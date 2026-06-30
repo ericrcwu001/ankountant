@@ -1,7 +1,5 @@
 ## Purpose
 
-> *NOT YET IMPLEMENTED YET. ALL TBD FEATURES*
-
 To establish a research-backed, first-principles foundation for **Ankountant** - an Anki-forked desktop + mobile study app for the accounting **CPA exam**. Helping CPA candidates pass the exam will require the app to keep the following in mind:
 
 - **Memory** - can the student *recall* a taught fact? (Anki's FSRS handles raw recall well, but it optimizes open-ended retention rather than peaking on a fixed exam date; the scheduler needs reworking for that - see the deadline-scheduling SPOV.)
