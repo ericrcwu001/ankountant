@@ -1,0 +1,7 @@
+---
+description: qt subsystem
+globs: qt/**
+alwaysApply: false
+---
+When working under qt/aqt (the PyQt6 GUI embedding the web components), read qt/aqt/CLAUDE.md for the canonical detail on browser/, operations/, forms/, mediasrv, and codegen.
+Key gotcha: forms/hooks/colors are generated into out/qt/_aqt/ and forms import from the synthetic `_aqt.forms.<name>_qt6` — type checking fails until the build runs, so trigger `just check` after codegen-affecting edits.

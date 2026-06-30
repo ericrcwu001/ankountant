@@ -16,6 +16,44 @@ Anki is a spaced repetition flashcard program with a multi-layered architecture.
 - Protobuf definitions in proto/ that are used by the different layers to
   talk to each other.
 
+## Architecture Map
+
+Anki is layered: a **Rust core** (`rslib/`) holds all collection/scheduling/sync
+logic; **Python** (`pylib/anki/`) wraps it over a PyO3 FFI bridge and the
+**PyQt6 desktop GUI** (`qt/aqt/`) drives it; the **Svelte/TypeScript frontend**
+(`ts/`) renders study/editor/config pages embedded in Qt webviews; and
+**`proto/`** is the Protobuf contract that wires all three together.
+
+Each subsystem has a nested `CLAUDE.md` — read it before working in that area:
+
+- **`rslib/`** — Rust core: collection, notes, decks, search, sync, media.
+  Scheduling lives in `rslib/src/scheduler/` → read
+  **`rslib/src/scheduler/CLAUDE.md`** when touching queues, due dates, FSRS, or
+  `answer_card`.
+- **`proto/`** — RPC + message definitions (`proto/anki/*.proto`), the source of
+  truth for all layers → read **`proto/CLAUDE.md`** before adding/changing any
+  service, method, or message.
+- **`pylib/anki/`** — Python API: `Collection`, scheduler, managers; `_backend.py`
+  is the FFI bridge → read **`pylib/anki/CLAUDE.md`** when adding backend-backed
+  Python methods or DB access.
+- **`qt/aqt/`** — desktop GUI: main window, webview embedding, `operations/`
+  (CollectionOp/QueryOp), `mediasrv.py`, browser, editor → read
+  **`qt/aqt/CLAUDE.md`** for dialogs, hooks, `.ui` forms, or undoable mutations.
+- **`ts/`** — Svelte/TS pages (`routes/`, `reviewer/`, `editor/`) served at
+  `localhost:40000/_anki/pages/` → read **`ts/CLAUDE.md`** for frontend
+  components, the backend bridge, or e2e tests.
+
+### Cross-language data flow
+
+`proto/anki/*.proto` is the single contract. Editing a `.proto` regenerates, in
+lockstep: the Rust service dispatch (compiled into `rslib/src/services.rs`), the
+Python wrappers (`out/pylib/anki/_backend_generated.py`, surfaced via the
+hand-written `pylib/anki/_backend.py`), and the TS callers
+(`out/ts/lib/generated/backend.ts`, imported as `@generated/backend`). Generated
+code lives under `out/` — never edit it. Because the layers index into generated
+dispatch by service/method order, a `.proto` change needs a full **`just check`**;
+`cargo check` alone regenerates only Rust and leaves Python/TS stale.
+
 ## Running Anki
 
 To build and run Anki in development mode:
@@ -116,3 +154,7 @@ in build scripts/tests is fine.
 ## Individual preferences
 
 See @.claude/user.md
+
+## grill-me skill
+
+When using the grill-me skill in this repo, store ADRs in `docs_ankountant/adr/` (not `docs/adr/`). Store `CONTEXT.md` at the repo root as usual.

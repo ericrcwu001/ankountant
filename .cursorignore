@@ -1,0 +1,18 @@
+# .cursorignore — hard-block list (files Cursor must NOT read or index at all).
+#
+# This file intentionally hard-blocks NOTHING today.
+#
+# Why it's empty of rules:
+#   - Build output (out/, target/, node_modules/) is already excluded from
+#     indexing via .gitignore, so there's no need to repeat it here.
+#   - out/ holds generated cross-language code (the Python/TypeScript bindings
+#     described in the root CLAUDE.md). That code must stay AI-readable so the
+#     AI can reason about cross-layer / IPC communication — so it is
+#     deliberately NOT hard-blocked here.
+#   - Pure index-noise (large lockfiles, generated docs site, etc.) belongs in
+#     .cursorindexingignore instead: those stay readable on demand but are kept
+#     out of the index.
+#
+# Add real hard-blocks below ONLY if such files ever exist in this repo —
+# e.g. secrets, credentials, .env files with live keys. Anything listed here
+# becomes completely invisible to Cursor and the AI.

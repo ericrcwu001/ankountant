@@ -1,0 +1,9 @@
+# Excluded from Cursor's index, but still readable on demand.
+# Files listed here are not crawled for indexing/embeddings (cuts index
+# noise + cost), yet Cursor and the AI can still open and read them when a
+# task explicitly needs them.
+
+Cargo.lock
+yarn.lock
+uv.lock
+docs-site/

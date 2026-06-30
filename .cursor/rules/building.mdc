@@ -1,0 +1,6 @@
+---
+description: Build, check, test commands
+alwaysApply: true
+---
+- Build/check/test/lint/format are `just` recipes — run `just --list` (e.g. `just check` formats + builds + runs checks; `just run`; `just test-rust|test-py|test-ts`; `just web-watch`).
+- Do NOT call ./ninja, ./run, ./check, or tools/ scripts directly.

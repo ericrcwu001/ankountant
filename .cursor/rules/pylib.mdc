@@ -1,0 +1,10 @@
+---
+description: pylib subsystem
+globs: pylib/anki/**
+alwaysApply: false
+---
+When working under pylib/anki, read pylib/anki/CLAUDE.md for local detail — it
+is the single source of truth for this Python<->Rust seam.
+Key gotcha: `RustBackendGenerated` is auto-generated at build time to
+out/pylib/anki/_backend_generated.py and is not in the source tree, so imports
+fail unless the build is complete (run `just pylib`).

@@ -1,0 +1,8 @@
+---
+description: proto subsystem
+globs: proto/**
+alwaysApply: false
+---
+- When working under proto, read proto/CLAUDE.md for local detail.
+- `.proto` files are the backend RPC contract: editing one regenerates the Rust service traits, Python `_backend_generated.py`, and TypeScript `@generated/backend` bindings.
+- This needs a full `just check`, not just `cargo check` — stale codegen leaves service/method indices out of sync across layers and calls the wrong method.

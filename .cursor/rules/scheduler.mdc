@@ -1,0 +1,8 @@
+---
+description: scheduler subsystem
+globs: rslib/src/scheduler/**
+alwaysApply: false
+---
+- When working under rslib/src/scheduler/, read rslib/src/scheduler/CLAUDE.md for local detail.
+- FSRS vs SM-2 is a runtime branch on `BoolKey::Fsrs`; intervals and desired-retention flow through `fsrs.next_states(...)` in `answering/mod.rs`.
+- The RPC contract is `proto/anki/scheduler.proto` — editing it needs a full `just check` (see proto/CLAUDE.md), not just `cargo check`.

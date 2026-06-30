@@ -1,0 +1,10 @@
+---
+description: ts subsystem
+globs: ts/**
+alwaysApply: false
+---
+When working under `ts/`, read `ts/CLAUDE.md` first for local detail (key
+paths, entry points, the dev loop, and ankountant UI guidance).
+Most important gotcha: pages are client-only (SSR/prerender off) and talk to
+the Rust backend through `postProto()` against `@generated/backend`, which is
+codegen'd from `proto/` into `out/` — rebuild after any `.proto` change.
