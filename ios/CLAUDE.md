@@ -1,4 +1,4 @@
-# Amgi — Project Instructions — Project Instructions
+# Ankountant — Project Instructions — Project Instructions
 
 ## Project Overview
 
@@ -47,7 +47,7 @@ ankitects/anki rslib (anki-upstream/)
 swift build
 
 # Build iOS app
-cd AmgiApp && xcodegen generate && cd ..
+cd AnkountantApp && xcodegen generate && cd ..
 xcodebuild build -project AnkiApp/AnkiApp.xcodeproj -scheme AnkiApp \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'
 

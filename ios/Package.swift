@@ -13,7 +13,7 @@ let sharedSwiftSettings: [SwiftSetting] = [
 
 let package = Package(
     name: "AnkiBridge",
-    // Pinned to iOS 18 / macOS 15 because the sibling AmgiReader package
+    // Pinned to iOS 18 / macOS 15 because the sibling AnkountantReader package
     // depends on hoshidicts, which requires macOS 15+. The app target
     // already deploys iOS 18 so this is a no-op for users.
     platforms: [.iOS(.v18), .macOS(.v15)],
@@ -24,7 +24,7 @@ let package = Package(
         .library(name: "AnkiServices", targets: ["AnkiServices"]),
         .library(name: "AnkiClients", targets: ["AnkiClients"]),
         .library(name: "AnkiSync", targets: ["AnkiSync"]),
-        .library(name: "AmgiCardWeb", targets: ["AmgiCardWeb"]),
+        .library(name: "AnkountantCardWeb", targets: ["AnkountantCardWeb"]),
     ],
     dependencies: [
         .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.0.0"),
@@ -34,7 +34,7 @@ let package = Package(
         // book/chapter/lookup model isn't entangled with Anki primitives.
         // The Anki-bridged loader (ReaderBookClient) lives in AnkiClients
         // and imports this package for its types.
-        .package(path: "AmgiReader"),
+        .package(path: "AnkountantReader"),
     ],
     targets: [
         // MARK: - Rust Bridge
@@ -86,7 +86,7 @@ let package = Package(
                 "AnkiProto",
                 "AnkiServices",
                 "AnkiSync",
-                .product(name: "AmgiReader", package: "AmgiReader"),
+                .product(name: "AnkountantReader", package: "AnkountantReader"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
                 .product(name: "DependenciesMacros", package: "swift-dependencies"),
                 .product(name: "Logging", package: "swift-log"),
@@ -101,12 +101,12 @@ let package = Package(
             swiftSettings: sharedSwiftSettings
         ),
         .target(
-            name: "AmgiCardWeb",
+            name: "AnkountantCardWeb",
             swiftSettings: sharedSwiftSettings
         ),
         .testTarget(
-            name: "AmgiCardWebTests",
-            dependencies: ["AmgiCardWeb"],
+            name: "AnkountantCardWebTests",
+            dependencies: ["AnkountantCardWeb"],
             swiftSettings: sharedSwiftSettings
         ),
     ],

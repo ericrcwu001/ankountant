@@ -1,4 +1,4 @@
-public import AmgiReader
+public import AnkountantReader
 public import Dependencies
 import DependenciesMacros
 
@@ -7,8 +7,8 @@ import DependenciesMacros
 /// into the Anki collection config so the same progress reaches other
 /// devices via Anki sync.
 ///
-/// Lives in `AnkiClients` rather than `AmgiReader` because the bridge
-/// to Anki's `setConfigJSONValue` is an Anki concern. `AmgiReader` itself
+/// Lives in `AnkiClients` rather than `AnkountantReader` because the bridge
+/// to Anki's `setConfigJSONValue` is an Anki concern. `AnkountantReader` itself
 /// stays Anki-free.
 @DependencyClient
 public struct ReaderProgressSyncClient: Sendable {
@@ -41,7 +41,7 @@ extension DependencyValues {
 }
 
 /// JSON-encoded shape stored in the Anki collection config under the
-/// `amgi.reader.progress` key. Mirrors DreamAfar's manifest schema so a
+/// `ankountant.reader.progress` key. Mirrors DreamAfar's manifest schema so a
 /// collection synced between forks can interoperate.
 public struct ReaderProgressManifest: Codable, Sendable, Equatable {
     public var version: Int

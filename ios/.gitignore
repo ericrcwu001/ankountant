@@ -3,7 +3,7 @@
 .DS_Store
 **/xcuserdata/
 *.xcworkspace/
-AmgiApp/memory/
+AnkountantApp/memory/
 DerivedData/
 build/
 AnkiRust.xcframework/

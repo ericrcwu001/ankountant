@@ -5,7 +5,7 @@ import Foundation
 import Logging
 import SwiftProtobuf
 
-private let logger = Logger(label: "com.amgiapp.notetypes.client")
+private let logger = Logger(label: "com.ankountantapp.notetypes.client")
 
 extension NotetypesClient: DependencyKey {
     public static let liveValue: Self = {

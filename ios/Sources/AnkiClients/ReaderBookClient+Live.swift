@@ -1,4 +1,4 @@
-import AmgiReader
+import AnkountantReader
 import AnkiBackend
 import AnkiKit
 import AnkiProto

@@ -5,7 +5,7 @@ import Foundation
 import Logging
 import SwiftProtobuf
 
-private let logger = Logger(label: "com.amgiapp.media.client")
+private let logger = Logger(label: "com.ankountantapp.media.client")
 
 extension MediaClient: DependencyKey {
     public static let liveValue: Self = {

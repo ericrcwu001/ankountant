@@ -1,0 +1,1228 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		03DAF0B9FB977DFA0CBE90A8 /* Review in Resources */ = {isa = PBXBuildFile; fileRef = D3753498A93232C13822A951 /* Review */; };
+		07CD76661C50006F2C618BE6 /* SyncSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AB81777259D50D47791C082 /* SyncSettingsView.swift */; };
+		0A9754A563E9EBBDB7814478 /* SyncSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D2976618B93D7B0DB049F3 /* SyncSheet.swift */; };
+		0B0BE97069D2D55D96EB0866 /* RetrievabilityChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = D258D7966A8B17796C5A10B4 /* RetrievabilityChart.swift */; };
+		0F1DE9F995A499581DDB3654 /* ReaderThemeColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0790B22C6DA67F8F3E8362D6 /* ReaderThemeColor.swift */; };
+		0F8CA23DCF071863543FA4A7 /* ReaderLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E331A6AF279A3736BF05FC8 /* ReaderLibraryView.swift */; };
+		0FA3547FA28995E36E75B555 /* AnkiKit in Frameworks */ = {isa = PBXBuildFile; productRef = A31979100547E8AD80B8471A /* AnkiKit */; };
+		131C1810800A205DF9842A31 /* StatsDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76498456E40F8B3ABB528ED6 /* StatsDashboardView.swift */; };
+		13ABB44911FC4667E3A63E2B /* DeckDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E58808CA6B40C845E6BE2D1 /* DeckDetailView.swift */; };
+		15C7E19151438EEEDF961C6E /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7DF531533DB31B567BEC32 /* ShareSheet.swift */; };
+		168430A4D1DC854E0521F57C /* SharedKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F1AE5EF0D956F5B09A10156 /* SharedKeys.swift */; };
+		1761DFE3EAB27A5F26030D16 /* ReaderDictionarySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B049203C0E08A2EFB509AE6 /* ReaderDictionarySettingsView.swift */; };
+		180BA63CE3E8B56F1315AA6F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E215BDA5D01FE0E670E2AEB /* SettingsView.swift */; };
+		1B39D6768D6BBD4037F46431 /* AnkiProto in Frameworks */ = {isa = PBXBuildFile; productRef = 5DAF8EEEDD3BE02ECA460231 /* AnkiProto */; };
+		1C5960413A55ECAE8E40CDEE /* ReaderCoverImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42F54E3E642CDA55377FF8FD /* ReaderCoverImage.swift */; };
+		1D8F27019DC85F0AA6DDE6E1 /* AnkiBackend in Frameworks */ = {isa = PBXBuildFile; productRef = 668579E8F6CB813A31E8C887 /* AnkiBackend */; };
+		1FD82AAE8AFCE0375843B419 /* TagsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62CA8315155D1CAE44C93E36 /* TagsView.swift */; };
+		225D9A30532734B791E60B22 /* mathjax in Resources */ = {isa = PBXBuildFile; fileRef = 23AD9325BFCF67C92CE70E87 /* mathjax */; };
+		26004F815DD200ADE21F42AC /* AppearanceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A885D3BB8DAFA6742DC637B /* AppearanceSettingsView.swift */; };
+		2655729E52132E90C2418A36 /* CardWebViewConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70EBBD2011127A05BA58AC90 /* CardWebViewConfig.swift */; };
+		2829D1BD2656FB41A2B2A0AA /* ImportHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94F9759DA9327F20A091BA0B /* ImportHelper.swift */; };
+		2A077612C4E6BA4C2550673A /* MaintenanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C73A41D7328E29ACBB3DA36 /* MaintenanceView.swift */; };
+		2B661D49EC1F69741869FFA8 /* Sharing in Frameworks */ = {isa = PBXBuildFile; productRef = 16BD10D6E7445311256D4913 /* Sharing */; };
+		2C968DC479B2689273F76B09 /* LoginSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C820A3ABA12F9F58FA97D306 /* LoginSheet.swift */; };
+		31E94D1BC14C9BFB7F7F9E59 /* ChapterListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34C15FC44A3950774F64B9F2 /* ChapterListView.swift */; };
+		3523C44227BF41C6FF4F9A36 /* PeriodPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17C9ABE3F15DEC56F0A0D5F7 /* PeriodPicker.swift */; };
+		3647426F74984A0CC1DC7851 /* RetentionChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F32BDCF4F6BF1D221409085 /* RetentionChart.swift */; };
+		36B3A3E99655C65E7F0A85E1 /* BrowseSelectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC0795F3D34382B40944EEC /* BrowseSelectionState.swift */; };
+		37EFBAD41ABD3D60DD2277CB /* TodayStatsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C44B7ECA176D74353199249 /* TodayStatsCard.swift */; };
+		3937C058C36CFC07479C9394 /* CardAssetScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00409FD1743F643E1EC8B54 /* CardAssetScheme.swift */; };
+		3DBB8FC60EC0F3A9504AFDCC /* CardContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AB2D0F3AFE3325F776A993C /* CardContextMenu.swift */; };
+		3FD9A0E9944EECF7EE3101B1 /* ButtonsChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05E65094966D4CC77130BAA0 /* ButtonsChart.swift */; };
+		4169F462155B6DC4877EE26B /* DecksReviewsChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45BBC9F257075940FFE68C11 /* DecksReviewsChart.swift */; };
+		42668B38B2F20B269E93225D /* ReviewsChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3648F706A4B00C12E555D205 /* ReviewsChart.swift */; };
+		49EA133DF4C5AE8BB9A04D83 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 909A316D54CCA4C38BD7B276 /* AboutView.swift */; };
+		4D6A6C0DCF88424C1D26C800 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F6EA651E618D65394037BD7 /* WidgetKit.framework */; };
+		4DAD7FC4B2630FE4F0E83693 /* CardStateChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDB4950DE3299793C4BE4B92 /* CardStateChart.swift */; };
+		4E6C176D856F9908A003F9B3 /* AnkiMobileAttributionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA43BB58E717B2FDA85D3652 /* AnkiMobileAttributionView.swift */; };
+		5038CFCE031039C4ACBAFE39 /* DebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B60FF87B0316C78F96489B8 /* DebugView.swift */; };
+		553F389D2D669A0EA92864FF /* WidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF0D840A187EB6B0407B7CA9 /* WidgetSnapshotStore.swift */; };
+		58245F02D8B4B3DD93699459 /* DeckListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD4E24076B14FC2B56965852 /* DeckListView.swift */; };
+		59E657C29C796D99D524F151 /* HeatmapLoadingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1B8D8283CBFF1D7FA28CB4D /* HeatmapLoadingManager.swift */; };
+		5A36132183FB2B698F36BA27 /* LookupStructuredContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAEA818DE24D5215145BC185 /* LookupStructuredContentView.swift */; };
+		5A9B254FABDF125BB9A35AED /* BatchTagSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17A79438B7CF0FCFF52F02AE /* BatchTagSheet.swift */; };
+		5B20031BAC9DDE2196C1E139 /* AccountStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C0157E96CF98C40A38C7282 /* AccountStore.swift */; };
+		640F39899D4FC4A3AB49145E /* SyncCoordinatorTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8676506F499FBA5117D16AA9 /* SyncCoordinatorTypes.swift */; };
+		6735BAA0A552042951036D94 /* SwiftNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = 1B876A436CBBB209AA029D51 /* SwiftNavigation */; };
+		6BC2BE429B43807FC27FF911 /* HourlyChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B9A0504FDE82230AE7DF69 /* HourlyChart.swift */; };
+		6E082FEACBB8DBFA66C3FCA4 /* IntervalsChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4098A4FE947EBC332E04FAF4 /* IntervalsChart.swift */; };
+		70042B6A17E450B30EE94837 /* AnkiBackedDictionaryConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F874AE64A90478C5F986B48D /* AnkiBackedDictionaryConfigStore.swift */; };
+		731B0883BD82C22E5ABCD503 /* WidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF0D840A187EB6B0407B7CA9 /* WidgetSnapshotStore.swift */; };
+		73F012415CFD5E73B53FA859 /* StatsChartTooltip.swift in Sources */ = {isa = PBXBuildFile; fileRef = C71A30A1FCAAAACB32C3505C /* StatsChartTooltip.swift */; };
+		75051E250254D792DBA16CE4 /* AnkountantReader in Frameworks */ = {isa = PBXBuildFile; productRef = ADAB8B275BD49AD122C128DB /* AnkountantReader */; };
+		7525FCCD15EF5F2FAAAEF6E5 /* ImageOcclusionWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD662C5E96C4AB803E463ADB /* ImageOcclusionWorkspaceView.swift */; };
+		760E7BD0822C26728982B44A /* ReviewSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = C16EDA5BD73464D27DF347EB /* ReviewSession.swift */; };
+		7878E9564E0059122DAC7DDF /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6370F065E997C80B8E88FF /* WidgetSnapshot.swift */; };
+		78F5929BD9636DF90F99433A /* AnkountantSpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00B8AC4916F57453BFA7DD8 /* AnkountantSpacing.swift */; };
+		79687EF3B8091F2D09C7884E /* AnkiSync in Frameworks */ = {isa = PBXBuildFile; productRef = 784D6B857D21EACF021E2D10 /* AnkiSync */; };
+		79936109072B3D8FD5B997F2 /* LookupAudioSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C628C5CAB5E712899BCCDC3A /* LookupAudioSupport.swift */; };
+		807086E7437C8D78D4BD6F0A /* DeckTemplateListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 827944E7BB39D4C900F6DA1F /* DeckTemplateListView.swift */; };
+		82373AD0960F0E0C34F791F7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 069DDC4FBCE1C0A18D93B37E /* ContentView.swift */; };
+		88FC5801726216311340FABE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72C525E06448AC10D61B7EE3 /* Assets.xcassets */; };
+		88FCD5D100F433590BCF2002 /* AnkountantTheme in Frameworks */ = {isa = PBXBuildFile; productRef = CE4198C6668FD2A767B47DF1 /* AnkountantTheme */; };
+		89C4E72568B6931F2D99ADC4 /* SyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355AFAC0971C1584E5479E53 /* SyncCoordinator.swift */; };
+		8A115BA563DA306788EB1E82 /* AnkountantWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B3A310D5F33B2643E076FF0A /* AnkountantWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8F9BBA87A5D9449036AFDA5B /* AnkountantTheme in Frameworks */ = {isa = PBXBuildFile; productRef = 5E56CDA6ADE0AAEC9A0ECE5A /* AnkountantTheme */; };
+		8FDC69D08C7BED77F2715E35 /* ForecastChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FD3F03FEEA2E1A50D1A28D0 /* ForecastChart.swift */; };
+		936D92C4076FD8A4FF31E0FC /* EditImageOcclusionNoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C510BAB055135CDAF5E356F /* EditImageOcclusionNoteView.swift */; };
+		93A9837AD81489784E8FD0B5 /* ProfilePickerMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E70F9F38DD3E611A01ABC /* ProfilePickerMenu.swift */; };
+		962D8FC41FEB56F566A1B2C9 /* AddNoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08129796D4BDF5FFB4D6A4F7 /* AddNoteView.swift */; };
+		96D0E02690F70AF8659B9F4F /* LookupPopupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2FABC55C742997E91D9DEB /* LookupPopupView.swift */; };
+		97104C3F3A6CEF955E8FDDA7 /* CardCountsChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646879CDEF55967592A6E595 /* CardCountsChart.swift */; };
+		9D2E70AF70AF996ACD702CA5 /* HeatmapChartOptimized.swift in Sources */ = {isa = PBXBuildFile; fileRef = D61200495739A9E9B9F9969B /* HeatmapChartOptimized.swift */; };
+		9E696D243D0A001CDB1BC710 /* DeckCountsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B49DE2CAFC8EB67C9C07E48 /* DeckCountsView.swift */; };
+		9EB67D252BA597DFD4F8C5FF /* UIKitNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = AFFE9C161CC5199774E5A836 /* UIKitNavigation */; };
+		A261A226DD481F44BB0DFA3B /* ReaderProgressCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB321909B96F8F5BC192F4E /* ReaderProgressCoordinator.swift */; };
+		A37C19F3C43F99C83AE7F39E /* ChapterReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D145BEA1094044148D6676A /* ChapterReaderView.swift */; };
+		A5B2C081D87A3A2D77B8CE52 /* BrowseSubtitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D10959576FDED430DB01DEB /* BrowseSubtitle.swift */; };
+		A84C956B77E5A48FFED51664 /* ReaderTTS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56FC2AF1E8CDF872D5D0EB63 /* ReaderTTS.swift */; };
+		AC094CEAB4A1E53F6B1DC3CD /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F6EA651E618D65394037BD7 /* WidgetKit.framework */; };
+		B1110A24893729DE51036067 /* WriteWidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A823ABA15930EF2822DE8209 /* WriteWidgetSnapshot.swift */; };
+		B361CF4E5522101B2168456B /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 51D6AC192B3B47A938776C1E /* SwiftUI.framework */; };
+		B605CD0BE1A7C5BEE7AE222E /* BrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0702B2D394D69AF6B6BC2793 /* BrowseView.swift */; };
+		B615CDAA027DC2BB3CC13EB3 /* SyncToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 635FFC6D420C39B1889E72F2 /* SyncToast.swift */; };
+		B848349E0DF4B73A92C45C07 /* CardWebViewCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76079A8685F3EB8515D880F3 /* CardWebViewCoordinator.swift */; };
+		BCA928A108319B6FE96705B9 /* NoteEditingDestinationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 765F582FAEA948A5D7684D9E /* NoteEditingDestinationView.swift */; };
+		C14B2E523199EDBF15EADF21 /* AccountsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C1AAECEC7CCFBAABAF81E7D /* AccountsSettingsView.swift */; };
+		C30B6E90EF773B1799467F5F /* TemplateSourceEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B922320D7DA522F843AE9C /* TemplateSourceEditor.swift */; };
+		D04061BF892EF53E8CAA474B /* AnkountantTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = F26610D0D7ACD4655B0955F6 /* AnkountantTypography.swift */; };
+		D127837E7EEBC1CAFF12465E /* AnkountantCardWeb in Frameworks */ = {isa = PBXBuildFile; productRef = 83324CEEC86005CA2C82927B /* AnkountantCardWeb */; };
+		D25B9F62F23AB580CC6A7DEE /* ReaderConfigurationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C7EE7066EFCB9753653726 /* ReaderConfigurationView.swift */; };
+		D2D84E8185221D59E95C3FE1 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6370F065E997C80B8E88FF /* WidgetSnapshot.swift */; };
+		D3D66A5DBB118EF849CD3096 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E37D21F1CA0E3CC0FD07D068 /* ReviewView.swift */; };
+		D52D325D523CE5E4858E70DB /* ReaderLookupStructuredContentResources.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = B19099278364E2F405DFBC23 /* ReaderLookupStructuredContentResources.generated.swift */; };
+		D5BCBFEA46B250207DC30B97 /* AnkiClients in Frameworks */ = {isa = PBXBuildFile; productRef = B81A39820C8557D7D0ED3EBC /* AnkiClients */; };
+		D8F6CB45C01606F9744B0839 /* AnkountantModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39CBE8EE0C76E849271017A8 /* AnkountantModifiers.swift */; };
+		D9C2C7F1104B9B0ACE98CEAC /* EmptyCardsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B4C084601D95D13AD70AD10 /* EmptyCardsView.swift */; };
+		DE0264D1E2B067B94A3AF8DF /* AnkiKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7A8128B5E3D55EA7FED9948C /* AnkiKit */; };
+		E35B1B00CAF72E00268EA049 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C836D6E618A0BCD6FDE130D /* OnboardingView.swift */; };
+		E4AF222FC7B21940C3F33F05 /* NoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D1C1349AF41D95B47EA995A /* NoteEditorView.swift */; };
+		E744FA87A10E9EA7CCDCAA13 /* NoteFieldHTMLPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4AFF84F476980B81B28165F /* NoteFieldHTMLPreview.swift */; };
+		E9830A0DD8FCBF5F21486B98 /* AnkiServices in Frameworks */ = {isa = PBXBuildFile; productRef = 028329FFBE47AA380A2BC36B /* AnkiServices */; };
+		ED611D7C9CEDA587A9FAEE61 /* ReaderSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE1F195DD99EDF77ABAA5107 /* ReaderSettingsView.swift */; };
+		ED9742E087D730F1B3C8329C /* CardWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80C103EE6A9579491EF808A8 /* CardWebView.swift */; };
+		F0020E358AD0327D8899BE79 /* AnkountantReaderDictionary in Frameworks */ = {isa = PBXBuildFile; productRef = 1D8904EF49679752013F030D /* AnkountantReaderDictionary */; };
+		F00CEDF59ACB222F4D7F9418 /* ReviewSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D116DF5E7B0CE96B4B3969F2 /* ReviewSettingsView.swift */; };
+		F0DACA8C0355CDA766626A3F /* ReviewPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40004FF1581AB2C0E1BAA1F5 /* ReviewPreferences.swift */; };
+		F22916D35B6B5A6DD606C61B /* StatsDualAxisSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4534EAE6FA1044A00043AD6E /* StatsDualAxisSupport.swift */; };
+		F3548BE4F60D42D26B49EA4A /* ReviewAudioSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D6113EB9F8790F0FA40D0 /* ReviewAudioSession.swift */; };
+		F49493CFD8D207315CBF7F0F /* EaseChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25EE7EA28FBFE27A35C1D67A /* EaseChart.swift */; };
+		F63B12D601DCD8595866774B /* AnkountantAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E23E852241B9AAA29E5E620 /* AnkountantAppApp.swift */; };
+		F90680FFA2F1CA7F30CE912E /* AddImageOcclusionNoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 137275C17F60AC97C993B692 /* AddImageOcclusionNoteView.swift */; };
+		F9E54CC9C148158E3BCC5CE6 /* FutureDueChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 596D02B88393034839026103 /* FutureDueChart.swift */; };
+		FA96F9C8F72A388A43960F99 /* AddedChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = B682CFA95FE9F51D91462CD3 /* AddedChart.swift */; };
+		FAFFE95A269146BB3F792779 /* ReaderConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 800B27D907AFFC04B99E07C5 /* ReaderConfiguration.swift */; };
+		FD0EE824DDC6FB44BC5B2C14 /* ReaderFontOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F4EC04E074574326D3C9E0 /* ReaderFontOption.swift */; };
+		FD2E49D8C844D13E50AC30A6 /* RichNoteFieldEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7868782C499FDC3C0EE74124 /* RichNoteFieldEditor.swift */; };
+		FD3004F34D6DACEBF4AF0DB9 /* DeckConfigView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89E7B9880FBB6B43488E00FA /* DeckConfigView.swift */; };
+		FD934EA79C5905A43165AC3F /* MediaCheckResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A35896F229D5651629F9644 /* MediaCheckResultView.swift */; };
+		FDAA88CAB8747BC9EA95F931 /* Fonts in Resources */ = {isa = PBXBuildFile; fileRef = E3312C01FEAF4579D15D9971 /* Fonts */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		5601FAFD049171685C53DD89 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3067F60484818D69649BFE2C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B35439DBFD3C201B5BFA4536;
+			remoteInfo = AnkountantWidget;
+		};
+		FDBA23F66251693935375E38 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3067F60484818D69649BFE2C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EA1E873F3E6149DE8BA103AC;
+			remoteInfo = AnkountantApp;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		9EAFE5FE02838DC15F14D942 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				8A115BA563DA306788EB1E82 /* AnkountantWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		05E65094966D4CC77130BAA0 /* ButtonsChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonsChart.swift; sourceTree = "<group>"; };
+		069DDC4FBCE1C0A18D93B37E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		0702B2D394D69AF6B6BC2793 /* BrowseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseView.swift; sourceTree = "<group>"; };
+		0790B22C6DA67F8F3E8362D6 /* ReaderThemeColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderThemeColor.swift; sourceTree = "<group>"; };
+		08129796D4BDF5FFB4D6A4F7 /* AddNoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddNoteView.swift; sourceTree = "<group>"; };
+		0B4C084601D95D13AD70AD10 /* EmptyCardsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyCardsView.swift; sourceTree = "<group>"; };
+		0C510BAB055135CDAF5E356F /* EditImageOcclusionNoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditImageOcclusionNoteView.swift; sourceTree = "<group>"; };
+		0D10959576FDED430DB01DEB /* BrowseSubtitle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseSubtitle.swift; sourceTree = "<group>"; };
+		137275C17F60AC97C993B692 /* AddImageOcclusionNoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddImageOcclusionNoteView.swift; sourceTree = "<group>"; };
+		1789545D645E253C7989889A /* AnkountantUI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AnkountantUI; path = ../AnkountantUI; sourceTree = SOURCE_ROOT; };
+		17A79438B7CF0FCFF52F02AE /* BatchTagSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchTagSheet.swift; sourceTree = "<group>"; };
+		17C9ABE3F15DEC56F0A0D5F7 /* PeriodPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodPicker.swift; sourceTree = "<group>"; };
+		1C836D6E618A0BCD6FDE130D /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		1E331A6AF279A3736BF05FC8 /* ReaderLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderLibraryView.swift; sourceTree = "<group>"; };
+		1EA1E7DB433B45BA2EC165C9 /* AnkountantApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AnkountantApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F32BDCF4F6BF1D221409085 /* RetentionChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetentionChart.swift; sourceTree = "<group>"; };
+		1F7DF531533DB31B567BEC32 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
+		23AD9325BFCF67C92CE70E87 /* mathjax */ = {isa = PBXFileReference; lastKnownFileType = folder; name = mathjax; path = Resources/mathjax; sourceTree = SOURCE_ROOT; };
+		25EE7EA28FBFE27A35C1D67A /* EaseChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EaseChart.swift; sourceTree = "<group>"; };
+		27F4EC04E074574326D3C9E0 /* ReaderFontOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderFontOption.swift; sourceTree = "<group>"; };
+		34C15FC44A3950774F64B9F2 /* ChapterListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterListView.swift; sourceTree = "<group>"; };
+		355AFAC0971C1584E5479E53 /* SyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCoordinator.swift; sourceTree = "<group>"; };
+		3648F706A4B00C12E555D205 /* ReviewsChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewsChart.swift; sourceTree = "<group>"; };
+		39CBE8EE0C76E849271017A8 /* AnkountantModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnkountantModifiers.swift; sourceTree = "<group>"; };
+		3A885D3BB8DAFA6742DC637B /* AppearanceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceSettingsView.swift; sourceTree = "<group>"; };
+		3C1AAECEC7CCFBAABAF81E7D /* AccountsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsSettingsView.swift; sourceTree = "<group>"; };
+		3D145BEA1094044148D6676A /* ChapterReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterReaderView.swift; sourceTree = "<group>"; };
+		3F1AE5EF0D956F5B09A10156 /* SharedKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedKeys.swift; sourceTree = "<group>"; };
+		40004FF1581AB2C0E1BAA1F5 /* ReviewPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPreferences.swift; sourceTree = "<group>"; };
+		4098A4FE947EBC332E04FAF4 /* IntervalsChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntervalsChart.swift; sourceTree = "<group>"; };
+		42F54E3E642CDA55377FF8FD /* ReaderCoverImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderCoverImage.swift; sourceTree = "<group>"; };
+		4534EAE6FA1044A00043AD6E /* StatsDualAxisSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsDualAxisSupport.swift; sourceTree = "<group>"; };
+		45BBC9F257075940FFE68C11 /* DecksReviewsChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecksReviewsChart.swift; sourceTree = "<group>"; };
+		48D2976618B93D7B0DB049F3 /* SyncSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncSheet.swift; sourceTree = "<group>"; };
+		4D1C1349AF41D95B47EA995A /* NoteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEditorView.swift; sourceTree = "<group>"; };
+		51D6AC192B3B47A938776C1E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		56FC2AF1E8CDF872D5D0EB63 /* ReaderTTS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderTTS.swift; sourceTree = "<group>"; };
+		596D02B88393034839026103 /* FutureDueChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FutureDueChart.swift; sourceTree = "<group>"; };
+		5A35896F229D5651629F9644 /* MediaCheckResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCheckResultView.swift; sourceTree = "<group>"; };
+		5AB2D0F3AFE3325F776A993C /* CardContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardContextMenu.swift; sourceTree = "<group>"; };
+		5B49DE2CAFC8EB67C9C07E48 /* DeckCountsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckCountsView.swift; sourceTree = "<group>"; };
+		5D3D6113EB9F8790F0FA40D0 /* ReviewAudioSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewAudioSession.swift; sourceTree = "<group>"; };
+		62CA8315155D1CAE44C93E36 /* TagsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagsView.swift; sourceTree = "<group>"; };
+		635FFC6D420C39B1889E72F2 /* SyncToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncToast.swift; sourceTree = "<group>"; };
+		638A5086A363C5E11957A447 /* ios */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ios; path = ..; sourceTree = SOURCE_ROOT; };
+		646879CDEF55967592A6E595 /* CardCountsChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardCountsChart.swift; sourceTree = "<group>"; };
+		65C7EE7066EFCB9753653726 /* ReaderConfigurationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderConfigurationView.swift; sourceTree = "<group>"; };
+		6AB81777259D50D47791C082 /* SyncSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncSettingsView.swift; sourceTree = "<group>"; };
+		6B60FF87B0316C78F96489B8 /* DebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugView.swift; sourceTree = "<group>"; };
+		6E215BDA5D01FE0E670E2AEB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		6FD3F03FEEA2E1A50D1A28D0 /* ForecastChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastChart.swift; sourceTree = "<group>"; };
+		70EBBD2011127A05BA58AC90 /* CardWebViewConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardWebViewConfig.swift; sourceTree = "<group>"; };
+		72C525E06448AC10D61B7EE3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		76079A8685F3EB8515D880F3 /* CardWebViewCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardWebViewCoordinator.swift; sourceTree = "<group>"; };
+		76498456E40F8B3ABB528ED6 /* StatsDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsDashboardView.swift; sourceTree = "<group>"; };
+		765F582FAEA948A5D7684D9E /* NoteEditingDestinationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEditingDestinationView.swift; sourceTree = "<group>"; };
+		7868782C499FDC3C0EE74124 /* RichNoteFieldEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichNoteFieldEditor.swift; sourceTree = "<group>"; };
+		7D3E70F9F38DD3E611A01ABC /* ProfilePickerMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePickerMenu.swift; sourceTree = "<group>"; };
+		800B27D907AFFC04B99E07C5 /* ReaderConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderConfiguration.swift; sourceTree = "<group>"; };
+		80C103EE6A9579491EF808A8 /* CardWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardWebView.swift; sourceTree = "<group>"; };
+		8225F35818823937B06A2E1E /* AnkountantReader */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AnkountantReader; path = ../AnkountantReader; sourceTree = SOURCE_ROOT; };
+		827944E7BB39D4C900F6DA1F /* DeckTemplateListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckTemplateListView.swift; sourceTree = "<group>"; };
+		8676506F499FBA5117D16AA9 /* SyncCoordinatorTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCoordinatorTypes.swift; sourceTree = "<group>"; };
+		89E7B9880FBB6B43488E00FA /* DeckConfigView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckConfigView.swift; sourceTree = "<group>"; };
+		8C0157E96CF98C40A38C7282 /* AccountStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountStore.swift; sourceTree = "<group>"; };
+		8C44B7ECA176D74353199249 /* TodayStatsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayStatsCard.swift; sourceTree = "<group>"; };
+		8E23E852241B9AAA29E5E620 /* AnkountantAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnkountantAppApp.swift; sourceTree = "<group>"; };
+		909A316D54CCA4C38BD7B276 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		94F9759DA9327F20A091BA0B /* ImportHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportHelper.swift; sourceTree = "<group>"; };
+		9B049203C0E08A2EFB509AE6 /* ReaderDictionarySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderDictionarySettingsView.swift; sourceTree = "<group>"; };
+		9C73A41D7328E29ACBB3DA36 /* MaintenanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaintenanceView.swift; sourceTree = "<group>"; };
+		9E488279CA6DA481AECC7431 /* AnkountantAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AnkountantAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E58808CA6B40C845E6BE2D1 /* DeckDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckDetailView.swift; sourceTree = "<group>"; };
+		9F6EA651E618D65394037BD7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		A00409FD1743F643E1EC8B54 /* CardAssetScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardAssetScheme.swift; sourceTree = "<group>"; };
+		A3B922320D7DA522F843AE9C /* TemplateSourceEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateSourceEditor.swift; sourceTree = "<group>"; };
+		A4B9A0504FDE82230AE7DF69 /* HourlyChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyChart.swift; sourceTree = "<group>"; };
+		A823ABA15930EF2822DE8209 /* WriteWidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WriteWidgetSnapshot.swift; sourceTree = "<group>"; };
+		AC2FABC55C742997E91D9DEB /* LookupPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LookupPopupView.swift; sourceTree = "<group>"; };
+		B19099278364E2F405DFBC23 /* ReaderLookupStructuredContentResources.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderLookupStructuredContentResources.generated.swift; sourceTree = "<group>"; };
+		B3A310D5F33B2643E076FF0A /* AnkountantWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = AnkountantWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B682CFA95FE9F51D91462CD3 /* AddedChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddedChart.swift; sourceTree = "<group>"; };
+		BAB321909B96F8F5BC192F4E /* ReaderProgressCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderProgressCoordinator.swift; sourceTree = "<group>"; };
+		BD662C5E96C4AB803E463ADB /* ImageOcclusionWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageOcclusionWorkspaceView.swift; sourceTree = "<group>"; };
+		BDB4950DE3299793C4BE4B92 /* CardStateChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardStateChart.swift; sourceTree = "<group>"; };
+		BE1F195DD99EDF77ABAA5107 /* ReaderSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderSettingsView.swift; sourceTree = "<group>"; };
+		BF6370F065E997C80B8E88FF /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
+		C16EDA5BD73464D27DF347EB /* ReviewSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewSession.swift; sourceTree = "<group>"; };
+		C628C5CAB5E712899BCCDC3A /* LookupAudioSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LookupAudioSupport.swift; sourceTree = "<group>"; };
+		C71A30A1FCAAAACB32C3505C /* StatsChartTooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsChartTooltip.swift; sourceTree = "<group>"; };
+		C820A3ABA12F9F58FA97D306 /* LoginSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginSheet.swift; sourceTree = "<group>"; };
+		CD4E24076B14FC2B56965852 /* DeckListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckListView.swift; sourceTree = "<group>"; };
+		D116DF5E7B0CE96B4B3969F2 /* ReviewSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewSettingsView.swift; sourceTree = "<group>"; };
+		D258D7966A8B17796C5A10B4 /* RetrievabilityChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetrievabilityChart.swift; sourceTree = "<group>"; };
+		D3753498A93232C13822A951 /* Review */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Review; path = Resources/Review; sourceTree = SOURCE_ROOT; };
+		D61200495739A9E9B9F9969B /* HeatmapChartOptimized.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeatmapChartOptimized.swift; sourceTree = "<group>"; };
+		E1B8D8283CBFF1D7FA28CB4D /* HeatmapLoadingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeatmapLoadingManager.swift; sourceTree = "<group>"; };
+		E3312C01FEAF4579D15D9971 /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = Resources/Fonts; sourceTree = SOURCE_ROOT; };
+		E37D21F1CA0E3CC0FD07D068 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
+		EF0D840A187EB6B0407B7CA9 /* WidgetSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotStore.swift; sourceTree = "<group>"; };
+		F00B8AC4916F57453BFA7DD8 /* AnkountantSpacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnkountantSpacing.swift; sourceTree = "<group>"; };
+		F26610D0D7ACD4655B0955F6 /* AnkountantTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnkountantTypography.swift; sourceTree = "<group>"; };
+		F4AFF84F476980B81B28165F /* NoteFieldHTMLPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteFieldHTMLPreview.swift; sourceTree = "<group>"; };
+		F874AE64A90478C5F986B48D /* AnkiBackedDictionaryConfigStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnkiBackedDictionaryConfigStore.swift; sourceTree = "<group>"; };
+		FA43BB58E717B2FDA85D3652 /* AnkiMobileAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnkiMobileAttributionView.swift; sourceTree = "<group>"; };
+		FAEA818DE24D5215145BC185 /* LookupStructuredContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LookupStructuredContentView.swift; sourceTree = "<group>"; };
+		FBC0795F3D34382B40944EEC /* BrowseSelectionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseSelectionState.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4074C0233B5442E55E2E8327 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = B35439DBFD3C201B5BFA4536 /* AnkountantWidget */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		0B093B188BC839CFD6A9715E /* Sources/Widgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4074C0233B5442E55E2E8327 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = Sources/Widgets;
+			sourceTree = "<group>";
+		};
+		AA0E9444407026F7B068C388 /* Tests/AnkountantAppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = Tests/AnkountantAppTests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		262D6FF13D250B79ECC3C2F6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DE0264D1E2B067B94A3AF8DF /* AnkiKit in Frameworks */,
+				E9830A0DD8FCBF5F21486B98 /* AnkiServices in Frameworks */,
+				D5BCBFEA46B250207DC30B97 /* AnkiClients in Frameworks */,
+				79687EF3B8091F2D09C7884E /* AnkiSync in Frameworks */,
+				1D8F27019DC85F0AA6DDE6E1 /* AnkiBackend in Frameworks */,
+				1B39D6768D6BBD4037F46431 /* AnkiProto in Frameworks */,
+				D127837E7EEBC1CAFF12465E /* AnkountantCardWeb in Frameworks */,
+				75051E250254D792DBA16CE4 /* AnkountantReader in Frameworks */,
+				F0020E358AD0327D8899BE79 /* AnkountantReaderDictionary in Frameworks */,
+				88FCD5D100F433590BCF2002 /* AnkountantTheme in Frameworks */,
+				6735BAA0A552042951036D94 /* SwiftNavigation in Frameworks */,
+				9EB67D252BA597DFD4F8C5FF /* UIKitNavigation in Frameworks */,
+				2B661D49EC1F69741869FFA8 /* Sharing in Frameworks */,
+				4D6A6C0DCF88424C1D26C800 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CE0B0BB0147E3A1F473376F6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0FA3547FA28995E36E75B555 /* AnkiKit in Frameworks */,
+				8F9BBA87A5D9449036AFDA5B /* AnkountantTheme in Frameworks */,
+				AC094CEAB4A1E53F6B1DC3CD /* WidgetKit.framework in Frameworks */,
+				B361CF4E5522101B2168456B /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		227956AEA2FEE0647971EE68 = {
+			isa = PBXGroup;
+			children = (
+				72C525E06448AC10D61B7EE3 /* Assets.xcassets */,
+				E3312C01FEAF4579D15D9971 /* Fonts */,
+				23AD9325BFCF67C92CE70E87 /* mathjax */,
+				D3753498A93232C13822A951 /* Review */,
+				81F25A166A013356D0C1B71C /* Packages */,
+				FF427DE713396E729B2B3818 /* Sources */,
+				0B093B188BC839CFD6A9715E /* Sources/Widgets */,
+				AA0E9444407026F7B068C388 /* Tests/AnkountantAppTests */,
+				2D571EC05BE59DE105E435E2 /* Frameworks */,
+				2AB87F89EA7D0E709E13C71D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		27C9DD285F16D806DD2592FA /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				909A316D54CCA4C38BD7B276 /* AboutView.swift */,
+				3C1AAECEC7CCFBAABAF81E7D /* AccountsSettingsView.swift */,
+				8C0157E96CF98C40A38C7282 /* AccountStore.swift */,
+				3A885D3BB8DAFA6742DC637B /* AppearanceSettingsView.swift */,
+				0B4C084601D95D13AD70AD10 /* EmptyCardsView.swift */,
+				9C73A41D7328E29ACBB3DA36 /* MaintenanceView.swift */,
+				5A35896F229D5651629F9644 /* MediaCheckResultView.swift */,
+				BE1F195DD99EDF77ABAA5107 /* ReaderSettingsView.swift */,
+				40004FF1581AB2C0E1BAA1F5 /* ReviewPreferences.swift */,
+				D116DF5E7B0CE96B4B3969F2 /* ReviewSettingsView.swift */,
+				6E215BDA5D01FE0E670E2AEB /* SettingsView.swift */,
+				6AB81777259D50D47791C082 /* SyncSettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		2AB87F89EA7D0E709E13C71D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1EA1E7DB433B45BA2EC165C9 /* AnkountantApp.app */,
+				9E488279CA6DA481AECC7431 /* AnkountantAppTests.xctest */,
+				B3A310D5F33B2643E076FF0A /* AnkountantWidget.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2D571EC05BE59DE105E435E2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				51D6AC192B3B47A938776C1E /* SwiftUI.framework */,
+				9F6EA651E618D65394037BD7 /* WidgetKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		81F25A166A013356D0C1B71C /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				8225F35818823937B06A2E1E /* AnkountantReader */,
+				1789545D645E253C7989889A /* AnkountantUI */,
+				638A5086A363C5E11957A447 /* ios */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		91E92CD9270BA50B75FCA6AF /* Decks */ = {
+			isa = PBXGroup;
+			children = (
+				89E7B9880FBB6B43488E00FA /* DeckConfigView.swift */,
+				9E58808CA6B40C845E6BE2D1 /* DeckDetailView.swift */,
+				CD4E24076B14FC2B56965852 /* DeckListView.swift */,
+				45BBC9F257075940FFE68C11 /* DecksReviewsChart.swift */,
+				827944E7BB39D4C900F6DA1F /* DeckTemplateListView.swift */,
+				7D3E70F9F38DD3E611A01ABC /* ProfilePickerMenu.swift */,
+				A3B922320D7DA522F843AE9C /* TemplateSourceEditor.swift */,
+			);
+			path = Decks;
+			sourceTree = "<group>";
+		};
+		953564D380D192D424EF8D86 /* Stats */ = {
+			isa = PBXGroup;
+			children = (
+				B682CFA95FE9F51D91462CD3 /* AddedChart.swift */,
+				05E65094966D4CC77130BAA0 /* ButtonsChart.swift */,
+				646879CDEF55967592A6E595 /* CardCountsChart.swift */,
+				BDB4950DE3299793C4BE4B92 /* CardStateChart.swift */,
+				25EE7EA28FBFE27A35C1D67A /* EaseChart.swift */,
+				6FD3F03FEEA2E1A50D1A28D0 /* ForecastChart.swift */,
+				596D02B88393034839026103 /* FutureDueChart.swift */,
+				D61200495739A9E9B9F9969B /* HeatmapChartOptimized.swift */,
+				E1B8D8283CBFF1D7FA28CB4D /* HeatmapLoadingManager.swift */,
+				A4B9A0504FDE82230AE7DF69 /* HourlyChart.swift */,
+				4098A4FE947EBC332E04FAF4 /* IntervalsChart.swift */,
+				17C9ABE3F15DEC56F0A0D5F7 /* PeriodPicker.swift */,
+				1F32BDCF4F6BF1D221409085 /* RetentionChart.swift */,
+				D258D7966A8B17796C5A10B4 /* RetrievabilityChart.swift */,
+				3648F706A4B00C12E555D205 /* ReviewsChart.swift */,
+				C71A30A1FCAAAACB32C3505C /* StatsChartTooltip.swift */,
+				76498456E40F8B3ABB528ED6 /* StatsDashboardView.swift */,
+				4534EAE6FA1044A00043AD6E /* StatsDualAxisSupport.swift */,
+				8C44B7ECA176D74353199249 /* TodayStatsCard.swift */,
+			);
+			path = Stats;
+			sourceTree = "<group>";
+		};
+		AF832769676209B8C8378B49 /* Review */ = {
+			isa = PBXGroup;
+			children = (
+				A00409FD1743F643E1EC8B54 /* CardAssetScheme.swift */,
+				80C103EE6A9579491EF808A8 /* CardWebView.swift */,
+				70EBBD2011127A05BA58AC90 /* CardWebViewConfig.swift */,
+				76079A8685F3EB8515D880F3 /* CardWebViewCoordinator.swift */,
+				5D3D6113EB9F8790F0FA40D0 /* ReviewAudioSession.swift */,
+				C16EDA5BD73464D27DF347EB /* ReviewSession.swift */,
+				E37D21F1CA0E3CC0FD07D068 /* ReviewView.swift */,
+			);
+			path = Review;
+			sourceTree = "<group>";
+		};
+		BBD981ED8A896D997C00C6F9 /* Sync */ = {
+			isa = PBXGroup;
+			children = (
+				FA43BB58E717B2FDA85D3652 /* AnkiMobileAttributionView.swift */,
+				C820A3ABA12F9F58FA97D306 /* LoginSheet.swift */,
+				1C836D6E618A0BCD6FDE130D /* OnboardingView.swift */,
+				355AFAC0971C1584E5479E53 /* SyncCoordinator.swift */,
+				8676506F499FBA5117D16AA9 /* SyncCoordinatorTypes.swift */,
+				48D2976618B93D7B0DB049F3 /* SyncSheet.swift */,
+				635FFC6D420C39B1889E72F2 /* SyncToast.swift */,
+			);
+			path = Sync;
+			sourceTree = "<group>";
+		};
+		D810DE21FEA41A9613820B1E /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				39CBE8EE0C76E849271017A8 /* AnkountantModifiers.swift */,
+				F00B8AC4916F57453BFA7DD8 /* AnkountantSpacing.swift */,
+				F26610D0D7ACD4655B0955F6 /* AnkountantTypography.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		DAB2D1E8C69D938CF233C0BA /* Reader */ = {
+			isa = PBXGroup;
+			children = (
+				F874AE64A90478C5F986B48D /* AnkiBackedDictionaryConfigStore.swift */,
+				34C15FC44A3950774F64B9F2 /* ChapterListView.swift */,
+				3D145BEA1094044148D6676A /* ChapterReaderView.swift */,
+				C628C5CAB5E712899BCCDC3A /* LookupAudioSupport.swift */,
+				AC2FABC55C742997E91D9DEB /* LookupPopupView.swift */,
+				FAEA818DE24D5215145BC185 /* LookupStructuredContentView.swift */,
+				800B27D907AFFC04B99E07C5 /* ReaderConfiguration.swift */,
+				65C7EE7066EFCB9753653726 /* ReaderConfigurationView.swift */,
+				42F54E3E642CDA55377FF8FD /* ReaderCoverImage.swift */,
+				9B049203C0E08A2EFB509AE6 /* ReaderDictionarySettingsView.swift */,
+				27F4EC04E074574326D3C9E0 /* ReaderFontOption.swift */,
+				1E331A6AF279A3736BF05FC8 /* ReaderLibraryView.swift */,
+				B19099278364E2F405DFBC23 /* ReaderLookupStructuredContentResources.generated.swift */,
+				BAB321909B96F8F5BC192F4E /* ReaderProgressCoordinator.swift */,
+				0790B22C6DA67F8F3E8362D6 /* ReaderThemeColor.swift */,
+				56FC2AF1E8CDF872D5D0EB63 /* ReaderTTS.swift */,
+			);
+			path = Reader;
+			sourceTree = "<group>";
+		};
+		E0584510035890186EAC049E /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				5AB2D0F3AFE3325F776A993C /* CardContextMenu.swift */,
+				5B49DE2CAFC8EB67C9C07E48 /* DeckCountsView.swift */,
+				94F9759DA9327F20A091BA0B /* ImportHelper.swift */,
+				3F1AE5EF0D956F5B09A10156 /* SharedKeys.swift */,
+				1F7DF531533DB31B567BEC32 /* ShareSheet.swift */,
+				62CA8315155D1CAE44C93E36 /* TagsView.swift */,
+				BF6370F065E997C80B8E88FF /* WidgetSnapshot.swift */,
+				EF0D840A187EB6B0407B7CA9 /* WidgetSnapshotStore.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		F1F52C915D0F45EBEC25B53A /* Browse */ = {
+			isa = PBXGroup;
+			children = (
+				137275C17F60AC97C993B692 /* AddImageOcclusionNoteView.swift */,
+				08129796D4BDF5FFB4D6A4F7 /* AddNoteView.swift */,
+				17A79438B7CF0FCFF52F02AE /* BatchTagSheet.swift */,
+				FBC0795F3D34382B40944EEC /* BrowseSelectionState.swift */,
+				0D10959576FDED430DB01DEB /* BrowseSubtitle.swift */,
+				0702B2D394D69AF6B6BC2793 /* BrowseView.swift */,
+				0C510BAB055135CDAF5E356F /* EditImageOcclusionNoteView.swift */,
+				BD662C5E96C4AB803E463ADB /* ImageOcclusionWorkspaceView.swift */,
+				765F582FAEA948A5D7684D9E /* NoteEditingDestinationView.swift */,
+				4D1C1349AF41D95B47EA995A /* NoteEditorView.swift */,
+				F4AFF84F476980B81B28165F /* NoteFieldHTMLPreview.swift */,
+				7868782C499FDC3C0EE74124 /* RichNoteFieldEditor.swift */,
+			);
+			path = Browse;
+			sourceTree = "<group>";
+		};
+		FF427DE713396E729B2B3818 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				8E23E852241B9AAA29E5E620 /* AnkountantAppApp.swift */,
+				069DDC4FBCE1C0A18D93B37E /* ContentView.swift */,
+				6B60FF87B0316C78F96489B8 /* DebugView.swift */,
+				A823ABA15930EF2822DE8209 /* WriteWidgetSnapshot.swift */,
+				F1F52C915D0F45EBEC25B53A /* Browse */,
+				91E92CD9270BA50B75FCA6AF /* Decks */,
+				DAB2D1E8C69D938CF233C0BA /* Reader */,
+				AF832769676209B8C8378B49 /* Review */,
+				27C9DD285F16D806DD2592FA /* Settings */,
+				E0584510035890186EAC049E /* Shared */,
+				953564D380D192D424EF8D86 /* Stats */,
+				BBD981ED8A896D997C00C6F9 /* Sync */,
+				D810DE21FEA41A9613820B1E /* Theme */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		31B4437C8B668B3DA866D12B /* AnkountantAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ADF8DD028A3855D49FF41400 /* Build configuration list for PBXNativeTarget "AnkountantAppTests" */;
+			buildPhases = (
+				33DE18B1D6C0E7A0C9B4A84C /* Sources */,
+				E031ADED70110F4005760D61 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				866E852046030B7BD9C6A9D7 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AA0E9444407026F7B068C388 /* Tests/AnkountantAppTests */,
+			);
+			name = AnkountantAppTests;
+			packageProductDependencies = (
+			);
+			productName = AnkountantAppTests;
+			productReference = 9E488279CA6DA481AECC7431 /* AnkountantAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		B35439DBFD3C201B5BFA4536 /* AnkountantWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 033D79AE4C3D99B8374A6133 /* Build configuration list for PBXNativeTarget "AnkountantWidget" */;
+			buildPhases = (
+				D0B6945E16DE11A0608C9CBF /* Sources */,
+				89400D58238D47F00B460D6E /* Resources */,
+				CE0B0BB0147E3A1F473376F6 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				0B093B188BC839CFD6A9715E /* Sources/Widgets */,
+			);
+			name = AnkountantWidget;
+			packageProductDependencies = (
+				A31979100547E8AD80B8471A /* AnkiKit */,
+				5E56CDA6ADE0AAEC9A0ECE5A /* AnkountantTheme */,
+			);
+			productName = AnkountantWidget;
+			productReference = B3A310D5F33B2643E076FF0A /* AnkountantWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		EA1E873F3E6149DE8BA103AC /* AnkountantApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FB500B7E5B8B46CBBA62968C /* Build configuration list for PBXNativeTarget "AnkountantApp" */;
+			buildPhases = (
+				C77EBD984FB04F84C3317A31 /* Sources */,
+				135BE8BAA220C8E47924E28E /* Resources */,
+				262D6FF13D250B79ECC3C2F6 /* Frameworks */,
+				9EAFE5FE02838DC15F14D942 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A6EF021EF7E67EA59A93FD66 /* PBXTargetDependency */,
+			);
+			name = AnkountantApp;
+			packageProductDependencies = (
+				7A8128B5E3D55EA7FED9948C /* AnkiKit */,
+				028329FFBE47AA380A2BC36B /* AnkiServices */,
+				B81A39820C8557D7D0ED3EBC /* AnkiClients */,
+				784D6B857D21EACF021E2D10 /* AnkiSync */,
+				668579E8F6CB813A31E8C887 /* AnkiBackend */,
+				5DAF8EEEDD3BE02ECA460231 /* AnkiProto */,
+				83324CEEC86005CA2C82927B /* AnkountantCardWeb */,
+				ADAB8B275BD49AD122C128DB /* AnkountantReader */,
+				1D8904EF49679752013F030D /* AnkountantReaderDictionary */,
+				CE4198C6668FD2A767B47DF1 /* AnkountantTheme */,
+				1B876A436CBBB209AA029D51 /* SwiftNavigation */,
+				AFFE9C161CC5199774E5A836 /* UIKitNavigation */,
+				16BD10D6E7445311256D4913 /* Sharing */,
+			);
+			productName = AnkountantApp;
+			productReference = 1EA1E7DB433B45BA2EC165C9 /* AnkountantApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3067F60484818D69649BFE2C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 312452E99A5CAC1202ECE437 /* Build configuration list for PBXProject "AnkountantApp" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 227956AEA2FEE0647971EE68;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A26D96F7495BD1DED308E8EE /* XCRemoteSwiftPackageReference "swift-navigation" */,
+				3FB7D1328F95CED5DE8FC6CC /* XCRemoteSwiftPackageReference "swift-sharing" */,
+				6DD6150291AF04F0EE07568A /* XCLocalSwiftPackageReference ".." */,
+				B53A6447C6A07BC0A64B6447 /* XCLocalSwiftPackageReference "../AnkountantReader" */,
+				C36B24A15F1B91C793A0C19F /* XCLocalSwiftPackageReference "../AnkountantUI" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 2AB87F89EA7D0E709E13C71D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EA1E873F3E6149DE8BA103AC /* AnkountantApp */,
+				31B4437C8B668B3DA866D12B /* AnkountantAppTests */,
+				B35439DBFD3C201B5BFA4536 /* AnkountantWidget */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		135BE8BAA220C8E47924E28E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				88FC5801726216311340FABE /* Assets.xcassets in Resources */,
+				FDAA88CAB8747BC9EA95F931 /* Fonts in Resources */,
+				03DAF0B9FB977DFA0CBE90A8 /* Review in Resources */,
+				225D9A30532734B791E60B22 /* mathjax in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		89400D58238D47F00B460D6E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E031ADED70110F4005760D61 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		33DE18B1D6C0E7A0C9B4A84C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C77EBD984FB04F84C3317A31 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				49EA133DF4C5AE8BB9A04D83 /* AboutView.swift in Sources */,
+				5B20031BAC9DDE2196C1E139 /* AccountStore.swift in Sources */,
+				C14B2E523199EDBF15EADF21 /* AccountsSettingsView.swift in Sources */,
+				F90680FFA2F1CA7F30CE912E /* AddImageOcclusionNoteView.swift in Sources */,
+				962D8FC41FEB56F566A1B2C9 /* AddNoteView.swift in Sources */,
+				FA96F9C8F72A388A43960F99 /* AddedChart.swift in Sources */,
+				70042B6A17E450B30EE94837 /* AnkiBackedDictionaryConfigStore.swift in Sources */,
+				4E6C176D856F9908A003F9B3 /* AnkiMobileAttributionView.swift in Sources */,
+				F63B12D601DCD8595866774B /* AnkountantAppApp.swift in Sources */,
+				D8F6CB45C01606F9744B0839 /* AnkountantModifiers.swift in Sources */,
+				78F5929BD9636DF90F99433A /* AnkountantSpacing.swift in Sources */,
+				D04061BF892EF53E8CAA474B /* AnkountantTypography.swift in Sources */,
+				26004F815DD200ADE21F42AC /* AppearanceSettingsView.swift in Sources */,
+				5A9B254FABDF125BB9A35AED /* BatchTagSheet.swift in Sources */,
+				36B3A3E99655C65E7F0A85E1 /* BrowseSelectionState.swift in Sources */,
+				A5B2C081D87A3A2D77B8CE52 /* BrowseSubtitle.swift in Sources */,
+				B605CD0BE1A7C5BEE7AE222E /* BrowseView.swift in Sources */,
+				3FD9A0E9944EECF7EE3101B1 /* ButtonsChart.swift in Sources */,
+				3937C058C36CFC07479C9394 /* CardAssetScheme.swift in Sources */,
+				3DBB8FC60EC0F3A9504AFDCC /* CardContextMenu.swift in Sources */,
+				97104C3F3A6CEF955E8FDDA7 /* CardCountsChart.swift in Sources */,
+				4DAD7FC4B2630FE4F0E83693 /* CardStateChart.swift in Sources */,
+				ED9742E087D730F1B3C8329C /* CardWebView.swift in Sources */,
+				2655729E52132E90C2418A36 /* CardWebViewConfig.swift in Sources */,
+				B848349E0DF4B73A92C45C07 /* CardWebViewCoordinator.swift in Sources */,
+				31E94D1BC14C9BFB7F7F9E59 /* ChapterListView.swift in Sources */,
+				A37C19F3C43F99C83AE7F39E /* ChapterReaderView.swift in Sources */,
+				82373AD0960F0E0C34F791F7 /* ContentView.swift in Sources */,
+				5038CFCE031039C4ACBAFE39 /* DebugView.swift in Sources */,
+				FD3004F34D6DACEBF4AF0DB9 /* DeckConfigView.swift in Sources */,
+				9E696D243D0A001CDB1BC710 /* DeckCountsView.swift in Sources */,
+				13ABB44911FC4667E3A63E2B /* DeckDetailView.swift in Sources */,
+				58245F02D8B4B3DD93699459 /* DeckListView.swift in Sources */,
+				807086E7437C8D78D4BD6F0A /* DeckTemplateListView.swift in Sources */,
+				4169F462155B6DC4877EE26B /* DecksReviewsChart.swift in Sources */,
+				F49493CFD8D207315CBF7F0F /* EaseChart.swift in Sources */,
+				936D92C4076FD8A4FF31E0FC /* EditImageOcclusionNoteView.swift in Sources */,
+				D9C2C7F1104B9B0ACE98CEAC /* EmptyCardsView.swift in Sources */,
+				8FDC69D08C7BED77F2715E35 /* ForecastChart.swift in Sources */,
+				F9E54CC9C148158E3BCC5CE6 /* FutureDueChart.swift in Sources */,
+				9D2E70AF70AF996ACD702CA5 /* HeatmapChartOptimized.swift in Sources */,
+				59E657C29C796D99D524F151 /* HeatmapLoadingManager.swift in Sources */,
+				6BC2BE429B43807FC27FF911 /* HourlyChart.swift in Sources */,
+				7525FCCD15EF5F2FAAAEF6E5 /* ImageOcclusionWorkspaceView.swift in Sources */,
+				2829D1BD2656FB41A2B2A0AA /* ImportHelper.swift in Sources */,
+				6E082FEACBB8DBFA66C3FCA4 /* IntervalsChart.swift in Sources */,
+				2C968DC479B2689273F76B09 /* LoginSheet.swift in Sources */,
+				79936109072B3D8FD5B997F2 /* LookupAudioSupport.swift in Sources */,
+				96D0E02690F70AF8659B9F4F /* LookupPopupView.swift in Sources */,
+				5A36132183FB2B698F36BA27 /* LookupStructuredContentView.swift in Sources */,
+				2A077612C4E6BA4C2550673A /* MaintenanceView.swift in Sources */,
+				FD934EA79C5905A43165AC3F /* MediaCheckResultView.swift in Sources */,
+				BCA928A108319B6FE96705B9 /* NoteEditingDestinationView.swift in Sources */,
+				E4AF222FC7B21940C3F33F05 /* NoteEditorView.swift in Sources */,
+				E744FA87A10E9EA7CCDCAA13 /* NoteFieldHTMLPreview.swift in Sources */,
+				E35B1B00CAF72E00268EA049 /* OnboardingView.swift in Sources */,
+				3523C44227BF41C6FF4F9A36 /* PeriodPicker.swift in Sources */,
+				93A9837AD81489784E8FD0B5 /* ProfilePickerMenu.swift in Sources */,
+				FAFFE95A269146BB3F792779 /* ReaderConfiguration.swift in Sources */,
+				D25B9F62F23AB580CC6A7DEE /* ReaderConfigurationView.swift in Sources */,
+				1C5960413A55ECAE8E40CDEE /* ReaderCoverImage.swift in Sources */,
+				1761DFE3EAB27A5F26030D16 /* ReaderDictionarySettingsView.swift in Sources */,
+				FD0EE824DDC6FB44BC5B2C14 /* ReaderFontOption.swift in Sources */,
+				0F8CA23DCF071863543FA4A7 /* ReaderLibraryView.swift in Sources */,
+				D52D325D523CE5E4858E70DB /* ReaderLookupStructuredContentResources.generated.swift in Sources */,
+				A261A226DD481F44BB0DFA3B /* ReaderProgressCoordinator.swift in Sources */,
+				ED611D7C9CEDA587A9FAEE61 /* ReaderSettingsView.swift in Sources */,
+				A84C956B77E5A48FFED51664 /* ReaderTTS.swift in Sources */,
+				0F1DE9F995A499581DDB3654 /* ReaderThemeColor.swift in Sources */,
+				3647426F74984A0CC1DC7851 /* RetentionChart.swift in Sources */,
+				0B0BE97069D2D55D96EB0866 /* RetrievabilityChart.swift in Sources */,
+				F3548BE4F60D42D26B49EA4A /* ReviewAudioSession.swift in Sources */,
+				F0DACA8C0355CDA766626A3F /* ReviewPreferences.swift in Sources */,
+				760E7BD0822C26728982B44A /* ReviewSession.swift in Sources */,
+				F00CEDF59ACB222F4D7F9418 /* ReviewSettingsView.swift in Sources */,
+				D3D66A5DBB118EF849CD3096 /* ReviewView.swift in Sources */,
+				42668B38B2F20B269E93225D /* ReviewsChart.swift in Sources */,
+				FD2E49D8C844D13E50AC30A6 /* RichNoteFieldEditor.swift in Sources */,
+				180BA63CE3E8B56F1315AA6F /* SettingsView.swift in Sources */,
+				15C7E19151438EEEDF961C6E /* ShareSheet.swift in Sources */,
+				168430A4D1DC854E0521F57C /* SharedKeys.swift in Sources */,
+				73F012415CFD5E73B53FA859 /* StatsChartTooltip.swift in Sources */,
+				131C1810800A205DF9842A31 /* StatsDashboardView.swift in Sources */,
+				F22916D35B6B5A6DD606C61B /* StatsDualAxisSupport.swift in Sources */,
+				89C4E72568B6931F2D99ADC4 /* SyncCoordinator.swift in Sources */,
+				640F39899D4FC4A3AB49145E /* SyncCoordinatorTypes.swift in Sources */,
+				07CD76661C50006F2C618BE6 /* SyncSettingsView.swift in Sources */,
+				0A9754A563E9EBBDB7814478 /* SyncSheet.swift in Sources */,
+				B615CDAA027DC2BB3CC13EB3 /* SyncToast.swift in Sources */,
+				1FD82AAE8AFCE0375843B419 /* TagsView.swift in Sources */,
+				C30B6E90EF773B1799467F5F /* TemplateSourceEditor.swift in Sources */,
+				37EFBAD41ABD3D60DD2277CB /* TodayStatsCard.swift in Sources */,
+				7878E9564E0059122DAC7DDF /* WidgetSnapshot.swift in Sources */,
+				731B0883BD82C22E5ABCD503 /* WidgetSnapshotStore.swift in Sources */,
+				B1110A24893729DE51036067 /* WriteWidgetSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D0B6945E16DE11A0608C9CBF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D2D84E8185221D59E95C3FE1 /* WidgetSnapshot.swift in Sources */,
+				553F389D2D669A0EA92864FF /* WidgetSnapshotStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		866E852046030B7BD9C6A9D7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EA1E873F3E6149DE8BA103AC /* AnkountantApp */;
+			targetProxy = FDBA23F66251693935375E38 /* PBXContainerItemProxy */;
+		};
+		A6EF021EF7E67EA59A93FD66 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B35439DBFD3C201B5BFA4536 /* AnkountantWidget */;
+			targetProxy = 5601FAFD049171685C53DD89 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0DE08AE80E51DAFEBC639BB7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AnkountantWidget.entitlements;
+				INFOPLIST_FILE = Sources/Widgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.ankountantapp.AnkountantApp.widget;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		0F4F0DF83CBF4E6AAF5C11DE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_CXX_LIBRARY = "libc++";
+				CODE_SIGN_ENTITLEMENTS = AnkountantApp.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -cxx-interoperability-mode=default";
+				PRODUCT_BUNDLE_IDENTIFIER = com.ankountant.ios;
+				PRODUCT_NAME = Ankountant;
+				SDKROOT = iphoneos;
+				SWIFT_CXX_INTEROPERABILITY_MODE = default;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		68109E21A5447AB648CFA141 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AnkountantWidget.entitlements;
+				INFOPLIST_FILE = Sources/Widgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.ankountantapp.AnkountantApp.widget;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		73C4A847D05AA738A535F7A5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_CXX_LIBRARY = "libc++";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -cxx-interoperability-mode=default";
+				PRODUCT_BUNDLE_IDENTIFIER = com.ankountantapp.AnkountantAppTests;
+				SDKROOT = iphoneos;
+				SWIFT_CXX_INTEROPERABILITY_MODE = default;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AnkountantApp.app/AnkountantApp";
+			};
+			name = Debug;
+		};
+		A13175D034BE96A2DB178429 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		BA49C42A886BCB129B1163E7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		E4A7B09A16E4CF5D7A0E662E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_CXX_LIBRARY = "libc++";
+				CODE_SIGN_ENTITLEMENTS = AnkountantApp.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -cxx-interoperability-mode=default";
+				PRODUCT_BUNDLE_IDENTIFIER = com.ankountant.ios;
+				PRODUCT_NAME = Ankountant;
+				SDKROOT = iphoneos;
+				SWIFT_CXX_INTEROPERABILITY_MODE = default;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F87B68B1ABD936588B2E00FC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_CXX_LIBRARY = "libc++";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -cxx-interoperability-mode=default";
+				PRODUCT_BUNDLE_IDENTIFIER = com.ankountantapp.AnkountantAppTests;
+				SDKROOT = iphoneos;
+				SWIFT_CXX_INTEROPERABILITY_MODE = default;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AnkountantApp.app/AnkountantApp";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		033D79AE4C3D99B8374A6133 /* Build configuration list for PBXNativeTarget "AnkountantWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				68109E21A5447AB648CFA141 /* Debug */,
+				0DE08AE80E51DAFEBC639BB7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		312452E99A5CAC1202ECE437 /* Build configuration list for PBXProject "AnkountantApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A13175D034BE96A2DB178429 /* Debug */,
+				BA49C42A886BCB129B1163E7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		ADF8DD028A3855D49FF41400 /* Build configuration list for PBXNativeTarget "AnkountantAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				73C4A847D05AA738A535F7A5 /* Debug */,
+				F87B68B1ABD936588B2E00FC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FB500B7E5B8B46CBBA62968C /* Build configuration list for PBXNativeTarget "AnkountantApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E4A7B09A16E4CF5D7A0E662E /* Debug */,
+				0F4F0DF83CBF4E6AAF5C11DE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		6DD6150291AF04F0EE07568A /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
+		};
+		B53A6447C6A07BC0A64B6447 /* XCLocalSwiftPackageReference "../AnkountantReader" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../AnkountantReader;
+		};
+		C36B24A15F1B91C793A0C19F /* XCLocalSwiftPackageReference "../AnkountantUI" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../AnkountantUI;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		3FB7D1328F95CED5DE8FC6CC /* XCRemoteSwiftPackageReference "swift-sharing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-sharing";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+		A26D96F7495BD1DED308E8EE /* XCRemoteSwiftPackageReference "swift-navigation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-navigation";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		028329FFBE47AA380A2BC36B /* AnkiServices */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnkiServices;
+		};
+		16BD10D6E7445311256D4913 /* Sharing */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3FB7D1328F95CED5DE8FC6CC /* XCRemoteSwiftPackageReference "swift-sharing" */;
+			productName = Sharing;
+		};
+		1B876A436CBBB209AA029D51 /* SwiftNavigation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A26D96F7495BD1DED308E8EE /* XCRemoteSwiftPackageReference "swift-navigation" */;
+			productName = SwiftNavigation;
+		};
+		1D8904EF49679752013F030D /* AnkountantReaderDictionary */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnkountantReaderDictionary;
+		};
+		5DAF8EEEDD3BE02ECA460231 /* AnkiProto */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnkiProto;
+		};
+		5E56CDA6ADE0AAEC9A0ECE5A /* AnkountantTheme */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnkountantTheme;
+		};
+		668579E8F6CB813A31E8C887 /* AnkiBackend */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnkiBackend;
+		};
+		784D6B857D21EACF021E2D10 /* AnkiSync */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnkiSync;
+		};
+		7A8128B5E3D55EA7FED9948C /* AnkiKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnkiKit;
+		};
+		83324CEEC86005CA2C82927B /* AnkountantCardWeb */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnkountantCardWeb;
+		};
+		A31979100547E8AD80B8471A /* AnkiKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnkiKit;
+		};
+		ADAB8B275BD49AD122C128DB /* AnkountantReader */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnkountantReader;
+		};
+		AFFE9C161CC5199774E5A836 /* UIKitNavigation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A26D96F7495BD1DED308E8EE /* XCRemoteSwiftPackageReference "swift-navigation" */;
+			productName = UIKitNavigation;
+		};
+		B81A39820C8557D7D0ED3EBC /* AnkiClients */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnkiClients;
+		};
+		CE4198C6668FD2A767B47DF1 /* AnkountantTheme */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnkountantTheme;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 3067F60484818D69649BFE2C /* Project object */;
+}

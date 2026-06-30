@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes how Amgi is structured, how the Rust bridge works, and how data flows through the app.
+This document describes how Ankountant is structured, how the Rust bridge works, and how data flows through the app.
 
 ## High-Level Overview
 

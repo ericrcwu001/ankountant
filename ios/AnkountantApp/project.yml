@@ -1,0 +1,139 @@
+name: AnkountantApp
+options:
+  bundleIdPrefix: com.ankountantapp
+  deploymentTarget:
+    iOS: "18.0"
+  defaultSourceDirectoryType: syncedFolder
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+packages:
+  AnkiBridge:
+    path: ..
+  AnkountantUI:
+    path: ../AnkountantUI
+  AnkountantReader:
+    path: ../AnkountantReader
+  swift-navigation:
+    url: https://github.com/pointfreeco/swift-navigation
+    from: 2.0.0
+  swift-sharing:
+    url: https://github.com/pointfreeco/swift-sharing
+    from: 2.0.0
+schemes:
+  AnkountantApp:
+    build:
+      targets:
+        AnkountantApp: all
+        AnkountantWidget: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - AnkountantAppTests
+targets:
+  AnkountantApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+        type: group
+        excludes:
+          - "Widgets"
+      - path: Assets.xcassets
+      - path: Resources/mathjax
+        type: folder
+      - path: Resources/Review
+        type: folder
+      - path: Resources/Fonts
+        type: folder
+    dependencies:
+      - package: AnkiBridge
+        product: AnkiKit
+      - package: AnkiBridge
+        product: AnkiServices
+      - package: AnkiBridge
+        product: AnkiClients
+      - package: AnkiBridge
+        product: AnkiSync
+      - package: AnkiBridge
+        product: AnkiBackend
+      - package: AnkiBridge
+        product: AnkiProto
+      - package: AnkiBridge
+        product: AnkountantCardWeb
+      - package: AnkountantReader
+        product: AnkountantReader
+      - package: AnkountantReader
+        product: AnkountantReaderDictionary
+      - package: AnkountantUI
+        product: AnkountantTheme
+      - package: swift-navigation
+        product: SwiftNavigation
+      - package: swift-navigation
+        product: UIKitNavigation
+      - package: swift-sharing
+        product: Sharing
+      - sdk: WidgetKit.framework
+      - target: AnkountantWidget
+        embed: true
+    settings:
+      base:
+        INFOPLIST_FILE: Info.plist
+        PRODUCT_NAME: Ankountant
+        PRODUCT_BUNDLE_IDENTIFIER: com.ankountant.ios
+        CODE_SIGN_ENTITLEMENTS: AnkountantApp.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Cxx interop chain. The app imports AnkountantReaderDictionary, which
+        # is built with .interoperabilityMode(.Cxx) for the hoshidicts
+        # bridge. Xcode + SPM under Swift 6 needs an explicit Clang C++
+        # standard alongside SWIFT_CXX_INTEROPERABILITY_MODE — without
+        # the language-standard hint Clang's dependency scanner rejects
+        # the CHoshiDicts modulemap's `requires cplusplus`.
+        SWIFT_CXX_INTEROPERABILITY_MODE: default
+        CLANG_CXX_LANGUAGE_STANDARD: "c++20"
+        CLANG_CXX_LIBRARY: "libc++"
+        OTHER_SWIFT_FLAGS: "$(inherited) -cxx-interoperability-mode=default"
+
+  AnkountantWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/Widgets
+      - path: Sources/Shared/WidgetSnapshot.swift
+      - path: Sources/Shared/WidgetSnapshotStore.swift
+    dependencies:
+      - package: AnkiBridge
+        product: AnkiKit
+      - package: AnkountantUI
+        product: AnkountantTheme
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ankountantapp.AnkountantApp.widget
+        INFOPLIST_FILE: Sources/Widgets/Info.plist
+        CODE_SIGN_ENTITLEMENTS: AnkountantWidget.entitlements
+
+  AnkountantAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/AnkountantAppTests
+    dependencies:
+      - target: AnkountantApp
+    settings:
+      base:
+        BUNDLE_LOADER: $(TEST_HOST)
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/AnkountantApp.app/AnkountantApp
+        PRODUCT_BUNDLE_IDENTIFIER: com.ankountantapp.AnkountantAppTests
+        GENERATE_INFOPLIST_FILE: YES
+        # Tests inherit @testable AnkountantApp's transitive Cxx-mode import
+        # of AnkountantReaderDictionary, so they need the same Clang+Swift
+        # interop flags as the app target.
+        SWIFT_CXX_INTEROPERABILITY_MODE: default
+        CLANG_CXX_LANGUAGE_STANDARD: "c++20"
+        CLANG_CXX_LIBRARY: "libc++"
+        OTHER_SWIFT_FLAGS: "$(inherited) -cxx-interoperability-mode=default"

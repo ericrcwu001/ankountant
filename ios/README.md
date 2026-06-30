@@ -1,7 +1,7 @@
-<h1 align="center">Amgi</h1>
+<h1 align="center">Ankountant</h1>
 
 <p align="center">
-  <em>암기 (amgi) — Korean for "memorization"</em>
+  <em>암기 (ankountant) — Korean for "memorization"</em>
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 
 ---
 
-Amgi wraps the official [ankitects/anki](https://github.com/ankitects/anki) Rust backend via C FFI, giving you a native SwiftUI experience backed by the same battle-tested engine that powers Anki Desktop and AnkiDroid. Sync your decks with any compatible sync server (including self-hosted), study with FSRS scheduling, and keep your review history in perfect sync across all your devices.
+Ankountant wraps the official [ankitects/anki](https://github.com/ankitects/anki) Rust backend via C FFI, giving you a native SwiftUI experience backed by the same battle-tested engine that powers Anki Desktop and AnkiDroid. Sync your decks with any compatible sync server (including self-hosted), study with FSRS scheduling, and keep your review history in perfect sync across all your devices.
 
 ## Features
 
@@ -79,7 +79,7 @@ For the full architecture walkthrough, see **[ARCHITECTURE.md](ARCHITECTURE.md)*
 
 ```bash
 git clone --recursive https://github.com/antigluten/amgi.git
-cd amgi
+cd ankountant
 ```
 
 ### 2. Install dependencies
@@ -113,8 +113,8 @@ This cross-compiles the Rust bridge for iOS device and simulator, then packages 
 ### 5. Open in Xcode
 
 ```bash
-cd AmgiApp && xcodegen generate && cd ..
-open AmgiApp/AmgiApp.xcodeproj
+cd AnkountantApp && xcodegen generate && cd ..
+open AnkountantApp/AnkountantApp.xcodeproj
 ```
 
 ### 6. Build and Run

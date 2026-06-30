@@ -5,7 +5,7 @@ public import Dependencies
 import DependenciesMacros
 import Logging
 
-private let logger = Logger(label: "com.amgiapp.tag.client")
+private let logger = Logger(label: "com.ankountantapp.tag.client")
 
 extension TagClient: DependencyKey {
     public static let liveValue: Self = {

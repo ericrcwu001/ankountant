@@ -1,4 +1,4 @@
-# Contributing to Amgi
+# Contributing to Ankountant
 
 Thank you for your interest in contributing. This guide covers how to report issues, suggest features, and submit code changes.
 
@@ -28,7 +28,7 @@ Open a [GitHub Issue](https://github.com/antigluten/amgi/issues/new) with the `e
 
 ```bash
 git clone --recursive https://github.com/antigluten/amgi.git
-cd amgi
+cd ankountant
 
 # Rust targets for iOS
 rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios-simulator

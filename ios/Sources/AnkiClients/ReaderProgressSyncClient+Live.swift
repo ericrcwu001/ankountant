@@ -1,4 +1,4 @@
-import AmgiReader
+import AnkountantReader
 import AnkiBackend
 public import Dependencies
 import DependenciesMacros
@@ -8,7 +8,7 @@ extension ReaderProgressSyncClient: DependencyKey {
     /// Anki collection-config key matching DreamAfar's. Keep stable so a
     /// collection that has been read from either fork sees the same
     /// progress data.
-    private static let collectionConfigKey = "amgi.reader.progress"
+    private static let collectionConfigKey = "ankountant.reader.progress"
 
     public static let liveValue: Self = {
         @Dependency(\.ankiBackend) var backend
