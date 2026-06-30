@@ -18,41 +18,52 @@ Anki is a spaced repetition flashcard program with a multi-layered architecture.
 
 ## Architecture Map
 
-Anki is layered: a **Rust core** (`rslib/`) holds all collection/scheduling/sync
-logic; **Python** (`pylib/anki/`) wraps it over a PyO3 FFI bridge and the
-**PyQt6 desktop GUI** (`qt/aqt/`) drives it; the **Svelte/TypeScript frontend**
-(`ts/`) renders study/editor/config pages embedded in Qt webviews; and
-**`proto/`** is the Protobuf contract that wires all three together.
+Ankountant ships **two apps on one shared Rust core**: a cross-platform
+**desktop app** (PyQt) and a native **iOS app** (Swift). Both bind the same
+`rslib/` engine and the same `proto/` contract — the desktop in-process via a
+PyO3 FFI, iOS via a compiled `.xcframework` over a C FFI.
 
-Each subsystem has a nested `CLAUDE.md` — read it before working in that area:
+### Shared core — feeds both apps
 
-- **`rslib/`** — Rust core: collection, notes, decks, search, sync, media.
-  Scheduling lives in `rslib/src/scheduler/` → read
-  **`rslib/src/scheduler/CLAUDE.md`** when touching queues, due dates, FSRS, or
-  `answer_card`.
-- **`proto/`** — RPC + message definitions (`proto/anki/*.proto`), the source of
-  truth for all layers → read **`proto/CLAUDE.md`** before adding/changing any
-  service, method, or message.
-- **`pylib/anki/`** — Python API: `Collection`, scheduler, managers; `_backend.py`
-  is the FFI bridge → read **`pylib/anki/CLAUDE.md`** when adding backend-backed
-  Python methods or DB access.
-- **`qt/aqt/`** — desktop GUI: main window, webview embedding, `operations/`
-  (CollectionOp/QueryOp), `mediasrv.py`, browser, editor → read
-  **`qt/aqt/CLAUDE.md`** for dialogs, hooks, `.ui` forms, or undoable mutations.
+- **`rslib/`** — Rust core: collection, notes, decks, search, sync, media,
+  scheduling. Scheduling lives in `rslib/src/scheduler/` → read
+  **`rslib/src/scheduler/CLAUDE.md`** for queues, due dates, FSRS, `answer_card`.
+- **`proto/`** — `proto/anki/*.proto`, the RPC contract every client dispatches
+  into → read **`proto/CLAUDE.md`** before changing any service/method/message.
+
+### Desktop app (Qt — macOS/Windows/Linux)
+
+- **`pylib/anki/`** — Python API over a PyO3 bridge (`_backend.py`) → read
+  **`pylib/anki/CLAUDE.md`**.
+- **`qt/aqt/`** — PyQt GUI: webview embedding, `operations/`, browser, editor →
+  read **`qt/aqt/CLAUDE.md`**.
 - **`ts/`** — Svelte/TS pages (`routes/`, `reviewer/`, `editor/`) served at
-  `localhost:40000/_anki/pages/` → read **`ts/CLAUDE.md`** for frontend
-  components, the backend bridge, or e2e tests.
+  `localhost:40000/_anki/pages/` → read **`ts/CLAUDE.md`**.
+
+### iOS app (Swift — `ios/`)
+
+- Native SwiftUI client. Consumes a **compiled** copy of `rslib/`
+  (`ios/anki-bridge-rs/` → `ios/AnkiRust.xcframework`) over a 4-function C FFI,
+  plus Swift modules in `ios/Sources/` (`AnkiProto`, `AnkiBackend`,
+  `AnkiServices`, `AnkiClients`). Feature UI in `ios/AnkountantApp/` (Review,
+  Browse, Decks, Stats, Sync, Reader, Settings).
+- Read **`ios/CLAUDE.md`** and **`ios/ARCHITECTURE.md`** before working in `ios/`.
 
 ### Cross-language data flow
 
 `proto/anki/*.proto` is the single contract. Editing a `.proto` regenerates, in
-lockstep: the Rust service dispatch (compiled into `rslib/src/services.rs`), the
-Python wrappers (`out/pylib/anki/_backend_generated.py`, surfaced via the
-hand-written `pylib/anki/_backend.py`), and the TS callers
-(`out/ts/lib/generated/backend.ts`, imported as `@generated/backend`). Generated
-code lives under `out/` — never edit it. Because the layers index into generated
-dispatch by service/method order, a `.proto` change needs a full **`just check`**;
-`cargo check` alone regenerates only Rust and leaves Python/TS stale.
+lockstep: the Rust dispatch (`rslib/src/services.rs`), the Python wrappers
+(`out/pylib/anki/_backend_generated.py`, surfaced via `pylib/anki/_backend.py`),
+and the TS callers (`out/ts/lib/generated/backend.ts`, `@generated/backend`) —
+run a full **`just check`**, not `cargo check`. Generated code lives under
+`out/`; never edit it.
+
+⚠️ **iOS has no codegen.** There is no `swift.rs` generator, so the Swift
+service/method indices in `ios/Sources/AnkiBackend/AnkiBackend.swift` are
+**hand-maintained** and must be re-derived from
+`out/pylib/anki/_backend_generated.py` whenever a `.proto` adds or reorders a
+service/method — otherwise iOS calls dispatch to the wrong Rust method. See
+`proto/CLAUDE.md` and `ios/CLAUDE.md`.
 
 ## Running Anki
 

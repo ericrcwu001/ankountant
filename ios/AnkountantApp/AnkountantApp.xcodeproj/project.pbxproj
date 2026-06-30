@@ -175,7 +175,7 @@
 		17C9ABE3F15DEC56F0A0D5F7 /* PeriodPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodPicker.swift; sourceTree = "<group>"; };
 		1C836D6E618A0BCD6FDE130D /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		1E331A6AF279A3736BF05FC8 /* ReaderLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderLibraryView.swift; sourceTree = "<group>"; };
-		1EA1E7DB433B45BA2EC165C9 /* AnkountantApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AnkountantApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1EA1E7DB433B45BA2EC165C9 /* Ankountant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ankountant.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F32BDCF4F6BF1D221409085 /* RetentionChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetentionChart.swift; sourceTree = "<group>"; };
 		1F7DF531533DB31B567BEC32 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		23AD9325BFCF67C92CE70E87 /* mathjax */ = {isa = PBXFileReference; lastKnownFileType = folder; name = mathjax; path = Resources/mathjax; sourceTree = SOURCE_ROOT; };
@@ -271,7 +271,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		4074C0233B5442E55E2E8327 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		4074C0233B5442E55E2E8327 /* Exceptions for "Sources/Widgets" folder in "AnkountantWidget" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -284,21 +284,13 @@
 		0B093B188BC839CFD6A9715E /* Sources/Widgets */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				4074C0233B5442E55E2E8327 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
+				4074C0233B5442E55E2E8327 /* Exceptions for "Sources/Widgets" folder in "AnkountantWidget" target */,
 			);
 			path = Sources/Widgets;
 			sourceTree = "<group>";
 		};
 		AA0E9444407026F7B068C388 /* Tests/AnkountantAppTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
 			path = Tests/AnkountantAppTests;
 			sourceTree = "<group>";
 		};
@@ -378,7 +370,7 @@
 		2AB87F89EA7D0E709E13C71D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1EA1E7DB433B45BA2EC165C9 /* AnkountantApp.app */,
+				1EA1E7DB433B45BA2EC165C9 /* Ankountant.app */,
 				9E488279CA6DA481AECC7431 /* AnkountantAppTests.xctest */,
 				B3A310D5F33B2643E076FF0A /* AnkountantWidget.appex */,
 			);
@@ -639,7 +631,7 @@
 				16BD10D6E7445311256D4913 /* Sharing */,
 			);
 			productName = AnkountantApp;
-			productReference = 1EA1E7DB433B45BA2EC165C9 /* AnkountantApp.app */;
+			productReference = 1EA1E7DB433B45BA2EC165C9 /* Ankountant.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -650,8 +642,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
-				TargetAttributes = {
-				};
 			};
 			buildConfigurationList = 312452E99A5CAC1202ECE437 /* Build configuration list for PBXProject "AnkountantApp" */;
 			developmentRegion = en;
@@ -868,6 +858,7 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				CODE_SIGN_ENTITLEMENTS = AnkountantApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = B9BK4KBFP6;
 				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1048,6 +1039,7 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				CODE_SIGN_ENTITLEMENTS = AnkountantApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = B9BK4KBFP6;
 				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

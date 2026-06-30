@@ -1,0 +1,8 @@
+---
+description: iOS app (Swift)
+globs: ios/**
+alwaysApply: false
+---
+- When working under `ios/`, read `ios/CLAUDE.md` and `ios/ARCHITECTURE.md` for local detail.
+- iOS is a frontend of the shared core: it consumes a compiled copy of `rslib/` (`ios/anki-bridge-rs/` → `ios/AnkiRust.xcframework`) over a 4-function C FFI, with Swift modules in `ios/Sources/` (`AnkiProto`, `AnkiBackend`, `AnkiServices`, `AnkiClients`).
+- ⚠️ Service/method indices in `ios/Sources/AnkiBackend/AnkiBackend.swift` are HAND-maintained (no `swift.rs` codegen) — re-derive them from `out/pylib/anki/_backend_generated.py` after any `.proto` service/method add or reorder, or calls dispatch to the wrong Rust method.

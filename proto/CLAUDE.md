@@ -39,6 +39,11 @@ them.
   (hangs, crashes, or 404s) — this is why a full `just check` is mandatory.
 - Index instability: adding, reordering, or removing a service or method shifts
   every index after it. Add new services/methods at the bottom of the list.
+- Fourth consumer — iOS (no codegen): unlike Rust/Python/TS, there is no
+  `swift.rs` generator. The Swift client's service/method indices are
+  hand-maintained in `ios/Sources/AnkiBackend/AnkiBackend.swift` and must be
+  re-derived from `out/pylib/anki/_backend_generated.py` after any add/reorder,
+  or iOS dispatches to the wrong method. See `ios/CLAUDE.md`.
 - Dual-service pattern: each area defines both `XxxService` (collection-facing,
   `&mut self`) and `BackendXxxService` (backend-facing, `&self`). Backend methods
   not explicitly listed delegate to the collection service; `proto_gen` panics if

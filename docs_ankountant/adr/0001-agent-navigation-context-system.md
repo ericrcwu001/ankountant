@@ -51,3 +51,10 @@ that could drift between tools.
   in the hot map and a thin `.mdc` router — never by inlining detail at the root.
 - If a layer is split or moved, update the pointer and the router glob; the
   canonical content moves with the nested file and stays in one place.
+- Extended (2026-06-30) to the iOS app: the hot map is organized as **shared core
+  (`rslib` + `proto`) → desktop frontend → iOS frontend**, so both apps share one
+  documented core rather than duplicating it. iOS detail reuses the in-tree
+  `ios/CLAUDE.md` + `ios/ARCHITECTURE.md` (canonical), routed by `.cursor/rules/ios.mdc`.
+  The proto contract's drift hazard now names its fourth consumer — the
+  hand-maintained Swift indices in `ios/Sources/AnkiBackend/AnkiBackend.swift`
+  (no `swift.rs` codegen).
