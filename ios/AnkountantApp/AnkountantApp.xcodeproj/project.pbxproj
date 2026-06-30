@@ -232,7 +232,7 @@
 		94F9759DA9327F20A091BA0B /* ImportHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportHelper.swift; sourceTree = "<group>"; };
 		9B049203C0E08A2EFB509AE6 /* ReaderDictionarySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderDictionarySettingsView.swift; sourceTree = "<group>"; };
 		9C73A41D7328E29ACBB3DA36 /* MaintenanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaintenanceView.swift; sourceTree = "<group>"; };
-		9E488279CA6DA481AECC7431 /* AnkountantAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AnkountantAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E488279CA6DA481AECC7431 /* AnkountantAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnkountantAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E58808CA6B40C845E6BE2D1 /* DeckDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckDetailView.swift; sourceTree = "<group>"; };
 		9F6EA651E618D65394037BD7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		A00409FD1743F643E1EC8B54 /* CardAssetScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardAssetScheme.swift; sourceTree = "<group>"; };
@@ -241,7 +241,7 @@
 		A823ABA15930EF2822DE8209 /* WriteWidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WriteWidgetSnapshot.swift; sourceTree = "<group>"; };
 		AC2FABC55C742997E91D9DEB /* LookupPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LookupPopupView.swift; sourceTree = "<group>"; };
 		B19099278364E2F405DFBC23 /* ReaderLookupStructuredContentResources.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderLookupStructuredContentResources.generated.swift; sourceTree = "<group>"; };
-		B3A310D5F33B2643E076FF0A /* AnkountantWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = AnkountantWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B3A310D5F33B2643E076FF0A /* AnkountantWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AnkountantWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B682CFA95FE9F51D91462CD3 /* AddedChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddedChart.swift; sourceTree = "<group>"; };
 		BAB321909B96F8F5BC192F4E /* ReaderProgressCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderProgressCoordinator.swift; sourceTree = "<group>"; };
 		BD662C5E96C4AB803E463ADB /* ImageOcclusionWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageOcclusionWorkspaceView.swift; sourceTree = "<group>"; };
@@ -838,6 +838,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = AnkountantWidget.entitlements;
+				DEVELOPMENT_TEAM = B9BK4KBFP6;
 				INFOPLIST_FILE = Sources/Widgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -877,6 +878,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = AnkountantWidget.entitlements;
+				DEVELOPMENT_TEAM = B9BK4KBFP6;
 				INFOPLIST_FILE = Sources/Widgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -895,6 +897,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_CXX_LIBRARY = "libc++";
+				DEVELOPMENT_TEAM = B9BK4KBFP6;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1060,6 +1063,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_CXX_LIBRARY = "libc++";
+				DEVELOPMENT_TEAM = B9BK4KBFP6;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
