@@ -21,6 +21,7 @@ members = [
   "rslib/sync",
   "tools/minilints",
 ]
+exclude = ["ios/anki-bridge-rs"]
 resolver = "2"
 
 [workspace.dependencies.percent-encoding-iri]

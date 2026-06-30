@@ -1,0 +1,23 @@
+[package]
+name = "anki-bridge-ios"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+anki = { path = "../../rslib", features = ["rustls"] }
+anki_proto = { path = "../../rslib/proto" }
+prost = "0.13"
+
+# Empty table makes this crate its own workspace root, so it is NOT pulled
+# into the repo-root [workspace] when vendored under ios/. Keeps a local
+# target/ dir and the [profile.release] settings below in effect.
+[workspace]
+
+[profile.release]
+opt-level = "s"     # Optimize for size (iOS binary)
+lto = true
+strip = true
