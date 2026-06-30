@@ -3,7 +3,7 @@ public import SwiftUI
 
 @Observable
 public final class ThemeManager: @unchecked Sendable {
-    nonisolated(unsafe) public static let shared = ThemeManager()
+    public static let shared = ThemeManager()
 
     public var theme: Theme {
         didSet { defaults.set(theme.rawValue, forKey: Keys.theme) }

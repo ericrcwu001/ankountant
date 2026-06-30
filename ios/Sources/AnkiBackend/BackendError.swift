@@ -61,6 +61,7 @@ public struct BackendError: Error, LocalizedError, CustomStringConvertible, Send
         case .osError: return "os error"
         case .schedulerUpgradeRequired: return "scheduler upgrade required"
         case .invalidCertificateFormat: return "invalid certificate"
+        case .invalidChecksum: return "invalid checksum"
         case .UNRECOGNIZED(let n): return "kind=\(n)"
         }
     }
