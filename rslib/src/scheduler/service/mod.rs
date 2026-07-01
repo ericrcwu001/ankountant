@@ -382,6 +382,55 @@ impl crate::services::SchedulerService for Collection {
             delta_days: self.get_fuzz_delta(input.card_id.into(), input.interval)?,
         })
     }
+
+    // --- Ankountant (FAR MVP) additions ---
+
+    fn compute_exam_schedule(
+        &mut self,
+        input: scheduler::ComputeExamScheduleRequest,
+    ) -> Result<scheduler::ComputeExamScheduleResponse> {
+        let section = ankountant_section(&input.section);
+        self.ankountant_compute_exam_schedule(&section, &input.exam_date)
+    }
+
+    fn build_confusion_queue(
+        &mut self,
+        input: scheduler::BuildConfusionQueueRequest,
+    ) -> Result<scheduler::BuildConfusionQueueResponse> {
+        let section = ankountant_section(&input.section);
+        self.ankountant_build_confusion_queue(&section, input.max_items)
+    }
+
+    fn get_readiness(
+        &mut self,
+        input: scheduler::GetReadinessRequest,
+    ) -> Result<scheduler::GetReadinessResponse> {
+        let section = ankountant_section(&input.section);
+        self.ankountant_get_readiness(&section)
+    }
+
+    fn submit_performance_attempt(
+        &mut self,
+        input: scheduler::SubmitPerformanceAttemptRequest,
+    ) -> Result<scheduler::SubmitPerformanceAttemptResponse> {
+        self.ankountant_submit_performance_attempt(input)
+    }
+
+    fn load_far_seed(
+        &mut self,
+        _input: scheduler::LoadFarSeedRequest,
+    ) -> Result<scheduler::LoadFarSeedResponse> {
+        self.ankountant_load_far_seed_response()
+    }
+}
+
+/// Default the section to the MVP's FAR when the caller leaves it blank.
+fn ankountant_section(section: &str) -> String {
+    if section.trim().is_empty() {
+        crate::ankountant::DEFAULT_SECTION.to_string()
+    } else {
+        section.to_string()
+    }
 }
 
 impl crate::services::BackendSchedulerService for Backend {

@@ -81,8 +81,9 @@ impl Collection {
         })
     }
 
-    /// Marks the cards as modified.
-    fn bury_or_suspend_cards_inner(
+    /// Marks the cards as modified. Callable from within an existing
+    /// transaction (used by the Ankountant sealed-bank + attempt-log writers).
+    pub(crate) fn bury_or_suspend_cards_inner(
         &mut self,
         cards: Vec<Card>,
         mode: BuryOrSuspendMode,

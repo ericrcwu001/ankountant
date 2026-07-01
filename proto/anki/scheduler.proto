@@ -64,6 +64,30 @@ service SchedulerService {
   // The number of days the calculated interval was fuzzed by on the previous
   // review (if any). Utilized by the FSRS add-on.
   rpc FuzzDelta(FuzzDeltaRequest) returns (FuzzDeltaResponse);
+
+  // --- Ankountant (FAR MVP) additions. Appended at the tail of
+  // SchedulerService to keep existing method indices stable across the
+  // Rust/Python/TS codegen and the hand-maintained iOS dispatch table. ---
+
+  // A1: read-only preview of the deadline-anchored desired retention and the
+  // resulting per-card next-interval, for the given section (e.g. "FAR").
+  rpc ComputeExamSchedule(ComputeExamScheduleRequest)
+      returns (ComputeExamScheduleResponse);
+  // A3: build the label-stripped, interleaved confusion-set review queue.
+  rpc BuildConfusionQueue(BuildConfusionQueueRequest)
+      returns (BuildConfusionQueueResponse);
+  // A4/A5: per-topic memory/performance/gap plus the abstain-aware readiness
+  // band for the section.
+  rpc GetReadiness(GetReadinessRequest) returns (GetReadinessResponse);
+  // A10: step-grade a TBS/confusion Performance submission, persist the
+  // Attempt Log note in the same transaction, return per-step credit.
+  rpc SubmitPerformanceAttempt(SubmitPerformanceAttemptRequest)
+      returns (SubmitPerformanceAttemptResponse);
+  // F016: load the hand-authored FAR seed into the current collection. Used by
+  // the Playwright e2e fixture to prepare a throwaway collection before each
+  // spec. Appended LAST (tail) so existing method indices stay stable across
+  // Rust/Python/TS codegen and the hand-maintained iOS dispatch table.
+  rpc LoadFarSeed(LoadFarSeedRequest) returns (LoadFarSeedResponse);
 }
 
 // Implicitly includes any of the above methods that are not listed in the
@@ -482,4 +506,96 @@ message FuzzDeltaRequest {
 
 message FuzzDeltaResponse {
   sint32 delta_days = 1;
+}
+
+// --- Ankountant (FAR MVP) messages ---
+
+message ComputeExamScheduleRequest {
+  string section = 1;
+  // Optional ISO-8601 exam date preview override. When empty, the date stored
+  // in col config `ankountant.<section>.exam.date` is used.
+  string exam_date = 2;
+}
+message ComputeExamScheduleResponse {
+  double desired_retention = 1;
+  repeated CardSchedulePreview cards = 2;
+}
+message CardSchedulePreview {
+  int64 card_id = 1;
+  int32 next_interval_days = 2;
+}
+
+message BuildConfusionQueueRequest {
+  string section = 1;
+  int32 max_items = 2;
+}
+message BuildConfusionQueueResponse {
+  repeated ConfusionItem items = 1;
+}
+// The client-facing DTO deliberately omits any topic/category/deck label so the
+// learner discriminates on content, not on a printed answer.
+message ConfusionItem {
+  int64 note_id = 1;
+  string prompt = 2;
+  repeated string treatments = 3;
+  string set_id = 4;
+}
+
+message GetReadinessRequest {
+  string section = 1;
+}
+message GetReadinessResponse {
+  repeated TopicScore topics = 1;
+  Readiness readiness = 2;
+}
+message TopicScore {
+  string set_id = 1;
+  double memory = 2;
+  double performance = 3;
+  double gap = 4;
+  // memory is only meaningful with >= 5 trailing-30d reps.
+  bool memory_insufficient = 5;
+}
+message Readiness {
+  bool abstain = 1;
+  string reason = 2;
+  // Wilson 95% band on Performance accuracy, 0..100 (%). Exam-day projection.
+  double band_low = 3;
+  double band_high = 4;
+  string confidence = 5;
+}
+
+message SubmitPerformanceAttemptRequest {
+  int64 item_note_id = 1;
+  // "confusion" | "tbs"
+  string mode = 2;
+  // confusion: {"choice":"..."}; tbs: {"steps":[{"id":..,"value":..}]}
+  string submission_json = 3;
+  string confidence = 4;
+  uint32 latency_ms = 5;
+}
+message SubmitPerformanceAttemptResponse {
+  repeated StepResult steps = 1;
+  double total_credit = 2;
+  int64 attempt_note_id = 3;
+}
+message StepResult {
+  string id = 1;
+  bool correct = 2;
+  double weight = 3;
+}
+
+message LoadFarSeedRequest {
+  string section = 1;
+}
+message LoadFarSeedResponse {
+  uint32 confusion_sets = 1;
+  uint32 sealed_items = 2;
+  uint32 sealed_je_tbs = 3;
+  uint32 sealed_numeric_tbs = 4;
+  uint32 study_recall_cards = 5;
+  uint32 rote_cards = 6;
+  // Note ids of the sealed TBS notes, so the e2e fixture can deep-link the
+  // TBS surface (?note=<id>) without a separate query RPC.
+  repeated int64 sealed_tbs_note_ids = 7;
 }

@@ -1,0 +1,976 @@
+// Copyright: Ankitects Pty Ltd and contributors
+// License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
+
+//! Integration tests for the Ankountant shared core (Phase A). Each test maps
+//! to one or more contract assertions (A03–A40); the pure-logic assertions live
+//! next to their functions in `logic.rs` and `grading.rs`.
+//!
+//! The module is already `#[cfg(test)]`-gated by its declaration in `mod.rs`.
+
+use std::collections::HashSet;
+
+use anki_proto::scheduler::BuildConfusionQueueRequest;
+use anki_proto::scheduler::ComputeExamScheduleRequest;
+use anki_proto::scheduler::GetReadinessRequest;
+use anki_proto::scheduler::SubmitPerformanceAttemptRequest;
+use serde_json::json;
+
+use super::config;
+use super::seed::SeedSummary;
+use crate::card::CardQueue;
+use crate::prelude::*;
+use crate::revlog::RevlogEntry;
+use crate::revlog::RevlogReviewKind;
+use crate::search::SortMode;
+use crate::services::SchedulerService;
+use crate::timestamp::TimestampMillis;
+
+fn seeded() -> (Collection, SeedSummary) {
+    let mut col = Collection::new();
+    let summary = col.ankountant_load_far_seed().unwrap();
+    (col, summary)
+}
+
+fn set_exam_date(col: &mut Collection, iso: &str) {
+    col.set_config_json(&config::exam_date_key("FAR"), &iso.to_string(), false)
+        .unwrap();
+}
+
+fn compute_schedule(col: &mut Collection, exam_date: &str) -> f64 {
+    SchedulerService::compute_exam_schedule(
+        col,
+        ComputeExamScheduleRequest {
+            section: "FAR".into(),
+            exam_date: exam_date.into(),
+        },
+    )
+    .unwrap()
+    .desired_retention
+}
+
+// --- A1 (A03–A09) ------------------------------------------------------------
+
+#[test]
+fn a1_ramp_at_anchor_dates_via_rpc() {
+    let mut col = Collection::new();
+    let today = chrono::Local::now().date_naive();
+    let d90 = (today + chrono::Duration::days(90))
+        .format("%Y-%m-%d")
+        .to_string();
+    let d30 = (today + chrono::Duration::days(30))
+        .format("%Y-%m-%d")
+        .to_string();
+    let d0 = today.format("%Y-%m-%d").to_string();
+    let past = (today - chrono::Duration::days(10))
+        .format("%Y-%m-%d")
+        .to_string();
+
+    assert!((compute_schedule(&mut col, &d90) - 0.80).abs() < 1e-9); // A03
+    assert!((compute_schedule(&mut col, &d30) - 0.875).abs() < 1e-9); // A04
+    assert!((compute_schedule(&mut col, &d0) - 0.95).abs() < 1e-9); // A05
+    assert!((compute_schedule(&mut col, &past) - 0.95).abs() < 1e-9); // A05 clamp
+}
+
+#[test]
+fn a1_no_exam_date_falls_back_to_configured_retention() {
+    // A06 — with no exam date, use the preset's configured desired retention.
+    let mut col = Collection::new();
+    let configured = col
+        .storage
+        .get_deck_config(DeckConfigId(1))
+        .unwrap()
+        .unwrap()
+        .inner
+        .desired_retention as f64;
+    let got = compute_schedule(&mut col, "");
+    assert!((got - configured).abs() < 1e-6);
+}
+
+#[test]
+fn a1_nearer_exam_yields_shorter_interval_for_same_card() {
+    // A07 — same stable memory state, dr(30d)=0.875 vs dr(90d)=0.80 ->
+    // the higher-retention (nearer) date produces a shorter next interval.
+    let mut col = Collection::new();
+    let dr_far = 0.80f32;
+    let dr_near = 0.875f32;
+    let ivl_far = col
+        .ankountant_preview_interval_for_memory(50.0, 5.0, dr_far)
+        .unwrap();
+    let ivl_near = col
+        .ankountant_preview_interval_for_memory(50.0, 5.0, dr_near)
+        .unwrap();
+    assert!(
+        ivl_near < ivl_far,
+        "nearer exam (dr {dr_near}) should shorten interval: near={ivl_near} far={ivl_far}"
+    );
+}
+
+#[test]
+fn a1_exam_date_from_col_config_changes_ramp() {
+    // A09 — exam date read from col config via config-set; changing it moves
+    // the ramp output.
+    let mut col = Collection::new();
+    let today = chrono::Local::now().date_naive();
+    set_exam_date(
+        &mut col,
+        &(today + chrono::Duration::days(90))
+            .format("%Y-%m-%d")
+            .to_string(),
+    );
+    let far = compute_schedule(&mut col, "");
+    set_exam_date(
+        &mut col,
+        &(today + chrono::Duration::days(30))
+            .format("%Y-%m-%d")
+            .to_string(),
+    );
+    let near = compute_schedule(&mut col, "");
+    assert!((far - 0.80).abs() < 1e-9);
+    assert!((near - 0.875).abs() < 1e-9);
+    assert!(near > far);
+}
+
+// --- A6 (A20–A23) ------------------------------------------------------------
+
+#[test]
+fn a6_query_notes_by_ds_tag() {
+    // A20 — a query returns all notes for a ds:: tag.
+    let (mut col, _) = seeded();
+    let nids = col
+        .search_notes_unordered("tag:ds::lease::finance")
+        .unwrap();
+    assert!(!nids.is_empty(), "expected notes tagged ds::lease::finance");
+}
+
+#[test]
+fn a6_confusable_map_resolves_each_tag_to_one_set() {
+    // A21 — no tag belongs to two sets.
+    let (col, _) = seeded();
+    let map = col.ankountant_confusable_map("FAR");
+    let mut seen: HashSet<&str> = HashSet::new();
+    for set in map.values() {
+        for tag in &set.tags {
+            assert!(seen.insert(tag.as_str()), "tag {tag} in two sets");
+            let resolved = Collection::ankountant_set_for_tag(&map, tag);
+            assert!(resolved.is_some());
+        }
+    }
+}
+
+#[test]
+fn a6_cards_filterable_by_cog_tag() {
+    // A22.
+    let (mut col, _) = seeded();
+    let rote = col
+        .search_cards("tag:cog::rote", SortMode::NoOrder)
+        .unwrap();
+    let applied = col
+        .search_cards("tag:cog::applied", SortMode::NoOrder)
+        .unwrap();
+    assert!(!rote.is_empty());
+    assert!(!applied.is_empty());
+}
+
+#[test]
+fn a6_tags_round_trip_through_save_reopen() {
+    // A23.
+    let (mut col, tmp) = crate::tests::open_fs_test_collection("ankountant_tags");
+    col.ankountant_load_far_seed().unwrap();
+    let before = col
+        .search_notes_unordered("tag:ds::lease::finance")
+        .unwrap()
+        .len();
+    let mut builder = col.as_builder();
+    col.close(None).unwrap();
+    let mut col = builder.build().unwrap();
+    let after = col
+        .search_notes_unordered("tag:ds::lease::finance")
+        .unwrap()
+        .len();
+    assert_eq!(before, after);
+    assert!(after > 0);
+    drop(tmp);
+}
+
+// --- A7 (A24–A26) ------------------------------------------------------------
+
+#[test]
+fn a7_sealed_cards_never_in_study_queue() {
+    // A24 — sealed cards are suspended and excluded from GetQueuedCards.
+    let (mut col, _) = seeded();
+    let queued = SchedulerService::get_queued_cards(
+        &mut col,
+        anki_proto::scheduler::GetQueuedCardsRequest {
+            fetch_limit: 500,
+            intraday_learning_only: false,
+        },
+    )
+    .unwrap();
+    for qc in &queued.cards {
+        let cid = CardId(qc.card.as_ref().unwrap().id);
+        let card = col.storage.get_card(cid).unwrap().unwrap();
+        assert_ne!(card.queue, CardQueue::Suspended);
+    }
+    // And every sealed card is indeed suspended.
+    let sealed = col
+        .search_cards("deck:Ankountant::Sealed::FAR::*", SortMode::NoOrder)
+        .unwrap();
+    assert!(!sealed.is_empty());
+    for cid in sealed {
+        assert_eq!(
+            col.storage.get_card(cid).unwrap().unwrap().queue,
+            CardQueue::Suspended
+        );
+    }
+}
+
+#[test]
+fn a7_sealed_and_study_items_are_distinct_notes() {
+    // A25.
+    let (mut col, _) = seeded();
+    let study: HashSet<i64> = col
+        .search_notes_unordered("deck:Ankountant::Study::FAR::*")
+        .unwrap()
+        .into_iter()
+        .map(|n| n.0)
+        .collect();
+    let sealed: HashSet<i64> = col
+        .search_notes_unordered("deck:Ankountant::Sealed::FAR::*")
+        .unwrap()
+        .into_iter()
+        .map(|n| n.0)
+        .collect();
+    assert!(!study.is_empty() && !sealed.is_empty());
+    assert!(study.is_disjoint(&sealed));
+}
+
+// --- A8 (A27–A30) ------------------------------------------------------------
+
+fn submit(
+    col: &mut Collection,
+    nid: NoteId,
+    mode: &str,
+    submission: serde_json::Value,
+    confidence: &str,
+) -> anki_proto::scheduler::SubmitPerformanceAttemptResponse {
+    SchedulerService::submit_performance_attempt(
+        col,
+        SubmitPerformanceAttemptRequest {
+            item_note_id: nid.0,
+            mode: mode.into(),
+            submission_json: submission.to_string(),
+            confidence: confidence.into(),
+            latency_ms: 4200,
+        },
+    )
+    .unwrap()
+}
+
+fn first_sealed_mcq(col: &mut Collection) -> NoteId {
+    // A sealed single-choice ("choice" step) item.
+    let nids = col
+        .search_notes_unordered("deck:Ankountant::Sealed::FAR::* note:\"Ankountant TBS\"")
+        .unwrap();
+    for nid in nids {
+        let note = col.storage.get_note(nid).unwrap().unwrap();
+        if note.fields()[super::notetypes::tbs_fields::STEPS_JSON].contains("\"choice\"") {
+            return nid;
+        }
+    }
+    panic!("no sealed mcq found");
+}
+
+fn attempt_log_count(col: &mut Collection) -> usize {
+    col.ankountant_attempts("FAR").unwrap().len()
+}
+
+#[test]
+fn a8_confusion_answer_writes_one_attempt_note_with_fields() {
+    // A27.
+    let (mut col, _) = seeded();
+    let nid = first_sealed_mcq(&mut col);
+    let before = attempt_log_count(&mut col);
+    let resp = submit(
+        &mut col,
+        nid,
+        "confusion",
+        json!({"choice": "Capitalize"}),
+        "confident",
+    );
+    assert!(resp.attempt_note_id > 0);
+    let attempts = col.ankountant_attempts("FAR").unwrap();
+    assert_eq!(attempts.len(), before + 1);
+    let last = attempts.iter().max_by_key(|a| a.ts).unwrap();
+    assert_eq!(last.confidence, "confident");
+    assert!(!last.confusion_set_id.is_empty());
+    assert_eq!(last.mode, "confusion");
+}
+
+#[test]
+fn a8_tbs_attempt_stores_per_step_credit() {
+    // A28 — outcome_json holds per-step credit for a TBS attempt.
+    let (mut col, _) = seeded();
+    let je = je_note(&mut col);
+    let resp = submit(
+        &mut col,
+        je,
+        "tbs",
+        json!({"steps":[
+          {"id":"l1","value":{"account":"ROU Asset","side":"dr","amount":10000}},
+          {"id":"l2","value":{"account":"Lease Liability","side":"cr","amount":10000}},
+          {"id":"l3","value":{"account":"Interest Expense","side":"dr","amount":500}},
+          {"id":"l4","value":{"account":"Cash","side":"cr","amount":999}}
+        ]}),
+        "unsure",
+    );
+    assert_eq!(resp.steps.len(), 4);
+    let attempts = col.ankountant_attempts("FAR").unwrap();
+    let last = attempts.iter().max_by_key(|a| a.ts).unwrap();
+    assert_eq!(last.outcome.steps.len(), 4);
+    assert!((last.outcome.credit - 0.75).abs() < 1e-9);
+}
+
+#[test]
+fn a8_attempt_notes_never_in_study_queue() {
+    // A29.
+    let (mut col, _) = seeded();
+    let nid = first_sealed_mcq(&mut col);
+    let _ = submit(
+        &mut col,
+        nid,
+        "confusion",
+        json!({"choice":"Expense"}),
+        "guess",
+    );
+    let queued = SchedulerService::get_queued_cards(
+        &mut col,
+        anki_proto::scheduler::GetQueuedCardsRequest {
+            fetch_limit: 500,
+            intraday_learning_only: false,
+        },
+    )
+    .unwrap();
+    let log_nt = col
+        .get_notetype_by_name(super::notetypes::ATTEMPT_LOG_NOTETYPE)
+        .unwrap()
+        .unwrap();
+    for qc in &queued.cards {
+        let cid = CardId(qc.card.as_ref().unwrap().id);
+        let card = col.storage.get_card(cid).unwrap().unwrap();
+        let note = col.storage.get_note(card.note_id).unwrap().unwrap();
+        assert_ne!(note.notetype_id, log_nt.id);
+    }
+}
+
+#[test]
+fn a8_no_schema_change_and_queryable_after_save_reopen() {
+    // A30 — PRAGMA table_info identical before/after writing attempts + reopen.
+    let (mut col, tmp) = crate::tests::open_fs_test_collection("ankountant_schema");
+    col.ankountant_load_far_seed().unwrap();
+
+    let schema_before = table_info(&col);
+
+    let nid = first_sealed_mcq(&mut col);
+    let _ = submit(
+        &mut col,
+        nid,
+        "confusion",
+        json!({"choice":"Capitalize"}),
+        "confident",
+    );
+
+    let schema_after = table_info(&col);
+    assert_eq!(
+        schema_before, schema_after,
+        "schema changed after writing attempts"
+    );
+
+    // Reopen and confirm attempts remain queryable + schema still identical.
+    let mut builder = col.as_builder();
+    col.close(None).unwrap();
+    let mut col = builder.build().unwrap();
+    assert_eq!(table_info(&col), schema_before);
+    assert!(attempt_log_count(&mut col) >= 1);
+    drop(tmp);
+}
+
+fn table_info(col: &Collection) -> Vec<String> {
+    let mut out = Vec::new();
+    for table in ["notes", "cards", "revlog"] {
+        let mut stmt = col
+            .storage
+            .db
+            .prepare(&format!("PRAGMA table_info({table})"))
+            .unwrap();
+        let rows = stmt
+            .query_map([], |row| {
+                Ok(format!(
+                    "{}:{}:{}",
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?
+                ))
+            })
+            .unwrap();
+        for r in rows {
+            out.push(format!("{table}.{}", r.unwrap()));
+        }
+    }
+    out
+}
+
+// --- A9 (A31–A34) ------------------------------------------------------------
+
+#[test]
+fn a9_notetype_stores_je_and_numeric_tbs() {
+    // A31.
+    let (mut col, _) = seeded();
+    let je = col
+        .search_notes_unordered("note:\"Ankountant TBS\" \"Record the entry*\"")
+        .unwrap();
+    assert!(!je.is_empty());
+    let numeric = col
+        .search_notes_unordered("note:\"Ankountant TBS\" \"Compute the amounts*\"")
+        .unwrap();
+    assert!(!numeric.is_empty());
+}
+
+#[test]
+fn a9_steps_support_n_weighted_steps_summing_to_one() {
+    // A32.
+    let (mut col, _) = seeded();
+    let je = je_note(&mut col);
+    let note = col.storage.get_note(je).unwrap().unwrap();
+    let steps =
+        super::grading::parse_steps(&note.fields()[super::notetypes::tbs_fields::STEPS_JSON])
+            .unwrap();
+    assert_eq!(steps.len(), 4);
+    let weights = super::grading::effective_weights(&steps);
+    let sum: f64 = weights.iter().sum();
+    assert!((sum - 1.0).abs() < 1e-9);
+    for s in &steps {
+        assert!(!s.id.is_empty());
+    }
+}
+
+#[test]
+fn a9_doc_review_and_research_stored_without_schema_change() {
+    // A33.
+    let (mut col, _) = seeded();
+    for shape in ["research", "doc_review"] {
+        let found = col
+            .search_notes_unordered(&format!("note:\"Ankountant TBS\" \"Stored-only {shape}*\""))
+            .unwrap();
+        assert!(!found.is_empty(), "missing stored-only {shape} TBS");
+    }
+}
+
+#[test]
+fn a9_provenance_fields_exist_and_default_empty() {
+    // A34.
+    let (mut col, _) = seeded();
+    let nt = col.ankountant_tbs_notetype().unwrap();
+    let names: Vec<&str> = nt.fields.iter().map(|f| f.name.as_str()).collect();
+    for prov in ["source_passage", "gen_method", "checker_status"] {
+        assert!(names.contains(&prov), "missing provenance field {prov}");
+    }
+    let je = je_note(&mut col);
+    let note = col.storage.get_note(je).unwrap().unwrap();
+    let fields = note.fields();
+    assert_eq!(fields[super::notetypes::tbs_fields::SOURCE_PASSAGE], "");
+    assert_eq!(fields[super::notetypes::tbs_fields::GEN_METHOD], "");
+    assert_eq!(fields[super::notetypes::tbs_fields::CHECKER_STATUS], "");
+}
+
+fn je_note(col: &mut Collection) -> NoteId {
+    col.search_notes_unordered("note:\"Ankountant TBS\" \"Record the entry*\"")
+        .unwrap()[0]
+}
+
+// --- A10 (A35–A39) -----------------------------------------------------------
+
+#[test]
+fn a10_je_partial_credit_matches_worked_example() {
+    // A35 / A36.
+    let (mut col, _) = seeded();
+    let je = je_note(&mut col);
+    let resp = submit(
+        &mut col,
+        je,
+        "tbs",
+        json!({"steps":[
+          {"id":"l1","value":{"account":"ROU Asset","side":"dr","amount":10000}},
+          {"id":"l2","value":{"account":"Lease Liability","side":"cr","amount":10000}},
+          {"id":"l3","value":{"account":"Interest Expense","side":"dr","amount":500}},
+          {"id":"l4","value":{"account":"Cash","side":"cr","amount":1}}
+        ]}),
+        "confident",
+    );
+    let flags: Vec<bool> = resp.steps.iter().map(|s| s.correct).collect();
+    assert_eq!(flags, vec![true, true, true, false]);
+    assert!((resp.total_credit - 0.75).abs() < 1e-9);
+}
+
+#[test]
+fn a10_numeric_per_cell_tolerance() {
+    // A37.
+    let (mut col, _) = seeded();
+    let numeric = col
+        .search_notes_unordered("note:\"Ankountant TBS\" \"Compute the amounts*\"")
+        .unwrap()[0];
+    let resp = submit(
+        &mut col,
+        numeric,
+        "tbs",
+        json!({"steps":[
+          {"id":"c1","value":250000.5},
+          {"id":"c2","value":99999}
+        ]}),
+        "unsure",
+    );
+    assert!(resp.steps[0].correct);
+    assert!(!resp.steps[1].correct);
+    assert!((resp.total_credit - 0.5).abs() < 1e-9);
+}
+
+#[test]
+fn a10_every_submit_writes_exactly_one_attempt_note() {
+    // A38.
+    let (mut col, _) = seeded();
+    let nid = first_sealed_mcq(&mut col);
+    let before = attempt_log_count(&mut col);
+    let _ = submit(
+        &mut col,
+        nid,
+        "confusion",
+        json!({"choice":"Capitalize"}),
+        "confident",
+    );
+    let _ = submit(
+        &mut col,
+        nid,
+        "confusion",
+        json!({"choice":"Expense"}),
+        "guess",
+    );
+    assert_eq!(attempt_log_count(&mut col), before + 2);
+}
+
+// --- A3 (A10–A12) ------------------------------------------------------------
+
+#[test]
+fn a3_queue_never_three_consecutive_same_tag() {
+    // A10 (contract).
+    let (mut col, _) = seeded();
+    let resp = SchedulerService::build_confusion_queue(
+        &mut col,
+        BuildConfusionQueueRequest {
+            section: "FAR".into(),
+            max_items: 0,
+        },
+    )
+    .unwrap();
+    assert!(!resp.items.is_empty());
+    // Recover each item's tag via its note.
+    let tags: Vec<String> = resp
+        .items
+        .iter()
+        .map(|it| {
+            let note = col.storage.get_note(NoteId(it.note_id)).unwrap().unwrap();
+            note.fields()[super::notetypes::tbs_fields::SCHEMA_TAG].clone()
+        })
+        .collect();
+    // Only assert within runs of the same set_id (interleaving is per-set).
+    let set_ids: Vec<&str> = resp.items.iter().map(|it| it.set_id.as_str()).collect();
+    for w in tags.windows(3).zip(set_ids.windows(3)) {
+        let (t, s) = w;
+        if s[0] == s[1] && s[1] == s[2] && t[0] == t[1] && t[1] == t[2] {
+            panic!("3-in-a-row same tag within a set: {t:?}");
+        }
+    }
+}
+
+#[test]
+fn a3_weaker_set_ranks_before_stronger_set() {
+    // A11 — seed a 40%-accuracy set and an 80%-accuracy set via Attempt Log.
+    let (mut col, _) = seeded();
+    // Weak set: capitalize_vs_expense (40% -> 2/5 correct).
+    seed_confusion_accuracy(&mut col, "capitalize_vs_expense", 2, 3);
+    // Strong set: operating_vs_finance_lease (80% -> 4/1).
+    seed_confusion_accuracy(&mut col, "operating_vs_finance_lease", 4, 1);
+
+    let resp = SchedulerService::build_confusion_queue(
+        &mut col,
+        BuildConfusionQueueRequest {
+            section: "FAR".into(),
+            max_items: 0,
+        },
+    )
+    .unwrap();
+    let weak_positions: Vec<usize> = resp
+        .items
+        .iter()
+        .enumerate()
+        .filter(|(_, it)| it.set_id == "capitalize_vs_expense")
+        .map(|(i, _)| i)
+        .collect();
+    let strong_positions: Vec<usize> = resp
+        .items
+        .iter()
+        .enumerate()
+        .filter(|(_, it)| it.set_id == "operating_vs_finance_lease")
+        .map(|(i, _)| i)
+        .collect();
+    assert!(!weak_positions.is_empty() && !strong_positions.is_empty());
+    let last_weak = *weak_positions.iter().max().unwrap();
+    let first_strong = *strong_positions.iter().min().unwrap();
+    assert!(
+        last_weak < first_strong,
+        "all weak-set items must precede strong-set items: weak {weak_positions:?} strong {strong_positions:?}"
+    );
+}
+
+#[test]
+fn a3_dto_has_no_label_field() {
+    // A12 — the ConfusionItem DTO exposes no populated category/topic/deck
+    // label. The proto message only has note_id/prompt/treatments/set_id; the
+    // prompt is a task question, not a category label.
+    let (mut col, _) = seeded();
+    let resp = SchedulerService::build_confusion_queue(
+        &mut col,
+        BuildConfusionQueueRequest {
+            section: "FAR".into(),
+            max_items: 5,
+        },
+    )
+    .unwrap();
+    for it in &resp.items {
+        // prompt must not echo the internal ds:: tag or a topic label.
+        assert!(!it.prompt.contains("ds::"));
+    }
+}
+
+/// Seed `correct` correct + `wrong` wrong confusion attempts for a set by
+/// writing Attempt Log notes directly.
+fn seed_confusion_accuracy(col: &mut Collection, set_id: &str, correct: u32, wrong: u32) {
+    use super::attempt_log::NewAttempt;
+    use super::attempt_log::Outcome;
+    col.transact(crate::ops::Op::AddNote, |col| {
+        for _ in 0..correct {
+            col.ankountant_write_attempt(&NewAttempt {
+                item_ref: NoteId(1),
+                confusion_set_id: set_id.into(),
+                mode: "confusion".into(),
+                confidence: "confident".into(),
+                latency_ms: 1000,
+                outcome: Outcome {
+                    credit: 1.0,
+                    steps: vec![],
+                },
+                section: "FAR".into(),
+                sealed: true,
+            })?;
+        }
+        for _ in 0..wrong {
+            col.ankountant_write_attempt(&NewAttempt {
+                item_ref: NoteId(1),
+                confusion_set_id: set_id.into(),
+                mode: "confusion".into(),
+                confidence: "guess".into(),
+                latency_ms: 1000,
+                outcome: Outcome {
+                    credit: 0.0,
+                    steps: vec![],
+                },
+                section: "FAR".into(),
+                sealed: true,
+            })?;
+        }
+        Ok(())
+    })
+    .unwrap();
+}
+
+// --- A4 (A13–A15) + A26 ------------------------------------------------------
+
+/// Seed N sealed confusion attempts spread across sets to satisfy volume +
+/// coverage, at a given fraction correct.
+fn seed_sealed_attempts(col: &mut Collection, per_set: u32, correct_frac: f64) {
+    use super::attempt_log::NewAttempt;
+    use super::attempt_log::Outcome;
+    let sets: Vec<String> = col
+        .ankountant_confusable_map("FAR")
+        .keys()
+        .cloned()
+        .collect();
+    col.transact(crate::ops::Op::AddNote, |col| {
+        for set_id in &sets {
+            for i in 0..per_set {
+                let correct = (i as f64) < (per_set as f64 * correct_frac);
+                col.ankountant_write_attempt(&NewAttempt {
+                    item_ref: NoteId(1),
+                    confusion_set_id: set_id.clone(),
+                    mode: "confusion".into(),
+                    confidence: "confident".into(),
+                    latency_ms: 1000,
+                    outcome: Outcome {
+                        credit: if correct { 1.0 } else { 0.0 },
+                        steps: vec![],
+                    },
+                    section: "FAR".into(),
+                    sealed: true,
+                })?;
+            }
+        }
+        Ok(())
+    })
+    .unwrap();
+}
+
+fn readiness(col: &mut Collection) -> anki_proto::scheduler::GetReadinessResponse {
+    SchedulerService::get_readiness(
+        col,
+        GetReadinessRequest {
+            section: "FAR".into(),
+        },
+    )
+    .unwrap()
+}
+
+#[test]
+fn a4_gap_equals_memory_minus_performance() {
+    // A13.
+    let (mut col, _) = seeded();
+    seed_memory_reps(&mut col, "ds::lease::finance", 8, 6); // 6/8 correct
+    seed_sealed_attempts(&mut col, 6, 0.5);
+    let resp = readiness(&mut col);
+    for t in &resp.topics {
+        assert!((t.gap - (t.memory - t.performance)).abs() < 1e-9);
+    }
+}
+
+#[test]
+fn a4_performance_only_from_sealed_no_study_leakage() {
+    // A14 / A26 — study-pile attempts (sealed=false) never move performance.
+    let (mut col, _) = seeded();
+    // Write only NON-sealed attempts on a set: performance must stay 0.
+    use super::attempt_log::NewAttempt;
+    use super::attempt_log::Outcome;
+    col.transact(crate::ops::Op::AddNote, |col| {
+        for _ in 0..10 {
+            col.ankountant_write_attempt(&NewAttempt {
+                item_ref: NoteId(1),
+                confusion_set_id: "capitalize_vs_expense".into(),
+                mode: "confusion".into(),
+                confidence: "confident".into(),
+                latency_ms: 1000,
+                outcome: Outcome {
+                    credit: 1.0,
+                    steps: vec![],
+                },
+                section: "FAR".into(),
+                sealed: false,
+            })?;
+        }
+        Ok(())
+    })
+    .unwrap();
+    let resp = readiness(&mut col);
+    let cap = resp
+        .topics
+        .iter()
+        .find(|t| t.set_id == "capitalize_vs_expense")
+        .unwrap();
+    assert_eq!(
+        cap.performance, 0.0,
+        "study-pile attempts leaked into performance"
+    );
+}
+
+#[test]
+fn a4_tbs_partial_credit_moves_performance() {
+    // A15 — a fractional TBS credit contributes fractionally, not pass/fail.
+    let (mut col, _) = seeded();
+    use super::attempt_log::NewAttempt;
+    use super::attempt_log::Outcome;
+    col.transact(crate::ops::Op::AddNote, |col| {
+        col.ankountant_write_attempt(&NewAttempt {
+            item_ref: NoteId(1),
+            confusion_set_id: "trading_afs_htm".into(),
+            mode: "tbs".into(),
+            confidence: "unsure".into(),
+            latency_ms: 1000,
+            outcome: Outcome {
+                credit: 0.5,
+                steps: vec![],
+            },
+            section: "FAR".into(),
+            sealed: true,
+        })
+    })
+    .unwrap();
+    let resp = readiness(&mut col);
+    let topic = resp
+        .topics
+        .iter()
+        .find(|t| t.set_id == "trading_afs_htm")
+        .unwrap();
+    assert!((topic.performance - 0.5).abs() < 1e-9);
+}
+
+// --- A5 (A16–A19) ------------------------------------------------------------
+
+#[test]
+fn a5_abstain_on_insufficient_volume() {
+    // A16 — < 20 sealed attempts.
+    let (mut col, _) = seeded();
+    seed_sealed_attempts(&mut col, 3, 0.5); // 4 sets * 3 = 12 attempts
+    let r = readiness(&mut col).readiness.unwrap();
+    assert!(r.abstain);
+    assert_eq!(r.reason, "insufficient volume");
+}
+
+#[test]
+fn a5_abstain_on_insufficient_coverage() {
+    // A17 — >= 20 attempts but < 60% coverage.
+    let (mut col, _) = seeded();
+    // Put all 24 attempts in a single set -> coverage 1/4 = 25%.
+    use super::attempt_log::NewAttempt;
+    use super::attempt_log::Outcome;
+    col.transact(crate::ops::Op::AddNote, |col| {
+        for i in 0..24 {
+            col.ankountant_write_attempt(&NewAttempt {
+                item_ref: NoteId(1),
+                confusion_set_id: "capitalize_vs_expense".into(),
+                mode: "confusion".into(),
+                confidence: "confident".into(),
+                latency_ms: 1000,
+                outcome: Outcome {
+                    credit: if i % 2 == 0 { 1.0 } else { 0.0 },
+                    steps: vec![],
+                },
+                section: "FAR".into(),
+                sealed: true,
+            })?;
+        }
+        Ok(())
+    })
+    .unwrap();
+    let r = readiness(&mut col).readiness.unwrap();
+    assert!(r.abstain);
+    assert_eq!(r.reason, "insufficient coverage");
+}
+
+#[test]
+fn a5_band_with_sufficient_evidence() {
+    // A18 — sufficient volume + coverage -> band with low < high + confidence.
+    let (mut col, _) = seeded();
+    seed_sealed_attempts(&mut col, 8, 0.5); // 32 attempts across 4 sets
+    let r = readiness(&mut col).readiness.unwrap();
+    assert!(!r.abstain);
+    assert!(r.band_low < r.band_high);
+    assert!(!r.confidence.is_empty());
+}
+
+#[test]
+fn a5_band_widens_when_volume_halves() {
+    // A19 — verified on the pure Wilson fn (see logic.rs), reconfirm end-to-end.
+    let (mut col_hi, _) = seeded();
+    seed_sealed_attempts(&mut col_hi, 10, 0.5); // 40 attempts
+    let hi = readiness(&mut col_hi).readiness.unwrap();
+
+    let (mut col_lo, _) = seeded();
+    seed_sealed_attempts(&mut col_lo, 5, 0.5); // 20 attempts
+    let lo = readiness(&mut col_lo).readiness.unwrap();
+
+    assert!(!hi.abstain && !lo.abstain);
+    assert!(
+        (lo.band_high - lo.band_low) > (hi.band_high - hi.band_low),
+        "band should widen as volume halves"
+    );
+}
+
+// --- F016 seed (A40) ---------------------------------------------------------
+
+#[test]
+fn f016_seed_crosses_the_thresholds() {
+    // A40.
+    let (_, summary) = seeded();
+    assert!(
+        summary.confusion_sets >= 4,
+        "sets: {}",
+        summary.confusion_sets
+    );
+    assert!(
+        summary.sealed_items >= 24,
+        "sealed: {}",
+        summary.sealed_items
+    );
+    assert!(summary.sealed_je_tbs >= 3, "je: {}", summary.sealed_je_tbs);
+    assert!(
+        summary.sealed_numeric_tbs >= 2,
+        "numeric: {}",
+        summary.sealed_numeric_tbs
+    );
+    // The sealed TBS note ids (JE + numeric) are tracked so the e2e fixture can
+    // deep-link the B4 surface (?note=<id>).
+    assert!(
+        summary.sealed_tbs_note_ids.len() >= summary.sealed_je_tbs + summary.sealed_numeric_tbs,
+        "tbs ids: {} vs {}+{}",
+        summary.sealed_tbs_note_ids.len(),
+        summary.sealed_je_tbs,
+        summary.sealed_numeric_tbs
+    );
+}
+
+#[test]
+fn f016_load_far_seed_response_maps_summary_to_proto() {
+    // The RPC entry point (LoadFarSeed) returns the same counts as the builder
+    // and carries the sealed TBS note ids for the e2e fixture. Each returned id
+    // resolves to a real Ankountant TBS note.
+    let mut col = Collection::new();
+    let resp = col.ankountant_load_far_seed_response().unwrap();
+    assert!(resp.confusion_sets >= 4);
+    assert!(resp.sealed_items >= 24);
+    assert!(resp.sealed_je_tbs >= 3);
+    assert!(resp.sealed_numeric_tbs >= 2);
+    assert!(!resp.sealed_tbs_note_ids.is_empty());
+    let tbs_ntid = col.ankountant_tbs_notetype().unwrap().id;
+    for nid in &resp.sealed_tbs_note_ids {
+        let note = col.storage.get_note(NoteId(*nid)).unwrap().unwrap();
+        assert_eq!(note.notetype_id, tbs_ntid);
+    }
+}
+
+// --- helpers -----------------------------------------------------------------
+
+/// Seed recall revlog entries in the trailing-30d window for the study cards
+/// on `tag`: `total` reps, `correct` of them a Good/Easy (button > 1).
+fn seed_memory_reps(col: &mut Collection, tag: &str, total: u32, correct: u32) {
+    let cids = col
+        .search_cards(
+            &format!("tag:{tag} deck:Ankountant::Study::FAR::*"),
+            SortMode::NoOrder,
+        )
+        .unwrap();
+    let cid = cids[0];
+    let now = TimestampMillis::now().0;
+    col.transact(crate::ops::Op::UpdateCard, |col| {
+        for i in 0..total {
+            let button = if i < correct { 3 } else { 1 };
+            col.storage.add_revlog_entry(
+                &RevlogEntry {
+                    id: crate::revlog::RevlogId(now + i as i64),
+                    cid,
+                    usn: Usn(-1),
+                    button_chosen: button,
+                    review_kind: RevlogReviewKind::Review,
+                    ..Default::default()
+                },
+                false,
+            )?;
+        }
+        Ok(())
+    })
+    .unwrap();
+}
