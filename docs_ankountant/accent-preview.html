@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ankountant — accent candidates</title>
+<style>
+  :root {
+    --font: system-ui, -apple-system, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", Roboto, sans-serif;
+    /* fixed semantic states (identical across all accents) */
+    --s-new-l:#2E6FD6; --s-new-d:#5AA0FF;
+    --s-learn-l:#D64541; --s-learn-d:#F7625A;
+    --s-review-l:#1F9D57; --s-review-d:#34D07C;
+    --s-buried-l:#E1922B; --s-buried-d:#F5B44E;
+    --s-susp-l:#B8860B; --s-susp-d:#E7C64B;
+    --s-marked-l:#5B60E0; --s-marked-d:#A5B4FC;
+    --danger-l:#B0322F; --danger-d:#F7625A;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; font-family:var(--font); background:#e9eeee; color:#101817;
+    -webkit-font-smoothing:antialiased; padding:28px 24px 60px;
+  }
+  h1 { font-size:24px; font-weight:600; letter-spacing:-0.015em; margin:0 0 4px; }
+  .sub { color:#546160; font-size:14px; margin:0 0 24px; max-width:70ch; line-height:1.5; }
+  .grid { display:grid; grid-template-columns:repeat(3, minmax(300px,1fr)); gap:22px; align-items:start; }
+  .col > h2 { font-size:16px; font-weight:600; margin:0 0 2px; letter-spacing:-0.01em; }
+  .col > .hex { font-size:12px; color:#546160; font-variant-numeric:tabular-nums; margin-bottom:10px; }
+  .note { font-size:12px; line-height:1.45; color:#546160; margin-top:8px; }
+
+  /* ---- mock app panel ---- */
+  .mock {
+    --font-num: var(--font);
+    border-radius:16px; padding:16px; margin-bottom:14px;
+    border:1px solid var(--border); background:var(--bg); color:var(--fg);
+  }
+  .mock.light {
+    --bg:#F2F5F5; --surface:#FDFDFD; --elev:#FFFFFF; --border:#DBE2E1; --border-sub:#E8EDED;
+    --fg:#101817; --fg2:#3D4A48; --fg3:#697573;
+    --s-new:var(--s-new-l); --s-learn:var(--s-learn-l); --s-review:var(--s-review-l);
+    --s-buried:var(--s-buried-l); --s-susp:var(--s-susp-l); --s-marked:var(--s-marked-l); --danger:var(--danger-l);
+    box-shadow:0 1px 2px rgba(16,24,23,.06),0 1px 3px rgba(16,24,23,.05);
+  }
+  .mock.dark {
+    --bg:#0E1413; --surface:#151D1C; --elev:#1D2726; --border:#2C3736; --border-sub:#232D2C;
+    --fg:#ECF1F0; --fg2:#AEB8B7; --fg3:#8A9594;
+    --s-new:var(--s-new-d); --s-learn:var(--s-learn-d); --s-review:var(--s-review-d);
+    --s-buried:var(--s-buried-d); --s-susp:var(--s-susp-d); --s-marked:var(--s-marked-d); --danger:var(--danger-d);
+  }
+  .modewrap { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#8a9594; margin:0 2px 6px; }
+
+  /* topbar */
+  .top { display:flex; align-items:center; gap:10px; padding-bottom:10px; border-bottom:1px solid var(--border-sub); margin-bottom:12px; }
+  .brandmark { width:16px; height:16px; border-radius:5px; background:var(--brand-fill); }
+  .brandname { font-weight:600; font-size:14px; letter-spacing:-0.01em; }
+  .tabs { margin-left:auto; display:flex; gap:14px; font-size:12px; color:var(--fg3); }
+  .tab.active { color:var(--brand); font-weight:600; border-bottom:2px solid var(--brand); padding-bottom:6px; margin-bottom:-9px; }
+
+  /* controls */
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:12px 0; }
+  .btn { font:inherit; font-size:13px; font-weight:600; border-radius:8px; padding:8px 14px; border:1px solid transparent; cursor:default; }
+  .btn.primary { background:var(--brand-fill); color:#fff; }
+  .btn.outline { background:transparent; color:var(--brand); border-color:var(--brand); }
+  a.link { color:var(--brand); font-size:13px; font-weight:500; text-decoration:none; border-bottom:1px solid color-mix(in srgb, var(--brand) 40%, transparent); }
+  .inp { font:inherit; font-size:13px; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--elev); color:var(--fg); width:150px; outline:none; }
+  .inp.focus { border-color:var(--brand); box-shadow:0 0 0 2px color-mix(in srgb, var(--brand) 45%, transparent); }
+
+  /* score dashboard */
+  .scores { display:flex; gap:14px; margin:14px 0 8px; }
+  .score { flex:1; }
+  .score .lbl { font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--fg3); font-weight:600; }
+  .score .val { font-size:30px; font-weight:600; letter-spacing:-0.01em; font-variant-numeric:tabular-nums; line-height:1.05; }
+  .score .val.brand { color:var(--brand); }
+  .band { height:8px; border-radius:99px; margin-top:6px; position:relative;
+          background:linear-gradient(90deg, transparent 0%, color-mix(in srgb,var(--brand) 26%, transparent) 18%,
+                    color-mix(in srgb,var(--brand) 26%, transparent) 82%, transparent 100%); }
+  .band::after { content:""; position:absolute; left:64%; top:-2px; width:2px; height:12px; background:var(--brand); border-radius:2px; }
+
+  .gap { display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:3px 8px; border-radius:99px;
+         color:var(--danger); background:color-mix(in srgb,var(--danger) 12%, transparent);
+         border:1px solid color-mix(in srgb,var(--danger) 28%, transparent); font-variant-numeric:tabular-nums; }
+
+  /* state chips (color never alone: dot + letter + label) */
+  .states { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+  .chip { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; padding:3px 8px 3px 6px; border-radius:99px;
+          background:var(--surface); border:1px solid var(--border); }
+  .chip .g { width:14px; height:14px; border-radius:4px; display:grid; place-items:center; color:#fff; font-size:8px; font-weight:700; }
+
+  .conf { display:flex; gap:6px; margin-top:12px; }
+  .conf .c { flex:1; text-align:center; font-size:11px; font-weight:600; padding:7px 0; border-radius:8px; border:1px solid var(--border); color:var(--fg2); background:var(--surface); }
+  .cap { font-size:10px; color:var(--fg3); margin-top:8px; text-transform:uppercase; letter-spacing:.05em; }
+  .best { display:inline-block; font-size:11px; font-weight:600; color:#12726E; background:#E7F2F1; border-radius:99px; padding:2px 8px; margin-left:6px; vertical-align:middle;}
+</style>
+</head>
+<body>
+  <h1>Ankountant — brand accent candidates</h1>
+  <p class="sub">Each accent is applied to real chrome (active tab, primary/outline buttons, link, focused input, and the Readiness band + hero numeral) and shown beside the <strong>fixed</strong> card-state chips so you can judge collision risk. States never change; only the accent does. Left = light, right = dark within each column.</p>
+
+  <div class="grid">
+    <!-- ================= TEAL ================= -->
+    <div class="col" style="--brand:#12726E; --brand-fill:#12726E;">
+      <h2>A · Ledger Teal <span class="best">recommended</span></h2>
+      <div class="hex">light #12726E · dark #3DB5AC · hue ~177°</div>
+      <div class="modewrap">Light</div>
+      <div class="mock light" style="--brand:#12726E; --brand-fill:#12726E;">
+        <div class="top"><div class="brandmark"></div><span class="brandname">Ankountant</span>
+          <div class="tabs"><span class="tab active">Study</span><span class="tab">Browse</span><span class="tab">Stats</span></div></div>
+        <div class="row"><button class="btn primary">Start review</button><button class="btn outline">Skip</button><a class="link" href="#">Why is this due?</a></div>
+        <div class="row"><input class="inp focus" value="Deferred inflow" readonly></div>
+        <div class="scores">
+          <div class="score"><div class="lbl">Memory</div><div class="val">84</div></div>
+          <div class="score"><div class="lbl">Performance</div><div class="val">61</div></div>
+          <div class="score"><div class="lbl">Readiness</div><div class="val brand">72</div><div class="band"></div></div>
+        </div>
+        <span class="gap">▲ Gap 23 pts</span>
+        <div class="states">
+          <span class="chip"><span class="g" style="background:var(--s-new)">N</span>New</span>
+          <span class="chip"><span class="g" style="background:var(--s-learn)">L</span>Learn</span>
+          <span class="chip"><span class="g" style="background:var(--s-review)">R</span>Review</span>
+          <span class="chip"><span class="g" style="background:var(--s-buried)">B</span>Buried</span>
+          <span class="chip"><span class="g" style="background:var(--s-marked)">M</span>Marked</span>
+        </div>
+        <div class="conf"><div class="c">Guess</div><div class="c">Unsure</div><div class="c">Confident</div></div>
+        <div class="cap">Confidence gate stays neutral (no accent, no default)</div>
+      </div>
+      <div class="modewrap">Dark</div>
+      <div class="mock dark" style="--brand:#3DB5AC; --brand-fill:#15807A;">
+        <div class="top"><div class="brandmark"></div><span class="brandname">Ankountant</span>
+          <div class="tabs"><span class="tab active">Study</span><span class="tab">Browse</span><span class="tab">Stats</span></div></div>
+        <div class="row"><button class="btn primary">Start review</button><button class="btn outline">Skip</button><a class="link" href="#">Why is this due?</a></div>
+        <div class="scores">
+          <div class="score"><div class="lbl">Memory</div><div class="val">84</div></div>
+          <div class="score"><div class="lbl">Performance</div><div class="val">61</div></div>
+          <div class="score"><div class="lbl">Readiness</div><div class="val brand">72</div><div class="band"></div></div>
+        </div>
+        <span class="gap">▲ Gap 23 pts</span>
+        <div class="states">
+          <span class="chip"><span class="g" style="background:var(--s-new)">N</span>New</span>
+          <span class="chip"><span class="g" style="background:var(--s-learn)">L</span>Learn</span>
+          <span class="chip"><span class="g" style="background:var(--s-review)">R</span>Review</span>
+          <span class="chip"><span class="g" style="background:var(--s-buried)">B</span>Buried</span>
+          <span class="chip"><span class="g" style="background:var(--s-marked)">M</span>Marked</span>
+        </div>
+      </div>
+      <p class="note"><strong>Furthest from every state.</strong> ~30° off review-green, ~40° off new-blue. Reads financial-statement. Only overlaps the rare flag-6 turquoise.</p>
+    </div>
+
+    <!-- ================= PETROL ================= -->
+    <div class="col" style="--brand:#0E6E8C; --brand-fill:#0E6E8C;">
+      <h2>B · Petrol Blue</h2>
+      <div class="hex">light #0E6E8C · dark #4FB4D4 · hue ~195°</div>
+      <div class="modewrap">Light</div>
+      <div class="mock light" style="--brand:#0E6E8C; --brand-fill:#0E6E8C;">
+        <div class="top"><div class="brandmark"></div><span class="brandname">Ankountant</span>
+          <div class="tabs"><span class="tab active">Study</span><span class="tab">Browse</span><span class="tab">Stats</span></div></div>
+        <div class="row"><button class="btn primary">Start review</button><button class="btn outline">Skip</button><a class="link" href="#">Why is this due?</a></div>
+        <div class="row"><input class="inp focus" value="Deferred inflow" readonly></div>
+        <div class="scores">
+          <div class="score"><div class="lbl">Memory</div><div class="val">84</div></div>
+          <div class="score"><div class="lbl">Performance</div><div class="val">61</div></div>
+          <div class="score"><div class="lbl">Readiness</div><div class="val brand">72</div><div class="band"></div></div>
+        </div>
+        <span class="gap">▲ Gap 23 pts</span>
+        <div class="states">
+          <span class="chip"><span class="g" style="background:var(--s-new)">N</span>New</span>
+          <span class="chip"><span class="g" style="background:var(--s-learn)">L</span>Learn</span>
+          <span class="chip"><span class="g" style="background:var(--s-review)">R</span>Review</span>
+          <span class="chip"><span class="g" style="background:var(--s-buried)">B</span>Buried</span>
+          <span class="chip"><span class="g" style="background:var(--s-marked)">M</span>Marked</span>
+        </div>
+        <div class="conf"><div class="c">Guess</div><div class="c">Unsure</div><div class="c">Confident</div></div>
+        <div class="cap">Confidence gate stays neutral (no accent, no default)</div>
+      </div>
+      <div class="modewrap">Dark</div>
+      <div class="mock dark" style="--brand:#4FB4D4; --brand-fill:#14748F;">
+        <div class="top"><div class="brandmark"></div><span class="brandname">Ankountant</span>
+          <div class="tabs"><span class="tab active">Study</span><span class="tab">Browse</span><span class="tab">Stats</span></div></div>
+        <div class="row"><button class="btn primary">Start review</button><button class="btn outline">Skip</button><a class="link" href="#">Why is this due?</a></div>
+        <div class="scores">
+          <div class="score"><div class="lbl">Memory</div><div class="val">84</div></div>
+          <div class="score"><div class="lbl">Performance</div><div class="val">61</div></div>
+          <div class="score"><div class="lbl">Readiness</div><div class="val brand">72</div><div class="band"></div></div>
+        </div>
+        <span class="gap">▲ Gap 23 pts</span>
+        <div class="states">
+          <span class="chip"><span class="g" style="background:var(--s-new)">N</span>New</span>
+          <span class="chip"><span class="g" style="background:var(--s-learn)">L</span>Learn</span>
+          <span class="chip"><span class="g" style="background:var(--s-review)">R</span>Review</span>
+          <span class="chip"><span class="g" style="background:var(--s-buried)">B</span>Buried</span>
+          <span class="chip"><span class="g" style="background:var(--s-marked)">M</span>Marked</span>
+        </div>
+      </div>
+      <p class="note"><strong>Modern-fintech.</strong> Cooler/bluer than teal, still clear of the semantic new-blue by hue + darkness. Slightly more "tech", a bit closer to info-blue than teal is.</p>
+    </div>
+
+    <!-- ================= INK NAVY ================= -->
+    <div class="col" style="--brand:#1F3A5F; --brand-fill:#1F3A5F;">
+      <h2>C · Ink Navy</h2>
+      <div class="hex">light #1F3A5F · dark #7FA6D4 · hue ~212°</div>
+      <div class="modewrap">Light</div>
+      <div class="mock light" style="--brand:#1F3A5F; --brand-fill:#1F3A5F;">
+        <div class="top"><div class="brandmark"></div><span class="brandname">Ankountant</span>
+          <div class="tabs"><span class="tab active">Study</span><span class="tab">Browse</span><span class="tab">Stats</span></div></div>
+        <div class="row"><button class="btn primary">Start review</button><button class="btn outline">Skip</button><a class="link" href="#">Why is this due?</a></div>
+        <div class="row"><input class="inp focus" value="Deferred inflow" readonly></div>
+        <div class="scores">
+          <div class="score"><div class="lbl">Memory</div><div class="val">84</div></div>
+          <div class="score"><div class="lbl">Performance</div><div class="val">61</div></div>
+          <div class="score"><div class="lbl">Readiness</div><div class="val brand">72</div><div class="band"></div></div>
+        </div>
+        <span class="gap">▲ Gap 23 pts</span>
+        <div class="states">
+          <span class="chip"><span class="g" style="background:var(--s-new)">N</span>New</span>
+          <span class="chip"><span class="g" style="background:var(--s-learn)">L</span>Learn</span>
+          <span class="chip"><span class="g" style="background:var(--s-review)">R</span>Review</span>
+          <span class="chip"><span class="g" style="background:var(--s-buried)">B</span>Buried</span>
+          <span class="chip"><span class="g" style="background:var(--s-marked)">M</span>Marked</span>
+        </div>
+        <div class="conf"><div class="c">Guess</div><div class="c">Unsure</div><div class="c">Confident</div></div>
+        <div class="cap">Confidence gate stays neutral (no accent, no default)</div>
+      </div>
+      <div class="modewrap">Dark</div>
+      <div class="mock dark" style="--brand:#7FA6D4; --brand-fill:#274B75;">
+        <div class="top"><div class="brandmark"></div><span class="brandname">Ankountant</span>
+          <div class="tabs"><span class="tab active">Study</span><span class="tab">Browse</span><span class="tab">Stats</span></div></div>
+        <div class="row"><button class="btn primary">Start review</button><button class="btn outline">Skip</button><a class="link" href="#">Why is this due?</a></div>
+        <div class="scores">
+          <div class="score"><div class="lbl">Memory</div><div class="val">84</div></div>
+          <div class="score"><div class="lbl">Performance</div><div class="val">61</div></div>
+          <div class="score"><div class="lbl">Readiness</div><div class="val brand">72</div><div class="band"></div></div>
+        </div>
+        <span class="gap">▲ Gap 23 pts</span>
+        <div class="states">
+          <span class="chip"><span class="g" style="background:var(--s-new)">N</span>New</span>
+          <span class="chip"><span class="g" style="background:var(--s-learn)">L</span>Learn</span>
+          <span class="chip"><span class="g" style="background:var(--s-review)">R</span>Review</span>
+          <span class="chip"><span class="g" style="background:var(--s-buried)">B</span>Buried</span>
+          <span class="chip"><span class="g" style="background:var(--s-marked)">M</span>Marked</span>
+        </div>
+      </div>
+      <p class="note"><strong>Classic trust/finance.</strong> Deep, authoritative, very legible. Same hue family as new-blue (distinguished by darkness) — the closest to a collision, so relies most on the "chrome-only" rule.</p>
+    </div>
+  </div>
+</body>
+</html>
