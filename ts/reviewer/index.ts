@@ -8,6 +8,7 @@
 export { default as $, default as jQuery } from "jquery/dist/jquery";
 
 import { imageOcclusionAPI } from "../routes/image-occlusion/review";
+import { clearAnkountantConfidenceGate, setupAnkountantConfidenceGate } from "./ankountant_confidence";
 import { mutateNextCardStates } from "./answering";
 import { addBrowserClasses } from "./browser_selector";
 
@@ -15,6 +16,9 @@ globalThis.anki = globalThis.anki || {};
 globalThis.anki.mutateNextCardStates = mutateNextCardStates;
 globalThis.anki.imageOcclusion = imageOcclusionAPI;
 globalThis.anki.setupImageCloze = imageOcclusionAPI.setup; // deprecated
+// Ankountant B1: pre-reveal confidence gate, driven from reviewer.py.
+globalThis.anki.ankountantConfidenceGate = setupAnkountantConfidenceGate;
+globalThis.anki.ankountantClearConfidenceGate = clearAnkountantConfidenceGate;
 
 import { bridgeCommand } from "@tslib/bridgecommand";
 import { registerPackage } from "@tslib/runtime-require";

@@ -169,6 +169,9 @@ class Reviewer:
         self._show_question_timer: QTimer | None = None
         self._show_answer_timer: QTimer | None = None
         self.auto_advance_enabled = False
+        # Ankountant B1: pre-reveal confidence gate state (reset per question).
+        self._ankountant_confidence: str | None = None
+        self._ankountant_gate_active = False
         gui_hooks.av_player_did_end_playing.append(self._on_av_player_did_end_playing)
 
     def show(self) -> None:
@@ -372,6 +375,9 @@ class Reviewer:
     def _showQuestion(self) -> None:
         self._reps += 1
         self.state = "question"
+        # Ankountant: re-arm the confidence gate for the new question.
+        self._ankountant_confidence = None
+        self._ankountant_gate_active = False
         self.typedAnswer: str | None = None
         c = self.card
         # grab the question and play audio
@@ -401,6 +407,11 @@ class Reviewer:
         self._update_flag_icon()
         self._update_mark_icon()
         self._showAnswerButton()
+        # Ankountant: render the pre-reveal confidence gate in the card webview.
+        self.web.eval(
+            "typeof anki !== 'undefined' && anki.ankountantConfidenceGate"
+            " && anki.ankountantConfidenceGate();"
+        )
         self.mw.web.setFocus()
         # user hook
         gui_hooks.reviewer_did_show_question(c)
@@ -479,6 +490,11 @@ class Reviewer:
         a = gui_hooks.card_will_show(a, c, "reviewAnswer")
         # render and update bottom
         self.web.eval(f"_showAnswer({json.dumps(a)});")
+        # Ankountant: tear the confidence gate down once the answer is shown.
+        self.web.eval(
+            "typeof anki !== 'undefined' && anki.ankountantClearConfidenceGate"
+            " && anki.ankountantClearConfidenceGate();"
+        )
         self._showEaseButtons()
         self.mw.web.setFocus()
         # user hook
@@ -691,6 +707,13 @@ class Reviewer:
             self.web.update()
         elif url == "statesMutated":
             self._states_mutated = True
+        elif url == "ankountant_gate_ready":
+            # The confidence gate rendered; arm the reveal block.
+            self._ankountant_gate_active = True
+        elif url.startswith("ankountant_ans:"):
+            # Confidence committed pre-reveal -> record it and reveal.
+            self._ankountant_confidence = url[len("ankountant_ans:") :]
+            self._getTypedAnswer()
         else:
             print("unrecognized anki link:", url)
 
@@ -800,6 +823,15 @@ class Reviewer:
         return self.mw.col.extract_cloze_for_typing(txt, idx) or None
 
     def _getTypedAnswer(self) -> None:
+        # Ankountant B1: block the reveal until a pre-reveal confidence is
+        # committed. Fail-open: only blocks once the gate has signalled it is
+        # active, so a JS failure can never soft-lock study.
+        if (
+            self._ankountant_gate_active
+            and self._ankountant_confidence is None
+            and self.state == "question"
+        ):
+            return
         self.web.evalWithCallback("getTypedAnswer();", self._onTypedAnswer)
 
     def _onTypedAnswer(self, val: None) -> None:
