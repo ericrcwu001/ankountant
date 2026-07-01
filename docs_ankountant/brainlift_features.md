@@ -15,12 +15,8 @@
 - **Attempt-before-reveal + confidence capture (SPOV 2):** Change the reviewer flow so the student commits an answer + a confidence *before* the back shows.
 - **"Which treatment applies?" gate (SPOV 4):** A pre-step that requires picking the method/standard before computing anything.
 - **3-score dashboard (SPOV 5 + SPOV 3):** Memory / Performance / Readiness, with the gap shown and the abstain message when data is thin. Readiness shown as the exam-day projection (as a range, not a point), not "today."
-### AI Content Pipeline — Phase 1 thin slice (assignment deliverable)
-A **minimal vertical slice** ships in the MVP to clear the assignment's graded gates end-to-end; full breadth/volume is deferred to **Phase 2a**. Scope it to **one section** (FAR — hardest, highest-value) and a **small deck**, but run every gate for real. Still AI-off in the app — this is a build-time batch tool; study / scheduling / scoring never call a model live.
-- **RAG card generator (scoped):** generate Q&A cards for the one section from source docs (textbook / FASB); every card stores its **source passage** (assignment rule: AI output with no traceable source zeroes that section).
-- **Quality checker:** a gold set of known-correct Q&A; report the 3 counts (correct+useful / wrong / correct-but-bad-teaching) with the pass cutoff set *before* looking; auto-block anything that fails. "A wrong fact is worse than no card."
-- **Beat a baseline:** show the RAG pipeline beats plain keyword/vector search on the eval (assignment requirement).
-- **Leakage check:** generated cards must not be near-copies of the sealed performance bank (SPOV 5 firewall) or the held-out test set.
+### AI Content Pipeline → Phase 2 (deferred; see Phase 2a)
+All AI card-generation work lives in **Phase 2a**. It's a **build-time batch tool**, not a runtime app feature — the study loop never calls a model live — so the MVP ships on hand-authored / seed content and doesn't depend on it (the 1A "decouple build-time from runtime" split).
 ### Review Modes (3 modes - only one is a flashcard)
 - **Recall flashcards** : Classic Anki loop: front → reveal → self-rate. Atomic facts only. 
 - **Confusion-set / "which treatment?"**: Label-stripped, scored on discrimination not recall. 
@@ -56,14 +52,18 @@ Three items above quietly assume schema changes: "add an effort/latency field to
 
 ## Phase 2 (deferred) — AI content pipeline + cross-device sync & accounts
 
-**Not MVP — build these only after the core study experience works** (deadline scheduler, the 3 review modes incl. TBS, the 3-score dashboard). Phase 1 already ships the **gated AI thin slice** (one section — see above) plus seed / hand-authored content, and is local-first (one device studies fine with no server). Two Phase-2 workstreams follow — **scaling** the AI pipeline (2a) and syncing across devices (2b). Phase 1 is still built *under the sync-safe constraint above* (Option A: TBS attempts as hidden notes; scores in `col` config JSON), so switching sync on later needs **no data-model rework** — the whole reason to hold the constraint now and defer the server.
+**Not MVP — build these only after the core study experience works** (deadline scheduler, the 3 review modes incl. TBS, the 3-score dashboard). Phase 1 ships on hand-authored / seed content and is local-first (one device studies fine with no server). Two Phase-2 workstreams follow — the AI content pipeline (2a) and cross-device sync + accounts (2b). Phase 1 is still built *under the sync-safe constraint above* (Option A: TBS attempts as hidden notes; scores in `col` config JSON), so switching sync on later needs **no data-model rework** — the whole reason to hold the constraint now and defer the server.
 
-### Phase 2a — AI content pipeline at scale
-Take the gated thin slice proven in Phase 1 (RAG generator + quality checker + beat-a-baseline + leakage check, on one section) and scale it out. Still AI-off: build-time batch generation, never a live model in the study loop. (The assignment's graded gates already live in the Phase 1 slice — only breadth/volume is deferred here.)
-- **Scale generation to the full ~50k deck** across all sections, reusing the Phase-1 gates: every card keeps a traceable source passage, the checker cutoff stays pre-set, and everything is leakage-checked against the sealed bank.
-- **RAG generates TBS items** — start with research + numeric (cleanly checkable), document-review later. *(moved from Phase 1 per the 2A note-type / generation split.)*
-- **Harden the untrusted-input guardrail:** treat ingested FASB/IRC text as a prompt-injection surface — a guardrail, not a reason to limit generation.
-- **Re-run beat-a-baseline + the leakage check at scale**, not just on the slice.
+### Phase 2a — AI content pipeline (offline, build-time batch tool)
+The full RAG generation pipeline, deferred whole. Decoupled from the study loop by design (**Runs AI-off**): a build-time batch tool that pre-generates the deck; study / scheduling / scoring never call a model live — which is exactly why it can wait (the MVP studies pre-made / hand-authored cards).
+- **RAG card generator:** Pull from source docs (textbook chapters, notes, FASB/IRC) → generate full Q&A flashcards at scale, targeting the 50k deck. Every card stores the source passage it came from. (Assignment rule: AI output with no traceable source zeroes that section.)
+- **RAG generates TBS items** — start with research + numeric (cleanly checkable), document-review later. *(TBS note-type coverage is a Phase 1 data-model item; generation lives here — the 2A split.)*
+- **Quality checker:** A gold set of known-correct Q&A; run generated cards through it, report 3 counts (correct+useful / wrong / correct-but-bad-teaching). Set the passing cutoff *before* looking; auto-block anything that fails. "A wrong fact is worse than no card."
+- **Beat a baseline:** Show the RAG pipeline outperforms plain keyword/vector search on the eval (assignment requirement).
+- **Leakage check:** Scan generated cards so none are near-copies of the sealed performance bank (keeps SPOV 5's firewall) or of the held-out test set.
+- Treat ingested FASB/IRC text as untrusted (prompt-injection surface), but that is a guardrail, not a reason to limit generation.
+
+> ⚠️ Assignment timing: several bullets cite assignment requirements/rules, so deferring the whole pipeline means those graded gates land in Phase 2 too. If the assignment has a deadline, confirm this ordering fits — this is the trade-off vs the earlier thin-slice option.
 
 ### Phase 2b — Cross-device cloud sync + accounts
 Cloud sync is an ops/infra project, not core learning value, so it waits. **Two planes, two stacks (the deliberate split):**
