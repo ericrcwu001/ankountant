@@ -1,0 +1,205 @@
+{
+  "sectionCovered": "Ankountant Phase-1 FAR MVP (A1-A10 shared core, B1-B5 desktop/iOS, + FAR seed) \u2014 hand-authored pre-seed (rubrics already 4-expert reviewed)",
+  "features": [
+    {
+      "id": "F001",
+      "title": "A1 \u2014 Deadline-anchored scheduler",
+      "description": "New read-only RPC ComputeExamSchedule. desired_retention(days_to_exam) ramps 0.80 (>=60d) -> 0.95 (0d), linear between; no exam date -> deck/preset configured retention. Exam date read from col config ankountant.exam.FAR.date (set via the existing config-set RPC, NO new setter). Plugs the computed retention into the existing FSRS next_states at Deck::effective_desired_retention (rslib/src/decks/mod.rs:96); no post-multiply.",
+      "prdSource": "\"Intervals are computed backward from the exam date so recall peaks on exam day... desired_retention(days_to_exam) ramps from 0.80 (>=60d out) to 0.95 (exam day), linear between\" (PRD A1)",
+      "priority": "P0",
+      "acceptanceHint": "test-rust: ramp exact at 90d->0.80, 30d->0.875, 0d->0.95, no-date->configured; nearer exam date => shorter next interval for same card; test-py: ComputeExamSchedule callable after just check. See prd/rubrics-core.md A1.",
+      "dependsOn": [],
+      "status": "done"
+    },
+    {
+      "id": "F002",
+      "title": "A2 \u2014 Latency-aware too-easy defunding (rote only) \u2014 PARKABLE",
+      "description": "Fast+correct+Confident answers on cog::rote stable cards (interval >= 21d) get a pre-FSRS desired-retention reduction (-0.05, floor 0.70) and cd.te=1; cog::applied cards never defunded; new/learning untouched. Confidence read from card.custom_data (Phase-A tests seed it \u2014 no B1 dependency). Baseline = trailing-5 median once >=3 reps else ankountant.latency.rote cohort median. P1 / cut-first: this feature is DELIBERATELY EXCLUDED from contract.md so parking it cannot fail the contract; implement only after all P0 features are green.",
+      "prdSource": "\"Fast, correct, confident answers on rote/fluency cards get their interval pushed out; critical-thinking (cog::applied) cards are never latency-defunded... Fires only on cog::rote cards.\" (PRD A2, marked *cut early*)",
+      "priority": "P1",
+      "acceptanceHint": "test-rust: stable rote fast+correct+Confident -> longer interval + custom_data.te=1; applied untouched; new/learning untouched; <3 reps uses cohort median; custom_data stays <=100 bytes. See prd/rubrics-core.md A2. If night runs short, leave todo (parked).",
+      "dependsOn": [
+        "F006"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": "F003",
+      "title": "A3 \u2014 Confusion-set queue builder",
+      "description": "New RPC BuildConfusionQueue(section) returns a label-stripped, interleaved queue mixing confusable ds:: tags within a set and ordering sets by discrimination weakness (lowest per-set accuracy first, from Attempt Log grouped by confusion_set_id). Client-facing ConfusionItem DTO omits topic/category/deck labels. CONFUSABLE map in col config ankountant.confusable.FAR.",
+      "prdSource": "\"New RPC BuildConfusionQueue(section) returns a label-stripped, interleaved queue that mixes confusable standards and orders confusion sets by the user's discrimination weakness\" (PRD A3)",
+      "priority": "P0",
+      "acceptanceHint": "test-rust: never 3+ consecutive same-tag; weaker set (40%) ranks before stronger (80%); DTO has no populated category-label field. Timing is non-gating. See prd/rubrics-core.md A3.",
+      "dependsOn": [
+        "F006",
+        "F008"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "F004",
+      "title": "A4 \u2014 Mastery + gap query (GetReadiness scores)",
+      "description": "New RPC GetReadiness(section) returns per topic: memory (trailing-30d recall accuracy on study pile, >=5 in-window reps else insufficient), performance (accuracy on the sealed bank, MCQ + TBS partial-credit weighted 50/50), gap = memory - performance. Rollup cached in col config ankountant.readiness.FAR.",
+      "prdSource": "\"New RPC GetReadiness(section) returns, per topic, memory... performance... and gap = memory - performance \u2014 the 'feels ready, isnt' signal.\" (PRD A4)",
+      "priority": "P0",
+      "acceptanceHint": "test-rust: returns memory/performance/gap with gap==memory-performance; performance ONLY from sealed-bank attempts (no study-pile leakage); TBS attempts contribute partial-credit fraction. Timing non-gating. See prd/rubrics-core.md A4.",
+      "dependsOn": [
+        "F006",
+        "F007",
+        "F008"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "F005",
+      "title": "A5 \u2014 Abstain rule (Wilson band)",
+      "description": "Part of GetReadiness. Abstain when sealed attempts < 20 (strict) OR coverage < 60% (coverage = sets-with->=1-attempt / sets-defined). Otherwise readiness = Wilson 95% accuracy band (0-100%), labeled exam-day projection, widening as volume drops; confidence Med (20-49) / High (>=50). Never a single point.",
+      "prdSource": "\"GetReadiness returns 'not enough data yet' instead of a fabricated number when evidence is thin. Abstain when sealed attempts < 20 or confusion-set coverage < 60%.\" (PRD A5)",
+      "priority": "P0",
+      "acceptanceHint": "test-rust: <20 attempts -> abstain 'insufficient volume'; >=20 but coverage <60% -> abstain 'insufficient coverage'; sufficient -> band low<high + confidence (never point); halving volume at fixed accuracy widens band. See prd/rubrics-core.md A5.",
+      "dependsOn": [
+        "F004"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "F006",
+      "title": "A6 \u2014 Deep-structure + cognitive-demand tags",
+      "description": "Two native Anki tag namespaces: ds::... deep-structure/schema tags (grouped into confusion sets via CONFUSABLE map in col config; confusion_set_id derived from tag, not stored per note) and cog::rote / cog::applied cognitive-demand tags on cards (gate A2). Both sync natively and are queryable.",
+      "prdSource": "\"Notes/cards carry ds::... deep-structure tags (grouped into confusion sets via the CONFUSABLE map in col config) and cog::rote/cog::applied cognitive-demand tags\" (PRD A6)",
+      "priority": "P0",
+      "acceptanceHint": "test-rust: query returns all notes for a ds:: tag; CONFUSABLE map resolves each tag to exactly one set_id; cards filterable by cog:: tag; tags round-trip through save/reopen. See prd/rubrics-core.md A6.",
+      "dependsOn": [],
+      "status": "done"
+    },
+    {
+      "id": "F007",
+      "title": "A7 \u2014 Sealed performance bank (firewall)",
+      "description": "A dedicated deck (Ankountant::Sealed::FAR) whose cards are held permanently suspended (queue = -1) so the study scheduler never serves them \u2014 the firewall making Performance measure transfer, not re-recall. Enforced by the existing queue builder (verified empirically, not by pinning a code path).",
+      "prdSource": "\"A dedicated deck of same-topic, new-surface items held permanently suspended (queue = -1) so the study scheduler never serves them \u2014 the firewall that makes Performance measure transfer, not re-recall.\" (PRD A7)",
+      "priority": "P0",
+      "acceptanceHint": "test-rust: sealed cards never appear in GetQueuedCards for study; sealed and study items on a topic are distinct notes; attempts feed Performance but not the FSRS schedule. See prd/rubrics-core.md A7.",
+      "dependsOn": [],
+      "status": "done"
+    },
+    {
+      "id": "F008",
+      "title": "A8 \u2014 Attempt Log note type (sync-safe data path)",
+      "description": "A hidden 'Attempt Log' note type in a never-queued deck; one note per gated attempt (fields: item_ref, confusion_set_id, mode, confidence, latency_ms, outcome_json, ts). Single source for the 3 scores + calibration. Reuses the Reader notes-as-storage precedent (ios/Sources/AnkiClients/ReaderBookClient*). NO new SQLite table/column. Recall-mode latest confidence mirrors into card.custom_data (the scalar A2 reads).",
+      "prdSource": "\"Each gated Performance attempt is stored as one hidden 'Attempt Log' note... replacing the sync-breaking 'confidence column on revlog.' ... Reuses the Reader's proven notes-as-storage pattern; no new SQLite table/column.\" (PRD A8)",
+      "priority": "P0",
+      "acceptanceHint": "test-rust: confusion answer writes one note w/ confidence/latency/set_id/outcome; TBS attempt writes one note w/ per-step credit; Attempt Log notes never in study queue; PRAGMA table_info for notes/cards/revlog identical before/after + save/reopen. See prd/rubrics-core.md A8.",
+      "dependsOn": [],
+      "status": "done"
+    },
+    {
+      "id": "F009",
+      "title": "A9 \u2014 TBS note type, all 4 shapes",
+      "description": "One 'Ankountant TBS' note type structurally holding all four shapes (research / journal_entry / numeric / doc_review) plus exhibits_json and ordered weighted gradable steps_json ({id, answer_key, weight}, default 1/N summing 1.0). journal_entry + numeric fully playable (B4); research + doc_review storable, surfaces deferred. Provenance fields (source_passage, gen_method, checker_status) STORED but UNPOPULATED (population is Phase 2a).",
+      "prdSource": "\"One Ankountant TBS note type structurally holds all four shapes (research / journal-entry / numeric / document-review) plus exhibits and ordered weighted gradable steps.\" (PRD A9)",
+      "priority": "P0",
+      "acceptanceHint": "test-rust/test-py: validates+stores a JE and a numeric TBS; steps_json supports N steps each w/ answer key + weight; doc_review and research store without schema change; provenance fields exist and default empty. See prd/rubrics-core.md A9.",
+      "dependsOn": [],
+      "status": "done"
+    },
+    {
+      "id": "F010",
+      "title": "A10 \u2014 TBS step-grading backend (SubmitPerformanceAttempt)",
+      "description": "New RPC SubmitPerformanceAttempt(item_note_id, mode, submission_json, confidence, latency_ms) grades a TBS/confusion submission line-by-line with partial credit (method vs slip), returns per-step results + total_credit, and persists the Attempt Log note (A8) in the same transaction. JE = per-line exact match (account, dr/cr, amount) w/ tolerance; numeric = per-cell tolerance; total = sum(weight * correct).",
+      "prdSource": "\"New RPC SubmitPerformanceAttempt grades a TBS/confusion submission line-by-line with partial credit... returns per-step results + total, and persists the Attempt Log note in the same transaction.\" (PRD A10)",
+      "priority": "P0",
+      "acceptanceHint": "test-rust: 4-line JE equal weights, 3 correct -> per_step [ok,ok,ok,wrong], total 0.75; one wrong amount marks only that line; numeric per-cell tolerance; every call writes exactly one Attempt Log note; test-py callable after just check. See prd/rubrics-core.md A10.",
+      "dependsOn": [
+        "F008",
+        "F009"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "F011",
+      "title": "B1 (desktop) \u2014 Attempt-before-reveal + confidence capture",
+      "description": "Desktop reviewer: reveal is blocked until the user commits a discrete Guess/Unsure/Confident confidence pre-reveal; it flows to SubmitPerformanceAttempt (Performance modes) and mirrors to card.custom_data (recall \u2014 the scalar A2 reads). Seams: ts/reviewer/index.ts (_showQuestion/_showAnswer), ts/reviewer/answering.ts, qt/aqt/reviewer.py. iOS is a NON-GATED demo checklist (not in contract).",
+      "prdSource": "\"The reveal is blocked until the user commits a discrete Guess/Unsure/Confident confidence pre-reveal; it flows to SubmitPerformanceAttempt (Performance modes) and mirrors to card.custom_data\" (PRD B1)",
+      "priority": "P0",
+      "acceptanceHint": "test-e2e (desktop): back cannot show until confidence committed; confidence persists and visible to GetReadiness (e2e + test-rust); three levels keyboard-selectable. iOS = manual demo only. See prd/rubrics-frontend.md B1.",
+      "dependsOn": [
+        "F008",
+        "F010",
+        "F016"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "F012",
+      "title": "B2 (desktop) \u2014 Which-treatment-applies gate",
+      "description": "Desktop: a label-stripped pre-computation step \u2014 pick the governing standard/method before any numeric entry; graded on discrimination (A10) and logged (A8). The item is shown with no topic/deck label and no data-testid='category-label' element. iOS non-gated demo.",
+      "prdSource": "\"A label-stripped pre-computation step: pick the governing standard/method before any numeric entry; graded on discrimination and logged.\" (PRD B2)",
+      "priority": "P0",
+      "acceptanceHint": "test-rust on DTO + test-e2e (desktop): no category label + no data-testid='category-label' element; selecting a treatment scores it; the attempt moves the topic's Performance/gap. iOS = manual demo. See prd/rubrics-frontend.md B2.",
+      "dependsOn": [
+        "F003",
+        "F010",
+        "F011"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "F013",
+      "title": "B3 (desktop) \u2014 Confusion-set review mode",
+      "description": "Desktop study mode that serves the interleaved, label-stripped confusion queue (A3) and runs the confidence capture (B1) + which-treatment gate (B2) per item; completing the queue updates the dashboard Performance (B5). iOS non-gated demo.",
+      "prdSource": "\"A study mode that serves the interleaved, label-stripped confusion queue and runs the confidence capture + which-treatment gate per item.\" (PRD B3)",
+      "priority": "P0",
+      "acceptanceHint": "test-e2e (desktop): mode plays the interleaved queue, not-all-same-treatment consecutive; each item runs B1+B2; completing the queue updates dashboard Performance. iOS = manual demo. See prd/rubrics-frontend.md B3.",
+      "dependsOn": [
+        "F003",
+        "F011",
+        "F012",
+        "F016"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "F014",
+      "title": "B4 (desktop) \u2014 TBS review surface: journal-entry + numeric",
+      "description": "A NEW desktop screen (new Svelte route under ts/, NOT the card reviewer) rendering Ankountant TBS notes with an exhibits pane and step-graded partial credit \u2014 a JE editable grid and numeric cells, submitted via SubmitPerformanceAttempt(mode=tbs). Exposes NO Again/Hard/Good/Easy buttons. iOS non-gated demo.",
+      "prdSource": "\"A new screen (not the card reviewer) that renders TBS notes with an exhibits pane and step-graded partial credit \u2014 a JE grid and numeric cells, submitted via SubmitPerformanceAttempt.\" (PRD B4)",
+      "priority": "P0",
+      "acceptanceHint": "test-e2e (desktop): JE grid renders; partially-correct submission shows per-line results + partial-credit total matching A10; numeric graded per cell; NO Again/Hard/Good/Easy buttons; exhibits visible. iOS = manual demo. See prd/rubrics-frontend.md B4.",
+      "dependsOn": [
+        "F009",
+        "F010",
+        "F016"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "F015",
+      "title": "B5 (desktop) \u2014 Three-score dashboard",
+      "description": "One desktop screen reading GetReadiness (A4/A5) showing per-topic Memory, Performance, the gap highlighted, and exam-day Readiness as a band + confidence \u2014 or the honest abstain message + reason when data is thin. gap >= 0.25 renders with a gap-warning class. iOS non-gated demo.",
+      "prdSource": "\"One screen showing Memory, Performance, the gap, and exam-day Readiness as a band + confidence \u2014 or the honest abstain message when data is thin.\" (PRD B5)",
+      "priority": "P0",
+      "acceptanceHint": "test-e2e (desktop): with data -> Memory/Performance/gap + Readiness band (low-high) + confidence, never a point; thin data -> abstain message + reason, no number; gap>=0.25 renders gap-warning class; Readiness labeled exam-day. iOS = manual demo. See prd/rubrics-frontend.md B5.",
+      "dependsOn": [
+        "F004",
+        "F005",
+        "F016"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "F016",
+      "title": "FAR seed content + Playwright e2e fixture loader",
+      "description": "Hand-authored FAR seed sized to exercise every rubric and cross the abstain thresholds: 4 CONFUSABLE sets (capitalize vs expense; operating vs finance lease; rev-rec step selection; trading vs AFS vs HTM); per set 3 study recall cards (mix cog::rote/cog::applied) + >=6 sealed MCQs (>=24 sealed total); 3 JE + 2 numeric sealed TBS (optionally 1 research + 1 doc-review stored-only); ~15-20 cog::rote recall cards total. Ship a FAR-seed.apkg or a SQL/col-config seed builder that the Playwright e2e fixture imports before each spec.",
+      "prdSource": "\"In scope: A1-A10 + B1-B5 + FAR seed content (prd/build-spec.md)\" and build-spec 'Seed content (author as part of Phase A)'.",
+      "priority": "P0",
+      "acceptanceHint": "test-rust/fixture: seed loads >=4 CONFUSABLE sets and >=24 sealed items (20 sealed attempts + >60% coverage reachable), >=3 JE + 2 numeric sealed TBS; e2e fixture (ts/tests/e2e/) imports it before each spec. See prd/build-spec.md 'Seed content'.",
+      "dependsOn": [
+        "F006",
+        "F007",
+        "F008",
+        "F009"
+      ],
+      "status": "done"
+    }
+  ]
+}
