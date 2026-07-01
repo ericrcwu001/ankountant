@@ -1476,13 +1476,12 @@ title="{}" {}>{}</button>""".format(
         page in a webview dialog (see aqt.ankountant)."""
         import aqt.ankountant
 
-        menubar = self.menuBar()
-        menu = QMenu("&Ankountant", menubar)
-        help_menu = getattr(self.form, "menuHelp", None)
-        if help_menu is not None:
-            menubar.insertMenu(help_menu.menuAction(), menu)
-        else:
-            menubar.addMenu(menu)
+        # Attach via the same form.menubar.addMenu idiom the .ui menus use.
+        # (Creating a QMenu manually and insertMenu()-ing it before the Help
+        # menu fails to appear in macOS's native menu bar, since Help is an
+        # OS-managed special menu.)
+        menu = self.form.menubar.addMenu("&Ankountant")
+        assert menu is not None
 
         dashboard = menu.addAction("Readiness Dashboard")
         qconnect(
@@ -1507,9 +1506,10 @@ title="{}" {}>{}</button>""".format(
     def load_ankountant_far_seed(self) -> None:
         """Seed the current collection with the hand-authored FAR demo content
         (confusion sets, sealed bank, TBS tasks) so the Ankountant screens have
-        data to show. Calls the LoadFarSeed backend RPC (F016)."""
-        from anki.scheduler_pb2 import LoadFarSeedResponse
-
+        data to show. Calls the LoadFarSeed backend RPC (F016) synchronously —
+        it is a single fast backend transaction — then refreshes the window."""
+        if self.col is None:
+            return
         if not askUser(
             "Add the FAR demo content (decks, cards, and TBS tasks) to your"
             " current collection? This is sample data for trying out the"
@@ -1518,23 +1518,17 @@ title="{}" {}>{}</button>""".format(
         ):
             return
 
-        def op(col: Collection) -> LoadFarSeedResponse:
-            return col._backend.load_far_seed(section="FAR")
-
-        def on_success(resp: LoadFarSeedResponse) -> None:
-            self.reset()
-            tooltip(
-                "Loaded FAR demo content: "
-                f"{resp.confusion_sets} confusion sets, "
-                f"{resp.sealed_items} sealed items, "
-                f"{resp.sealed_je_tbs} journal-entry + "
-                f"{resp.sealed_numeric_tbs} numeric TBS.",
-                parent=self,
-            )
-
-        QueryOp(parent=self, op=op, success=on_success).with_progress(
-            "Loading FAR demo content…"
-        ).run_in_background()
+        resp = self.col._backend.load_far_seed(section="FAR")
+        self.reset()
+        tooltip(
+            "Loaded FAR demo content: "
+            f"{resp.confusion_sets} confusion sets, "
+            f"{resp.sealed_items} sealed items, "
+            f"{resp.sealed_je_tbs} journal-entry + "
+            f"{resp.sealed_numeric_tbs} numeric TBS."
+            " Look for the new Ankountant::Study / Ankountant::Sealed decks.",
+            parent=self,
+        )
 
     def updateTitleBar(self) -> None:
         self.setWindowTitle("Ankountant")
