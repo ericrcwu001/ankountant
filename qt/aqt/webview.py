@@ -59,6 +59,9 @@ class AnkiWebViewKind(Enum):
     FIELDS = "fields"
     IMPORT_LOG = "import log"
     IMPORT_ANKI_PACKAGE = "anki package import"
+    ANKOUNTANT_DASHBOARD = "ankountant dashboard"
+    ANKOUNTANT_CONFUSION = "ankountant confusion"
+    ANKOUNTANT_TBS = "ankountant tbs"
 
 
 class AuthInterceptor(QWebEngineUrlRequestInterceptor):
@@ -142,6 +145,9 @@ class AnkiWebPage(QWebEnginePage):
             AnkiWebViewKind.IMPORT_ANKI_PACKAGE,
             AnkiWebViewKind.IMPORT_CSV,
             AnkiWebViewKind.IMPORT_LOG,
+            AnkiWebViewKind.ANKOUNTANT_DASHBOARD,
+            AnkiWebViewKind.ANKOUNTANT_CONFUSION,
+            AnkiWebViewKind.ANKOUNTANT_TBS,
         )
 
         global _profile_with_api_access, _profile_without_api_access

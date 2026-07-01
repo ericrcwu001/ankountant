@@ -506,7 +506,7 @@ class AnkiQt(QMainWindow):
         restoreGeom(self, "mainWindow")
         restoreState(self, "mainWindow")
         # titlebar
-        self.setWindowTitle(f"{self.pm.name} - Anki")
+        self.setWindowTitle(f"{self.pm.name} - Ankountant")
         # show and raise window for osx
         self.show()
         self.activateWindow()
@@ -1465,8 +1465,43 @@ title="{}" {}>{}</button>""".format(
         )
         m.actionFullScreen.setShortcutContext(Qt.ShortcutContext.ApplicationShortcut)
 
+        # Ankountant
+        self._setup_ankountant_menu()
+
+    def _setup_ankountant_menu(self) -> None:
+        """Add the Ankountant menu with entry points to its feature screens.
+
+        Built programmatically (rather than in the .ui form) so it does not
+        depend on regenerated form attributes. Each action opens a SvelteKit
+        page in a webview dialog (see aqt.ankountant)."""
+        import aqt.ankountant
+
+        menubar = self.menuBar()
+        menu = QMenu("&Ankountant", menubar)
+        help_menu = getattr(self.form, "menuHelp", None)
+        if help_menu is not None:
+            menubar.insertMenu(help_menu.menuAction(), menu)
+        else:
+            menubar.addMenu(menu)
+
+        dashboard = menu.addAction("Readiness Dashboard")
+        qconnect(
+            dashboard.triggered,
+            lambda: aqt.ankountant.AnkountantDashboardDialog(self),
+        )
+        confusion = menu.addAction("Confusion-Set Review")
+        qconnect(
+            confusion.triggered,
+            lambda: aqt.ankountant.AnkountantConfusionDialog(self),
+        )
+        tbs = menu.addAction("TBS Practice")
+        qconnect(
+            tbs.triggered,
+            lambda: aqt.ankountant.AnkountantTbsDialog(self),
+        )
+
     def updateTitleBar(self) -> None:
-        self.setWindowTitle("Anki")
+        self.setWindowTitle("Ankountant")
 
     # View
     ##########################################################################
