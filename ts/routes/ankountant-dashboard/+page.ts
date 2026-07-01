@@ -15,7 +15,13 @@ export const load = (async () => {
     // exam-day projection (B5-D4 / A57).
     let examDate = "";
     try {
-        const raw = await getConfigJson({ val: `ankountant.${SECTION}.exam.date` });
+        // A missing exam date is the normal, expected state (there is no
+        // dedicated setter — the key is absent until the user sets one), so
+        // suppress the backend's NotFound alert dialog and fall back to empty.
+        const raw = await getConfigJson(
+            { val: `ankountant.${SECTION}.exam.date` },
+            { alertOnError: false },
+        );
         const parsed = JSON.parse(new TextDecoder().decode(raw.json));
         examDate = typeof parsed === "string" ? parsed : "";
     } catch {

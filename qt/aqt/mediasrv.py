@@ -765,6 +765,15 @@ exposed_backend_list = [
     "get_optimal_retention_parameters",
     "simulate_fsrs_review",
     "simulate_fsrs_workload",
+    # SchedulerService (Ankountant)
+    "build_confusion_queue",
+    "get_readiness",
+    "submit_performance_attempt",
+    "load_far_seed",
+    # ConfigService
+    "get_config_json",
+    # SearchService
+    "search_notes",
     # DeckConfigService
     "get_ignored_before_count",
     "get_retention_workload",
