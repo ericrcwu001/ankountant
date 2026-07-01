@@ -1,3 +1,6 @@
+// Copyright: Ankitects Pty Ltd and contributors
+// License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
+
 //! C ABI bridge for the Anki Rust backend.
 //!
 //! Exposes functions matching the pattern used by AnkiDroid's JNI bridge,

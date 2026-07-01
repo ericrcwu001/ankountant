@@ -18,6 +18,6 @@ prost = "0.13"
 [workspace]
 
 [profile.release]
-opt-level = "s"     # Optimize for size (iOS binary)
+opt-level = "s" # Optimize for size (iOS binary)
 lto = true
 strip = true

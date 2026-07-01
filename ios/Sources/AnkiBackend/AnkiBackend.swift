@@ -326,6 +326,17 @@ extension AnkiBackend {
         package static let computeFsrsParams: UInt32 = 30
         package static let simulateFsrsReview: UInt32 = 33
         package static let simulateFsrsWorkload: UInt32 = 34
+        // Ankountant (FAR MVP) additions, appended after FuzzDelta (38).
+        // Re-derived from out/pylib/anki/_backend_generated.py (service 13):
+        // compute_exam_schedule=39, build_confusion_queue=40, get_readiness=41,
+        // submit_performance_attempt=42, load_far_seed=43.
+        package static let computeExamSchedule: UInt32 = 39
+        package static let buildConfusionQueue: UInt32 = 40
+        package static let getReadiness: UInt32 = 41
+        package static let submitPerformanceAttempt: UInt32 = 42
+        // F016 seed loader — e2e/test-only; still resynced here so a future
+        // iOS caller dispatches to the right Rust method (FR-6 / drift guard).
+        package static let loadFarSeed: UInt32 = 43
     }
 
     // BackendDeckConfigService (service 11). Method indices verified against
