@@ -113,7 +113,7 @@ targets:
       - sdk: SwiftUI.framework
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.ankountantapp.AnkountantApp.widget
+        PRODUCT_BUNDLE_IDENTIFIER: com.ankountant.ios.widget
         INFOPLIST_FILE: Sources/Widgets/Info.plist
         CODE_SIGN_ENTITLEMENTS: AnkountantWidget.entitlements
 
