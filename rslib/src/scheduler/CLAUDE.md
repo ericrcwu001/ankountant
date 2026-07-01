@@ -63,6 +63,7 @@ SM-2 and FSRS scheduling both live.
 
 This is THE core engine for the roadmap's deadline-anchored scheduler + FSRS
 rework. No days-to-exam / deadline logic exists yet — it must be added here.
+
 - Desired-retention is the natural anchor point. It is read in
   `answering/mod.rs::card_state_updater` via `Deck::effective_desired_retention`
   (`rslib/src/decks/mod.rs`) and flows into `fsrs.next_states(...)`.

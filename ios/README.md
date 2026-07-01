@@ -64,14 +64,14 @@ For the full architecture walkthrough, see **[ARCHITECTURE.md](ARCHITECTURE.md)*
 
 ## Requirements
 
-| Tool | Version |
-|------|---------|
-| iOS | 17.0+ |
-| Xcode | 16.0+ |
-| Rust | 1.92+ (via rustup) |
-| protoc | 3.0+ |
-| protoc-gen-swift | latest |
-| xcodegen | latest |
+| Tool             | Version            |
+| ---------------- | ------------------ |
+| iOS              | 17.0+              |
+| Xcode            | 16.0+              |
+| Rust             | 1.92+ (via rustup) |
+| protoc           | 3.0+               |
+| protoc-gen-swift | latest             |
+| xcodegen         | latest             |
 
 ## Getting Started
 

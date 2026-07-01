@@ -34,16 +34,16 @@ it relates to the desktop app, and `ios/CLAUDE.md` for working conventions.
 
 ## Module Map
 
-| Module | Purpose |
-|---|---|
-| **AnkiKit** | Pure Swift domain types: `Rating`, `FSRSState`, `DeckInfo`, `CardRecord`, etc. |
-| **AnkiProto** | Generated Swift protobuf types from the 24 `.proto` service files |
-| **AnkiBackend** | Swift wrapper around the Rust C FFI (`AnkiBackend` class) + hand-maintained service/method index enums |
-| **AnkiServices** | Domain service layer (`DecksService`, `SchedulerService`, `NotesService`, …) translating UI requests into backend RPCs |
-| **AnkiClients** | `@DependencyClient` structs with live implementations |
-| **AnkiSync** | `KeychainHelper` for credential storage |
-| **AnkountantCardWeb** | Card HTML rewriting + MathJax for `WKWebView` rendering |
-| **AnkountantReader** (sibling package) | Reader/dictionary domain types (hoshidicts C++ engine). **Ankountant-specific feature, not in the official client** |
+| Module                                 | Purpose                                                                                                                |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **AnkiKit**                            | Pure Swift domain types: `Rating`, `FSRSState`, `DeckInfo`, `CardRecord`, etc.                                         |
+| **AnkiProto**                          | Generated Swift protobuf types from the 24 `.proto` service files                                                      |
+| **AnkiBackend**                        | Swift wrapper around the Rust C FFI (`AnkiBackend` class) + hand-maintained service/method index enums                 |
+| **AnkiServices**                       | Domain service layer (`DecksService`, `SchedulerService`, `NotesService`, …) translating UI requests into backend RPCs |
+| **AnkiClients**                        | `@DependencyClient` structs with live implementations                                                                  |
+| **AnkiSync**                           | `KeychainHelper` for credential storage                                                                                |
+| **AnkountantCardWeb**                  | Card HTML rewriting + MathJax for `WKWebView` rendering                                                                |
+| **AnkountantReader** (sibling package) | Reader/dictionary domain types (hoshidicts C++ engine). **Ankountant-specific feature, not in the official client**    |
 
 All library modules live in the SPM package (`Package.swift`, package name
 "AnkiBridge"). The iOS app target (`AnkountantApp/`) is a separate Xcode project
@@ -56,12 +56,12 @@ All library modules live in the SPM package (`Package.swift`, package name
 The entire bridge surface is four C functions (declared in
 `anki-bridge-rs/include/anki_bridge.h`, implemented in `anki-bridge-rs/src/lib.rs`):
 
-| Function | Purpose |
-|---|---|
-| `anki_open_backend(path, lang)` | Open a collection at the given path, returns a handle |
-| `anki_run_method(handle, service, method, input, input_len, output, output_len)` | Run an RPC method |
-| `anki_free_response(ptr, len)` | Free a response buffer allocated by Rust |
-| `anki_close_backend(handle)` | Close the collection and free the handle |
+| Function                                                                         | Purpose                                               |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `anki_open_backend(path, lang)`                                                  | Open a collection at the given path, returns a handle |
+| `anki_run_method(handle, service, method, input, input_len, output, output_len)` | Run an RPC method                                     |
+| `anki_free_response(ptr, len)`                                                   | Free a response buffer allocated by Rust              |
+| `anki_close_backend(handle)`                                                     | Close the collection and free the handle              |
 
 `anki_run_method` wraps `anki::backend::Backend::run_service_method()`. The
 bridge crate depends directly on this monorepo's core: `anki = { path = "../../rslib" }`.
@@ -92,7 +92,7 @@ The Rust backend exposes services identified by numeric IDs. There are two dispa
   operations (open collection, sync, etc.) and delegate to collection services.
 - **Collection services** (even IDs) handle collection-level operations.
 
-**Important**: backend services add their own methods *before* delegating, so
+**Important**: backend services add their own methods _before_ delegating, so
 method indices differ between the backend and collection layers. Example:
 `getQueuedCards` is method **3** on `BackendSchedulerService` (ID 13) but method
 **0** on the collection scheduler service. Always use the **backend dispatch
@@ -107,15 +107,15 @@ from `_backend_generated.py`. A `.proto` service/method add or reorder updates
 Python/TS via `just check` but leaves Swift stale → calls hit the wrong method.
 See `proto/CLAUDE.md`.
 
-| Service ID | Name | Key Methods |
-|---|---|---|
-| 1 | BackendSyncService | 3=SyncLogin, 5=SyncCollection, 6=FullUploadOrDownload |
-| 3 | BackendCollectionService | 0=OpenCollection, 1=CloseCollection |
-| 7 | BackendDecksService | 8=GetDeckTree, 13=GetDeckNames |
-| 13 | BackendSchedulerService | 3=GetQueuedCards, 4=AnswerCard, 7=CountsForDeckToday |
-| 25 | BackendNotesService | 5=GetNote |
-| 27 | BackendCardRenderingService | 6=RenderExistingCard |
-| 29 | BackendSearchService | 0=SearchCards, 1=SearchNotes |
+| Service ID | Name                        | Key Methods                                           |
+| ---------- | --------------------------- | ----------------------------------------------------- |
+| 1          | BackendSyncService          | 3=SyncLogin, 5=SyncCollection, 6=FullUploadOrDownload |
+| 3          | BackendCollectionService    | 0=OpenCollection, 1=CloseCollection                   |
+| 7          | BackendDecksService         | 8=GetDeckTree, 13=GetDeckNames                        |
+| 13         | BackendSchedulerService     | 3=GetQueuedCards, 4=AnswerCard, 7=CountsForDeckToday  |
+| 25         | BackendNotesService         | 5=GetNote                                             |
+| 27         | BackendCardRenderingService | 6=RenderExistingCard                                  |
+| 29         | BackendSearchService        | 0=SearchCards, 1=SearchNotes                          |
 
 ## Data Flows
 

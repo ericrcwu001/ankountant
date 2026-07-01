@@ -9,6 +9,7 @@
 ## Seed content (author as part of Phase A)
 
 FAR, sized to exercise every rubric and cross the abstain thresholds on demand:
+
 - **4 CONFUSABLE sets:** capitalize vs expense; operating vs finance lease; rev-rec step selection; trading vs AFS vs HTM.
 - **Per set:** 3 study recall cards (tag some `cog::rote`, some `cog::applied` to exercise A2) + **≥6 sealed MCQs** → ≥24 sealed items total, so 20 sealed attempts is reachable and coverage can be dialed above/below 60%.
 - **Sealed TBS:** 3 journal-entry + 2 numeric (playable via B4); optionally 1 research + 1 doc-review stored-only (A9 AC3).

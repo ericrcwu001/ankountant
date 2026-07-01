@@ -36,17 +36,17 @@ rslib/ — this monorepo's Rust core
 Library targets live in the SPM package `AnkiBridge` (`Package.swift`); the app
 target is the separate Xcode project `AnkountantApp/`.
 
-| Module | Purpose |
-|---|---|
-| `AnkiKit` | Pure Swift domain types (`Rating`, `CardRecord`, `DeckInfo`, `FSRSState`, …) |
-| `AnkiProto` | Generated Swift protobuf types from `proto/anki/*.proto` (24 service files) |
-| `AnkiBackend` | Swift wrapper around the Rust C FFI (`AnkiBackend` class) + the hand-maintained `Service`/`*Method` index enums |
-| `AnkiServices` | Domain service layer (`DecksService`, `SchedulerService`, `NotesService`, …) over the backend |
-| `AnkiClients` | `@DependencyClient` structs + live implementations |
-| `AnkiSync` | `KeychainHelper` for credential storage |
-| `AnkountantCardWeb` | Card HTML rewriting + MathJax injection for `WKWebView` |
+| Module                           | Purpose                                                                                                                                                           |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AnkiKit`                        | Pure Swift domain types (`Rating`, `CardRecord`, `DeckInfo`, `FSRSState`, …)                                                                                      |
+| `AnkiProto`                      | Generated Swift protobuf types from `proto/anki/*.proto` (24 service files)                                                                                       |
+| `AnkiBackend`                    | Swift wrapper around the Rust C FFI (`AnkiBackend` class) + the hand-maintained `Service`/`*Method` index enums                                                   |
+| `AnkiServices`                   | Domain service layer (`DecksService`, `SchedulerService`, `NotesService`, …) over the backend                                                                     |
+| `AnkiClients`                    | `@DependencyClient` structs + live implementations                                                                                                                |
+| `AnkiSync`                       | `KeychainHelper` for credential storage                                                                                                                           |
+| `AnkountantCardWeb`              | Card HTML rewriting + MathJax injection for `WKWebView`                                                                                                           |
 | `AnkountantReader` (sibling pkg) | Reader/dictionary domain types (hoshidicts C++); the Anki-bridged loader (`ReaderBookClient`) lives in `AnkiClients`. Ankountant-specific — no desktop equivalent |
-| `AnkiRustLib` (binary target) | Prebuilt `rslib/` as `AnkiRust.xcframework` |
+| `AnkiRustLib` (binary target)    | Prebuilt `rslib/` as `AnkiRust.xcframework`                                                                                                                       |
 
 App feature folders (`AnkountantApp/Sources/`): `Review`, `Browse`, `Decks`,
 `Stats`, `Sync`, `Reader`, `Settings`, `Shared`, `Theme`, `Widgets`.
@@ -75,6 +75,7 @@ swift test
 ## Key Patterns
 
 ### Dependency Client (struct-closure DI)
+
 ```swift
 @DependencyClient
 public struct CardClient: Sendable {
@@ -84,6 +85,7 @@ public struct CardClient: Sendable {
 ```
 
 ### Calling the Rust Backend
+
 ```swift
 // Typed RPC: encode request protobuf → C FFI → decode response protobuf
 let response: Anki_Decks_DeckTreeNode = try backend.invoke(

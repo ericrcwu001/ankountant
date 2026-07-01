@@ -4,7 +4,7 @@
 
 ## New proto surface (append-only, on `SchedulerService`)
 
-Append after the current tail method `simulateFsrsWorkload` — **never reorder existing methods** (protects the hand-maintained iOS indices). Exam date is *set* via the existing config-set RPC (`config.proto`), so there is **no 5th RPC**.
+Append after the current tail method `simulateFsrsWorkload` — **never reorder existing methods** (protects the hand-maintained iOS indices). Exam date is _set_ via the existing config-set RPC (`config.proto`), so there is **no 5th RPC**.
 
 ```proto
 message ComputeExamScheduleRequest { string section = 1; string exam_date = 2; } // ISO-8601; read-only preview
@@ -44,19 +44,19 @@ Codegen: edit `proto/anki/scheduler.proto` → **`just check`** (regenerates Rus
 
 ## Data model / entities (all standard Anki objects — sync-safe)
 
-| Entity | Store | Key fields | Notes |
-|---|---|---|---|
-| Schema tag | Anki tag (`ds::…`) on notes | namespaced deep-structure tag | Groups by principle; syncs natively (A6). |
-| Cognitive-demand tag | Anki tag (`cog::rote`\|`cog::applied`) on cards' notes | rote vs applied | Gates A2 (rote only). |
-| CONFUSABLE map | `col` config `ankountant.confusable.FAR` | `{set_id: {tags:[…], treatments:[…]}}` | Seeded; drives A3/B2; resolves tag→set_id. |
-| Study note | standard note/card + `ds::`/`cog::` tags | fields | Normal FSRS schedule. |
-| Sealed Performance item | note in `Ankountant::Sealed::FAR`; cards `queue=-1` (suspended) | fields, `ds::` tag | Firewall = permanently suspended (A7). |
-| Ankountant TBS note | new note type | `tbs_type`, `prompt`, `exhibits_json`, `steps_json` (`{id,answer_key,weight}`), `schema_tag`, provenance (stored, empty) | All 4 shapes (A9). |
-| Attempt Log note | hidden note type, never-queued deck | `item_ref`, `confusion_set_id`, `mode`, `confidence`, `latency_ms`, `outcome_json`, `ts` | Sync-safe per-attempt store (A8); source for the 3 scores. |
-| Per-card scalars | `card.custom_data` | `te` flag, trailing-5 latencies, latest confidence | ≤100 bytes (A2/A8). |
-| Exam date | `col` config `ankountant.exam.FAR.date` | ISO date | First-class, synced; set via config-set RPC (A1). |
-| 3-score rollup | `col` config `ankountant.readiness.FAR` | memory/performance/gap/readiness per topic | Cache; recomputed by A4. |
-| Rote latency prior | `col` config `ankountant.latency.rote` | EMA of rote answer times | A2 cold-start baseline. |
+| Entity                  | Store                                                           | Key fields                                                                                                               | Notes                                                      |
+| ----------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| Schema tag              | Anki tag (`ds::…`) on notes                                     | namespaced deep-structure tag                                                                                            | Groups by principle; syncs natively (A6).                  |
+| Cognitive-demand tag    | Anki tag (`cog::rote`\|`cog::applied`) on cards' notes          | rote vs applied                                                                                                          | Gates A2 (rote only).                                      |
+| CONFUSABLE map          | `col` config `ankountant.confusable.FAR`                        | `{set_id: {tags:[…], treatments:[…]}}`                                                                                   | Seeded; drives A3/B2; resolves tag→set_id.                 |
+| Study note              | standard note/card + `ds::`/`cog::` tags                        | fields                                                                                                                   | Normal FSRS schedule.                                      |
+| Sealed Performance item | note in `Ankountant::Sealed::FAR`; cards `queue=-1` (suspended) | fields, `ds::` tag                                                                                                       | Firewall = permanently suspended (A7).                     |
+| Ankountant TBS note     | new note type                                                   | `tbs_type`, `prompt`, `exhibits_json`, `steps_json` (`{id,answer_key,weight}`), `schema_tag`, provenance (stored, empty) | All 4 shapes (A9).                                         |
+| Attempt Log note        | hidden note type, never-queued deck                             | `item_ref`, `confusion_set_id`, `mode`, `confidence`, `latency_ms`, `outcome_json`, `ts`                                 | Sync-safe per-attempt store (A8); source for the 3 scores. |
+| Per-card scalars        | `card.custom_data`                                              | `te` flag, trailing-5 latencies, latest confidence                                                                       | ≤100 bytes (A2/A8).                                        |
+| Exam date               | `col` config `ankountant.exam.FAR.date`                         | ISO date                                                                                                                 | First-class, synced; set via config-set RPC (A1).          |
+| 3-score rollup          | `col` config `ankountant.readiness.FAR`                         | memory/performance/gap/readiness per topic                                                                               | Cache; recomputed by A4.                                   |
+| Rote latency prior      | `col` config `ankountant.latency.rote`                          | EMA of rote answer times                                                                                                 | A2 cold-start baseline.                                    |
 
 ## Sync-safety (hard rule, FR-5)
 
