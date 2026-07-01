@@ -71,6 +71,12 @@ test-e2e ui='': _install-playwright-browsers
     {{ ninja }} pyenv ts:generated pylib qt
     {{ playwright_env }} {{ yarn }} test:e2e {{ ui }}
 
+# Run iOS tests. Placeholder so the command resolves; the iOS app is a
+# NON-GATED demo track (its ACs are a manual checklist, not a CI gate) and has
+# no XCTest harness wired into `just` yet. See docs_ankountant/prd/rubrics-frontend.md.
+test-ios:
+    @echo "iOS is a non-gated demo track; no automated tests wired up. (no-op)"
+
 [private]
 _test:
     {{ ninja }} check:rust_test check:pytest check:vitest

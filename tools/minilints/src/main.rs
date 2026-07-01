@@ -39,6 +39,12 @@ const IGNORED_FOLDERS: &[&str] = &[
     "./.venv",
     "./qt/installer/windows-template",
     "./qt/installer/mac-template",
+    // Claude Code scratch worktrees: gitignored full checkouts of the repo,
+    // not source to lint (they carry copied qt/aqt/forms/*.py etc.).
+    "./.claude",
+    // The iOS Rust bridge's cargo build output (generated .rs: prost protos,
+    // thiserror/serde codegen, i18n strings) — mirror of the top-level ./target.
+    "./ios/anki-bridge-rs/target",
 ];
 
 fn main() -> Result<()> {

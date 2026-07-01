@@ -26,7 +26,10 @@
         "extra",
         "ts/.svelte-kit",
         "ts/vite.config.ts.timestamp*",
-        "qt/installer/*-template"
+        "qt/installer/*-template",
+        "ios/AnkountantApp/Resources/Review/CardWebViewBridge.js",
+        "ios/AnkountantApp/Resources/mathjax",
+        ".agentic-loop"
     ],
     "plugins": [
         "https://plugins.dprint.dev/typescript-0.91.6.wasm",
