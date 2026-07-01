@@ -1,48 +1,65 @@
-import SwiftUI
-import AnkountantTheme
+public import SwiftUI
 
-// MARK: - Shadow
+// MARK: - Elevation shadow (theme-aware, replaces the old hardcoded drop)
 
-extension View {
+public extension View {
+    /// Legacy convenience: apply the card-level (e2) elevation using the
+    /// environment palette + scheme. Prefer `ankountantElevation(_:palette:scheme:)`
+    /// for explicit control.
     func ankountantShadow() -> some View {
-        shadow(color: Color.black.opacity(0.22), radius: 15, x: 3, y: 5)
+        modifier(AnkountantDefaultShadowModifier())
+    }
+}
+
+private struct AnkountantDefaultShadowModifier: ViewModifier {
+    @Environment(\.palette) private var palette
+    @Environment(\.colorScheme) private var scheme
+    func body(content: Content) -> some View {
+        content.ankountantElevation(.e2, palette: palette, scheme: scheme)
     }
 }
 
 // MARK: - Card Modifier
 
-struct AnkountantCardModifier: ViewModifier {
+public struct AnkountantCardModifier: ViewModifier {
     @Environment(\.palette) private var palette
+    @Environment(\.colorScheme) private var scheme
     var elevated: Bool = false
 
-    func body(content: Content) -> some View {
+    public init(elevated: Bool = false) {
+        self.elevated = elevated
+    }
+
+    public func body(content: Content) -> some View {
         content
             .padding(AnkountantSpacing.lg)
             .background(
                 elevated ? palette.surfaceElevated : palette.surface,
-                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(palette.border.opacity(elevated ? 0.32 : 0.18), lineWidth: 1)
+                RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
+                    .stroke(elevated ? palette.border : palette.borderSubtle, lineWidth: 1)
             )
-            .modifier(ConditionalShadow(enabled: elevated))
+            .modifier(ConditionalElevation(enabled: elevated, palette: palette, scheme: scheme))
     }
 }
 
-private struct ConditionalShadow: ViewModifier {
+private struct ConditionalElevation: ViewModifier {
     let enabled: Bool
+    let palette: Palette
+    let scheme: ColorScheme
 
     func body(content: Content) -> some View {
         if enabled {
-            content.ankountantShadow()
+            content.ankountantElevation(.e2, palette: palette, scheme: scheme)
         } else {
             content
         }
     }
 }
 
-extension View {
+public extension View {
     func ankountantCard(elevated: Bool = false) -> some View {
         modifier(AnkountantCardModifier(elevated: elevated))
     }
@@ -50,7 +67,7 @@ extension View {
 
 // MARK: - Section Background
 
-extension View {
+public extension View {
     func ankountantSectionBackground() -> some View {
         modifier(AnkountantSectionBackgroundModifier())
     }
@@ -63,33 +80,41 @@ private struct AnkountantSectionBackgroundModifier: ViewModifier {
     }
 }
 
-// MARK: - Button Styles
+// MARK: - Button Styles (8px rounded-rect controls; pills reserved for chips)
 
-struct AnkountantPrimaryButtonStyle: ButtonStyle {
+public struct AnkountantPrimaryButtonStyle: ButtonStyle {
     @Environment(\.palette) private var palette
 
-    func makeBody(configuration: Configuration) -> some View {
+    public init() {}
+
+    public func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .ankountantFont(.body)
-            .foregroundStyle(.white)
+            .ankountantFont(.bodyEmphasis)
+            .foregroundStyle(palette.onAccent)
             .padding(.vertical, AnkountantSpacing.sm)
             .padding(.horizontal, 20)
-            .background(palette.accent, in: Capsule())
+            .background(
+                palette.accentFill,
+                in: RoundedRectangle(cornerRadius: AnkountantRadius.control, style: .continuous)
+            )
             .opacity(configuration.isPressed ? 0.85 : 1.0)
     }
 }
 
-struct AnkountantSecondaryButtonStyle: ButtonStyle {
+public struct AnkountantSecondaryButtonStyle: ButtonStyle {
     @Environment(\.palette) private var palette
 
-    func makeBody(configuration: Configuration) -> some View {
+    public init() {}
+
+    public func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .ankountantFont(.body)
+            .ankountantFont(.bodyEmphasis)
             .foregroundStyle(palette.accent)
             .padding(.vertical, AnkountantSpacing.sm)
             .padding(.horizontal, 20)
             .background(
-                Capsule().stroke(palette.accent, lineWidth: 1)
+                RoundedRectangle(cornerRadius: AnkountantRadius.control, style: .continuous)
+                    .stroke(palette.accent, lineWidth: 1)
             )
             .opacity(configuration.isPressed ? 0.85 : 1.0)
     }
@@ -97,7 +122,7 @@ struct AnkountantSecondaryButtonStyle: ButtonStyle {
 
 // MARK: - Status Tone
 
-enum AnkountantStatusTone {
+public enum AnkountantStatusTone: Sendable {
     case accent
     case positive
     case warning
@@ -105,7 +130,7 @@ enum AnkountantStatusTone {
     case info
     case neutral
 
-    fileprivate func foregroundColor(_ palette: Palette) -> Color {
+    public func foregroundColor(_ palette: Palette) -> Color {
         switch self {
         case .accent:   return palette.accent
         case .positive: return palette.positive
@@ -116,7 +141,7 @@ enum AnkountantStatusTone {
         }
     }
 
-    fileprivate func backgroundColor(_ palette: Palette) -> Color {
+    public func backgroundColor(_ palette: Palette) -> Color {
         switch self {
         case .accent:   return palette.accent.opacity(0.12)
         case .positive: return palette.positive.opacity(0.14)
@@ -127,14 +152,14 @@ enum AnkountantStatusTone {
         }
     }
 
-    fileprivate func borderColor(_ palette: Palette) -> Color {
+    public func borderColor(_ palette: Palette) -> Color {
         switch self {
-        case .neutral: return palette.border.opacity(0.32)
+        case .neutral: return palette.border
         default:       return foregroundColor(palette).opacity(0.28)
         }
     }
 
-    fileprivate func toolbarForegroundColor(_ palette: Palette) -> Color {
+    public func toolbarForegroundColor(_ palette: Palette) -> Color {
         switch self {
         case .neutral: return palette.textPrimary
         default:       return foregroundColor(palette)
@@ -144,14 +169,21 @@ enum AnkountantStatusTone {
 
 // MARK: - Status Message (centered Label + caption, used for empty states)
 
-struct AnkountantStatusMessageView: View {
+public struct AnkountantStatusMessageView: View {
     @Environment(\.palette) private var palette
     let title: String
     let message: String
     let systemImage: String
     let tone: AnkountantStatusTone
 
-    var body: some View {
+    public init(title: String, message: String, systemImage: String, tone: AnkountantStatusTone) {
+        self.title = title
+        self.message = message
+        self.systemImage = systemImage
+        self.tone = tone
+    }
+
+    public var body: some View {
         VStack(spacing: AnkountantSpacing.md) {
             Label(title, systemImage: systemImage)
                 .ankountantFont(.bodyEmphasis)
@@ -169,7 +201,7 @@ struct AnkountantStatusMessageView: View {
 
 // MARK: - Toolbar / Capsule / Status modifiers
 
-extension View {
+public extension View {
     func ankountantToolbarIconButton(size: CGFloat = 32) -> some View {
         modifier(AnkountantToolbarIconButtonModifier(size: size))
     }
@@ -208,10 +240,10 @@ private struct AnkountantToolbarIconButtonModifier: ViewModifier {
             .foregroundStyle(palette.textPrimary)
             .background(palette.surfaceElevated)
             .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(palette.border.opacity(0.28), lineWidth: 1)
+                RoundedRectangle(cornerRadius: AnkountantRadius.control, style: .continuous)
+                    .stroke(palette.border, lineWidth: 1)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AnkountantRadius.control, style: .continuous))
     }
 }
 
@@ -235,7 +267,7 @@ private struct AnkountantCapsuleControlModifier: ViewModifier {
             .padding(.vertical, verticalPadding)
             .background(palette.surfaceElevated)
             .overlay(
-                Capsule().stroke(palette.border.opacity(0.28), lineWidth: 1)
+                Capsule().stroke(palette.border, lineWidth: 1)
             )
             .clipShape(Capsule())
     }
@@ -262,35 +294,25 @@ private struct AnkountantStatusBadgeModifier: ViewModifier {
 
 private struct AnkountantStatusPanelModifier: ViewModifier {
     @Environment(\.palette) private var palette
+    @Environment(\.colorScheme) private var scheme
     let tone: AnkountantStatusTone
     let elevated: Bool
     func body(content: Content) -> some View {
         content
             .padding(AnkountantSpacing.lg)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: AnkountantRadius.container, style: .continuous)
                     .fill(palette.surfaceElevated)
             )
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: AnkountantRadius.container, style: .continuous)
                     .fill(tone.backgroundColor(palette))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: AnkountantRadius.container, style: .continuous)
                     .stroke(tone.borderColor(palette), lineWidth: 1)
             )
-            .modifier(_ConditionalShadow(enabled: elevated))
-    }
-}
-
-private struct _ConditionalShadow: ViewModifier {
-    let enabled: Bool
-    func body(content: Content) -> some View {
-        if enabled {
-            content.ankountantShadow()
-        } else {
-            content
-        }
+            .modifier(ConditionalElevation(enabled: elevated, palette: palette, scheme: scheme))
     }
 }
 

@@ -209,7 +209,7 @@ struct TagsView: View {
                     .scaleEffect(0.8)
             } else {
                 Image(systemName: "chevron.right")
-                    .font(AnkountantFont.caption.font)
+                    .ankountantFont(.caption)
                     .foregroundStyle(palette.textTertiary)
             }
         }
@@ -349,12 +349,12 @@ struct TagsView: View {
 
 #Preview {
     TagsView()
-        .environment(\.palette, .vividDark)
+        .environment(\.palette, .dark)
         .preferredColorScheme(.dark)
 }
 
 #Preview("Note mode") {
     TagsView(targetNoteIDs: [1, 2, 3])
-        .environment(\.palette, .vividDark)
+        .environment(\.palette, .dark)
         .preferredColorScheme(.dark)
 }

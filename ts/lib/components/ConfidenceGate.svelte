@@ -71,25 +71,73 @@ revealing only after a commit (A41–A43).
 
 <style lang="scss">
     .confidence-gate {
-        margin: 0.75rem 0;
+        margin: 0;
 
+        // Promote the prompt so the gate reads as a required decision, not a
+        // toolbar (Ledger §5).
+        .prompt {
+            margin: 0 0 var(--space-sm);
+            font-weight: 600;
+        }
+
+        // Three equal-weight options on a shared row — no default, no leading
+        // size/colour (Ledger §5); "Guess" is visually as safe to pick as any.
         .levels {
-            display: flex;
-            gap: 0.5rem;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-sm);
         }
 
         .level {
-            padding: 0.4rem 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-xs);
+            min-height: 44px; // comfortable target (C7)
+            padding: var(--space-sm) var(--space-md);
+            font: inherit; // 16px, overrides the global 12/13px button size (C1)
+            color: var(--fg);
+            background: var(--canvas-inset);
+            border: 1px solid var(--border-control); // clears 3:1 (C3)
+            border-radius: var(--border-radius);
             cursor: pointer;
 
+            &:hover:not(:disabled) {
+                border-color: var(--accent);
+            }
+
+            // Selection is brand chrome (navy), never a semantic hue.
             &.selected {
-                font-weight: bold;
-                outline: 2px solid var(--fg-link, #08c);
+                font-weight: 600;
+                color: var(--accent);
+                border-color: var(--accent);
+                background: var(--accent-tint);
+            }
+
+            &:disabled {
+                opacity: 0.55;
+                cursor: default;
+            }
+
+            // Visible 2px navy focus ring + offset (never a glow); beats the
+            // global `outline: none !important` on buttons.
+            &:focus-visible {
+                outline: 2px solid var(--accent) !important;
+                outline-offset: 2px;
             }
 
             kbd {
-                opacity: 0.6;
-                margin-right: 0.3rem;
+                display: inline-grid;
+                place-items: center;
+                min-width: 20px;
+                height: 20px;
+                padding: 0 4px;
+                font-family: var(--font-mono);
+                font-size: 12px;
+                color: var(--fg-subtle);
+                background: var(--canvas);
+                border: 1px solid var(--border-subtle);
+                border-radius: 6px;
             }
         }
     }

@@ -58,7 +58,7 @@ struct DeckDetailView: View {
                             .foregroundStyle(.secondary)
                         Text("\(counts.newCount)")
                             .font(.title2.weight(.semibold))
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(palette.stateNew)
                     }
                     Spacer()
                     VStack(alignment: .leading) {
@@ -67,7 +67,7 @@ struct DeckDetailView: View {
                             .foregroundStyle(.secondary)
                         Text("\(counts.learnCount)")
                             .font(.title2.weight(.semibold))
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(palette.stateLearn)
                     }
                     Spacer()
                     VStack(alignment: .leading) {
@@ -76,7 +76,7 @@ struct DeckDetailView: View {
                             .foregroundStyle(.secondary)
                         Text("\(counts.reviewCount)")
                             .font(.title2.weight(.semibold))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(palette.stateReview)
                     }
                 }
                 .padding(.vertical, 8)

@@ -1,146 +1,202 @@
 {
-  "$meta": {
-    "name": "Ankountant Ledger Design System",
-    "version": "1.0.0",
-    "updated": "2026-07-01",
-    "status": "agreed",
-    "description": "Single source of truth for the shared web (SCSS) + iOS (SwiftUI) design system. A generator should emit ts/lib/sass/_color-palette.scss + _vars.scss and the Swift AnkountantTheme Palette/tokens from this file. Do not hand-edit the generated files.",
-    "modes": ["light", "dark"],
-    "decisions": {
-      "accent": "ink-navy",
-      "themeModel": "single-identity + light/dark (beige 'muted' retired)",
-      "buttons": "8px rounded-rect (pills for chips only)",
-      "type": "system-native (SF / system-ui) + mono for ledgers",
-      "sourceOfTruth": "this file"
+    "$meta": {
+        "name": "Ankountant Ledger Design System",
+        "version": "1.0.0",
+        "updated": "2026-07-01",
+        "status": "agreed",
+        "description": "Single source of truth for the shared web (SCSS) + iOS (SwiftUI) design system. A generator should emit ts/lib/sass/_color-palette.scss + _vars.scss and the Swift AnkountantTheme Palette/tokens from this file. Do not hand-edit the generated files.",
+        "modes": ["light", "dark"],
+        "decisions": {
+            "accent": "ink-navy",
+            "themeModel": "single-identity + light/dark (beige 'muted' retired)",
+            "buttons": "8px rounded-rect (pills for chips only)",
+            "type": "system-native (SF / system-ui) + mono for ledgers",
+            "sourceOfTruth": "this file"
+        }
+    },
+
+    "color": {
+        "brand": {
+            "$comment": "Ink Navy. Chrome-only: primary actions, links, focus, selection, active nav, Readiness band. Never a card state.",
+            "accent": { "light": "#1F3A5F", "dark": "#7FA6D4" },
+            "fill": { "light": "#1F3A5F", "dark": "#274B75" },
+            "hover": { "light": "#172C48", "dark": "#2F5888" },
+            "tint": { "light": "#E7ECF3", "dark": "rgba(127,166,212,0.14)" },
+            "onBrand": { "light": "#FFFFFF", "dark": "#FFFFFF" },
+            "focusRing": { "light": "#1F3A5F", "dark": "#7FA6D4" }
+        },
+
+        "neutral": {
+            "$comment": "Cool slate, single temperature, harmonized to the navy brand. Off-black/off-white, never pure.",
+            "bg": { "light": "#EEF0F4", "dark": "#0F1216" },
+            "surface": { "light": "#FBFBFC", "dark": "#171B21" },
+            "surfaceElevated": { "light": "#FFFFFF", "dark": "#1F242C" },
+            "surfaceInset": { "light": "#FFFFFF", "dark": "#12151A" },
+            "borderSubtle": { "light": "#E6E9EF", "dark": "#262C34" },
+            "border": { "light": "#D5DAE3", "dark": "#303742" },
+            "borderStrong": { "light": "#B7BECB", "dark": "#414A57" },
+            "fg": { "light": "#0E0F13", "dark": "#ECEEF2" },
+            "fgSecondary": { "light": "#3C424D", "dark": "#AEB4BF" },
+            "fgTertiary": { "light": "#616875", "dark": "#8A909C" },
+            "fgDisabled": { "light": "#9AA0AC", "dark": "#5B6270" }
+        },
+
+        "state": {
+            "$comment": "Semantic states = data/state only. Chips use tint bg (12-16%) + text-safe variant + hairline (~28%). Each state MUST also carry an icon + label (color never alone).",
+            "positive": { "fillLight": "#1F9D57", "textLight": "#157A42", "dark": "#34D07C" },
+            "danger": { "fillLight": "#D64541", "textLight": "#B0322F", "dark": "#F7625A" },
+            "warning": { "fillLight": "#E1922B", "textLight": "#8A5A12", "dark": "#F5B44E" },
+            "info": { "fillLight": "#2E6FD6", "textLight": "#2559AE", "dark": "#5AA0FF" }
+        },
+
+        "cardState": {
+            "$comment": "Anki card states map onto semantic hues; suspended/marked/flags preserved from the existing system. Keep hues; pair with icon+label+shape.",
+            "new": "info",
+            "learn": "danger",
+            "review": "positive",
+            "buried": "warning",
+            "suspended": { "note": "preserve existing yellow tokens" },
+            "marked": { "note": "preserve existing indigo tokens" },
+            "flags1to7": { "note": "preserve existing 7 hues unchanged" },
+            "accentCard": { "note": "stays blue = the semantic 'card' concept, NOT the app brand" }
+        },
+
+        "feedback": {
+            "$comment": "Fixes the current undefined --fg-error fallback (#c00) + saturated flag-1 gap-warning row.",
+            "fgError": { "light": "#B0322F", "dark": "#F7625A" },
+            "gapWarningBg": { "light": "rgba(214,69,65,0.12)", "dark": "rgba(214,69,65,0.20)" }
+        }
+    },
+
+    "typography": {
+        "family": {
+            "sans": "system-ui, -apple-system, \"SF Pro Text\", \"Segoe UI Variable Text\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+            "mono": "ui-monospace, \"SF Mono\", \"Cascadia Code\", \"Roboto Mono\", Menlo, Consolas, monospace"
+        },
+        "numeric": "tabular-nums lining-nums",
+        "$comment": "Base 16px web / 17pt iOS (deliberate density difference). Negative tracking on display sizes only. Reading measure <= 66ch; line-height >= 1.5.",
+        "scale": [
+            {
+                "role": "displayHero",
+                "web": 40,
+                "ios": 34,
+                "weight": 600,
+                "tracking": "-0.01em",
+                "lineHeight": 1.05,
+                "numeric": "tabular"
+            },
+            {
+                "role": "sectionHeading",
+                "web": 22,
+                "ios": 24,
+                "weight": 600,
+                "tracking": "-0.015em",
+                "lineHeight": 1.2
+            },
+            { "role": "cardTitle", "web": 18, "ios": 20, "weight": 600, "tracking": "-0.01em", "lineHeight": 1.25 },
+            {
+                "role": "body",
+                "web": 16,
+                "ios": 17,
+                "weight": 400,
+                "tracking": "0",
+                "lineHeight": 1.5,
+                "numeric": "tabular-where-numeric"
+            },
+            { "role": "bodyEmphasis", "web": 16, "ios": 17, "weight": 600, "tracking": "0", "lineHeight": 1.5 },
+            { "role": "callout", "web": 15, "ios": 15, "weight": 400, "tracking": "0", "lineHeight": 1.45 },
+            {
+                "role": "caption",
+                "web": 13,
+                "ios": 13,
+                "weight": 500,
+                "tracking": "0",
+                "lineHeight": 1.4,
+                "numeric": "tabular-where-numeric"
+            },
+            {
+                "role": "micro",
+                "web": 12,
+                "ios": 12,
+                "weight": 600,
+                "tracking": "+0.02em",
+                "lineHeight": 1.3,
+                "note": "uppercase functional labels only"
+            },
+            {
+                "role": "mono",
+                "web": 15,
+                "ios": 15,
+                "weight": 450,
+                "tracking": "0",
+                "lineHeight": 1.45,
+                "family": "mono",
+                "note": "ledger / JE cells"
+            }
+        ]
+    },
+
+    "space": {
+        "$comment": "4-pt scale; 2 is the hairline/optical exception. web emits --space-*, iOS = AnkountantSpacing.",
+        "xxs": 2,
+        "xs": 4,
+        "sm": 8,
+        "md": 12,
+        "lg": 16,
+        "xl": 24,
+        "xxl": 32,
+        "xxxl": 48,
+        "huge": 64
+    },
+
+    "radius": {
+        "inner": 6,
+        "control": 8,
+        "card": 12,
+        "container": 16,
+        "pill": 9999,
+        "$comment": "buttons/inputs = control (8). pill for status chips only."
+    },
+
+    "elevation": {
+        "$comment": "Borders-first; shadows tinted to ink #0E0F13. Dark relies on surface steps + hairline.",
+        "light": {
+            "e0": "none",
+            "e1": "0 1px 2px rgba(14,15,19,.06), 0 1px 3px rgba(14,15,19,.05)",
+            "e2": "0 4px 10px rgba(14,15,19,.09), 0 2px 4px rgba(14,15,19,.06)",
+            "e3": "0 16px 40px rgba(14,15,19,.16), 0 4px 10px rgba(14,15,19,.08)"
+        },
+        "dark": {
+            "e0": "none",
+            "e1": "0 1px 2px rgba(0,0,0,.40)",
+            "e2": "0 6px 16px rgba(0,0,0,.50)",
+            "e3": "0 20px 48px rgba(0,0,0,.60)"
+        }
+    },
+
+    "motion": {
+        "duration": { "instant": 100, "fast": 160, "base": 240, "slow": 400 },
+        "easing": {
+            "enter": "cubic-bezier(0.2,0,0,1)",
+            "exit": "cubic-bezier(0.4,0,1,1)",
+            "iosSpring": "spring(response:0.35, dampingFraction:0.9)"
+        },
+        "reducedMotion": "collapse to instant/opacity; no loops; no motion-only information",
+        "focusRing": "2px brand + offset; never a glow"
+    },
+
+    "constraints": {
+        "$comment": "Non-negotiable a11y/learning-science floors (WCAG 2.2 + Apple HIG). Constrain all aesthetic choices.",
+        "bodyMin": { "web": "16px", "ios": "17pt", "hardFloor": "12px" },
+        "textContrast": { "normal": 4.5, "large": 3.0, "studyProseTarget": 7.0 },
+        "nonTextContrast": 3.0,
+        "readingMeasureCh": [45, 75],
+        "readingMeasureDefault": "66ch",
+        "lineHeightBodyMin": 1.5,
+        "targetSize": { "ios": "44x44pt", "web": "24x24px + 24px spacing" },
+        "colorNeverAlone": true,
+        "tabularNumeralsRequired": true,
+        "retrievalIntegrity": "answer not in render tree until attempt committed; no peek affordance",
+        "uncertaintyHonesty": "Readiness = graded/faded Wilson band + explicit abstain; never a crisp point"
     }
-  },
-
-  "color": {
-    "brand": {
-      "$comment": "Ink Navy. Chrome-only: primary actions, links, focus, selection, active nav, Readiness band. Never a card state.",
-      "accent":     { "light": "#1F3A5F", "dark": "#7FA6D4" },
-      "fill":       { "light": "#1F3A5F", "dark": "#274B75" },
-      "hover":      { "light": "#172C48", "dark": "#2F5888" },
-      "tint":       { "light": "#E7ECF3", "dark": "rgba(127,166,212,0.14)" },
-      "onBrand":    { "light": "#FFFFFF", "dark": "#FFFFFF" },
-      "focusRing":  { "light": "#1F3A5F", "dark": "#7FA6D4" }
-    },
-
-    "neutral": {
-      "$comment": "Cool slate, single temperature, harmonized to the navy brand. Off-black/off-white, never pure.",
-      "bg":              { "light": "#EEF0F4", "dark": "#0F1216" },
-      "surface":         { "light": "#FBFBFC", "dark": "#171B21" },
-      "surfaceElevated": { "light": "#FFFFFF", "dark": "#1F242C" },
-      "surfaceInset":    { "light": "#FFFFFF", "dark": "#12151A" },
-      "borderSubtle":    { "light": "#E6E9EF", "dark": "#262C34" },
-      "border":          { "light": "#D5DAE3", "dark": "#303742" },
-      "borderStrong":    { "light": "#B7BECB", "dark": "#414A57" },
-      "fg":              { "light": "#0E0F13", "dark": "#ECEEF2" },
-      "fgSecondary":     { "light": "#3C424D", "dark": "#AEB4BF" },
-      "fgTertiary":      { "light": "#616875", "dark": "#8A909C" },
-      "fgDisabled":      { "light": "#9AA0AC", "dark": "#5B6270" }
-    },
-
-    "state": {
-      "$comment": "Semantic states = data/state only. Chips use tint bg (12-16%) + text-safe variant + hairline (~28%). Each state MUST also carry an icon + label (color never alone).",
-      "positive": { "fillLight": "#1F9D57", "textLight": "#157A42", "dark": "#34D07C" },
-      "danger":   { "fillLight": "#D64541", "textLight": "#B0322F", "dark": "#F7625A" },
-      "warning":  { "fillLight": "#E1922B", "textLight": "#8A5A12", "dark": "#F5B44E" },
-      "info":     { "fillLight": "#2E6FD6", "textLight": "#2559AE", "dark": "#5AA0FF" }
-    },
-
-    "cardState": {
-      "$comment": "Anki card states map onto semantic hues; suspended/marked/flags preserved from the existing system. Keep hues; pair with icon+label+shape.",
-      "new":       "info",
-      "learn":     "danger",
-      "review":    "positive",
-      "buried":    "warning",
-      "suspended": { "note": "preserve existing yellow tokens" },
-      "marked":    { "note": "preserve existing indigo tokens" },
-      "flags1to7": { "note": "preserve existing 7 hues unchanged" },
-      "accentCard":{ "note": "stays blue = the semantic 'card' concept, NOT the app brand" }
-    },
-
-    "feedback": {
-      "$comment": "Fixes the current undefined --fg-error fallback (#c00) + saturated flag-1 gap-warning row.",
-      "fgError":       { "light": "#B0322F", "dark": "#F7625A" },
-      "gapWarningBg":  { "light": "rgba(214,69,65,0.12)", "dark": "rgba(214,69,65,0.20)" }
-    }
-  },
-
-  "typography": {
-    "family": {
-      "sans": "system-ui, -apple-system, \"SF Pro Text\", \"Segoe UI Variable Text\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      "mono": "ui-monospace, \"SF Mono\", \"Cascadia Code\", \"Roboto Mono\", Menlo, Consolas, monospace"
-    },
-    "numeric": "tabular-nums lining-nums",
-    "$comment": "Base 16px web / 17pt iOS (deliberate density difference). Negative tracking on display sizes only. Reading measure <= 66ch; line-height >= 1.5.",
-    "scale": [
-      { "role": "displayHero",   "web": 40, "ios": 34, "weight": 600, "tracking": "-0.01em",  "lineHeight": 1.05, "numeric": "tabular" },
-      { "role": "sectionHeading","web": 22, "ios": 24, "weight": 600, "tracking": "-0.015em", "lineHeight": 1.2 },
-      { "role": "cardTitle",     "web": 18, "ios": 20, "weight": 600, "tracking": "-0.01em",  "lineHeight": 1.25 },
-      { "role": "body",          "web": 16, "ios": 17, "weight": 400, "tracking": "0",         "lineHeight": 1.5, "numeric": "tabular-where-numeric" },
-      { "role": "bodyEmphasis",  "web": 16, "ios": 17, "weight": 600, "tracking": "0",         "lineHeight": 1.5 },
-      { "role": "callout",       "web": 15, "ios": 15, "weight": 400, "tracking": "0",         "lineHeight": 1.45 },
-      { "role": "caption",       "web": 13, "ios": 13, "weight": 500, "tracking": "0",         "lineHeight": 1.4, "numeric": "tabular-where-numeric" },
-      { "role": "micro",         "web": 12, "ios": 12, "weight": 600, "tracking": "+0.02em",   "lineHeight": 1.3, "note": "uppercase functional labels only" },
-      { "role": "mono",          "web": 15, "ios": 15, "weight": 450, "tracking": "0",         "lineHeight": 1.45, "family": "mono", "note": "ledger / JE cells" }
-    ]
-  },
-
-  "space": {
-    "$comment": "4-pt scale; 2 is the hairline/optical exception. web emits --space-*, iOS = AnkountantSpacing.",
-    "xxs": 2, "xs": 4, "sm": 8, "md": 12, "lg": 16, "xl": 24, "xxl": 32, "xxxl": 48, "huge": 64
-  },
-
-  "radius": {
-    "inner": 6,
-    "control": 8,
-    "card": 12,
-    "container": 16,
-    "pill": 9999,
-    "$comment": "buttons/inputs = control (8). pill for status chips only."
-  },
-
-  "elevation": {
-    "$comment": "Borders-first; shadows tinted to ink #0E0F13. Dark relies on surface steps + hairline.",
-    "light": {
-      "e0": "none",
-      "e1": "0 1px 2px rgba(14,15,19,.06), 0 1px 3px rgba(14,15,19,.05)",
-      "e2": "0 4px 10px rgba(14,15,19,.09), 0 2px 4px rgba(14,15,19,.06)",
-      "e3": "0 16px 40px rgba(14,15,19,.16), 0 4px 10px rgba(14,15,19,.08)"
-    },
-    "dark": {
-      "e0": "none",
-      "e1": "0 1px 2px rgba(0,0,0,.40)",
-      "e2": "0 6px 16px rgba(0,0,0,.50)",
-      "e3": "0 20px 48px rgba(0,0,0,.60)"
-    }
-  },
-
-  "motion": {
-    "duration": { "instant": 100, "fast": 160, "base": 240, "slow": 400 },
-    "easing": {
-      "enter": "cubic-bezier(0.2,0,0,1)",
-      "exit": "cubic-bezier(0.4,0,1,1)",
-      "iosSpring": "spring(response:0.35, dampingFraction:0.9)"
-    },
-    "reducedMotion": "collapse to instant/opacity; no loops; no motion-only information",
-    "focusRing": "2px brand + offset; never a glow"
-  },
-
-  "constraints": {
-    "$comment": "Non-negotiable a11y/learning-science floors (WCAG 2.2 + Apple HIG). Constrain all aesthetic choices.",
-    "bodyMin": { "web": "16px", "ios": "17pt", "hardFloor": "12px" },
-    "textContrast": { "normal": 4.5, "large": 3.0, "studyProseTarget": 7.0 },
-    "nonTextContrast": 3.0,
-    "readingMeasureCh": [45, 75],
-    "readingMeasureDefault": "66ch",
-    "lineHeightBodyMin": 1.5,
-    "targetSize": { "ios": "44x44pt", "web": "24x24px + 24px spacing" },
-    "colorNeverAlone": true,
-    "tabularNumeralsRequired": true,
-    "retrievalIntegrity": "answer not in render tree until attempt committed; no peek affordance",
-    "uncertaintyHonesty": "Readiness = graded/faded Wilson band + explicit abstain; never a crisp point"
-  }
 }

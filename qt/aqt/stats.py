@@ -79,7 +79,8 @@ class NewDeckStats(QDialog):
         self.deck_chooser.cleanup()
         self.form.web.cleanup()
         self.form.web = None  # type: ignore
-        saveGeom(self, self.name)
+        if self.isWindow():
+            saveGeom(self, self.name)
         aqt.dialogs.markClosed("NewDeckStats")
         QDialog.reject(self)
 
@@ -188,7 +189,8 @@ class DeckStats(QDialog):
     def reject(self) -> None:
         self.form.web.cleanup()
         self.form.web = None  # type: ignore
-        saveGeom(self, self.name)
+        if self.isWindow():
+            saveGeom(self, self.name)
         aqt.dialogs.markClosed("DeckStats")
         QDialog.reject(self)
 

@@ -22,24 +22,16 @@
         background: var(--button-primary-bg);
         @if $hover {
             &:hover {
-                background: linear-gradient(
-                    180deg,
-                    var(--button-primary-gradient-start) 0%,
-                    var(--button-primary-gradient-end) 100%
-                );
+                background: var(--button-primary-hover-bg);
             }
         }
     } @else {
         background: var(--button-bg);
         @if $hover {
             &:hover {
-                background: linear-gradient(
-                    180deg,
-                    var(--button-gradient-start) 0%,
-                    var(--button-gradient-end) 100%
-                );
+                background: var(--button-hover-bg);
                 /* Makes distinguishing hover state in light theme easier */
-                border: 1px solid var(--shadow);
+                border: 1px solid var(--button-hover-border);
             }
         }
     }
@@ -69,6 +61,8 @@
 
     @if ($primary) {
         color: white;
+        /* flat navy fill + subtle tinted (navy) shadow — Ledger §1c */
+        box-shadow: 0 1px 2px rgba(31, 58, 95, 0.24);
     } @else {
         color: var(--fg);
     }
@@ -77,6 +71,8 @@
         &:active {
             @include impressed-shadow(0.35);
             border-color: var(--border-subtle);
+            /* tactile press feedback — Ledger §1c */
+            transform: translateY(1px);
         }
         @if ($active-class != "") {
             &.#{$active-class} {

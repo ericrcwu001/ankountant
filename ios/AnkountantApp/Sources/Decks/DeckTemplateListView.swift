@@ -121,7 +121,7 @@ struct DeckTemplateListView: View {
                     }
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(AnkountantFont.caption.font)
+                        .ankountantFont(.caption)
                         .foregroundStyle(palette.textTertiary)
                 }
             }
@@ -428,7 +428,7 @@ struct TemplateEditorView: View {
                             } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: "chevron.up.chevron.down")
-                                        .font(AnkountantFont.caption.font)
+                                        .ankountantFont(.caption)
                                         .foregroundStyle(palette.textSecondary)
                                 }
                                 .ankountantCapsuleControl(horizontalPadding: 12, verticalPadding: 8)

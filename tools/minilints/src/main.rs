@@ -45,6 +45,10 @@ const IGNORED_FOLDERS: &[&str] = &[
     // The iOS Rust bridge's cargo build output (generated .rs: prost protos,
     // thiserror/serde codegen, i18n strings) — mirror of the top-level ./target.
     "./ios/anki-bridge-rs/target",
+    // SwiftPM build dir (gitignored): third-party dependency checkouts
+    // (swift-protobuf, zstd, …) fetched by `swift build`/`xcodebuild`, not our
+    // source to lint. minilints walks the FS, so it must be excluded explicitly.
+    "./ios/.build",
 ];
 
 fn main() -> Result<()> {

@@ -5,7 +5,6 @@
 - Never mix `navigationDestination(for:)` and `NavigationLink(destination:)` in the same navigation hierarchy; it causes significant problems.
 - `navigationDestination(for:)` must be registered once per data type; flag duplicates.
 
-
 ## Alerts, confirmation dialogs, and sheets
 
 - Always attach `confirmationDialog()` to the user interface that triggers the dialog. This allows Liquid Glass animations to move from the correct source.

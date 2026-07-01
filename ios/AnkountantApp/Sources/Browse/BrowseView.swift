@@ -559,7 +559,7 @@ struct NoteContextMenuButton: View {
                 )
             } else {
                 Image(systemName: "ellipsis.circle")
-                    .font(AnkountantFont.bodyEmphasis.font)
+                    .ankountantFont(.bodyEmphasis)
                     .foregroundStyle(.tertiary)
             }
         }

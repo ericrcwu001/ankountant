@@ -238,10 +238,10 @@ struct ReviewView: View {
 
     private var answerButtons: some View {
         HStack(spacing: disperseAnswerButtons ? 16 : 8) {
-            ratingButton(.again, color: .red)
-            ratingButton(.hard, color: .orange)
-            ratingButton(.good, color: .green)
-            ratingButton(.easy, color: .blue)
+            ratingButton(.again, color: palette.danger)
+            ratingButton(.hard, color: palette.warning)
+            ratingButton(.good, color: palette.positive)
+            ratingButton(.easy, color: palette.info)
         }
         .padding(.horizontal, disperseAnswerButtons ? 20 : 16)
         .padding(.vertical, 16)

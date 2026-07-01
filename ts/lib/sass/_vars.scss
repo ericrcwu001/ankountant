@@ -15,26 +15,46 @@ $vars: (
     props: (
         font: (
             size: (
-                default: 15px,
+                default: 16px,
             ),
+        ),
+        // System-native type stacks (Ledger design system §2). Ledger reserves a
+        // licensed brand sans for the wordmark only; product chrome is system-ui.
+        font-sans: (
+            default: 'system-ui, -apple-system, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        ),
+        font-mono: (
+            default: 'ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace',
+        ),
+        // One 4-pt spacing scale (Ledger §3). 2px = hairline/optical exception.
+        space: (
+            xxs: (default: 2px),
+            xs: (default: 4px),
+            sm: (default: 8px),
+            md: (default: 12px),
+            lg: (default: 16px),
+            xl: (default: 24px),
+            xxl: (default: 32px),
+            xxxl: (default: 48px),
+            huge: (default: 64px),
         ),
         border-radius: (
             default: (
-                "Used to round corners of various UI elements",
+                "Radius for controls: buttons, inputs, selects, toggles",
                 (
-                    default: 5px,
+                    default: 8px,
                 ),
             ),
             medium: (
-                "Used for container corners",
+                "Radius for cards and panels",
                 (
                     default: 12px,
                 ),
             ),
             large: (
-                "Used for pill-shaped buttons",
+                "Radius for large containers: modals, sheets",
                 (
-                    default: 15px,
+                    default: 16px,
                 ),
             ),
         ),
@@ -58,6 +78,14 @@ $vars: (
                 ),
             ),
         ),
+        // Ledger motion scale (§3): motion is feedback only. Gate large motion
+        // behind prefers-reduced-motion in components.
+        motion: (
+            instant: (default: 100ms),
+            fast: (default: 160ms),
+            base: (default: 240ms),
+            slow: (default: 400ms),
+        ),
         blur: (
             default: (
                 "Default background blur value",
@@ -72,36 +100,50 @@ $vars: (
             default: (
                 "Default text/icon color",
                 (
-                    light: palette(darkgray, 9),
-                    dark: palette(lightgray, 0),
+                    light: #0e0f13,
+                    dark: #eceef2,
                 ),
             ),
             subtle: (
                 "Placeholder text, icons in idle state",
                 (
-                    light: palette(darkgray, 0),
-                    dark: palette(lightgray, 9),
+                    light: #3c424d,
+                    dark: #aeb4bf,
                 ),
             ),
             disabled: (
                 "Foreground color of disabled UI elements",
                 (
-                    light: palette(lightgray, 9),
-                    dark: palette(darkgray, 0),
+                    light: #9aa0ac,
+                    dark: #5b6270,
                 ),
             ),
             faint: (
                 "Foreground color that barely stands out against canvas",
                 (
-                    light: palette(lightgray, 7),
-                    dark: palette(darkgray, 2),
+                    light: #616875,
+                    dark: #8a909c,
                 ),
             ),
             link: (
                 "Hyperlink foreground color",
                 (
-                    light: palette(blue, 7),
-                    dark: palette(blue, 2),
+                    light: #1f3a5f,
+                    dark: #7fa6d4,
+                ),
+            ),
+            error: (
+                "Foreground color for error/danger text (Ledger feedback.fgError)",
+                (
+                    light: #b0322f,
+                    dark: #f7625a,
+                ),
+            ),
+            success: (
+                "Foreground color for success text (Ledger state.positive text)",
+                (
+                    light: #157a42,
+                    dark: #34d07c,
                 ),
             ),
         ),
@@ -109,29 +151,29 @@ $vars: (
             default: (
                 "Window background",
                 (
-                    light: palette(lightgray, 2),
-                    dark: palette(darkgray, 5),
+                    light: #eef0f4,
+                    dark: #0f1216,
                 ),
             ),
             elevated: (
                 "Background of containers",
                 (
-                    light: white,
-                    dark: palette(darkgray, 4),
+                    light: #fbfbfc,
+                    dark: #171b21,
                 ),
             ),
             inset: (
                 "Background of inputs inside containers",
                 (
-                    light: white,
-                    dark: palette(darkgray, 5),
+                    light: #ffffff,
+                    dark: #12151a,
                 ),
             ),
             overlay: (
                 "Background of floating elements (menus, tooltips)",
                 (
-                    light: palette(lightgray, 0),
-                    dark: palette(darkgray, 5),
+                    light: #ffffff,
+                    dark: #1f242c,
                 ),
             ),
             code: (
@@ -153,29 +195,36 @@ $vars: (
             default: (
                 "Border color with medium contrast against window background",
                 (
-                    light: palette(lightgray, 6),
-                    dark: palette(darkgray, 7),
+                    light: #d5dae3,
+                    dark: #303742,
                 ),
             ),
             subtle: (
                 "Border color with low contrast against window background",
                 (
-                    light: palette(lightgray, 4),
-                    dark: palette(darkgray, 6),
+                    light: #e6e9ef,
+                    dark: #262c34,
                 ),
             ),
             strong: (
                 "Border color with high contrast against window background",
                 (
-                    light: palette(lightgray, 9),
-                    dark: palette(darkgray, 9),
+                    light: #b7becb,
+                    dark: #414a57,
+                ),
+            ),
+            control: (
+                "Border for interactive controls (inputs/selects/choice buttons); clears the 3:1 non-text contrast floor (C3)",
+                (
+                    light: #787f8c,
+                    dark: #6b7280,
                 ),
             ),
             focus: (
-                "Border color of focused input elements",
+                "Border color of focused input elements (brand navy)",
                 (
-                    light: palette(blue, 5),
-                    dark: palette(blue, 5),
+                    light: #1f3a5f,
+                    dark: #7fa6d4,
                 ),
             ),
         ),
@@ -189,14 +238,14 @@ $vars: (
             ),
             gradient: (
                 start: (
-                    "Start value of default button gradient",
+                    "Start value of default button gradient (flat = button bg)",
                     (
-                        light: white,
-                        dark: color.scale(palette(darkgray, 4), $lightness: 10%),
+                        light: palette(lightgray, 0),
+                        dark: color.scale(palette(darkgray, 4), $lightness: 5%),
                     ),
                 ),
                 end: (
-                    "End value of default button gradient",
+                    "End value of default button gradient (flat = button bg)",
                     (
                         light: palette(lightgray, 0),
                         dark: color.scale(palette(darkgray, 4), $lightness: 5%),
@@ -204,6 +253,13 @@ $vars: (
                 ),
             ),
             hover: (
+                bg: (
+                    "Background color of default button in hover state",
+                    (
+                        light: palette(lightgray, 2),
+                        dark: color.scale(palette(darkgray, 4), $lightness: 10%),
+                    ),
+                ),
                 border: (
                     "Border color of default button in hover state",
                     (
@@ -221,33 +277,42 @@ $vars: (
             ),
             primary: (
                 bg: (
-                    "Background color of primary button",
+                    "Background color of primary button (brand navy fill)",
                     (
-                        light: color.scale(palette(blue, 6), $lightness: 5%),
-                        dark: color.scale(palette(blue, 7), $saturation: -10%),
+                        light: #1f3a5f,
+                        dark: #274b75,
                     ),
                 ),
                 gradient: (
                     start: (
-                        "Start value of primary button gradient",
+                        "Start value of primary button gradient (flat = brand fill)",
                         (
-                            light: palette(blue, 5),
-                            dark: color.scale(palette(blue, 6), $saturation: -10%),
+                            light: #1f3a5f,
+                            dark: #274b75,
                         ),
                     ),
                     end: (
-                        "End value of primary button gradient",
+                        "End value of primary button gradient (flat = brand fill)",
                         (
-                            light: color.scale(palette(blue, 6), $lightness: 5%),
-                            dark: color.scale(palette(blue, 7), $saturation: -10%),
+                            light: #1f3a5f,
+                            dark: #274b75,
+                        ),
+                    ),
+                ),
+                hover: (
+                    bg: (
+                        "Background color of primary button in hover state (brand hover)",
+                        (
+                            light: #172c48,
+                            dark: #2f5888,
                         ),
                     ),
                 ),
                 disabled: (
-                    "Background color of primary button in disabled state",
+                    "Background color of primary button in disabled state (muted navy)",
                     (
-                        light: palette(blue, 3),
-                        dark: color.scale(palette(blue, 5), $saturation: -10%),
+                        light: color.scale(#1f3a5f, $lightness: 55%),
+                        dark: color.scale(#274b75, $lightness: 25%),
                     ),
                 ),
             ),
@@ -300,13 +365,28 @@ $vars: (
                 ),
             ),
             focus: (
-                "Box-shadow color for elements in focused state",
+                "Box-shadow color for elements in focused state (brand navy)",
                 (
-                    default: palette(indigo, 5),
+                    light: #1f3a5f,
+                    dark: #7fa6d4,
                 ),
             ),
         ),
         accent: (
+            default: (
+                "Brand accent (Ink Navy) — chrome only: primary actions, links, active nav, Readiness band",
+                (
+                    light: #1f3a5f,
+                    dark: #7fa6d4,
+                ),
+            ),
+            tint: (
+                "Brand accent tint for selected/active chrome backgrounds",
+                (
+                    light: #e7ecf3,
+                    dark: rgba(127, 166, 212, 0.14),
+                ),
+            ),
             card: (
                 "Accent color for cards",
                 (
@@ -453,6 +533,15 @@ $vars: (
                 (
                     light: black,
                     dark: white,
+                ),
+            ),
+        ),
+        gap-warning: (
+            bg: (
+                "Danger-tint background for the dashboard gap-warning row (Ledger feedback.gapWarningBg)",
+                (
+                    light: rgba(214, 69, 65, 0.12),
+                    dark: rgba(214, 69, 65, 0.2),
                 ),
             ),
         ),

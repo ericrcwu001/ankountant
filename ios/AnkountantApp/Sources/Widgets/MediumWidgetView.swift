@@ -26,11 +26,12 @@ struct MediumWidgetView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(snapshot.totalDue)")
-                        .font(.system(size: 50, weight: .bold))
+                        .font(.system(size: 50, weight: .bold).monospacedDigit())
                         .foregroundStyle(palette.textPrimary)
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
-                        .kerning(-2)
+                        // display tracking: -0.01em (shared token) → -0.5 @ 50pt
+                        .tracking(-0.5)
                     Text("cards due")
                         .font(.system(size: 11))
                         .foregroundStyle(palette.textSecondary)
@@ -53,9 +54,9 @@ struct MediumWidgetView: View {
 
             // Right: category breakdown + done today
             VStack(alignment: .leading, spacing: 9) {
-                countRow(dot: .blue, label: "New", count: snapshot.newCount)
-                countRow(dot: .orange, label: "Learn", count: snapshot.learnCount)
-                countRow(dot: .green, label: "Review", count: snapshot.reviewCount)
+                countRow(dot: palette.stateNew, label: "New", count: snapshot.newCount)
+                countRow(dot: palette.stateLearn, label: "Learn", count: snapshot.learnCount)
+                countRow(dot: palette.stateReview, label: "Review", count: snapshot.reviewCount)
 
                 Rectangle()
                     .fill(.separator)

@@ -37,9 +37,10 @@ struct LargeWidgetView: View {
             // Hero due count
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("\(totalDue)")
-                    .font(.system(size: 52, weight: .bold))
+                    .font(.system(size: 52, weight: .bold).monospacedDigit())
                     .foregroundStyle(palette.textPrimary)
-                    .kerning(-2.5)
+                    // display tracking: -0.01em (shared token) → -0.52 @ 52pt
+                    .tracking(-0.52)
                 Text("cards due")
                     .font(.system(size: 14))
                     .foregroundStyle(palette.textSecondary)
@@ -71,11 +72,11 @@ struct LargeWidgetView: View {
 
             // 3-column breakdown
             HStack(spacing: 0) {
-                breakdownColumn(color: .blue, label: "New", count: snapshot.newCount)
+                breakdownColumn(color: palette.stateNew, label: "New", count: snapshot.newCount)
                 Divider()
-                breakdownColumn(color: .orange, label: "Learn", count: snapshot.learnCount)
+                breakdownColumn(color: palette.stateLearn, label: "Learn", count: snapshot.learnCount)
                 Divider()
-                breakdownColumn(color: .green, label: "Review", count: snapshot.reviewCount)
+                breakdownColumn(color: palette.stateReview, label: "Review", count: snapshot.reviewCount)
             }
             .frame(maxWidth: .infinity)
             .padding(.bottom, 12)
@@ -135,9 +136,10 @@ struct LargeWidgetView: View {
     private func breakdownColumn(color: Color, label: String, count: Int) -> some View {
         VStack(spacing: 3) {
             Text("\(count)")
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(size: 22, weight: .bold).monospacedDigit())
                 .foregroundStyle(palette.textPrimary)
-                .kerning(-0.8)
+                // display tracking: -0.01em (shared token) → -0.22 @ 22pt
+                .tracking(-0.22)
             HStack(spacing: 4) {
                 Circle()
                     .fill(color)

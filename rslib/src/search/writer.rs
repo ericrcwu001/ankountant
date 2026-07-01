@@ -29,10 +29,8 @@ pub fn replace_search_node(mut existing: Vec<Node>, replacement: Node) -> String
                 match old_node {
                     Node::Not(n) => update_node(n, new_node),
                     Node::Group(ns) => update_node_vec(ns, new_node),
-                    Node::Search(n) => {
-                        if mem::discriminant(n) == mem::discriminant(new_node) {
-                            *n = new_node.clone();
-                        }
+                    Node::Search(n) if mem::discriminant(n) == mem::discriminant(new_node) => {
+                        *n = new_node.clone();
                     }
                     _ => (),
                 }

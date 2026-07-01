@@ -26,11 +26,12 @@ struct SmallWidgetView: View {
             // Hero due count
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(snapshot.totalDue)")
-                    .font(.system(size: 54, weight: .bold, design: .default))
+                    .font(.system(size: 54, weight: .bold, design: .default).monospacedDigit())
                     .foregroundStyle(palette.textPrimary)
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
-                    .kerning(-2)
+                    // display tracking: -0.01em (shared token) → -0.54 @ 54pt
+                    .tracking(-0.54)
                 Text("cards due")
                     .font(.system(size: 12))
                     .foregroundStyle(palette.textSecondary)

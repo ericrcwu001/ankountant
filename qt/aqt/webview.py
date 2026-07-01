@@ -62,6 +62,7 @@ class AnkiWebViewKind(Enum):
     ANKOUNTANT_DASHBOARD = "ankountant dashboard"
     ANKOUNTANT_CONFUSION = "ankountant confusion"
     ANKOUNTANT_TBS = "ankountant tbs"
+    ANKOUNTANT_SHELL = "ankountant shell"
 
 
 class AuthInterceptor(QWebEngineUrlRequestInterceptor):
@@ -148,6 +149,7 @@ class AnkiWebPage(QWebEnginePage):
             AnkiWebViewKind.ANKOUNTANT_DASHBOARD,
             AnkiWebViewKind.ANKOUNTANT_CONFUSION,
             AnkiWebViewKind.ANKOUNTANT_TBS,
+            AnkiWebViewKind.ANKOUNTANT_SHELL,
         )
 
         global _profile_with_api_access, _profile_without_api_access

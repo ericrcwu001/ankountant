@@ -117,7 +117,7 @@ struct CardContextMenu: View {
             .disabled(!canUndo || isUndoing)
         } label: {
             Image(systemName: "ellipsis.circle")
-                .font(AnkountantFont.bodyEmphasis.font)
+                .ankountantFont(.bodyEmphasis)
         }
         .alert("Action failed", isPresented: $showError) {
             Button("OK") { }

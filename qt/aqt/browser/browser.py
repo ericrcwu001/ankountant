@@ -61,7 +61,6 @@ from aqt.utils import (
     HelpPage,
     KeyboardModifiersPressed,
     add_ellipsis_to_action_label,
-    current_window,
     ensure_editor_saved,
     getTag,
     no_arg_trigger,
@@ -77,6 +76,7 @@ from aqt.utils import (
     skip_if_selection_is_empty,
     tooltip,
     tr,
+    widget_effectively_focused,
 )
 
 from ..addcards import AddCards
@@ -183,7 +183,9 @@ class Browser(QMainWindow):
     def on_operation_did_execute(
         self, changes: OpChanges, handler: object | None
     ) -> None:
-        focused = current_window() == self
+        # widget_effectively_focused stays correct when the Browser is embedded
+        # as a workspace tab (current_window() would return the main window).
+        focused = widget_effectively_focused(self)
         self.table.op_executed(changes, handler, focused)
         self.sidebar.op_executed(changes, handler, focused)
         if changes.note_text:
@@ -212,7 +214,7 @@ class Browser(QMainWindow):
             self._renderPreview()
 
     def on_focus_change(self, new: QWidget | None, old: QWidget | None) -> None:
-        if current_window() == self:
+        if widget_effectively_focused(self):
             self.setUpdatesEnabled(True)
             self.table.redraw_cells()
             self.sidebar.refresh_if_needed()
@@ -390,9 +392,17 @@ class Browser(QMainWindow):
 
         # keyboard shortcut for shift+home/end
         self.pgUpCut = QShortcut(QKeySequence("Shift+Home"), self)
+        self.pgUpCut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         qconnect(self.pgUpCut.activated, self.onFirstCard)
         self.pgDownCut = QShortcut(QKeySequence("Shift+End"), self)
+        self.pgDownCut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         qconnect(self.pgDownCut.activated, self.onLastCard)
+
+        # Scope menu-action shortcuts to the Browser subtree so they don't fire
+        # (or collide) while another tab/window has focus, now that the Browser
+        # can be embedded as a workspace tab.
+        for action in self.findChildren(QAction):
+            action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
 
         # add-on hook
         gui_hooks.browser_menus_did_init(self)
@@ -429,7 +439,11 @@ class Browser(QMainWindow):
         self.table.cleanup()
         self.sidebar.cleanup()
         saveSplitter(self.form.splitter, "editor3")
-        saveGeom(self, self._editor_state_key)
+        # Window geometry is meaningless when embedded as a dock tab; keep the
+        # splitter + internal QMainWindow state (sidebar dock etc.), which stay
+        # valid either way.
+        if self.isWindow():
+            saveGeom(self, self._editor_state_key)
         saveState(self, self._editor_state_key)
         self.teardownHooks()
         self.mw.maybeReset()
@@ -602,7 +616,10 @@ class Browser(QMainWindow):
         self.form.gridLayout.addWidget(switch, 0, 0)
 
     def setupEditor(self) -> None:
-        QShortcut(QKeySequence("Ctrl+Shift+P"), self, self.onTogglePreview)
+        preview_shortcut = QShortcut(
+            QKeySequence("Ctrl+Shift+P"), self, self.onTogglePreview
+        )
+        preview_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
 
         def add_preview_button(editor: Editor) -> None:
             editor._links["preview"] = lambda _editor: self.onTogglePreview()

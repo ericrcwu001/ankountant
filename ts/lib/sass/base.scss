@@ -3,11 +3,20 @@
 @use "button-mixins" as button;
 @use "./scrollbar";
 
-$body-color: palette(darkgray, 9);
-$body-color-dark: palette(lightgray, 0);
-$body-bg: palette(lightgray, 2);
-$body-bg-dark: palette(darkgray, 5);
+// Ledger neutrals (cool slate, off-black/off-white) — keep Bootstrap reboot's
+// --bs-* body tokens in sync with the design system instead of the generic look.
+$body-color: #0e0f13;
+$body-color-dark: #eceef2;
+$body-bg: #eef0f4;
+$body-bg-dark: #0f1216;
 $link-hover-decoration: none;
+// System-native type stacks (Ledger §2) so bootstrap-reboot doesn't reintroduce
+// its own font stack.
+$font-family-sans-serif: system-ui, -apple-system, "SF Pro Text",
+    "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+$font-family-monospace: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
+    Menlo, Consolas, monospace;
 
 $utilities: (
     "opacity": (
@@ -32,6 +41,25 @@ $utilities: (
 
 .flex-basis-75 {
     flex-basis: 75%;
+}
+
+/* Tabular figures for numbers that align or change — scores, %, bands, JE/ledger
+   cells, stats (Ledger §2 / accessibility floor C10). */
+.tabular {
+    font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Honor Reduce Motion (Ledger §3 / accessibility floor C9): collapse animation
+   + transitions to instant, no loops, no motion-only information. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 
 html,

@@ -57,6 +57,7 @@ from aqt.utils import (
     show_warning,
     tooltip,
     tr,
+    widget_effectively_focused,
 )
 
 
@@ -437,10 +438,10 @@ class Reviewer:
         conf = self.mw.col.decks.config_dict_for_deck_id(self.card.current_deck_id())
         if conf["waitForAudio"] and av_player.current_player:
             return
-        if (
-            not self.auto_advance_enabled
-            or not self.mw.app.focusWidget()
-            or self.mw.app.focusWidget().window() != self.mw
+        # Pause when focus leaves the home surface (another window OR an
+        # embedded workspace tool tab such as Browse/Add).
+        if not self.auto_advance_enabled or not widget_effectively_focused(
+            self.mw._home_content
         ):
             self.auto_advance_enabled = False
             return
@@ -521,10 +522,10 @@ class Reviewer:
         conf = self.mw.col.decks.config_dict_for_deck_id(self.card.current_deck_id())
         if conf["waitForAudio"] and av_player.current_player:
             return
-        if (
-            not self.auto_advance_enabled
-            or not self.mw.app.focusWidget()
-            or self.mw.app.focusWidget().window() != self.mw
+        # Pause when focus leaves the home surface (another window OR an
+        # embedded workspace tool tab such as Browse/Add).
+        if not self.auto_advance_enabled or not widget_effectively_focused(
+            self.mw._home_content
         ):
             self.auto_advance_enabled = False
             return

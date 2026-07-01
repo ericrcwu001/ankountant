@@ -24,7 +24,6 @@ Review process:
 
 If doing a partial review, load only the relevant reference files.
 
-
 ## Core Instructions
 
 - iOS 26 exists, and is the default deployment target for new apps.
@@ -33,7 +32,6 @@ If doing a partial review, load only the relevant reference files.
 - Do not introduce third-party frameworks without asking first.
 - Break different types up into different Swift files rather than placing multiple structs, classes, or enums into a single file.
 - Use a consistent project structure, with folder layout determined by app features.
-
 
 ## Output Format
 
@@ -94,7 +92,6 @@ TextField("Username", text: $model.username)
 3. **Data flow (medium):** The manual binding on line 31 is fragile and harder to maintain.
 
 End of example.
-
 
 ## References
 

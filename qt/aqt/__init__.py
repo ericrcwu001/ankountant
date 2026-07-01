@@ -128,19 +128,37 @@ class DialogManager:
         "sync_log": [mediasync.MediaSyncDialog, None],
     }
 
+    # DialogManager names that open as workspace tabs (see aqt.workspace)
+    # instead of separate OS windows, when a workspace is present.
+    _embeddable = {"AddCards", "Browser", "NewDeckStats", "DeckStats"}
+
     def open(self, name: str, *args: Any, **kwargs: Any) -> Any:
         (creator, instance) = self._dialogs[name]
+        mw = aqt.mw
+        # Duck-typed (avoids importing workspace here + a circular import);
+        # only dereferenced when `embed` is True, i.e. workspace is present.
+        workspace: Any = getattr(mw, "workspace", None) if mw else None
+        embed = workspace is not None and name in self._embeddable
         if instance:
-            if instance.windowState() & Qt.WindowState.WindowMinimized:
-                instance.setWindowState(
-                    instance.windowState() & ~Qt.WindowState.WindowMinimized
-                )
-            instance.activateWindow()
-            instance.raise_()
+            if embed:
+                # Raise the existing tab instead of activating a window.
+                workspace.raise_tool(name)
+            else:
+                if instance.windowState() & Qt.WindowState.WindowMinimized:
+                    instance.setWindowState(
+                        instance.windowState() & ~Qt.WindowState.WindowMinimized
+                    )
+                instance.activateWindow()
+                instance.raise_()
             if hasattr(instance, "reopen"):
                 instance.reopen(*args, **kwargs)
         else:
-            instance = creator(*args, **kwargs)
+            if embed:
+                # Create the tool and host it as a tab; the tool's trailing
+                # self.show() is superseded by reparenting into the dock.
+                instance = workspace.embed(name, creator, args, kwargs)
+            else:
+                instance = creator(*args, **kwargs)
             self._dialogs[name][1] = instance
         gui_hooks.dialog_manager_did_open_dialog(self, name, instance)
         return instance

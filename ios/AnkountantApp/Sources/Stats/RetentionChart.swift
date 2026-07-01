@@ -1,4 +1,5 @@
 import SwiftUI
+import AnkountantTheme
 import AnkiProto
 
 struct RetentionChart: View {

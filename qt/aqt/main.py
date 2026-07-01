@@ -14,7 +14,7 @@ import weakref
 from argparse import Namespace
 from collections.abc import Callable, Sequence
 from concurrent.futures import Future
-from typing import Any, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
 
 import anki
 import anki.sound
@@ -77,13 +77,22 @@ from aqt.utils import (
     showWarning,
     tooltip,
     tr,
+    widget_effectively_focused,
 )
 from aqt.webview import AnkiWebView, AnkiWebViewKind
+
+if TYPE_CHECKING:
+    from aqt.workspace import Workspace
 
 install_pylib_legacy()
 
 MainWindowState = Literal[
-    "startup", "deckBrowser", "overview", "review", "resetRequired", "profileManager"
+    "startup",
+    "deckBrowser",
+    "overview",
+    "review",
+    "resetRequired",
+    "profileManager",
 ]
 
 
@@ -168,6 +177,13 @@ class AnkiQt(QMainWindow):
     pm: ProfileManagerType
     web: MainWebView
     bottomWeb: BottomWebView
+    # Container for the home (Decks/Study) surface; the toolbar/web/bottom trio
+    # lives inside it. Home-scoped shortcuts + focus checks key off this widget.
+    _home_content: QWidget
+    # The tabbed/dockable workspace hosting home + tool tabs (see workspace.py).
+    # The Ankountant SvelteKit shell (Readiness / Confusion / TBS) is one of its
+    # tool tabs (workspace.open_ankountant), not a main-window state.
+    workspace: Workspace
 
     def __init__(
         self,
@@ -221,6 +237,10 @@ class AnkiQt(QMainWindow):
 
     def setupUI(self) -> None:
         self.col = None
+        # Container for the home (Decks/Study) surface: the toolbar/web/bottom
+        # trio lives inside it (filled in setupMainWindow). Created before
+        # setupKeys so home-scoped shortcuts can be parented to it.
+        self._home_content = QWidget()
         self.disable_automatic_garbage_collection()
         self.setupAppMsg()
         self.setupKeys()
@@ -505,6 +525,9 @@ class AnkiQt(QMainWindow):
         # show main window
         restoreGeom(self, "mainWindow")
         restoreState(self, "mainWindow")
+        # re-open the workspace tool tabs + dock layout saved for this profile
+        # (must run after restoreState so its own saveState blob wins)
+        self.workspace.restore_layout()
         # titlebar
         self.setWindowTitle(f"{self.pm.name} - Ankountant")
         # show and raise window for osx
@@ -767,6 +790,12 @@ class AnkiQt(QMainWindow):
         getattr(self, f"_{state}State", lambda *_: None)(oldState, *args)
         if state != "resetRequired":
             self.bottomWeb.adjustHeightToFit()
+        # Bring the home tab forward when entering a home surface, in case the
+        # user was in a tool tab (workspace is absent very early in startup).
+        if state in ("deckBrowser", "overview", "review") and getattr(
+            self, "workspace", None
+        ):
+            self.workspace.raise_home()
         gui_hooks.state_did_change(state, oldState)
 
     def _deckBrowserState(self, oldState: MainWindowState) -> None:
@@ -841,7 +870,10 @@ class AnkiQt(QMainWindow):
         self, changes: OpChanges, handler: object | None
     ) -> None:
         "Notify current screen of changes."
-        focused = current_window() == self
+        # Containment-aware: the home surface counts as focused only when focus
+        # is actually inside it, not merely anywhere in the (single) window —
+        # e.g. not while the user works in a workspace tool tab.
+        focused = widget_effectively_focused(self._home_content)
         if self.state == "review":
             dirty = self.reviewer.op_executed(changes, handler, focused)
         elif self.state == "overview":
@@ -863,8 +895,11 @@ class AnkiQt(QMainWindow):
     def on_focus_did_change(
         self, new_focus: QWidget | None, _old: QWidget | None
     ) -> None:
-        "If main window has received focus, ensure current UI state is updated."
-        if new_focus and new_focus.window() == self:
+        "If the home surface has received focus, ensure current UI state is updated."
+        if new_focus and (
+            new_focus is self._home_content
+            or self._home_content.isAncestorOf(new_focus)
+        ):
             if self.state == "review":
                 self.reviewer.refresh_if_needed()
             elif self.state == "overview":
@@ -944,6 +979,8 @@ title="{}" {}>{}</button>""".format(
     ##########################################################################
 
     def setupMainWindow(self) -> None:
+        from aqt.workspace import Workspace
+
         # main window
         self.form = aqt.forms.main.Ui_MainWindow()
         self.form.setupUi(self)
@@ -956,14 +993,20 @@ title="{}" {}>{}</button>""".format(
         sweb = self.bottomWeb = BottomWebView(self)
         sweb.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
         sweb.disable_zoom()
-        # add in a layout
-        self.mainLayout = QVBoxLayout()
+        # the home (Decks/Study) surface: trio stacked inside _home_content
+        # (created early in setupUI so home-scoped shortcuts can bind to it).
+        # The moveToState state machine keeps driving these three webviews.
+        self.mainLayout = QVBoxLayout(self._home_content)
         self.mainLayout.setContentsMargins(0, 0, 0, 0)
         self.mainLayout.setSpacing(0)
         self.mainLayout.addWidget(tweb)
         self.mainLayout.addWidget(self.web)
         self.mainLayout.addWidget(sweb)
-        self.form.centralwidget.setLayout(self.mainLayout)
+        # Turn the main window into a browser-style tabbed workspace: home
+        # becomes a permanent tab; tools (Add/Browse/Stats/Ankountant) open as
+        # dockable tabs alongside it. See qt/aqt/workspace.py.
+        self.workspace = Workspace(self)
+        self.workspace.build(self._home_content)
 
         # force webengine processes to load before cwd is changed
         if is_win:
@@ -973,7 +1016,18 @@ title="{}" {}>{}</button>""".format(
         gui_hooks.card_review_webview_did_init(self.web, AnkiWebViewKind.MAIN)
 
     def closeAllWindows(self, onsuccess: Callable) -> None:
-        aqt.dialogs.closeAll(onsuccess)
+        # Snapshot the workspace layout while the tool docks still exist —
+        # dialogs.closeAll (below) tears them down.
+        if getattr(self, "workspace", None):
+            self.workspace.save_layout()
+
+        def after_dialogs_closed() -> None:
+            if getattr(self, "workspace", None):
+                # Dispose surfaces the DialogManager doesn't own (shell webview).
+                self.workspace.shutdown()
+            onsuccess()
+
+        aqt.dialogs.closeAll(after_dialogs_closed)
 
     # Components
     ##########################################################################
@@ -1164,8 +1218,10 @@ title="{}" {}>{}</button>""".format(
     ##########################################################################
 
     def setupKeys(self) -> None:
+        # Single-letter shortcuts are scoped to the home surface (see
+        # applyShortcuts) so they don't fire — or eat typed text — while the
+        # user works inside a workspace tool tab (Add/Browse/Stats/...).
         globalShortcuts = [
-            ("Ctrl+:", show_debug_console),
             ("d", lambda: self.moveToState("deckBrowser")),
             ("s", self.onStudyKey),
             ("a", self.onAddCard),
@@ -1175,9 +1231,22 @@ title="{}" {}>{}</button>""".format(
             ("y", self.on_sync_button_clicked),
         ]
         self.applyShortcuts(globalShortcuts)
+        # The debug console stays reachable from anywhere in the window.
+        debug_shortcut = QShortcut(QKeySequence("Ctrl+:"), self)
+        debug_shortcut.setAutoRepeat(False)
+        qconnect(debug_shortcut.activated, show_debug_console)
         self.stateShortcuts: list[QShortcut] = []
 
     def _close_active_window(self) -> None:
+        # If focus is inside a workspace tool tab, Ctrl/Cmd+W closes that tab
+        # (current_window() would otherwise resolve to the main window).
+        if (
+            not QApplication.activeModalWidget()
+            and (ws := getattr(self, "workspace", None))
+            and (tool := ws.tool_for_focus())
+        ):
+            ws.close_tool_widget(tool)
+            return
         window = (
             QApplication.activeModalWidget()
             or current_window()
@@ -1207,9 +1276,15 @@ title="{}" {}>{}</button>""".format(
     def applyShortcuts(
         self, shortcuts: Sequence[tuple[str, Callable]]
     ) -> list[QShortcut]:
+        """Bind shortcuts scoped to the home (Decks/Study) surface.
+
+        Parenting to `_home_content` with WidgetWithChildrenShortcut keeps
+        single-letter keys and reviewer answer keys from firing while focus is
+        inside a workspace tool tab (Add Cards / Browser / Stats / ...)."""
         qshortcuts = []
         for key, fn in self._normalize_shortcuts(shortcuts):
-            scut = QShortcut(key, self, activated=fn)  # type: ignore
+            scut = QShortcut(key, self._home_content, activated=fn)  # type: ignore
+            scut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
             scut.setAutoRepeat(False)
             qshortcuts.append(scut)
         return qshortcuts
@@ -1472,10 +1547,8 @@ title="{}" {}>{}</button>""".format(
         """Add the Ankountant menu with entry points to its feature screens.
 
         Built programmatically (rather than in the .ui form) so it does not
-        depend on regenerated form attributes. Each action opens a SvelteKit
-        page in a webview dialog (see aqt.ankountant)."""
-        import aqt.ankountant
-
+        depend on regenerated form attributes. Each action opens the Ankountant
+        shell as a workspace tab (see aqt.workspace.Workspace.open_ankountant)."""
         # Attach via the same form.menubar.addMenu idiom the .ui menus use.
         # (Creating a QMenu manually and insertMenu()-ing it before the Help
         # menu fails to appear in macOS's native menu bar, since Help is an
@@ -1486,17 +1559,17 @@ title="{}" {}>{}</button>""".format(
         dashboard = menu.addAction("Readiness Dashboard")
         qconnect(
             dashboard.triggered,
-            lambda: aqt.ankountant.AnkountantDashboardDialog(self),
+            lambda: self.workspace.open_ankountant("dashboard"),
         )
         confusion = menu.addAction("Confusion-Set Review")
         qconnect(
             confusion.triggered,
-            lambda: aqt.ankountant.AnkountantConfusionDialog(self),
+            lambda: self.workspace.open_ankountant("confusion"),
         )
         tbs = menu.addAction("TBS Practice")
         qconnect(
             tbs.triggered,
-            lambda: aqt.ankountant.AnkountantTbsDialog(self),
+            lambda: self.workspace.open_ankountant("tbs"),
         )
 
         menu.addSeparator()

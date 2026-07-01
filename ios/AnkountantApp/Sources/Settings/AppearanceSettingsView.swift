@@ -6,10 +6,6 @@ struct AppearanceSettingsView: View {
 
     var body: some View {
         Form {
-            Section("Theme") {
-                themePickerRow
-            }
-
             Section("Appearance") {
                 Picker("Appearance", selection: $manager.appearance) {
                     Text("System").tag(Appearance.system)
@@ -26,62 +22,6 @@ struct AppearanceSettingsView: View {
         }
         .navigationTitle("Appearance")
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    @ViewBuilder
-    private var themePickerRow: some View {
-        HStack(spacing: AnkountantSpacing.md) {
-            ThemeCard(theme: .vivid, label: "Vivid", isSelected: manager.theme == .vivid) {
-                manager.theme = .vivid
-            }
-            ThemeCard(theme: .muted, label: "Muted", isSelected: manager.theme == .muted) {
-                manager.theme = .muted
-            }
-        }
-        .padding(.vertical, AnkountantSpacing.xs)
-    }
-}
-
-private struct ThemeCard: View {
-    let theme: Theme
-    let label: String
-    let isSelected: Bool
-    let onTap: () -> Void
-
-    @Environment(\.colorScheme) private var systemScheme
-
-    var body: some View {
-        let preview = Palette.resolve(theme: theme, scheme: systemScheme)
-        Button(action: onTap) {
-            VStack(spacing: AnkountantSpacing.sm) {
-                VStack(spacing: 4) {
-                    bar(color: preview.background)
-                    bar(color: preview.surface)
-                    bar(color: preview.accent)
-                }
-                .padding(AnkountantSpacing.sm)
-                .background(preview.surface, in: RoundedRectangle(cornerRadius: 8))
-
-                HStack(spacing: 4) {
-                    if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
-                    }
-                    Text(label).bold()
-                }
-                .font(.subheadline)
-            }
-            .padding(AnkountantSpacing.md)
-            .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? preview.accent : preview.border, lineWidth: isSelected ? 2 : 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func bar(color: Color) -> some View {
-        RoundedRectangle(cornerRadius: 3).fill(color).frame(height: 10)
     }
 }
 
@@ -107,26 +47,26 @@ private struct PreviewCard: View {
                 .buttonStyle(AnkountantPrimaryButtonStyle())
         }
         .padding(AnkountantSpacing.lg)
-        .background(palette.surface, in: RoundedRectangle(cornerRadius: 12))
+        .background(palette.surface, in: RoundedRectangle(cornerRadius: AnkountantRadius.card))
     }
 
     private func badge(_ text: String, color: Color) -> some View {
         Text(text)
             .ankountantFont(.captionBold)
             .foregroundStyle(color)
-            .padding(.horizontal, 8).padding(.vertical, 4)
+            .padding(.horizontal, AnkountantSpacing.sm).padding(.vertical, AnkountantSpacing.xs)
             .background(color.opacity(0.15), in: Capsule())
     }
 }
 
-#Preview("Vivid Light") {
-    NavigationStack { AppearanceSettingsView(manager: ThemeManager(defaults: UserDefaults(suiteName: "preview-vivid-light")!)) }
-        .environment(\.palette, .vividLight)
+#Preview("Light") {
+    NavigationStack { AppearanceSettingsView(manager: ThemeManager(defaults: UserDefaults(suiteName: "preview-light")!)) }
+        .environment(\.palette, .light)
         .preferredColorScheme(.light)
 }
 
-#Preview("Muted Dark") {
-    NavigationStack { AppearanceSettingsView(manager: ThemeManager(defaults: UserDefaults(suiteName: "preview-muted-dark")!)) }
-        .environment(\.palette, .mutedDark)
+#Preview("Dark") {
+    NavigationStack { AppearanceSettingsView(manager: ThemeManager(defaults: UserDefaults(suiteName: "preview-dark")!)) }
+        .environment(\.palette, .dark)
         .preferredColorScheme(.dark)
 }

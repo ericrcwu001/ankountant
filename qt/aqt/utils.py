@@ -1032,6 +1032,19 @@ def current_window() -> QWidget | None:
         return None
 
 
+def widget_effectively_focused(widget: QWidget) -> bool:
+    """True if the app's focus widget is `widget` or one of its descendants.
+
+    Unlike `current_window() == widget`, this stays correct when `widget` is
+    embedded in another window (e.g. a workspace dock tab) rather than being a
+    top-level window itself.
+    """
+    focus = QApplication.focusWidget()
+    if focus is None:
+        return False
+    return focus is widget or widget.isAncestorOf(focus)
+
+
 def send_to_trash(path: Path) -> None:
     "Place file/folder in recycling bin, or delete permanently on failure."
     if not path.exists():

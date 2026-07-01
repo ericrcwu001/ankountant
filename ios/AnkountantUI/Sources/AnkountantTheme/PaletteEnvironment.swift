@@ -1,13 +1,14 @@
 public import SwiftUI
 
 public extension EnvironmentValues {
-    @Entry var palette: Palette = .vividLight
+    @Entry var palette: Palette = .light
 }
 
 public extension View {
     /// Apply at the app's root view. Reads `ThemeManager` and writes the resolved
     /// `Palette` into the environment plus applies `.preferredColorScheme(...)`
     /// when the user has overridden the system appearance.
+    @MainActor
     func themedRoot(manager: ThemeManager = .shared) -> some View {
         modifier(ThemedRootModifier(manager: manager))
     }

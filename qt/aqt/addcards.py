@@ -129,6 +129,9 @@ class AddCards(QMainWindow):
         self.addButton.setShortcut(QKeySequence("Ctrl+Return"))
         # qt5.14+ doesn't handle numpad enter on Windows
         self.compat_add_shorcut = QShortcut(QKeySequence("Ctrl+Enter"), self)
+        self.compat_add_shorcut.setContext(
+            Qt.ShortcutContext.WidgetWithChildrenShortcut
+        )
         qconnect(self.compat_add_shorcut.activated, self.addButton.click)
         self.addButton.setToolTip(shortcut(tr.adding_add_shortcut_ctrlandenter()))
 
@@ -360,7 +363,9 @@ class AddCards(QMainWindow):
         self.deck_chooser.cleanup()
         gui_hooks.operation_did_execute.remove(self.on_operation_did_execute)
         self.mw.maybeReset()
-        saveGeom(self, "add")
+        # Window geometry is meaningless when embedded as a workspace dock tab.
+        if self.isWindow():
+            saveGeom(self, "add")
         aqt.dialogs.markClosed("AddCards")
         self._close_event_has_cleaned_up = True
         self.mw.deferred_delete_and_garbage_collect(self)

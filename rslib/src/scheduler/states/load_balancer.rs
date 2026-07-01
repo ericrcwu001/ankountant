@@ -377,8 +377,8 @@ fn calculate_sibling_modifiers(
 
     if let Some(nid) = nid {
         let sibling_days = days_by_preset
-            .iter()
-            .flat_map(|(_did, days)| {
+            .values()
+            .flat_map(|days| {
                 days.iter()
                     .enumerate()
                     .fold(HashSet::new(), |mut sibling_days, (i, day)| {

@@ -2,7 +2,7 @@
 
 - Respect the user’s accessibility settings for fonts, colors, animations, and more.
 - Do not force specific font sizes. Prefer Dynamic Type (`.font(.body)`, `.font(.headline)`, etc.).
-- If you *need* a custom font size, use `@ScaledMetric` when targeting iOS 18 and earlier. When targeting iOS 26 or later, `.font(.body.scaled(by:))` is also available to get font size adjustment.
+- If you _need_ a custom font size, use `@ScaledMetric` when targeting iOS 18 and earlier. When targeting iOS 26 or later, `.font(.body.scaled(by:))` is also available to get font size adjustment.
 - Flag instances where images have unclear or unhelpful VoiceOver readings, e.g. `Image(.newBanner2026)`. If they are decorative, suggest using `Image(decorative:)` or `accessibilityHidden()`, otherwise attach an `accessibilityLabel()`.
 - If the user has “Reduce Motion” enabled, replace large, motion-based animations with opacity instead.
 - If buttons have complex or frequently changing labels, recommend using `accessibilityInputLabels()` to provide better Voice Control commands. For example, if a button had a live-updating share price for Apple such as “AAPL $271.68”, adding an input label for “Apple” would be a big improvement.

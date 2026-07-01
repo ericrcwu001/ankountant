@@ -2,15 +2,6 @@ import XCTest
 @testable import AnkountantTheme
 
 final class ThemeTests: XCTestCase {
-    func testThemeRawValues() {
-        XCTAssertEqual(Theme.vivid.rawValue, "vivid")
-        XCTAssertEqual(Theme.muted.rawValue, "muted")
-    }
-
-    func testThemeAllCases() {
-        XCTAssertEqual(Theme.allCases, [.vivid, .muted])
-    }
-
     func testAppearanceRawValues() {
         XCTAssertEqual(Appearance.system.rawValue, "system")
         XCTAssertEqual(Appearance.light.rawValue, "light")

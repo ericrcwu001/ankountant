@@ -63,7 +63,6 @@
 		7525FCCD15EF5F2FAAAEF6E5 /* ImageOcclusionWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD662C5E96C4AB803E463ADB /* ImageOcclusionWorkspaceView.swift */; };
 		760E7BD0822C26728982B44A /* ReviewSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = C16EDA5BD73464D27DF347EB /* ReviewSession.swift */; };
 		7878E9564E0059122DAC7DDF /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6370F065E997C80B8E88FF /* WidgetSnapshot.swift */; };
-		78F5929BD9636DF90F99433A /* AnkountantSpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00B8AC4916F57453BFA7DD8 /* AnkountantSpacing.swift */; };
 		79687EF3B8091F2D09C7884E /* AnkiSync in Frameworks */ = {isa = PBXBuildFile; productRef = 784D6B857D21EACF021E2D10 /* AnkiSync */; };
 		79936109072B3D8FD5B997F2 /* LookupAudioSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C628C5CAB5E712899BCCDC3A /* LookupAudioSupport.swift */; };
 		807086E7437C8D78D4BD6F0A /* DeckTemplateListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 827944E7BB39D4C900F6DA1F /* DeckTemplateListView.swift */; };
@@ -95,14 +94,12 @@
 		BCA928A108319B6FE96705B9 /* NoteEditingDestinationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 765F582FAEA948A5D7684D9E /* NoteEditingDestinationView.swift */; };
 		C14B2E523199EDBF15EADF21 /* AccountsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C1AAECEC7CCFBAABAF81E7D /* AccountsSettingsView.swift */; };
 		C30B6E90EF773B1799467F5F /* TemplateSourceEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B922320D7DA522F843AE9C /* TemplateSourceEditor.swift */; };
-		D04061BF892EF53E8CAA474B /* AnkountantTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = F26610D0D7ACD4655B0955F6 /* AnkountantTypography.swift */; };
 		D127837E7EEBC1CAFF12465E /* AnkountantCardWeb in Frameworks */ = {isa = PBXBuildFile; productRef = 83324CEEC86005CA2C82927B /* AnkountantCardWeb */; };
 		D25B9F62F23AB580CC6A7DEE /* ReaderConfigurationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C7EE7066EFCB9753653726 /* ReaderConfigurationView.swift */; };
 		D2D84E8185221D59E95C3FE1 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6370F065E997C80B8E88FF /* WidgetSnapshot.swift */; };
 		D3D66A5DBB118EF849CD3096 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E37D21F1CA0E3CC0FD07D068 /* ReviewView.swift */; };
 		D52D325D523CE5E4858E70DB /* ReaderLookupStructuredContentResources.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = B19099278364E2F405DFBC23 /* ReaderLookupStructuredContentResources.generated.swift */; };
 		D5BCBFEA46B250207DC30B97 /* AnkiClients in Frameworks */ = {isa = PBXBuildFile; productRef = B81A39820C8557D7D0ED3EBC /* AnkiClients */; };
-		D8F6CB45C01606F9744B0839 /* AnkountantModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39CBE8EE0C76E849271017A8 /* AnkountantModifiers.swift */; };
 		D9C2C7F1104B9B0ACE98CEAC /* EmptyCardsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B4C084601D95D13AD70AD10 /* EmptyCardsView.swift */; };
 		DE0264D1E2B067B94A3AF8DF /* AnkiKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7A8128B5E3D55EA7FED9948C /* AnkiKit */; };
 		E35B1B00CAF72E00268EA049 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C836D6E618A0BCD6FDE130D /* OnboardingView.swift */; };
@@ -184,7 +181,6 @@
 		34C15FC44A3950774F64B9F2 /* ChapterListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterListView.swift; sourceTree = "<group>"; };
 		355AFAC0971C1584E5479E53 /* SyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCoordinator.swift; sourceTree = "<group>"; };
 		3648F706A4B00C12E555D205 /* ReviewsChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewsChart.swift; sourceTree = "<group>"; };
-		39CBE8EE0C76E849271017A8 /* AnkountantModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnkountantModifiers.swift; sourceTree = "<group>"; };
 		3A885D3BB8DAFA6742DC637B /* AppearanceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceSettingsView.swift; sourceTree = "<group>"; };
 		3C1AAECEC7CCFBAABAF81E7D /* AccountsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsSettingsView.swift; sourceTree = "<group>"; };
 		3D145BEA1094044148D6676A /* ChapterReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterReaderView.swift; sourceTree = "<group>"; };
@@ -261,8 +257,6 @@
 		E3312C01FEAF4579D15D9971 /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = Resources/Fonts; sourceTree = SOURCE_ROOT; };
 		E37D21F1CA0E3CC0FD07D068 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		EF0D840A187EB6B0407B7CA9 /* WidgetSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotStore.swift; sourceTree = "<group>"; };
-		F00B8AC4916F57453BFA7DD8 /* AnkountantSpacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnkountantSpacing.swift; sourceTree = "<group>"; };
-		F26610D0D7ACD4655B0955F6 /* AnkountantTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnkountantTypography.swift; sourceTree = "<group>"; };
 		F4AFF84F476980B81B28165F /* NoteFieldHTMLPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteFieldHTMLPreview.swift; sourceTree = "<group>"; };
 		F874AE64A90478C5F986B48D /* AnkiBackedDictionaryConfigStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnkiBackedDictionaryConfigStore.swift; sourceTree = "<group>"; };
 		FA43BB58E717B2FDA85D3652 /* AnkiMobileAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnkiMobileAttributionView.swift; sourceTree = "<group>"; };
@@ -464,16 +458,6 @@
 			path = Sync;
 			sourceTree = "<group>";
 		};
-		D810DE21FEA41A9613820B1E /* Theme */ = {
-			isa = PBXGroup;
-			children = (
-				39CBE8EE0C76E849271017A8 /* AnkountantModifiers.swift */,
-				F00B8AC4916F57453BFA7DD8 /* AnkountantSpacing.swift */,
-				F26610D0D7ACD4655B0955F6 /* AnkountantTypography.swift */,
-			);
-			path = Theme;
-			sourceTree = "<group>";
-		};
 		DAB2D1E8C69D938CF233C0BA /* Reader */ = {
 			isa = PBXGroup;
 			children = (
@@ -546,7 +530,6 @@
 				E0584510035890186EAC049E /* Shared */,
 				953564D380D192D424EF8D86 /* Stats */,
 				BBD981ED8A896D997C00C6F9 /* Sync */,
-				D810DE21FEA41A9613820B1E /* Theme */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -720,9 +703,6 @@
 				70042B6A17E450B30EE94837 /* AnkiBackedDictionaryConfigStore.swift in Sources */,
 				4E6C176D856F9908A003F9B3 /* AnkiMobileAttributionView.swift in Sources */,
 				F63B12D601DCD8595866774B /* AnkountantAppApp.swift in Sources */,
-				D8F6CB45C01606F9744B0839 /* AnkountantModifiers.swift in Sources */,
-				78F5929BD9636DF90F99433A /* AnkountantSpacing.swift in Sources */,
-				D04061BF892EF53E8CAA474B /* AnkountantTypography.swift in Sources */,
 				26004F815DD200ADE21F42AC /* AppearanceSettingsView.swift in Sources */,
 				5A9B254FABDF125BB9A35AED /* BatchTagSheet.swift in Sources */,
 				36B3A3E99655C65E7F0A85E1 /* BrowseSelectionState.swift in Sources */,

@@ -307,11 +307,14 @@ require("anki/ui").loaded.then(() => require("anki/NoteEditor").instances[0].too
             else:
                 on_hotkey = on_activated
 
-            QShortcut(  # type: ignore
+            # Scope to the editor subtree so two embedded editors (e.g. Add +
+            # Browser workspace tabs) don't make identical format keys ambiguous.
+            _sc = QShortcut(  # type: ignore
                 QKeySequence(keys),
                 self.widget,
                 activated=on_hotkey,
             )
+            _sc.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
 
         btn = self._addButton(
             icon,
@@ -384,7 +387,8 @@ require("anki/ui").loaded.then(() => require("anki/NoteEditor").instances[0].too
                 fn = self._addFocusCheck(fn)
             else:
                 keys, fn, _ = row
-            QShortcut(QKeySequence(keys), self.widget, activated=fn)  # type: ignore
+            _sc = QShortcut(QKeySequence(keys), self.widget, activated=fn)  # type: ignore
+            _sc.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
 
     def setupColourPalette(self) -> None:
         if not (colors := self.mw.col.get_config("customColorPickerPalette")):
