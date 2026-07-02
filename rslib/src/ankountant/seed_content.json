@@ -2045,5 +2045,722 @@
             ],
             "source": "ASC 323-10-35 (equity method of accounting for investments)"
         }
+    ],
+    "section_items": [
+        {
+            "section": "AUD",
+            "tbs_type": "doc_review",
+            "set_id": "aud_request_relevance",
+            "schema_version": 1,
+            "prompt": "The CPA firm Adams, Barnes & Company is preparing for the Year 20X5 audit of Keystone Computers & Networks, Inc. (KCN), a calendar year-end nonissuer. A staff member updated last year's audit request list. As senior, review each called-out request and decide whether to retain it, delete it, or replace it with a better request, using the exhibits. Materiality is $300,000.",
+            "exhibits": [
+                {
+                    "id": "ex1",
+                    "kind": "statement",
+                    "title": "Exhibit 1 - KCN working trial balance (condensed)",
+                    "body": "Materiality for the Year 20X5 audit = $300,000. Selected balances (12/31/X4 audited vs 12/31/X5 unadjusted): Accounts receivable-trade (1050.10); Software development cost (2100.00, newly capitalized this year); Leasehold improvements; Capital stock (unchanged X4 to X5); Rent (7100.10, significant); Utilities (7140.10, immaterial)."
+                },
+                {
+                    "id": "ex2",
+                    "kind": "memo",
+                    "title": "Exhibit 2 - Memo to files (partner C. Adams, 11/5/20X5)",
+                    "body": "The Plumbtree intangible (~$1,000,000 remaining, amortized $200k/yr) may be written off half or more this year; earnings are down ~40%. The company began capitalizing software development costs this year. Accounts receivable from officers increased because President Best asked for and obtained a loan from the company under a loan agreement Mr. Steele signed; because the amount was slightly below the level needing Board approval, the matter was not addressed by the Board."
+                },
+                {
+                    "id": "ex3",
+                    "kind": "email",
+                    "title": "Exhibit 3 - Forwarded email (President Best)",
+                    "body": "\"...let's make sure that we capitalize these costs ($178,000) because we may be able to develop software...\" PS: rent is going up, but the new lease has no payment for the first three months (abatement)."
+                },
+                {
+                    "id": "ex4",
+                    "kind": "email",
+                    "title": "Exhibit 4 - Email (Manager Karen West)",
+                    "body": "Allowance for bad debts $96,000 -> $104,000; Willay Co. receivable of $208,234 written off; ~$32,000 more possibly uncollectible. We definitely need to consider the adequacy of the allowance for bad debts."
+                },
+                {
+                    "id": "doc",
+                    "kind": "document",
+                    "role": "document",
+                    "title": "Keystone Computers & Networks, Inc. - Year Ended December 31, 20X5 - Audit Request List (Draft 1)",
+                    "body": "For each called-out request, determine if the current language is appropriate as is, should be removed, or should be replaced with one of the provided alternatives (materiality = $300,000).\n1. <blank step=\"s1\">Accounts receivable summarized by date of most recent purchase.</blank>\n2. <blank step=\"s2\">Invoices supporting depreciation expense for the year.</blank>\n3. <blank step=\"s3\">Software development cost invoices and other support.</blank>\n4. <blank step=\"s4\">Vouchers supporting increase in leasehold improvements.</blank>\n5. <blank step=\"s5\">Detailed analysis and reconciliation of each unpaid account payable at year-end.</blank>\n6. <blank step=\"s6\">Documentation supporting change in capital stock outstanding.</blank>\n7. <blank step=\"s7\">Management's review of receivables from officers.</blank>\n8. <blank step=\"s8\">Account 7140.10 expense analysis.</blank>"
+                }
+            ],
+            "steps": [
+                {
+                    "kind": "blank",
+                    "id": "s1",
+                    "label": "Callout 1 - A/R summary basis",
+                    "answer_key": "o3",
+                    "original_text": "Accounts receivable summarized by date of most recent purchase.",
+                    "options": [
+                        { "id": "o1", "kind": "keep", "text": "Retain the original text." },
+                        { "id": "o2", "kind": "delete", "text": "Delete the text." },
+                        { "id": "o3", "kind": "replace", "text": "Accounts receivable aged by date due." },
+                        {
+                            "id": "o4",
+                            "kind": "replace",
+                            "text": "Accounts receivable summarized by length of business relationship with KCN."
+                        },
+                        { "id": "o5", "kind": "replace", "text": "Accounts receivable matched with sales items." }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "s2",
+                    "label": "Callout 2 - depreciation support",
+                    "answer_key": "o5",
+                    "original_text": "Invoices supporting depreciation expense for the year.",
+                    "options": [
+                        { "id": "o1", "kind": "keep", "text": "Retain the original text." },
+                        { "id": "o2", "kind": "delete", "text": "Delete the text." },
+                        {
+                            "id": "o3",
+                            "kind": "replace",
+                            "text": "Lawyer's letter response on expected life of fixed assets."
+                        },
+                        { "id": "o4", "kind": "replace", "text": "Cash deposit slip for increase in cash for 20X5." },
+                        {
+                            "id": "o5",
+                            "kind": "replace",
+                            "text": "Schedule of details of depreciation expense calculation for 20X5."
+                        }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "s3",
+                    "label": "Callout 3 - software development costs",
+                    "answer_key": "o1",
+                    "original_text": "Software development cost invoices and other support.",
+                    "options": [
+                        { "id": "o1", "kind": "keep", "text": "Retain the original text." },
+                        { "id": "o2", "kind": "delete", "text": "Delete the text." },
+                        {
+                            "id": "o3",
+                            "kind": "replace",
+                            "text": "Confirmation requests to developers involved with software development costs."
+                        },
+                        {
+                            "id": "o4",
+                            "kind": "replace",
+                            "text": "Details of amortization of software development cost."
+                        },
+                        { "id": "o5", "kind": "replace", "text": "Physical examples of the software developed." }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "s4",
+                    "label": "Callout 4 - leasehold improvements",
+                    "answer_key": "o3",
+                    "original_text": "Vouchers supporting increase in leasehold improvements.",
+                    "options": [
+                        { "id": "o1", "kind": "keep", "text": "Retain the original text." },
+                        { "id": "o2", "kind": "delete", "text": "Delete the text." },
+                        {
+                            "id": "o3",
+                            "kind": "replace",
+                            "text": "Schedule of additions and retirements to leasehold improvements."
+                        },
+                        {
+                            "id": "o4",
+                            "kind": "replace",
+                            "text": "Schedule of descriptions of estimated lives of this year's new additions."
+                        },
+                        {
+                            "id": "o5",
+                            "kind": "replace",
+                            "text": "Schedule of tax depreciation for this year's new additions."
+                        }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "s5",
+                    "label": "Callout 5 - accounts payable",
+                    "answer_key": "o3",
+                    "original_text": "Detailed analysis and reconciliation of each unpaid account payable at year-end.",
+                    "options": [
+                        { "id": "o1", "kind": "keep", "text": "Retain the original text." },
+                        { "id": "o2", "kind": "delete", "text": "Delete the text." },
+                        {
+                            "id": "o3",
+                            "kind": "replace",
+                            "text": "Trial balance of accounts payable at the balance sheet date."
+                        },
+                        {
+                            "id": "o4",
+                            "kind": "replace",
+                            "text": "List of amortization of accounts payable at the balance sheet date."
+                        },
+                        { "id": "o5", "kind": "replace", "text": "Current and past credit ratings of each supplier." }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "s6",
+                    "label": "Callout 6 - capital stock",
+                    "answer_key": "o2",
+                    "original_text": "Documentation supporting change in capital stock outstanding.",
+                    "options": [
+                        { "id": "o1", "kind": "keep", "text": "Retain the original text." },
+                        { "id": "o2", "kind": "delete", "text": "Delete the text." },
+                        {
+                            "id": "o3",
+                            "kind": "replace",
+                            "text": "Documentation of cash receipts related to new stock issuance."
+                        },
+                        { "id": "o4", "kind": "replace", "text": "Addresses of new shareholders." },
+                        {
+                            "id": "o5",
+                            "kind": "replace",
+                            "text": "Schedule supporting retained earnings effect relating to current stock."
+                        }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "s7",
+                    "label": "Callout 7 - receivables from officers",
+                    "answer_key": "o5",
+                    "original_text": "Management's review of receivables from officers.",
+                    "options": [
+                        { "id": "o1", "kind": "keep", "text": "Retain the original text." },
+                        { "id": "o2", "kind": "delete", "text": "Delete the text." },
+                        {
+                            "id": "o3",
+                            "kind": "replace",
+                            "text": "Cash deposit receipt related to new receivables from officers."
+                        },
+                        {
+                            "id": "o4",
+                            "kind": "replace",
+                            "text": "Copy of Board of Director approval of new loans from officers."
+                        },
+                        { "id": "o5", "kind": "replace", "text": "Copy of loan agreement with Mr. Best." }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "s8",
+                    "label": "Callout 8 - expense account analysis",
+                    "answer_key": "o4",
+                    "original_text": "Account 7140.10 expense analysis.",
+                    "options": [
+                        { "id": "o1", "kind": "keep", "text": "Retain the original text." },
+                        { "id": "o2", "kind": "replace", "text": "Account 1000.30 detailed analysis." },
+                        { "id": "o3", "kind": "replace", "text": "Account 5100.10 detailed analysis." },
+                        { "id": "o4", "kind": "replace", "text": "Account 7100.10 expense analysis." },
+                        { "id": "o5", "kind": "replace", "text": "Account 7200.10 expense analysis." }
+                    ]
+                }
+            ],
+            "source": "KCN audit-request-list DRS (Whittington & Pany; docs_ankountant/tbs-research/06-docreview-sim.md section 5A), 8 verbatim callouts. Reasoned key is analytically defensible (not an official AICPA key). Authority: PCAOB AS 1105 (audit evidence) + AS 2301 (responses to assessed risks); verified against current PCAOB standards."
+        },
+        {
+            "section": "AUD",
+            "tbs_type": "research",
+            "set_id": "aud_evidence_sufficiency",
+            "schema_version": 1,
+            "prompt": "An engagement team is documenting the basis for its opinion and needs the PCAOB auditing standard that defines audit evidence and the auditor's objective to obtain sufficient appropriate audit evidence. Research the standards and enter the citation.",
+            "exhibits": [
+                {
+                    "kind": "text",
+                    "title": "Scenario",
+                    "body": "The team must cite the governing PCAOB Auditing Standard on audit evidence (definition, sufficiency, and appropriateness)."
+                }
+            ],
+            "steps": [
+                {
+                    "kind": "citation",
+                    "id": "citation",
+                    "weight": 1.0,
+                    "label": "Governing standard",
+                    "granularity": "section",
+                    "accepted": ["AS 1105", "PCAOB AS 1105", "AS No. 1105", "1105"],
+                    "corpus_refs": ["pcaob-as-1105"]
+                }
+            ],
+            "source": "PCAOB AS 1105, Audit Evidence. Public-domain PCAOB standard (verbatim in corpus). Verified current (reorganized PCAOB standards, effective 2017)."
+        },
+        {
+            "section": "FAR",
+            "tbs_type": "research",
+            "set_id": "operating_vs_finance_lease",
+            "schema_version": 1,
+            "prompt": "Kestrel Co. signs a 5-year equipment lease commencing January 1, Year 1, with payments due each December 31. Research the FASB Accounting Standards Codification for the paragraph requiring a lessee to recognize a right-of-use asset and a lease liability at the commencement date, and enter the citation.",
+            "exhibits": [
+                {
+                    "kind": "text",
+                    "title": "Scenario",
+                    "body": "The controller needs the paragraph establishing WHEN (at what date) the lessee first records the right-of-use asset and the lease liability."
+                }
+            ],
+            "steps": [
+                {
+                    "kind": "citation",
+                    "id": "citation",
+                    "weight": 1.0,
+                    "label": "Governing citation",
+                    "granularity": "paragraph",
+                    "accepted": ["ASC 842-20-25-1", "842-20-25-1", "ASC 842-20-25"],
+                    "corpus_refs": ["asc-842-20-25-1"]
+                }
+            ],
+            "source": "ASC 842-20-25-1 (lessee initial recognition at commencement). Modernized from Wiley CPAexcel 2014 FAR M13-E lease research, which cited the superseded ASC 840-30-30-1/840-10-25-1. VERIFIED against current US GAAP: ASC 842 replaced ASC 840. ASC = Tier-B cite-only. Parent section 842-20-25 also accepted."
+        },
+        {
+            "section": "FAR",
+            "tbs_type": "doc_review",
+            "set_id": "revrec_step_selection",
+            "schema_version": 1,
+            "prompt": "Review the draft revenue-recognition footnote (Note 7) for a SaaS company reporting under ASC 606. For each highlighted phrase, retain it or replace it so the note is correct, using the exhibits.",
+            "exhibits": [
+                {
+                    "id": "ex1",
+                    "kind": "text",
+                    "title": "Exhibit 1 - Standard contract terms",
+                    "body": "Annual SaaS subscriptions are billed in advance; the service is delivered continuously over the 12-month term. Customers have a 30-day right of return. A perpetual license and one year of post-contract support (PCS) are separate performance obligations, each with an observable standalone selling price."
+                },
+                {
+                    "id": "ex2",
+                    "kind": "table",
+                    "title": "Exhibit 2 - 20X5 revenue schedule",
+                    "columns": ["Item", "Amount"],
+                    "rows": [
+                        ["Subscription billings in 20X5", "4,200,000"],
+                        ["Portion unearned at 12/31/20X5 (deferred)", "300,000"],
+                        ["Subscription revenue earned in 20X5", "3,900,000"]
+                    ]
+                },
+                {
+                    "id": "ex3",
+                    "kind": "email",
+                    "title": "Exhibit 3 - Email from controller",
+                    "body": "Returns are estimable from history; they occur every year and are not zero, though individually small. Please make sure the note reflects the returns policy."
+                },
+                {
+                    "id": "doc",
+                    "kind": "document",
+                    "role": "document",
+                    "title": "Note 7. Revenue Recognition (draft)",
+                    "body": "The Company recognizes revenue under ASC 606. For its annual SaaS subscription contracts, the Company recognizes subscription revenue <blank step=\"s1\">at the point the contract is signed</blank>. Implementation services that are not distinct from the subscription are recognized <blank step=\"s2\">over the subscription term</blank>. The Company's standard terms include a 30-day right of return; the Company records revenue <blank step=\"s3\">in full at contract inception with no adjustment for expected returns</blank>. For bundled arrangements that include a perpetual software license and one year of technical support, the transaction price is allocated <blank step=\"s4\">entirely to the software license</blank>. Total subscription revenue recognized in 20X5 was <blank step=\"s5\">$4,200,000</blank>."
+                }
+            ],
+            "steps": [
+                {
+                    "kind": "blank",
+                    "id": "s1",
+                    "label": "SaaS subscription timing",
+                    "answer_key": "o2",
+                    "confusion_set_id": "revrec_timing_saas",
+                    "original_text": "at the point the contract is signed",
+                    "options": [
+                        { "id": "o1", "kind": "keep", "text": "at the point the contract is signed" },
+                        {
+                            "id": "o2",
+                            "kind": "replace",
+                            "text": "ratably over the subscription period as the customer simultaneously receives and consumes the benefit"
+                        },
+                        { "id": "o3", "kind": "replace", "text": "when the customer is invoiced" },
+                        { "id": "o4", "kind": "replace", "text": "when cash is collected" },
+                        {
+                            "id": "o5",
+                            "kind": "replace",
+                            "text": "at the point control of the software transfers to the customer"
+                        }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "s2",
+                    "label": "Non-distinct implementation services",
+                    "answer_key": "o1",
+                    "confusion_set_id": "revrec_bundled_nondistinct",
+                    "original_text": "over the subscription term",
+                    "options": [
+                        { "id": "o1", "kind": "keep", "text": "over the subscription term" },
+                        { "id": "o2", "kind": "replace", "text": "immediately upon completion of implementation" },
+                        { "id": "o3", "kind": "replace", "text": "at contract inception" },
+                        {
+                            "id": "o4",
+                            "kind": "replace",
+                            "text": "as a separate performance obligation using a cost-to-cost input method"
+                        },
+                        { "id": "o5", "kind": "delete", "text": "Delete the sentence." }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "s3",
+                    "label": "Right of return",
+                    "answer_key": "o2",
+                    "confusion_set_id": "variable_consideration_returns",
+                    "original_text": "in full at contract inception with no adjustment for expected returns",
+                    "options": [
+                        {
+                            "id": "o1",
+                            "kind": "keep",
+                            "text": "in full at contract inception with no adjustment for expected returns"
+                        },
+                        {
+                            "id": "o2",
+                            "kind": "replace",
+                            "text": "net of a refund liability for expected returns (variable consideration), constrained to the amount probable of not significantly reversing"
+                        },
+                        {
+                            "id": "o3",
+                            "kind": "replace",
+                            "text": "only after the 30-day return period lapses, deferring all revenue until then"
+                        },
+                        {
+                            "id": "o4",
+                            "kind": "replace",
+                            "text": "net of actual returns recorded in the subsequent period"
+                        }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "s4",
+                    "label": "Transaction price allocation",
+                    "answer_key": "o2",
+                    "confusion_set_id": "transaction_price_allocation",
+                    "original_text": "entirely to the software license",
+                    "options": [
+                        { "id": "o1", "kind": "keep", "text": "entirely to the software license" },
+                        {
+                            "id": "o2",
+                            "kind": "replace",
+                            "text": "to each performance obligation based on relative standalone selling prices"
+                        },
+                        { "id": "o3", "kind": "replace", "text": "equally between the license and the support" },
+                        {
+                            "id": "o4",
+                            "kind": "replace",
+                            "text": "to the support obligation first, with the residual to the license"
+                        }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "s5",
+                    "label": "Figure ties to schedule",
+                    "answer_key": "o2",
+                    "confusion_set_id": "figure_ties_to_schedule",
+                    "original_text": "$4,200,000",
+                    "options": [
+                        { "id": "o1", "kind": "keep", "text": "$4,200,000" },
+                        { "id": "o2", "kind": "replace", "text": "$3,900,000" },
+                        { "id": "o3", "kind": "replace", "text": "$4,500,000" },
+                        { "id": "o4", "kind": "replace", "text": "$3,600,000" }
+                    ]
+                }
+            ],
+            "source": "FAR revenue-recognition footnote DRS (docs_ankountant/tbs-research/06-docreview-sim.md section 5C), 5 blanks. Authority: ASC 606 (over-time recognition 606-10-25-27; allocation 606-10-32-31; variable consideration/returns 606-10-32-8). VERIFIED against current US GAAP. ASC = Tier-B cite-only."
+        },
+        {
+            "section": "FAR",
+            "tbs_type": "numeric",
+            "set_id": "far_balancesheet_adjustments",
+            "schema_version": 1,
+            "prompt": "Blear Co. is preparing its consolidated balance sheet as of December 31, Year 3 (to be issued February 25, Year 4). Review the exhibits and enter the required net adjustment to each line item (increases positive, decreases negative, whole dollars; leave 0 if no adjustment).",
+            "exhibits": [
+                {
+                    "id": "e1",
+                    "kind": "email",
+                    "title": "Email regarding sale of accounts receivable",
+                    "body": "AR Manager (12/29): On December 28 we agreed to sell $30,000 of accounts receivable without recourse for a 10% fee; we received $27,000 today. Senior Accountant (12/30): I recorded Dr Cash 27,000 / Cr Accounts receivable 27,000."
+                },
+                {
+                    "id": "e2",
+                    "kind": "table",
+                    "title": "Year-end inventory analysis (FIFO)",
+                    "columns": [
+                        "Product",
+                        "Qty subledger",
+                        "Qty physical",
+                        "Unit cost",
+                        "Replacement cost",
+                        "NRV",
+                        "Normal margin"
+                    ],
+                    "rows": [
+                        ["A", "1,500", "1,450", "25", "26", "20", "2"],
+                        ["B", "140", "148", "30", "37", "35", "2"]
+                    ]
+                },
+                {
+                    "id": "e3",
+                    "kind": "table",
+                    "title": "Accounts payable subledger (Jan Year 4)",
+                    "columns": ["Date", "Vendor", "Description", "Amount"],
+                    "rows": [
+                        ["1/4/yr4", "Clean Co.", "Janitorial services received in December Year 3", "6,000"],
+                        ["1/10/yr4", "Guardian LLC", "Legal fees for general corporate matters (Dec Year 3)", "27,500"],
+                        ["1/19/yr4", "Machine Co.", "Inventory received Jan 10 Year 4 (f.o.b. destination)", "18,000"],
+                        ["1/29/yr4", "Match Corp.", "Inventory received Jan 27 Year 4 (f.o.b. destination)", "22,200"]
+                    ]
+                },
+                {
+                    "id": "e4",
+                    "kind": "invoice",
+                    "title": "Home Build Corp. invoice #0567 (12/31/Year 3)",
+                    "body": "[Posted to: Property, plant and equipment; Amount posted: $85,300; Period: December Year 3.] HVAC for manufacturing building installed 12/31/Year 3: $75,000. Annual maintenance contract 1/1/Year 4-12/31/Year 4: $5,000. Subtotal 80,000; tax 4,500; shipping 800; TOTAL $85,300."
+                },
+                {
+                    "id": "e5",
+                    "kind": "invoice",
+                    "title": "Guardian LLC invoice (Jan 9 Year 4)",
+                    "body": "[Posted to: Legal expense #6100; Amount posted: $27,500; Period: January Year 4.] Services 12/1/Year 3-12/31/Year 3: December Year 3 legal fees for general corporate matters, $27,500. Net 60."
+                },
+                {
+                    "id": "e6",
+                    "kind": "statement",
+                    "title": "Intangible asset summary",
+                    "body": "Year-3 addition of $20,000 to the patent account is attributable to salary and benefit costs incurred for research and development on a new product expected to launch in Year 4."
+                }
+            ],
+            "steps": [
+                {
+                    "kind": "numeric",
+                    "id": "D5",
+                    "label": "Accounts receivable (net)",
+                    "answer_key": -3000,
+                    "tolerance": 0
+                },
+                { "kind": "numeric", "id": "D6", "label": "Inventory", "answer_key": -8260, "tolerance": 0 },
+                { "kind": "numeric", "id": "D7", "label": "Prepaid expenses", "answer_key": 5000, "tolerance": 0 },
+                {
+                    "kind": "numeric",
+                    "id": "D11",
+                    "label": "Property, plant and equipment (net)",
+                    "answer_key": -5000,
+                    "tolerance": 0
+                },
+                {
+                    "kind": "numeric",
+                    "id": "D12",
+                    "label": "Intangible assets (net)",
+                    "answer_key": -20000,
+                    "tolerance": 0
+                },
+                {
+                    "kind": "numeric",
+                    "id": "D16",
+                    "label": "Accounts payable and accrued expenses",
+                    "answer_key": 33500,
+                    "tolerance": 0
+                },
+                { "kind": "numeric", "id": "D27", "label": "Retained earnings", "answer_key": -64760, "tolerance": 0 }
+            ],
+            "source": "AICPA retired FAR TBS 'Blear Co.' adjusting entries (docs_ankountant/tbs-research/01-far-tbs-pdf.md), 7 signed whole-dollar cells (tolerance 0). Authority: ASC 860-10-40-5 (factoring/derecognition), ASC 330-10-35 (LCNRV + count cutoff), ASC 360-10-30-1 (PP&E cost + reclass), ASC 350-30/730-10 (R&D expensing), CON 8 (accrual cutoff). VERIFIED current US GAAP; balances to $1,755,040. ASC = Tier-B cite-only."
+        },
+        {
+            "section": "REG",
+            "tbs_type": "research",
+            "set_id": "reg_capitalize_vs_deduct",
+            "schema_version": 1,
+            "prompt": "A sole proprietor asks whether the ordinary and necessary costs of carrying on the business are deductible. Research the Internal Revenue Code for the section allowing a deduction for trade or business expenses, and enter the citation.",
+            "exhibits": [
+                {
+                    "kind": "text",
+                    "title": "Scenario",
+                    "body": "Identify the IRC section that allows a current deduction for ordinary and necessary trade or business expenses."
+                }
+            ],
+            "steps": [
+                {
+                    "kind": "citation",
+                    "id": "citation",
+                    "weight": 1.0,
+                    "label": "Governing citation",
+                    "granularity": "paragraph",
+                    "accepted": ["IRC \u00a7162(a)", "IRC \u00a7162", "\u00a7162", "Section 162", "IRC 162"],
+                    "corpus_refs": ["irc-162"]
+                }
+            ],
+            "source": "IRC \u00a7162(a) (trade or business expenses). 26 U.S.C. \u00a7162(a) is public domain (verbatim in corpus). VERIFIED current. Contrast \u00a7263(a) (capitalization)."
+        },
+        {
+            "section": "REG",
+            "tbs_type": "doc_review",
+            "set_id": "reg_capitalize_vs_deduct",
+            "schema_version": 1,
+            "prompt": "Review the draft tax memo. For each highlighted expenditure, select whether it is currently deductible under IRC \u00a7162 or must be capitalized and recovered over time under IRC \u00a7263. Use the exhibits.",
+            "exhibits": [
+                {
+                    "id": "ex1",
+                    "kind": "text",
+                    "title": "Exhibit 1 - Expenditure facts",
+                    "body": "Client (a calendar-year business) incurred: a routine repair to a delivery truck ($400); the purchase of a new $60,000 machine placed in service this year; the cost to add a new wing to the building ($250,000); and office supplies used this year ($900)."
+                },
+                {
+                    "id": "doc",
+                    "kind": "document",
+                    "role": "document",
+                    "title": "Draft tax memo - treatment of Year 1 expenditures",
+                    "body": "Recommended treatment: the routine repair to the delivery truck is <blank step=\"b1\">[treatment]</blank>. The purchase of the new machine is <blank step=\"b2\">[treatment]</blank>. The cost to add the new building wing is <blank step=\"b3\">[treatment]</blank>. The office supplies used this year are <blank step=\"b4\">[treatment]</blank>."
+                }
+            ],
+            "steps": [
+                {
+                    "kind": "blank",
+                    "id": "b1",
+                    "label": "Routine truck repair",
+                    "answer_key": "o1",
+                    "confusion_set_id": "reg_capitalize_vs_deduct",
+                    "options": [
+                        { "id": "o1", "kind": "replace", "text": "Currently deductible" },
+                        { "id": "o2", "kind": "replace", "text": "Capitalize and recover over time" }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "b2",
+                    "label": "New machine purchase",
+                    "answer_key": "o2",
+                    "confusion_set_id": "reg_capitalize_vs_deduct",
+                    "options": [
+                        { "id": "o1", "kind": "replace", "text": "Currently deductible" },
+                        { "id": "o2", "kind": "replace", "text": "Capitalize and recover over time" }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "b3",
+                    "label": "New building wing",
+                    "answer_key": "o2",
+                    "confusion_set_id": "reg_capitalize_vs_deduct",
+                    "options": [
+                        { "id": "o1", "kind": "replace", "text": "Currently deductible" },
+                        { "id": "o2", "kind": "replace", "text": "Capitalize and recover over time" }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "b4",
+                    "label": "Office supplies used",
+                    "answer_key": "o1",
+                    "confusion_set_id": "reg_capitalize_vs_deduct",
+                    "options": [
+                        { "id": "o1", "kind": "replace", "text": "Currently deductible" },
+                        { "id": "o2", "kind": "replace", "text": "Capitalize and recover over time" }
+                    ]
+                }
+            ],
+            "source": "REG tax-memo doc-review (deduct vs capitalize). Authority: IRC \u00a7162 (ordinary/necessary business expenses currently deductible) vs \u00a7263(a) (new assets/permanent improvements capitalized). VERIFIED current; IRC public domain (verbatim in corpus)."
+        },
+        {
+            "section": "BAR",
+            "tbs_type": "research",
+            "set_id": "bar_segment_reporting",
+            "schema_version": 1,
+            "prompt": "A public company must decide which operating segments to report separately. Research the FASB Accounting Standards Codification for the paragraph stating the 10% quantitative thresholds that make an operating segment separately reportable, and enter the citation.",
+            "exhibits": [
+                {
+                    "kind": "text",
+                    "title": "Scenario",
+                    "body": "Identify the ASC 280 paragraph listing the quantitative (10%) thresholds for a reportable operating segment."
+                }
+            ],
+            "steps": [
+                {
+                    "kind": "citation",
+                    "id": "citation",
+                    "weight": 1.0,
+                    "label": "Governing citation",
+                    "granularity": "paragraph",
+                    "accepted": ["ASC 280-10-50-12", "280-10-50-12", "ASC 280-10-50"],
+                    "corpus_refs": ["asc-280-10-50-12"]
+                }
+            ],
+            "source": "ASC 280-10-50-12 (segment quantitative thresholds). VERIFIED current US GAAP (ASC 280 unchanged). ASC = Tier-B cite-only; parent section 280-10-50 accepted."
+        },
+        {
+            "section": "ISC",
+            "tbs_type": "doc_review",
+            "set_id": "isc_control_type",
+            "schema_version": 1,
+            "prompt": "Review the draft IT controls memo. For each highlighted control, select whether it is a preventive control or a detective control. Use the exhibits.",
+            "exhibits": [
+                {
+                    "id": "ex1",
+                    "kind": "text",
+                    "title": "Exhibit 1 - Control descriptions",
+                    "body": "The entity operates: (1) a rule requiring supervisor approval before a new vendor is added to the vendor master file; (2) a monthly reconciliation of the vendor master file to approved vendor-request forms; (3) system-enforced segregation of duties so the person authorizing a disbursement cannot also record it."
+                },
+                {
+                    "id": "doc",
+                    "kind": "document",
+                    "role": "document",
+                    "title": "Draft IT general controls memo",
+                    "body": "Control classification: requiring supervisor approval before adding a new vendor is a <blank step=\"b1\">[control type]</blank>. The monthly reconciliation of the vendor master file to approved requests is a <blank step=\"b2\">[control type]</blank>. System-enforced segregation of duties between authorizing and recording disbursements is a <blank step=\"b3\">[control type]</blank>."
+                }
+            ],
+            "steps": [
+                {
+                    "kind": "blank",
+                    "id": "b1",
+                    "label": "Vendor add approval",
+                    "answer_key": "o1",
+                    "confusion_set_id": "isc_control_type",
+                    "options": [
+                        { "id": "o1", "kind": "replace", "text": "Preventive control" },
+                        { "id": "o2", "kind": "replace", "text": "Detective control" }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "b2",
+                    "label": "Master-file reconciliation",
+                    "answer_key": "o2",
+                    "confusion_set_id": "isc_control_type",
+                    "options": [
+                        { "id": "o1", "kind": "replace", "text": "Preventive control" },
+                        { "id": "o2", "kind": "replace", "text": "Detective control" }
+                    ]
+                },
+                {
+                    "kind": "blank",
+                    "id": "b3",
+                    "label": "Segregation of duties",
+                    "answer_key": "o1",
+                    "confusion_set_id": "isc_control_type",
+                    "options": [
+                        { "id": "o1", "kind": "replace", "text": "Preventive control" },
+                        { "id": "o2", "kind": "replace", "text": "Detective control" }
+                    ]
+                }
+            ],
+            "source": "ISC IT general controls classification (preventive vs detective). Authority: NIST Cybersecurity Framework 2.0 (Protect vs Detect functions) and NIST SP 800-53 control families; see ISC corpus. VERIFIED current; NIST is public domain (verbatim in corpus)."
+        },
+        {
+            "section": "TCP",
+            "tbs_type": "research",
+            "set_id": "tcp_cost_recovery",
+            "schema_version": 1,
+            "prompt": "A business wants to immediately expense, rather than capitalize and depreciate, the cost of qualifying depreciable property placed in service this year. Research the Internal Revenue Code for the section allowing an election to treat the cost of such property as an expense, and enter the citation.",
+            "exhibits": [
+                {
+                    "kind": "text",
+                    "title": "Scenario",
+                    "body": "Identify the IRC section that lets a taxpayer elect to expense the cost of qualifying depreciable business property (subject to a dollar limit)."
+                }
+            ],
+            "steps": [
+                {
+                    "kind": "citation",
+                    "id": "citation",
+                    "weight": 1.0,
+                    "label": "Governing citation",
+                    "granularity": "paragraph",
+                    "accepted": ["IRC \u00a7179(a)", "IRC \u00a7179", "\u00a7179", "Section 179", "IRC 179"],
+                    "corpus_refs": ["irc-179"]
+                }
+            ],
+            "source": "IRC \u00a7179(a) (election to expense certain depreciable assets). 26 U.S.C. \u00a7179(a) is public domain (verbatim in corpus). VERIFIED current (annual dollar limits indexed; the expensing election itself is stable)."
+        }
     ]
 }

@@ -2,33 +2,35 @@
 Copyright: Ankitects Pty Ltd and contributors
 License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
-Workspace-pane wrapper around the TBS task surface. Mirrors the data load of
-ankountant-tbs/+page.ts: find the first sealed TBS note in the section (there is
-no deep-link inside the workspace) and build its render model.
+Workspace-pane wrapper around the research surface. Unlike TbsPane (which grabs
+the first TBS note regardless of shape), this filters by BOTH tbs_type=research
+and section (ADR 0008), defaulting to FAR, so it never collides with a JE/numeric
+or a different section's item.
 -->
 <script lang="ts">
     import { onMount } from "svelte";
 
     import { getNote, searchNotes } from "@generated/backend";
 
+    import ResearchSurface from "../../ankountant-research/ResearchSurface.svelte";
     import type { TbsModel } from "../../ankountant-tbs/lib";
     import { buildTbsModel } from "../../ankountant-tbs/lib";
-    import TbsSurface from "../../ankountant-tbs/TbsSurface.svelte";
     import PaneState from "./PaneState.svelte";
 
     const SECTION = "FAR";
-    // Mirrors rslib TBS_NOTETYPE + the sealed-bank deck layout (confusion.rs).
-    const FIRST_TBS_SEARCH = `"note:Ankountant TBS" deck:Ankountant::Sealed::${SECTION}::*`;
+    const SEARCH = `"note:Ankountant TBS" "tbs_type:research" deck:Ankountant::Sealed::${SECTION}::*`;
 
     let phase: "loading" | "ready" | "empty" | "error" = "loading";
     let noteId = 0n;
     let model: TbsModel | null = null;
+    let fields: string[] = [];
+    let tags: string[] = [];
     let message = "";
 
     async function load(): Promise<void> {
         phase = "loading";
         try {
-            const found = await searchNotes({ search: FIRST_TBS_SEARCH });
+            const found = await searchNotes({ search: SEARCH });
             noteId = found.ids.length > 0 ? found.ids[0] : 0n;
             if (noteId === 0n) {
                 phase = "empty";
@@ -36,6 +38,8 @@ no deep-link inside the workspace) and build its render model.
             }
             const note = await getNote({ nid: noteId });
             model = buildTbsModel(note.fields, note.tags);
+            fields = note.fields;
+            tags = note.tags;
             phase = "ready";
         } catch (err) {
             message = err instanceof Error ? err.message : String(err);
@@ -49,12 +53,12 @@ no deep-link inside the workspace) and build its render model.
 </script>
 
 {#if phase === "ready" && model}
-    <TbsSurface {noteId} {model} />
+    <ResearchSurface {noteId} {model} {fields} {tags} />
 {:else if phase !== "ready"}
     <PaneState
         {phase}
         {message}
         onRetry={load}
-        emptyText="No TBS task available yet. Load the FAR demo content from the Ankountant menu."
+        emptyText="No research task available yet. Load the FAR demo content from the Ankountant menu."
     />
 {/if}

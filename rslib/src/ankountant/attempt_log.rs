@@ -42,6 +42,12 @@ pub(crate) struct Outcome {
     pub(crate) credit: f64,
     #[serde(default)]
     pub(crate) steps: Vec<OutcomeStep>,
+    /// T1 AC2 — research "time-to-cite" (ms), a reported secondary signal only.
+    /// `#[serde(default)]` keeps old `outcome_json` (no key) deserializing, and
+    /// `skip_serializing_if` keeps non-research outcomes byte-identical to
+    /// before (sync-safe: no new field on the wire when absent).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) elapsed_ms: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

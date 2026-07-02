@@ -60,6 +60,8 @@ _ANKOUNTANT_ROUTES = {
     "dashboard": "ankountant-dashboard",
     "confusion": "ankountant-confusion",
     "tbs": "ankountant-tbs",
+    "research": "ankountant-research",
+    "doc_review": "ankountant-doc-review",
     "stats": "ankountant-stats",
 }
 

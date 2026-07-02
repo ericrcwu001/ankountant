@@ -426,6 +426,8 @@ def is_sveltekit_page(path: str) -> bool:
         "ankountant-dashboard",
         "ankountant-confusion",
         "ankountant-tbs",
+        "ankountant-research",
+        "ankountant-doc-review",
         "ankountant-stats",
         "ankountant-workspace",
     ]

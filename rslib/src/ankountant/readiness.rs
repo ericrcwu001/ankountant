@@ -83,21 +83,19 @@ impl Collection {
             }
             sealed_attempts += 1;
             let acc = perf.entry(a.confusion_set_id.clone()).or_default();
-            match a.mode.as_str() {
-                "tbs" => {
-                    acc.tbs_credit += a.outcome.credit;
-                    acc.tbs_total += 1.0;
-                    sealed_correct += a.outcome.credit;
-                    sealed_total += 1.0;
-                }
-                _ => {
-                    // confusion / MCQ: pass/fail on credit >= 0.5
-                    let c = if a.outcome.credit >= 0.5 { 1.0 } else { 0.0 };
-                    acc.mcq_correct += c;
-                    acc.mcq_total += 1.0;
-                    sealed_correct += c;
-                    sealed_total += 1.0;
-                }
+            if logic::is_partial_credit_mode(a.mode.as_str()) {
+                // tbs / doc_review: fractional per-step (per-blank) partial credit.
+                acc.tbs_credit += a.outcome.credit;
+                acc.tbs_total += 1.0;
+                sealed_correct += a.outcome.credit;
+                sealed_total += 1.0;
+            } else {
+                // confusion / research / MCQ: pass/fail on credit >= 0.5.
+                let c = if a.outcome.credit >= 0.5 { 1.0 } else { 0.0 };
+                acc.mcq_correct += c;
+                acc.mcq_total += 1.0;
+                sealed_correct += c;
+                sealed_total += 1.0;
             }
         }
 

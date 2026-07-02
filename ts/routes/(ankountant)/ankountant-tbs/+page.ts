@@ -27,6 +27,6 @@ export const load = (async ({ url }) => {
         return { noteId: 0n, model: null };
     }
     const note = await getNote({ nid: noteId });
-    const model = buildTbsModel(note.fields);
+    const model = buildTbsModel(note.fields, note.tags);
     return { noteId, model };
 }) satisfies PageLoad;

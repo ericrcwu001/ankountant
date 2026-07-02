@@ -1,0 +1,114 @@
+{
+    "FAR": [
+        {
+            "id": "asc-842-20-25-1",
+            "citation": "ASC 842-20-25-1",
+            "title": "Leases — Lessee initial recognition at the commencement date",
+            "body": "Our paraphrase (Tier-B cite-only; see the Codification for the authoritative text): at the lease commencement date the lessee recognizes a right-of-use asset and a lease liability. The liability is the present value of the lease payments not yet paid; the right-of-use asset is that liability plus any lease payments made at or before commencement and initial direct costs, less incentives received.",
+            "deep_link": "https://asc.fasb.org/842-20-25-1",
+            "tags": ["lease", "recognition", "commencement", "ROU"],
+            "verbatim": false,
+            "source": "FASB ASC 842-20-25-1 (paraphrased; ADR 0006 Tier-B firewall)"
+        },
+        {
+            "id": "asc-606-10-32-31",
+            "citation": "ASC 606-10-32-31",
+            "title": "Revenue — Allocating the transaction price to performance obligations (Step 4)",
+            "body": "Our paraphrase (Tier-B cite-only): the transaction price is allocated to each distinct performance obligation in proportion to the relative standalone selling prices of the promised goods or services, so that each obligation is allocated the consideration the entity expects to be entitled to for satisfying it.",
+            "deep_link": "https://asc.fasb.org/606-10-32-31",
+            "tags": ["revenue", "allocation", "SSP", "step4"],
+            "verbatim": false,
+            "source": "FASB ASC 606-10-32-31 (paraphrased; ADR 0006 Tier-B firewall)"
+        },
+        {
+            "id": "asc-606-10-25-27",
+            "citation": "ASC 606-10-25-27",
+            "title": "Revenue — Performance obligations satisfied over time (Step 5)",
+            "body": "Our paraphrase (Tier-B cite-only): an entity recognizes revenue over time when one of three criteria is met (the customer simultaneously receives and consumes the benefits as the entity performs; the entity's performance creates or enhances an asset the customer controls; or the asset has no alternative use and the entity has an enforceable right to payment for performance completed to date). Otherwise revenue is recognized at the point in time control transfers.",
+            "deep_link": "https://asc.fasb.org/606-10-25-27",
+            "tags": ["revenue", "over-time", "point-in-time", "step5"],
+            "verbatim": false,
+            "source": "FASB ASC 606-10-25-27 (paraphrased; ADR 0006 Tier-B firewall)"
+        },
+        {
+            "id": "asc-360-10-30-1",
+            "citation": "ASC 360-10-30-1",
+            "title": "Property, plant, and equipment — Initial measurement",
+            "body": "Our paraphrase (Tier-B cite-only): property, plant, and equipment is initially measured at historical cost, which includes the costs necessary to bring the asset to the condition and location necessary for its intended use (for example, purchase price, freight-in, installation, and testing). Costs that do not ready the asset for use, such as operator training and the first year's insurance, are period costs.",
+            "deep_link": "https://asc.fasb.org/360-10-30-1",
+            "tags": ["PP&E", "capitalize", "historical-cost"],
+            "verbatim": false,
+            "source": "FASB ASC 360-10-30-1 (paraphrased; ADR 0006 Tier-B firewall)"
+        }
+    ],
+    "BAR": [
+        {
+            "id": "asc-280-10-50-12",
+            "citation": "ASC 280-10-50-12",
+            "title": "Segment reporting — Quantitative thresholds for a reportable segment",
+            "body": "Our paraphrase (Tier-B cite-only): an operating segment is separately reportable if it meets any of the 10% quantitative thresholds — its reported revenue (external plus intersegment) is 10% or more of the combined revenue of all operating segments; the absolute amount of its reported profit or loss is 10% or more of the greater (in absolute amount) of the combined reported profit of all profitable segments or the combined reported loss of all loss segments; or its assets are 10% or more of the combined assets of all operating segments.",
+            "deep_link": "https://asc.fasb.org/280-10-50-12",
+            "tags": ["segment", "reportable", "thresholds"],
+            "verbatim": false,
+            "source": "FASB ASC 280-10-50-12 (paraphrased; ADR 0006 Tier-B firewall)"
+        }
+    ],
+    "REG": [
+        {
+            "id": "irc-162",
+            "citation": "IRC §162(a)",
+            "title": "Trade or business expenses — ordinary and necessary",
+            "body": "26 U.S.C. §162(a) (public domain): \"There shall be allowed as a deduction all the ordinary and necessary expenses paid or incurred during the taxable year in carrying on any trade or business, including— (1) a reasonable allowance for salaries or other compensation for personal services actually rendered; (2) traveling expenses (including amounts expended for meals and lodging other than amounts which are lavish or extravagant under the circumstances) while away from home in the pursuit of a trade or business; and (3) rentals or other payments required to be made as a condition to the continued use or possession, for purposes of the trade or business, of property to which the taxpayer has not taken or is not taking title or in which he has no equity.\"",
+            "deep_link": "https://www.law.cornell.edu/uscode/text/26/162",
+            "tags": ["deduction", "trade-or-business", "ordinary-and-necessary"],
+            "verbatim": true,
+            "source": "26 U.S.C. §162(a) (U.S. Code, public domain)"
+        },
+        {
+            "id": "irc-263",
+            "citation": "IRC §263(a)",
+            "title": "Capital expenditures — no current deduction",
+            "body": "26 U.S.C. §263(a) (public domain): \"No deduction shall be allowed for— (1) Any amount paid out for new buildings or for permanent improvements or betterments made to increase the value of any property or estate.\" (Subparagraphs (A)–(L) list statutory exceptions; omitted here.)",
+            "deep_link": "https://www.law.cornell.edu/uscode/text/26/263",
+            "tags": ["capitalize", "capital-expenditure", "improvements"],
+            "verbatim": true,
+            "source": "26 U.S.C. §263(a)(1) (U.S. Code, public domain)"
+        }
+    ],
+    "TCP": [
+        {
+            "id": "irc-179",
+            "citation": "IRC §179(a)",
+            "title": "Election to expense certain depreciable business assets",
+            "body": "26 U.S.C. §179(a) (public domain): \"A taxpayer may elect to treat the cost of any section 179 property as an expense which is not chargeable to capital account. Any cost so treated shall be allowed as a deduction for the taxable year in which the section 179 property is placed in service.\"",
+            "deep_link": "https://www.law.cornell.edu/uscode/text/26/179",
+            "tags": ["cost-recovery", "expensing", "election"],
+            "verbatim": true,
+            "source": "26 U.S.C. §179(a) (U.S. Code, public domain)"
+        }
+    ],
+    "AUD": [
+        {
+            "id": "pcaob-as-1105",
+            "citation": "AS 1105",
+            "title": "Audit Evidence (sufficiency and appropriateness)",
+            "body": "PCAOB AS 1105.04 (public domain): \"Audit evidence is all the information, whether obtained from audit procedures or other sources, that is used by the auditor in arriving at the conclusions on which the auditor's opinion is based. Audit evidence consists of both information that supports and corroborates management's assertions regarding the financial statements or internal control over financial reporting and information that contradicts such assertions.\" AS 1105.06: to be appropriate, audit evidence must be both relevant and reliable; sufficiency is the measure of the quantity of audit evidence.",
+            "deep_link": "https://pcaobus.org/oversight/standards/auditing-standards/details/AS1105",
+            "tags": ["audit-evidence", "sufficient", "appropriate"],
+            "verbatim": true,
+            "source": "PCAOB AS 1105 .04/.06 (PCAOB auditing standards, public domain)"
+        }
+    ],
+    "ISC": [
+        {
+            "id": "nist-csf-2-0",
+            "citation": "NIST CSF 2.0",
+            "title": "NIST Cybersecurity Framework 2.0 — Core Functions",
+            "body": "NIST Cybersecurity Framework (CSF) 2.0 (public domain): the CSF Core is organized into six Functions — Govern, Identify, Protect, Detect, Respond, and Recover. Govern (added in 2.0) establishes and monitors the organization's cybersecurity risk-management strategy, expectations, and policy; the other five organize outcomes for understanding, safeguarding against, detecting, responding to, and recovering from cybersecurity risks.",
+            "deep_link": "https://www.nist.gov/cyberframework",
+            "tags": ["NIST", "CSF", "controls", "governance"],
+            "verbatim": true,
+            "source": "NIST Cybersecurity Framework 2.0 (NIST, U.S. Government, public domain)"
+        }
+    ]
+}

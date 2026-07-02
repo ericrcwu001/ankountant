@@ -14,6 +14,16 @@ extension PerformanceClient: DependencyKey {
             return note.flds.components(separatedBy: "\u{1f}")
         }
 
+        // Fields + section tags: the section (ADR 0008) rides in the note's
+        // `sec::<SECTION>` tag, so the render model needs both to scope the
+        // literature and reveal correctly.
+        @Sendable func fieldsAndTags(of noteId: Int64) throws -> (fields: [String], tags: [String]) {
+            let note = try notes.getNote(noteId)
+            let fields = note.flds.components(separatedBy: "\u{1f}")
+            let tags = note.tags.split(separator: " ").map(String.init)
+            return (fields, tags)
+        }
+
         return Self(
             listTbsTasks: {
                 let query = "\"note:Ankountant TBS\" deck:Ankountant::Sealed::FAR::*"
@@ -24,10 +34,17 @@ extension PerformanceClient: DependencyKey {
                 }
             },
             loadTbs: { noteId in
-                buildTbsModel(fields: try fields(of: noteId))
+                let (fields, tags) = try fieldsAndTags(of: noteId)
+                return buildTbsModel(fields: fields, tags: tags)
             },
             submitTbs: { noteId, submissionJson, confidence, latencyMs in
                 try scheduler.submitPerformanceAttempt(noteId, "tbs", submissionJson, confidence, latencyMs)
+            },
+            submitResearch: { noteId, citation, confidence, latencyMs in
+                try scheduler.submitPerformanceAttempt(noteId, "research", buildResearchSubmission(citation), confidence, latencyMs)
+            },
+            submitDocReview: { noteId, submissionJson, confidence, latencyMs in
+                try scheduler.submitPerformanceAttempt(noteId, "doc_review", submissionJson, confidence, latencyMs)
             },
             confusionQueue: { section, maxItems in
                 try scheduler.buildConfusionQueue(section, maxItems)

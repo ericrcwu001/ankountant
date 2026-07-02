@@ -1,10 +1,17 @@
 // Copyright: Ankitects Pty Ltd and contributors
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
-// ! B4 (F014) — pure helpers for the TBS review surface. The heavy lifting
-// ! (partial-credit grading) is authoritative on the Rust side via
-// ! `SubmitPerformanceAttempt`; these helpers only parse the note structure for
-// ! rendering and shape the submission JSON. Kept DOM-free for `just test-ts`.
+// ! Workstream B — pure helpers for the section-agnostic TBS surfaces (exam
+// ! shell, research, doc-review, JE/numeric). Grading stays authoritative on the
+// ! Rust side via `SubmitPerformanceAttempt`; these helpers only parse the note
+// ! structure for rendering and shape the submission JSON. Kept DOM-free for
+// ! `just test-ts`.
+// !
+// ! RETRIEVAL INTEGRITY (C11): the *render* model NEVER carries an answer key —
+// ! `parseSteps` drops `answer_key`, and `options[]` are the label-stripped
+// ! candidates only (nothing marks which is correct). The correct value is
+// ! surfaced ONLY post-submit via `buildRevealModel`, mirroring the existing
+// ! client-side stripping discipline.
 
 /** Field order of the "Ankountant TBS" note type (mirrors tbs_fields). */
 export const TBS_FIELD = {
@@ -13,32 +20,76 @@ export const TBS_FIELD = {
     exhibitsJson: 2,
     stepsJson: 3,
     schemaTag: 4,
+    sourcePassage: 5,
 } as const;
 
 export type TbsShape = "journal_entry" | "numeric" | "research" | "doc_review";
 
-/** A single exhibit shown alongside the task (basic pane, B4-D4). */
+/** The CPA sections the engine covers (ADR 0008). */
+export const SECTIONS = ["AUD", "FAR", "REG", "BAR", "ISC", "TCP"] as const;
+export type Section = (typeof SECTIONS)[number];
+
+const SEC_TAG_PREFIX = "sec::";
+
+/** Typed exhibit kinds (mirrors the Rust SeedExhibit `kind`). */
+export type ExhibitKind =
+    | "text"
+    | "email"
+    | "invoice"
+    | "table"
+    | "statement"
+    | "memo"
+    | "document"
+    | "stamp";
+
+/** A single typed exhibit shown alongside the task. `role:"document"` marks the
+ *  doc-review primary document (its body carries `<blank step="id">` markers);
+ *  `kind:"table"` carries `columns`/`rows`. */
 export interface Exhibit {
+    id?: string;
     title: string;
+    kind: ExhibitKind;
+    role?: string;
     body: string;
+    columns?: string[];
+    rows?: string[][];
+}
+
+/** A candidate option for a doc-review blank — label-stripped (nothing here
+ *  marks which option is correct; that stays server-side). */
+export interface RenderOption {
+    id: string;
+    text: string;
+    kind: string;
 }
 
 /**
- * A gradable step, WITHOUT its answer key — the key stays server-side and is
- * never rendered. For a journal-entry step the client edits account/side/amount
- * cells; for a numeric step, a single value cell.
+ * A gradable step, WITHOUT its answer key. For a journal-entry step the client
+ * edits account/side/amount; for numeric a value cell; for a doc-review blank a
+ * `<select>` of `options`; for research a citation input.
  */
 export interface RenderStep {
     id: string;
     label: string;
     weight: number;
+    /** Step kind (citation | blank | je | numeric); undefined for legacy steps. */
+    kind?: string;
+    /** doc-review blank candidates (label-stripped). */
+    options?: RenderOption[];
+    /** doc-review blank's original document text (safe to show). */
+    originalText?: string;
+    /** research hint: which bundled corpus passages back the answer. */
+    corpusRefs?: string[];
 }
 
 export interface TbsModel {
     shape: TbsShape;
+    section: string;
     prompt: string;
     exhibits: Exhibit[];
     steps: RenderStep[];
+    /** doc-review only: the primary document body (with `<blank>` markers). */
+    document?: string;
 }
 
 function safeParse<T>(raw: string | undefined, fallback: T): T {
@@ -52,7 +103,25 @@ function safeParse<T>(raw: string | undefined, fallback: T): T {
     }
 }
 
-/** Parse exhibits_json into a list of {title, body} exhibits. */
+const EXHIBIT_KINDS: ExhibitKind[] = [
+    "text",
+    "email",
+    "invoice",
+    "table",
+    "statement",
+    "memo",
+    "document",
+    "stamp",
+];
+
+function asStringArray(v: unknown): string[] | undefined {
+    if (!Array.isArray(v)) {
+        return undefined;
+    }
+    return v.map((x) => String(x ?? ""));
+}
+
+/** Parse exhibits_json into typed exhibits. */
 export function parseExhibits(raw: string | undefined): Exhibit[] {
     const parsed = safeParse<unknown>(raw, []);
     if (!Array.isArray(parsed)) {
@@ -60,17 +129,54 @@ export function parseExhibits(raw: string | undefined): Exhibit[] {
     }
     return parsed.map((e, i) => {
         const obj = (e ?? {}) as Record<string, unknown>;
+        const kindRaw = typeof obj.kind === "string" ? obj.kind : "text";
+        const kind = (EXHIBIT_KINDS.includes(kindRaw as ExhibitKind)
+            ? kindRaw
+            : "text") as ExhibitKind;
+        const rows = Array.isArray(obj.rows)
+            ? (obj.rows as unknown[]).map((r) => asStringArray(r) ?? [])
+            : undefined;
         return {
+            id: typeof obj.id === "string" ? obj.id : undefined,
             title: typeof obj.title === "string" ? obj.title : `Exhibit ${i + 1}`,
-            body: typeof obj.body === "string" ? obj.body : String(e ?? ""),
+            kind,
+            role: typeof obj.role === "string" ? obj.role : undefined,
+            body: typeof obj.body === "string" ? obj.body : "",
+            columns: asStringArray(obj.columns),
+            rows,
         };
     });
+}
+
+interface RawOption {
+    id?: unknown;
+    text?: unknown;
+    kind?: unknown;
 }
 
 interface RawStep {
     id?: unknown;
     label?: unknown;
     weight?: unknown;
+    kind?: unknown;
+    options?: unknown;
+    original_text?: unknown;
+    corpus_refs?: unknown;
+    // NOTE: `answer_key` is deliberately NOT read here (retrieval integrity C11).
+}
+
+function parseOptions(raw: unknown): RenderOption[] | undefined {
+    if (!Array.isArray(raw)) {
+        return undefined;
+    }
+    return raw.map((o, i) => {
+        const obj = (o ?? {}) as RawOption;
+        return {
+            id: typeof obj.id === "string" ? obj.id : `o${i + 1}`,
+            text: typeof obj.text === "string" ? obj.text : "",
+            kind: typeof obj.kind === "string" ? obj.kind : "replace",
+        };
+    });
 }
 
 /**
@@ -88,23 +194,96 @@ export function parseSteps(raw: string | undefined): RenderStep[] {
         const id = typeof s.id === "string" ? s.id : `s${i + 1}`;
         const label = typeof s.label === "string" ? s.label : id;
         const weight = typeof s.weight === "number" ? s.weight : defaultWeight;
-        return { id, label, weight };
+        const step: RenderStep = { id, label, weight };
+        if (typeof s.kind === "string") {
+            step.kind = s.kind;
+        }
+        const options = parseOptions(s.options);
+        if (options) {
+            step.options = options;
+        }
+        if (typeof s.original_text === "string") {
+            step.originalText = s.original_text;
+        }
+        const corpusRefs = asStringArray(s.corpus_refs);
+        if (corpusRefs) {
+            step.corpusRefs = corpusRefs;
+        }
+        return step;
     });
 }
 
-/** Build the full TBS render model from a note's raw fields. */
-export function buildTbsModel(fields: string[]): TbsModel {
+/** Resolve a note's section from its `sec::<SECTION>` tag (fallback FAR). */
+export function sectionFromTags(tags: string[] | undefined): string {
+    const t = (tags ?? []).find((x) => x.startsWith(SEC_TAG_PREFIX));
+    const sec = t ? t.slice(SEC_TAG_PREFIX.length) : "FAR";
+    return (SECTIONS as readonly string[]).includes(sec) ? sec : "FAR";
+}
+
+/** Build the full TBS render model from a note's raw fields (+ tags for section). */
+export function buildTbsModel(fields: string[], tags?: string[]): TbsModel {
     const shapeRaw = fields[TBS_FIELD.tbsType] ?? "journal_entry";
     const shape = (["journal_entry", "numeric", "research", "doc_review"].includes(shapeRaw)
         ? shapeRaw
         : "journal_entry") as TbsShape;
+    const exhibits = parseExhibits(fields[TBS_FIELD.exhibitsJson]);
+    const doc = exhibits.find((e) => e.role === "document");
     return {
         shape,
+        section: sectionFromTags(tags),
         prompt: fields[TBS_FIELD.prompt] ?? "",
-        exhibits: parseExhibits(fields[TBS_FIELD.exhibitsJson]),
+        exhibits,
         steps: parseSteps(fields[TBS_FIELD.stepsJson]),
+        document: doc?.body,
     };
 }
+
+/** Exhibits shown in the exhibits pane (everything except the doc-review doc). */
+export function paneExhibits(model: TbsModel): Exhibit[] {
+    return model.exhibits.filter((e) => e.role !== "document");
+}
+
+// --- Document segmentation (doc-review) --------------------------------------
+
+export type DocSegment =
+    | { type: "text"; key: string; text: string }
+    | { type: "blank"; key: string; blankId: string; original: string };
+
+const BLANK_RE = /<blank\s+step="([^"]+)">([\s\S]*?)<\/blank>/g;
+
+/** Split a doc-review document body into text + blank segments. Each `<blank
+ *  step="id">original</blank>` marker becomes a blank segment referencing a
+ *  step id; everything else is literal text. */
+export function segmentDocument(body: string | undefined): DocSegment[] {
+    if (!body) {
+        return [];
+    }
+    const segments: DocSegment[] = [];
+    let last = 0;
+    let n = 0;
+    BLANK_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = BLANK_RE.exec(body)) !== null) {
+        if (m.index > last) {
+            segments.push({ type: "text", key: `t${n}`, text: body.slice(last, m.index) });
+            n += 1;
+        }
+        segments.push({
+            type: "blank",
+            key: `b${n}`,
+            blankId: m[1],
+            original: m[2],
+        });
+        n += 1;
+        last = m.index + m[0].length;
+    }
+    if (last < body.length) {
+        segments.push({ type: "text", key: `t${n}`, text: body.slice(last) });
+    }
+    return segments;
+}
+
+// --- Submission builders -----------------------------------------------------
 
 /** One journal-entry line as edited in the grid. */
 export interface JeLineInput {
@@ -112,18 +291,24 @@ export interface JeLineInput {
     account: string;
     side: string;
     amount: string;
+    /** When true the line is intentionally blank ("no entry required"). */
+    noEntry?: boolean;
 }
 
-/** Shape the submission_json for a journal-entry TBS. */
+/** Shape the submission_json for a journal-entry TBS. A "no entry" line submits
+ *  empty values (graded incorrect if the line was required — the exam shows
+ *  spare rows, so not every row must be used). */
 export function buildJeSubmission(lines: JeLineInput[]): string {
     return JSON.stringify({
         steps: lines.map((l) => ({
             id: l.id,
-            value: {
-                account: l.account,
-                side: l.side,
-                amount: l.amount === "" ? "" : Number(l.amount),
-            },
+            value: l.noEntry
+                ? { account: "", side: "", amount: "" }
+                : {
+                    account: l.account,
+                    side: l.side,
+                    amount: l.amount === "" ? "" : Number(l.amount),
+                },
         })),
     });
 }
@@ -143,3 +328,135 @@ export function buildNumericSubmission(cells: NumericCellInput[]): string {
         })),
     });
 }
+
+/** Shape the submission_json for a research TBS (one citation; the backend
+ *  research arm reads `citation`). */
+export function buildResearchSubmission(citation: string): string {
+    return JSON.stringify({ citation: citation.trim() });
+}
+
+/** Shape the submission_json for a doc-review TBS (all blanks in one attempt;
+ *  each value is the chosen option id, matched server-side against the blank's
+ *  answer_key option id). */
+export function buildDocReviewSubmission(blanks: { id: string; value: string }[]): string {
+    return JSON.stringify({ steps: blanks.map((b) => ({ id: b.id, value: b.value })) });
+}
+
+// --- Post-submit reveal (Results layer) --------------------------------------
+// Built ONLY after submit. It resolves the answer key from the raw note fields
+// (already in memory from getNote) into a human-readable correct value; it is
+// never used to render anything before the learner submits.
+
+export interface StepReveal {
+    id: string;
+    label: string;
+    correctText: string;
+}
+
+export interface RevealModel {
+    steps: StepReveal[];
+    /** Item-level authoritative basis / provenance (source_passage field). */
+    source: string;
+    /** Blueprint-ish tag: section + the item's ds:: schema tag. */
+    section: string;
+    schemaTag: string;
+}
+
+interface RawRevealStep {
+    id?: unknown;
+    label?: unknown;
+    kind?: unknown;
+    answer_key?: unknown;
+    options?: unknown;
+}
+
+function optionText(options: unknown, id: string): string {
+    if (!Array.isArray(options)) {
+        return id;
+    }
+    for (const o of options) {
+        const obj = (o ?? {}) as RawOption;
+        if (obj.id === id) {
+            return typeof obj.text === "string" ? obj.text : id;
+        }
+    }
+    return id;
+}
+
+function revealCorrect(step: RawRevealStep): string {
+    const key = step.answer_key;
+    if (step.kind === "blank" && typeof key === "string") {
+        return optionText(step.options, key);
+    }
+    if (Array.isArray(key)) {
+        return key.map((k) => String(k)).join(" / ");
+    }
+    if (key && typeof key === "object") {
+        const o = key as Record<string, unknown>;
+        if ("account" in o) {
+            return `${String(o.side ?? "").toUpperCase()} ${String(o.account ?? "")} ${String(o.amount ?? "")}`.trim();
+        }
+        return JSON.stringify(key);
+    }
+    return key === undefined || key === null ? "" : String(key);
+}
+
+/** Build the post-submit reveal model from the raw note fields. */
+export function buildRevealModel(fields: string[], tags?: string[]): RevealModel {
+    const rawSteps = safeParse<RawRevealStep[]>(fields[TBS_FIELD.stepsJson], []);
+    const rendered = parseSteps(fields[TBS_FIELD.stepsJson]);
+    const labelById = new Map(rendered.map((s) => [s.id, s.label]));
+    const steps: StepReveal[] = (Array.isArray(rawSteps) ? rawSteps : []).map((s, i) => {
+        const id = typeof s.id === "string" ? s.id : `s${i + 1}`;
+        return {
+            id,
+            label: labelById.get(id) ?? id,
+            correctText: revealCorrect(s),
+        };
+    });
+    return {
+        steps,
+        source: fields[TBS_FIELD.sourcePassage] ?? "",
+        section: sectionFromTags(tags),
+        schemaTag: fields[TBS_FIELD.schemaTag] ?? "",
+    };
+}
+
+// --- Controlled chart of accounts (JE upgrade) -------------------------------
+// A curated account picker (not free text) covering the seeded JE items plus
+// common FAR accounts. The real exam supplies a per-item list; this is a
+// pragmatic superset until per-item account lists are authored.
+export const JE_ACCOUNTS: string[] = [
+    "Cash",
+    "Accounts Receivable",
+    "Allowance for Doubtful Accounts",
+    "Inventory",
+    "Prepaid Expenses",
+    "Land",
+    "Building",
+    "Equipment",
+    "Right-of-Use Asset",
+    "Accumulated Depreciation",
+    "Patent",
+    "Accounts Payable",
+    "Lease Liability",
+    "Bonds Payable",
+    "Discount on Bonds Payable",
+    "Deferred Tax Liability",
+    "Income Tax Payable",
+    "Common Stock",
+    "Common Stock Dividend Distributable",
+    "Additional Paid-in Capital",
+    "Retained Earnings",
+    "Treasury Stock",
+    "Unrealized Holding Gain - Income",
+    "Unrealized Holding Gain - OCI",
+    "Fair Value Adjustment - Trading",
+    "Fair Value Adjustment (AFS)",
+    "Interest Expense",
+    "Income Tax Expense",
+    "Repairs and Maintenance Expense",
+    "Research and Development Expense",
+    "Loss on Sale of A/R",
+    "COGS",
+];

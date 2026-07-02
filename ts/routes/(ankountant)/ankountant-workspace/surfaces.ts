@@ -17,6 +17,9 @@ import AddPane from "./panes/AddPane.svelte";
 import BrowsePane from "./panes/BrowsePane.svelte";
 import ConfusionPane from "./panes/ConfusionPane.svelte";
 import DashboardPane from "./panes/DashboardPane.svelte";
+import DocReviewPane from "./panes/DocReviewPane.svelte";
+import LiteraturePane from "./panes/LiteraturePane.svelte";
+import ResearchPane from "./panes/ResearchPane.svelte";
 import StatsPane from "./panes/StatsPane.svelte";
 import TbsPane from "./panes/TbsPane.svelte";
 
@@ -46,6 +49,24 @@ export const SURFACES: Record<SurfaceKind, SurfaceDef> = {
         label: "TBS",
         glyph: "▤",
         component: TbsPane,
+    },
+    research: {
+        kind: "research",
+        label: "Research",
+        glyph: "⌕",
+        component: ResearchPane,
+    },
+    doc_review: {
+        kind: "doc_review",
+        label: "Doc Review",
+        glyph: "▥",
+        component: DocReviewPane,
+    },
+    literature: {
+        kind: "literature",
+        label: "Literature",
+        glyph: "▧",
+        component: LiteraturePane,
     },
     stats: {
         kind: "stats",

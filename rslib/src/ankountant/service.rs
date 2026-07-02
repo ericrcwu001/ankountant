@@ -39,11 +39,20 @@ impl Collection {
 
         // Build the id -> submitted value map from the submission JSON.
         let submitted = parse_submission(&req.mode, &req.submission_json)?;
-        let (outcomes, total_credit) = grading::grade(&steps, &submitted);
+        // research = single-citation, all-or-nothing (multi-valued key);
+        // everything else (tbs / doc_review) = per-step partial credit.
+        let (outcomes, total_credit) = if req.mode == "research" {
+            grading::grade_research(&steps, &submitted)
+        } else {
+            grading::grade(&steps, &submitted)
+        };
 
-        // Resolve the confusion set for this item from its schema tag (A6/A3).
-        let section = super::DEFAULT_SECTION;
-        let map = self.ankountant_confusable_map(section);
+        // Resolve the item's section (ADR 0008): from its `sec::` tag, falling
+        // back to the default for pre-section-dimension notes. The section drives
+        // both the confusable map and the sealed-bank lookup below, so an AUD
+        // attempt resolves against AUD sets + the AUD sealed deck, not FAR.
+        let section = super::note_section(&note.tags);
+        let map = self.ankountant_confusable_map(&section);
         let schema_tag = note.fields().get(tbs_fields::SCHEMA_TAG).cloned();
         // Also consider the note's ordinary tags for a ds:: match.
         let confusion_set_id = schema_tag
@@ -57,7 +66,7 @@ impl Collection {
             .unwrap_or_default();
 
         // Is this item in the sealed firewall bank? (Determines Performance.)
-        let sealed = self.ankountant_note_is_sealed(item_note_id, section)?;
+        let sealed = self.ankountant_note_is_sealed(item_note_id, &section)?;
 
         let outcome = Outcome {
             credit: total_credit,
@@ -69,6 +78,9 @@ impl Collection {
                     weight: o.weight,
                 })
                 .collect(),
+            // T1 AC2 — record time-to-cite for research attempts only; other
+            // modes keep `outcome_json` byte-identical (elapsed_ms omitted).
+            elapsed_ms: (req.mode == "research").then_some(req.latency_ms),
         };
 
         let attempt = NewAttempt {
@@ -78,7 +90,7 @@ impl Collection {
             confidence: req.confidence.clone(),
             latency_ms: req.latency_ms,
             outcome,
-            section: section.to_string(),
+            section,
             sealed,
         };
 
@@ -111,7 +123,9 @@ impl Collection {
 
 /// Parse a submission into a step-id -> value map.
 /// - confusion mode: `{"choice":"X"}` maps to a single step id "choice".
-/// - tbs mode: `{"steps":[{"id":"l1","value":...}]}`.
+/// - research mode: `{"citation":"ASC …"}` maps to a single step id "citation".
+/// - tbs / doc_review mode: `{"steps":[{"id":"l1","value":...}]}` (doc_review
+///   reuses this per-step path verbatim — one step per blank).
 fn parse_submission(mode: &str, json: &str) -> Result<HashMap<String, Value>> {
     let mut out = HashMap::new();
     let root: Value = serde_json::from_str(json).or_invalid("invalid submission_json")?;
@@ -119,6 +133,11 @@ fn parse_submission(mode: &str, json: &str) -> Result<HashMap<String, Value>> {
         "confusion" => {
             if let Some(choice) = root.get("choice") {
                 out.insert("choice".to_string(), choice.clone());
+            }
+        }
+        "research" => {
+            if let Some(citation) = root.get("citation") {
+                out.insert("citation".to_string(), citation.clone());
             }
         }
         _ => {
