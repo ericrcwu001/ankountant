@@ -20,6 +20,32 @@
 - **Treatment** — one of the mutually-exclusive answers within a confusion set
   (e.g. "Capitalize" / "Expense").
 
+## TBS (Task-Based Simulations)
+
+- **TBS shape** — one of four structural forms a TBS takes: **journal-entry**,
+  **numeric**, **research**, **document-review**. All four are stored in the one
+  `Ankountant TBS` note type; each has its own playable surface.
+- **TBS exam shell** — the shared split-screen chrome that hosts every TBS,
+  mirroring the real exam: an **exhibits** pane, an **authoritative-literature**
+  browser, a spreadsheet, and multi-part requirement tabs. All shapes render
+  inside it; the literature browser is available on every TBS, not only research.
+- **Exhibit** — a supporting document attached to a TBS (financial statements,
+  memo, emails, contracts, trial balance) that the candidate consults to answer.
+- **Authoritative literature** — the searchable body of standards a research task
+  is answered against; **per section**: FAR/BAR → FASB ASC, AUD → AICPA + PCAOB
+  standards, REG/TCP → the Internal Revenue Code, ISC → NIST/SOC/COBIT frameworks
+  (SEC regs overlay several). Public-domain bodies (IRC, SEC, PCAOB, NIST) may be
+  bundled verbatim; FASB ASC is cite-only (ADR 0006).
+- **Research sim** — the TBS shape where you navigate the authoritative
+  literature and submit the governing **citation**; scored on correctness (with
+  time as a secondary signal) — a lookup skill, not recall.
+- **Document-review sim** — the TBS shape presenting exhibits plus a document
+  whose **blanks** are each a "which treatment applies?" choice; graded per blank
+  with partial credit (reuses confusion-set logic).
+- **Blank** — one gradable choice-slot in a document-review sim.
+- **Citation** — the answer to a research sim (e.g. `ASC 842-20-25-1`), graded by
+  normalized match against an accepted-citation list.
+
 ## Piles (the firewall)
 
 - **Study pile** — cards the scheduler queues for normal FSRS review. Feeds

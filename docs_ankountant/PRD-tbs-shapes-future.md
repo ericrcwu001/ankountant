@@ -114,11 +114,23 @@ Inherits all of `PRD.md` §"Technical Context" and Functional/Non-Functional req
 - **R2 — Citation normalization.** Many valid ways to write one cite. _Mitigate:_ accepted-citation list + normalization in the grader (T1 AC1).
 - **R3 — Scope creep toward a full codification browser.** _Mitigate:_ corpus is seed-scoped (T2), not comprehensive.
 
+## Decisions locked (2026-07-02)
+
+> From the grill-me interview. Canonical: `tbs-research/00-DECISIONS.md`. **Scope
+> expanded** beyond this draft: build a shared **exam shell** (exhibits +
+> authoritative-literature browser + lightweight spreadsheet + requirement tabs)
+> hosting ALL four shapes, JE/numeric migrated in (ADR 0007) — not two bolt-on
+> surfaces. Personal-use build; real ASC excerpts loaded at runtime from the
+> gitignored media folder, never committed (ADR 0006). Doc-review blanks are
+> hybrid (reuse `ds::` confusion sets when they exist, else item-local options),
+> equal-weighted. Delivered by an autonomous background build on the
+> `tbs-surfaces` branch, test-gated.
+
 ## Open Questions
 
-- [ ] **OQ-1 — Literature licensing.** What can we legally bundle/redistribute for research sims? — owner: eric — blocks: public release of research items (not local demo).
-- [ ] **OQ-2 — Time as credit vs signal.** Should research grading fold time into credit, or keep it a reported secondary signal (current plan)? — owner: eric — blocks: T1 grading exactness.
-- [ ] **OQ-3 — Corpus search backend.** Client-side over bundled file vs an append-only `SearchLiterature` RPC — pick per corpus size. — owner: eric — blocks: T2 implementation choice.
+- [x] **OQ-1 — Literature licensing.** RESOLVED (ADR 0006): personal-use build; real ASC excerpts loaded at runtime from the gitignored Anki media folder (full fidelity), never committed to the repo (honors the Tier-B firewall). Citations + our paraphrases + manifests are committed. Swappable loader seam kept for any future distribution.
+- [x] **OQ-2 — Time as credit vs signal.** RESOLVED: correctness-only credit (normalized citation match; accept exact paragraph OR parent section per the key); time-to-cite recorded + trended as a coaching signal, never folded into the score.
+- [ ] **OQ-3 — Corpus search backend.** Client-side over the bundled corpus vs an append-only `SearchLiterature` RPC — still open; decide in synthesis per corpus size (research agents 05/08 to advise). — owner: eric — blocks: T2 implementation choice.
 
 ## Changelog
 
