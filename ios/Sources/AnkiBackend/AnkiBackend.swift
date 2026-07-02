@@ -334,8 +334,8 @@ extension AnkiBackend {
         package static let buildConfusionQueue: UInt32 = 40
         package static let getReadiness: UInt32 = 41
         package static let submitPerformanceAttempt: UInt32 = 42
-        // F016 seed loader — e2e/test-only; still resynced here so a future
-        // iOS caller dispatches to the right Rust method (FR-6 / drift guard).
+        // F016 FAR demo seed loader — wired to the DebugView "Load FAR demo
+        // profile" action via SchedulerService.loadFarSeed (FR-6 / drift guard).
         package static let loadFarSeed: UInt32 = 43
     }
 

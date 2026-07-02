@@ -369,7 +369,20 @@ impl Collection {
 
         // Get deck-specific desired retention if available, otherwise use config
         // default
-        let desired_retention = deck.effective_desired_retention(&config);
+        let mut desired_retention = deck.effective_desired_retention(&config);
+        // Ankountant A1-live/A2: mirror the live answer path for study cards so
+        // a manual "recompute memory state" agrees with the deadline ramp and
+        // any latency-defunding reduction.
+        if let Some(section) =
+            crate::ankountant::schedule::section_for_deck_name(&deck.human_name())
+        {
+            desired_retention = self.ankountant_desired_retention(&section, "")? as f32;
+            if crate::ankountant::logic::custom_data_too_easy(&card.custom_data) {
+                desired_retention = (desired_retention
+                    - crate::ankountant::constants::TOO_EASY_RETENTION_REDUCTION as f32)
+                    .max(crate::ankountant::constants::TOO_EASY_RETENTION_FLOOR as f32);
+            }
+        }
 
         let historical_retention = config.inner.historical_retention;
         let params = config.fsrs_params();

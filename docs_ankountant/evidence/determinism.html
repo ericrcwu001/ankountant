@@ -1,0 +1,1665 @@
+<!doctype html>
+<!--
+  Copyright: Ankitects Pty Ltd and contributors
+  License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
+
+  GENERATED — do not edit by hand. Regenerate with `just ankountant-evidence`
+  (emitter: rslib/src/ankountant/determinism.rs::emit_determinism_evidence).
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ankountant — Backend Determinism Evidence</title>
+    <style>
+      :root {
+        --bg: #0f1420;
+        --panel: #172033;
+        --panel-2: #1e2a42;
+        --ink: #e8edf6;
+        --muted: #9fb0cc;
+        --accent: #6ea8ff;
+        --ok: #4bd991;
+        --bad: #ff6b6b;
+        --border: #2a3a58;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+      h1 { font-size: 26px; margin: 0 0 4px; }
+      h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 32px 0 12px; }
+      p.claim { color: var(--muted); max-width: 70ch; }
+      code { background: var(--panel-2); padding: 2px 6px; border-radius: 5px; font-size: 13px; }
+      .badges { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0; }
+      .badge {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border);
+        background: var(--panel); font-weight: 600;
+      }
+      .badge .dot { width: 10px; height: 10px; border-radius: 50%; }
+      .pass .dot { background: var(--ok); } .pass { color: var(--ok); }
+      .fail .dot { background: var(--bad); } .fail { color: var(--bad); }
+      .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+      table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+      th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+      th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+      td.num, th.num { text-align: right; }
+      .foot { color: var(--muted); font-size: 13px; margin-top: 10px; }
+      details { margin-top: 16px; }
+      summary { cursor: pointer; color: var(--accent); }
+      pre { background: #0b0f18; border: 1px solid var(--border); border-radius: 10px; padding: 16px; overflow: auto; font-size: 12px; color: #c7d3e8; }
+      .hash { color: var(--accent); word-break: break-all; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1 id="title"></h1>
+      <p class="claim" id="claim"></p>
+      <p class="foot">Reproduce: <code id="reproduce"></code> · generated <span id="ts"></span></p>
+
+      <div class="badges" id="badges"></div>
+
+      <h2>Readiness projection (identical across runs)</h2>
+      <div class="card"><table id="readiness"></table></div>
+
+      <h2>Confusion-queue order (identical across runs)</h2>
+      <div class="card"><table id="queue"></table></div>
+
+      <h2>Next-card interval recommendations</h2>
+      <div class="card" id="intervals-card"><table id="intervals"></table></div>
+
+      <h2>Interval fuzz — pure function of (card_id + reps)</h2>
+      <div class="card"><table id="fuzz"></table></div>
+      <p class="foot">In production the fuzz RNG is seeded with <code>card_id + reps</code>; in tests fuzzing is disabled entirely. Either way the recommendation is reproducible — same seed, same day.</p>
+
+      <details>
+        <summary>Raw JSON record</summary>
+        <pre id="raw"></pre>
+      </details>
+    </div>
+
+    <script>
+      const DATA = {
+  "claim": "Given a fixed collection, the shared Rust core's scores, readiness band, confusion-queue order, and next-card intervals are identical on repeat runs. The only scheduling randomness (interval fuzz) is a pure function of (card_id + reps).",
+  "fuzz_reproducibility": [
+    {
+      "card_id": 1001,
+      "fuzz_factor": 0.6605027914047241,
+      "fuzzed_interval_from_100": 102,
+      "reps": 0,
+      "seed": 1001
+    },
+    {
+      "card_id": 1001,
+      "fuzz_factor": 0.5816593170166016,
+      "fuzzed_interval_from_100": 101,
+      "reps": 1,
+      "seed": 1002
+    },
+    {
+      "card_id": 2002,
+      "fuzz_factor": 0.03469967842102051,
+      "fuzzed_interval_from_100": 93,
+      "reps": 0,
+      "seed": 2002
+    },
+    {
+      "card_id": 2002,
+      "fuzz_factor": 0.21693956851959229,
+      "fuzzed_interval_from_100": 96,
+      "reps": 5,
+      "seed": 2007
+    }
+  ],
+  "generated_at": 1782961182,
+  "reproduce": "just ankountant-evidence",
+  "run1": {
+    "confusion_queue": [
+      {
+        "note_id": 1782961182634,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182636,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182635,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182638,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182640,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182637,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182642,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182644,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182639,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182646,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182688,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182641,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182689,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182697,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182643,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182706,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182645,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182648,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182650,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182647,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182651,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182654,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182649,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182656,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182652,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182658,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182653,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182686,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182655,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182690,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182657,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182691,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182659,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182696,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182660,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182662,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182661,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182664,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182663,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182666,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182665,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182668,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182667,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182670,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182669,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182692,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182671,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182693,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182672,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182699,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182687,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182673,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182675,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182674,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182677,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182679,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182676,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182681,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182678,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182684,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182680,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182694,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182682,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182695,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182683,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182698,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182685,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182701,
+        "set_id": "trading_afs_htm"
+      }
+    ],
+    "intervals": [
+      {
+        "card_id": 1782961182509,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182510,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182511,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182512,
+        "good_days": 79
+      },
+      {
+        "card_id": 1782961182513,
+        "good_days": 118
+      },
+      {
+        "card_id": 1782961182514,
+        "good_days": 18
+      },
+      {
+        "card_id": 1782961182515,
+        "good_days": 57
+      },
+      {
+        "card_id": 1782961182516,
+        "good_days": 86
+      },
+      {
+        "card_id": 1782961182517,
+        "good_days": 81
+      },
+      {
+        "card_id": 1782961182518,
+        "good_days": 122
+      },
+      {
+        "card_id": 1782961182519,
+        "good_days": 153
+      },
+      {
+        "card_id": 1782961182520,
+        "good_days": 481
+      },
+      {
+        "card_id": 1782961182521,
+        "good_days": 513
+      },
+      {
+        "card_id": 1782961182522,
+        "good_days": 170
+      },
+      {
+        "card_id": 1782961182523,
+        "good_days": 335
+      },
+      {
+        "card_id": 1782961182524,
+        "good_days": 410
+      },
+      {
+        "card_id": 1782961182529,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182530,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182531,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182532,
+        "good_days": 80
+      },
+      {
+        "card_id": 1782961182533,
+        "good_days": 107
+      },
+      {
+        "card_id": 1782961182534,
+        "good_days": 27
+      },
+      {
+        "card_id": 1782961182535,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182536,
+        "good_days": 141
+      },
+      {
+        "card_id": 1782961182537,
+        "good_days": 28
+      },
+      {
+        "card_id": 1782961182538,
+        "good_days": 72
+      },
+      {
+        "card_id": 1782961182539,
+        "good_days": 103
+      },
+      {
+        "card_id": 1782961182540,
+        "good_days": 318
+      },
+      {
+        "card_id": 1782961182541,
+        "good_days": 578
+      },
+      {
+        "card_id": 1782961182542,
+        "good_days": 628
+      },
+      {
+        "card_id": 1782961182543,
+        "good_days": 189
+      },
+      {
+        "card_id": 1782961182544,
+        "good_days": 259
+      },
+      {
+        "card_id": 1782961182549,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182550,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182551,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182552,
+        "good_days": 44
+      },
+      {
+        "card_id": 1782961182553,
+        "good_days": 178
+      },
+      {
+        "card_id": 1782961182554,
+        "good_days": 61
+      },
+      {
+        "card_id": 1782961182555,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182556,
+        "good_days": 129
+      },
+      {
+        "card_id": 1782961182557,
+        "good_days": 40
+      },
+      {
+        "card_id": 1782961182558,
+        "good_days": 68
+      },
+      {
+        "card_id": 1782961182559,
+        "good_days": 166
+      },
+      {
+        "card_id": 1782961182560,
+        "good_days": 210
+      },
+      {
+        "card_id": 1782961182561,
+        "good_days": 295
+      },
+      {
+        "card_id": 1782961182562,
+        "good_days": 360
+      },
+      {
+        "card_id": 1782961182563,
+        "good_days": 409
+      },
+      {
+        "card_id": 1782961182564,
+        "good_days": 443
+      },
+      {
+        "card_id": 1782961182569,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182570,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182571,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182572,
+        "good_days": 79
+      },
+      {
+        "card_id": 1782961182573,
+        "good_days": 118
+      },
+      {
+        "card_id": 1782961182574,
+        "good_days": 18
+      },
+      {
+        "card_id": 1782961182575,
+        "good_days": 57
+      },
+      {
+        "card_id": 1782961182576,
+        "good_days": 86
+      },
+      {
+        "card_id": 1782961182577,
+        "good_days": 81
+      },
+      {
+        "card_id": 1782961182578,
+        "good_days": 122
+      },
+      {
+        "card_id": 1782961182579,
+        "good_days": 153
+      },
+      {
+        "card_id": 1782961182580,
+        "good_days": 542
+      },
+      {
+        "card_id": 1782961182581,
+        "good_days": 165
+      },
+      {
+        "card_id": 1782961182582,
+        "good_days": 224
+      },
+      {
+        "card_id": 1782961182583,
+        "good_days": 417
+      },
+      {
+        "card_id": 1782961182584,
+        "good_days": 484
+      },
+      {
+        "card_id": 1782961182589,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182590,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182591,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182592,
+        "good_days": 80
+      },
+      {
+        "card_id": 1782961182593,
+        "good_days": 107
+      },
+      {
+        "card_id": 1782961182594,
+        "good_days": 27
+      },
+      {
+        "card_id": 1782961182595,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182596,
+        "good_days": 141
+      },
+      {
+        "card_id": 1782961182597,
+        "good_days": 28
+      },
+      {
+        "card_id": 1782961182598,
+        "good_days": 72
+      },
+      {
+        "card_id": 1782961182599,
+        "good_days": 103
+      },
+      {
+        "card_id": 1782961182600,
+        "good_days": 369
+      },
+      {
+        "card_id": 1782961182601,
+        "good_days": 654
+      },
+      {
+        "card_id": 1782961182602,
+        "good_days": 182
+      },
+      {
+        "card_id": 1782961182603,
+        "good_days": 261
+      },
+      {
+        "card_id": 1782961182604,
+        "good_days": 323
+      },
+      {
+        "card_id": 1782961182609,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182610,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182611,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182612,
+        "good_days": 44
+      },
+      {
+        "card_id": 1782961182613,
+        "good_days": 178
+      },
+      {
+        "card_id": 1782961182614,
+        "good_days": 61
+      },
+      {
+        "card_id": 1782961182615,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182616,
+        "good_days": 129
+      },
+      {
+        "card_id": 1782961182617,
+        "good_days": 40
+      },
+      {
+        "card_id": 1782961182618,
+        "good_days": 68
+      },
+      {
+        "card_id": 1782961182619,
+        "good_days": 166
+      },
+      {
+        "card_id": 1782961182620,
+        "good_days": 292
+      },
+      {
+        "card_id": 1782961182621,
+        "good_days": 366
+      },
+      {
+        "card_id": 1782961182622,
+        "good_days": 423
+      },
+      {
+        "card_id": 1782961182623,
+        "good_days": 466
+      },
+      {
+        "card_id": 1782961182624,
+        "good_days": 121
+      },
+      {
+        "card_id": 1782961182629,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182630,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182631,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182632,
+        "good_days": 79
+      },
+      {
+        "card_id": 1782961182633,
+        "good_days": 118
+      },
+      {
+        "card_id": 1782961182634,
+        "good_days": 18
+      }
+    ],
+    "readiness": {
+      "abstain": false,
+      "band_high": 74.63049313572935,
+      "band_low": 44.19411876855265,
+      "confidence": "Med",
+      "coverage": 0.75,
+      "point_estimate": 60.41666666666666,
+      "reason": "",
+      "reasons": [
+        "Lowest performance: capitalize vs expense (61%)",
+        "Largest gap: revrec step selection (14 pts)",
+        "Coverage: 75% of topics; 36 sealed attempts"
+      ]
+    },
+    "topics": [
+      {
+        "gap": 0.13749999999999996,
+        "memory": 0.75,
+        "memory_high": 0.9110583316059452,
+        "memory_insufficient": false,
+        "memory_low": 0.4676946650664344,
+        "performance": 0.6125,
+        "performance_high": 0.8266705926171916,
+        "performance_low": 0.34376825588537924,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "gap": 0.13749999999999996,
+        "memory": 0.75,
+        "memory_high": 0.9110583316059452,
+        "memory_insufficient": false,
+        "memory_low": 0.4676946650664344,
+        "performance": 0.6125,
+        "performance_high": 0.8266705926171916,
+        "performance_low": 0.34376825588537924,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "gap": 0.13749999999999996,
+        "memory": 0.75,
+        "memory_high": 0.9110583316059452,
+        "memory_insufficient": false,
+        "memory_low": 0.4676946650664344,
+        "performance": 0.6125,
+        "performance_high": 0.8266705926171916,
+        "performance_low": 0.34376825588537924,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "gap": 0.0,
+        "memory": 0.0,
+        "memory_high": 0.0,
+        "memory_insufficient": true,
+        "memory_low": 0.0,
+        "performance": 0.0,
+        "performance_high": 0.0,
+        "performance_low": 0.0,
+        "set_id": "trading_afs_htm"
+      }
+    ]
+  },
+  "run2": {
+    "confusion_queue": [
+      {
+        "note_id": 1782961182634,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182636,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182635,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182638,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182640,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182637,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182642,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182644,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182639,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182646,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182688,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182641,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182689,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182697,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182643,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182706,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182645,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182648,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182650,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182647,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182651,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182654,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182649,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182656,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182652,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182658,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182653,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182686,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182655,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182690,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182657,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182691,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182659,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182696,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182660,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182662,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182661,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182664,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182663,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182666,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182665,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182668,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182667,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182670,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182669,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182692,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182671,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182693,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182672,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182699,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182687,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182673,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182675,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182674,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182677,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182679,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182676,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182681,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182678,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182684,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182680,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182694,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182682,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182695,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182683,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182698,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182685,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182701,
+        "set_id": "trading_afs_htm"
+      }
+    ],
+    "intervals": [
+      {
+        "card_id": 1782961182509,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182510,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182511,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182512,
+        "good_days": 79
+      },
+      {
+        "card_id": 1782961182513,
+        "good_days": 118
+      },
+      {
+        "card_id": 1782961182514,
+        "good_days": 18
+      },
+      {
+        "card_id": 1782961182515,
+        "good_days": 57
+      },
+      {
+        "card_id": 1782961182516,
+        "good_days": 86
+      },
+      {
+        "card_id": 1782961182517,
+        "good_days": 81
+      },
+      {
+        "card_id": 1782961182518,
+        "good_days": 122
+      },
+      {
+        "card_id": 1782961182519,
+        "good_days": 153
+      },
+      {
+        "card_id": 1782961182520,
+        "good_days": 481
+      },
+      {
+        "card_id": 1782961182521,
+        "good_days": 513
+      },
+      {
+        "card_id": 1782961182522,
+        "good_days": 170
+      },
+      {
+        "card_id": 1782961182523,
+        "good_days": 335
+      },
+      {
+        "card_id": 1782961182524,
+        "good_days": 410
+      },
+      {
+        "card_id": 1782961182529,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182530,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182531,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182532,
+        "good_days": 80
+      },
+      {
+        "card_id": 1782961182533,
+        "good_days": 107
+      },
+      {
+        "card_id": 1782961182534,
+        "good_days": 27
+      },
+      {
+        "card_id": 1782961182535,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182536,
+        "good_days": 141
+      },
+      {
+        "card_id": 1782961182537,
+        "good_days": 28
+      },
+      {
+        "card_id": 1782961182538,
+        "good_days": 72
+      },
+      {
+        "card_id": 1782961182539,
+        "good_days": 103
+      },
+      {
+        "card_id": 1782961182540,
+        "good_days": 318
+      },
+      {
+        "card_id": 1782961182541,
+        "good_days": 578
+      },
+      {
+        "card_id": 1782961182542,
+        "good_days": 628
+      },
+      {
+        "card_id": 1782961182543,
+        "good_days": 189
+      },
+      {
+        "card_id": 1782961182544,
+        "good_days": 259
+      },
+      {
+        "card_id": 1782961182549,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182550,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182551,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182552,
+        "good_days": 44
+      },
+      {
+        "card_id": 1782961182553,
+        "good_days": 178
+      },
+      {
+        "card_id": 1782961182554,
+        "good_days": 61
+      },
+      {
+        "card_id": 1782961182555,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182556,
+        "good_days": 129
+      },
+      {
+        "card_id": 1782961182557,
+        "good_days": 40
+      },
+      {
+        "card_id": 1782961182558,
+        "good_days": 68
+      },
+      {
+        "card_id": 1782961182559,
+        "good_days": 166
+      },
+      {
+        "card_id": 1782961182560,
+        "good_days": 210
+      },
+      {
+        "card_id": 1782961182561,
+        "good_days": 295
+      },
+      {
+        "card_id": 1782961182562,
+        "good_days": 360
+      },
+      {
+        "card_id": 1782961182563,
+        "good_days": 409
+      },
+      {
+        "card_id": 1782961182564,
+        "good_days": 443
+      },
+      {
+        "card_id": 1782961182569,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182570,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182571,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182572,
+        "good_days": 79
+      },
+      {
+        "card_id": 1782961182573,
+        "good_days": 118
+      },
+      {
+        "card_id": 1782961182574,
+        "good_days": 18
+      },
+      {
+        "card_id": 1782961182575,
+        "good_days": 57
+      },
+      {
+        "card_id": 1782961182576,
+        "good_days": 86
+      },
+      {
+        "card_id": 1782961182577,
+        "good_days": 81
+      },
+      {
+        "card_id": 1782961182578,
+        "good_days": 122
+      },
+      {
+        "card_id": 1782961182579,
+        "good_days": 153
+      },
+      {
+        "card_id": 1782961182580,
+        "good_days": 542
+      },
+      {
+        "card_id": 1782961182581,
+        "good_days": 165
+      },
+      {
+        "card_id": 1782961182582,
+        "good_days": 224
+      },
+      {
+        "card_id": 1782961182583,
+        "good_days": 417
+      },
+      {
+        "card_id": 1782961182584,
+        "good_days": 484
+      },
+      {
+        "card_id": 1782961182589,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182590,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182591,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182592,
+        "good_days": 80
+      },
+      {
+        "card_id": 1782961182593,
+        "good_days": 107
+      },
+      {
+        "card_id": 1782961182594,
+        "good_days": 27
+      },
+      {
+        "card_id": 1782961182595,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182596,
+        "good_days": 141
+      },
+      {
+        "card_id": 1782961182597,
+        "good_days": 28
+      },
+      {
+        "card_id": 1782961182598,
+        "good_days": 72
+      },
+      {
+        "card_id": 1782961182599,
+        "good_days": 103
+      },
+      {
+        "card_id": 1782961182600,
+        "good_days": 369
+      },
+      {
+        "card_id": 1782961182601,
+        "good_days": 654
+      },
+      {
+        "card_id": 1782961182602,
+        "good_days": 182
+      },
+      {
+        "card_id": 1782961182603,
+        "good_days": 261
+      },
+      {
+        "card_id": 1782961182604,
+        "good_days": 323
+      },
+      {
+        "card_id": 1782961182609,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182610,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182611,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182612,
+        "good_days": 44
+      },
+      {
+        "card_id": 1782961182613,
+        "good_days": 178
+      },
+      {
+        "card_id": 1782961182614,
+        "good_days": 61
+      },
+      {
+        "card_id": 1782961182615,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182616,
+        "good_days": 129
+      },
+      {
+        "card_id": 1782961182617,
+        "good_days": 40
+      },
+      {
+        "card_id": 1782961182618,
+        "good_days": 68
+      },
+      {
+        "card_id": 1782961182619,
+        "good_days": 166
+      },
+      {
+        "card_id": 1782961182620,
+        "good_days": 292
+      },
+      {
+        "card_id": 1782961182621,
+        "good_days": 366
+      },
+      {
+        "card_id": 1782961182622,
+        "good_days": 423
+      },
+      {
+        "card_id": 1782961182623,
+        "good_days": 466
+      },
+      {
+        "card_id": 1782961182624,
+        "good_days": 121
+      },
+      {
+        "card_id": 1782961182629,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182630,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182631,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182632,
+        "good_days": 79
+      },
+      {
+        "card_id": 1782961182633,
+        "good_days": 118
+      },
+      {
+        "card_id": 1782961182634,
+        "good_days": 18
+      }
+    ],
+    "readiness": {
+      "abstain": false,
+      "band_high": 74.63049313572935,
+      "band_low": 44.19411876855265,
+      "confidence": "Med",
+      "coverage": 0.75,
+      "point_estimate": 60.41666666666666,
+      "reason": "",
+      "reasons": [
+        "Lowest performance: capitalize vs expense (61%)",
+        "Largest gap: revrec step selection (14 pts)",
+        "Coverage: 75% of topics; 36 sealed attempts"
+      ]
+    },
+    "topics": [
+      {
+        "gap": 0.13749999999999996,
+        "memory": 0.75,
+        "memory_high": 0.9110583316059452,
+        "memory_insufficient": false,
+        "memory_low": 0.4676946650664344,
+        "performance": 0.6125,
+        "performance_high": 0.8266705926171916,
+        "performance_low": 0.34376825588537924,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "gap": 0.13749999999999996,
+        "memory": 0.75,
+        "memory_high": 0.9110583316059452,
+        "memory_insufficient": false,
+        "memory_low": 0.4676946650664344,
+        "performance": 0.6125,
+        "performance_high": 0.8266705926171916,
+        "performance_low": 0.34376825588537924,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "gap": 0.13749999999999996,
+        "memory": 0.75,
+        "memory_high": 0.9110583316059452,
+        "memory_insufficient": false,
+        "memory_low": 0.4676946650664344,
+        "performance": 0.6125,
+        "performance_high": 0.8266705926171916,
+        "performance_low": 0.34376825588537924,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "gap": 0.0,
+        "memory": 0.0,
+        "memory_high": 0.0,
+        "memory_insufficient": true,
+        "memory_low": 0.0,
+        "performance": 0.0,
+        "performance_high": 0.0,
+        "performance_low": 0.0,
+        "set_id": "trading_afs_htm"
+      }
+    ]
+  },
+  "title": "Backend determinism (rubric #4)",
+  "verdicts": {
+    "independent_seed_agrees": true,
+    "repeat_run_identical": true
+  }
+};
+
+      const $ = (id) => document.getElementById(id);
+      $("title").textContent = DATA.title;
+      $("claim").textContent = DATA.claim;
+      $("reproduce").textContent = DATA.reproduce;
+      $("ts").textContent = new Date((DATA.generated_at || 0) * 1000).toISOString();
+      $("raw").textContent = JSON.stringify(DATA, null, 2);
+
+      function badge(label, ok) {
+        const cls = ok ? "pass" : "fail";
+        const mark = ok ? "verified identical" : "MISMATCH";
+        return `<span class="badge ${cls}"><span class="dot"></span>${label}: ${mark}</span>`;
+      }
+      $("badges").innerHTML =
+        badge("Repeat run", DATA.verdicts.repeat_run_identical) +
+        badge("Independent seed", DATA.verdicts.independent_seed_agrees);
+
+      const r = DATA.run1.readiness;
+      const pct = (x) => (x == null ? "—" : (x * 100).toFixed(0) + "%");
+      const sc = (x) => (x == null ? "—" : Number(x).toFixed(1));
+      $("readiness").innerHTML = r.abstain
+        ? `<tr><th>Status</th><td>Abstains — ${r.reason} (give-up rule)</td></tr>
+           <tr><th>Coverage</th><td>${pct(r.coverage)}</td></tr>`
+        : `<tr><th>CPA band</th><td>${sc(r.band_low)} – ${sc(r.band_high)} (point ${sc(r.point_estimate)})</td></tr>
+           <tr><th>Confidence</th><td>${r.confidence}</td></tr>
+           <tr><th>Coverage</th><td>${pct(r.coverage)}</td></tr>`;
+
+      const q = DATA.run1.confusion_queue || [];
+      $("queue").innerHTML =
+        `<tr><th class="num">#</th><th>Topic (set_id)</th><th>Note</th></tr>` +
+        q.map((it, i) => `<tr><td class="num">${i + 1}</td><td>${it.set_id}</td><td>${it.note_id}</td></tr>`).join("");
+
+      const iv = DATA.run1.intervals || [];
+      $("intervals").innerHTML =
+        `<tr><th>Card</th><th class="num">Good interval (days)</th></tr>` +
+        (iv.length
+          ? iv.slice(0, 12).map((x) => `<tr><td>${x.card_id}</td><td class="num">${x.good_days}</td></tr>`).join("")
+          : `<tr><td colspan="2" class="foot">No review-state cards in this seed.</td></tr>`) +
+        (iv.length > 12 ? `<tr><td class="foot" colspan="2">… ${iv.length - 12} more (all identical across runs)</td></tr>` : "");
+
+      const fz = DATA.fuzz_reproducibility || [];
+      $("fuzz").innerHTML =
+        `<tr><th>card_id</th><th class="num">reps</th><th class="num">seed</th><th class="num">fuzz factor</th><th class="num">fuzzed ivl (from 100)</th></tr>` +
+        fz.map((x) => `<tr><td>${x.card_id}</td><td class="num">${x.reps}</td><td class="num">${x.seed}</td><td class="num">${Number(x.fuzz_factor).toFixed(4)}</td><td class="num">${x.fuzzed_interval_from_100}</td></tr>`).join("");
+    </script>
+  </body>
+</html>

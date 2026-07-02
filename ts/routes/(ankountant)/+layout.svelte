@@ -2,40 +2,42 @@
 Copyright: Ankitects Pty Ltd and contributors
 License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
-Shell chrome for the Ankountant surfaces (Readiness / Confusion / TBS). The
-three routes live in a SvelteKit route group `(ankountant)/` so they share this
-top bar without changing their flat URLs (`/ankountant-dashboard` etc.), so
-mediasrv's first-segment whitelist needs no change.
+Shell chrome for the Ankountant surfaces (Home / Readiness / Confusion / TBS /
+Stats / Workspace). The routes live in a SvelteKit route group `(ankountant)/` so they
+share this top bar without changing their flat URLs (`/ankountant-dashboard`
+etc.), so mediasrv's first-segment whitelist needs no change.
 
-Rendered inside the desktop single-window "ankountant" state (qt/aqt/main.py):
-tab clicks navigate client-side (goto — no reload, no new OS window); "← Decks"
-exits via a Qt bridge command that routes to moveToState("deckBrowser"). Styled
-with the Ledger design tokens (--accent = Ink Navy, --canvas*, --border*).
+This shell is the desktop app's primary surface: on launch the classic Qt chrome
+(menubar, dock tab strip, deck browser) is hidden and this loads full-window
+(qt/aqt/main.py: set_ankountant_fullscreen + Workspace.enter_home_shell). Tab
+clicks navigate client-side (goto — no reload, no new OS window). Styled with the
+Ledger design tokens (--accent = Ink Navy, --canvas*, --border*).
 -->
 <script lang="ts">
     import { onMount } from "svelte";
 
     import { afterNavigate, goto } from "$app/navigation";
-    import { bridgeCommand } from "@tslib/bridgecommand";
 
     const tabs = [
+        { id: "home", label: "Home", href: "/ankountant-home" },
         { id: "dashboard", label: "Readiness", href: "/ankountant-dashboard" },
         { id: "confusion", label: "Confusion", href: "/ankountant-confusion" },
         { id: "tbs", label: "TBS", href: "/ankountant-tbs" },
+        { id: "stats", label: "Stats", href: "/ankountant-stats" },
+        { id: "workspace", label: "Workspace", href: "/ankountant-workspace" },
     ];
 
     // Kept in sync on initial load and after every client navigation (incl. the
-    // Qt-driven __ankGoto path and browser back/forward).
-    let current = "";
+    // Qt-driven __ankGoto path and browser back/forward). Seeded from the URL so
+    // the workspace route never flashes the surface-tab bar (ssr is off).
+    let current = typeof window !== "undefined" ? window.location.pathname : "";
     afterNavigate(() => {
         current = window.location.pathname;
     });
 
-    function exitToDecks(): void {
-        // Qt routes this to moveToState("deckBrowser") (Qt-only bridge; the
-        // shell always runs inside the desktop webview).
-        bridgeCommand("ankountant:exit");
-    }
+    // The tiling workspace provides its own toolbar, so the shared surface-tab
+    // bar is suppressed there.
+    $: isWorkspace = current === "/ankountant-workspace";
 
     function navigate(href: string): void {
         goto(href); // client-side, no reload, no window
@@ -51,29 +53,24 @@ with the Ledger design tokens (--accent = Ink Navy, --canvas*, --border*).
 </script>
 
 <div class="ank-shell">
-    <header class="ank-shell-topbar">
-        <button
-            type="button"
-            class="ank-back"
-            on:click={exitToDecks}
-            aria-label="Back to decks"
-        >
-            ← Decks
-        </button>
-        <nav class="ank-tabs" aria-label="Ankountant sections">
-            {#each tabs as t (t.id)}
-                <button
-                    type="button"
-                    class="ank-tab"
-                    class:active={current === t.href}
-                    aria-current={current === t.href ? "page" : undefined}
-                    on:click={() => navigate(t.href)}
-                >
-                    {t.label}
-                </button>
-            {/each}
-        </nav>
-    </header>
+    {#if !isWorkspace}
+        <header class="ank-shell-topbar">
+            <span class="ank-brand">Ankountant</span>
+            <nav class="ank-tabs" aria-label="Ankountant sections">
+                {#each tabs as t (t.id)}
+                    <button
+                        type="button"
+                        class="ank-tab"
+                        class:active={current === t.href}
+                        aria-current={current === t.href ? "page" : undefined}
+                        on:click={() => navigate(t.href)}
+                    >
+                        {t.label}
+                    </button>
+                {/each}
+            </nav>
+        </header>
+    {/if}
 
     <main class="ank-shell-body"><slot /></main>
 </div>
@@ -97,27 +94,11 @@ with the Ledger design tokens (--accent = Ink Navy, --canvas*, --border*).
         border-bottom: 1px solid var(--border-subtle);
     }
 
-    // These are plain <button>s, so the global button base applies; the
-    // higher-specificity component rules below flatten them to nav chrome.
-    .ank-back {
-        font: inherit;
+    // Brand wordmark anchoring the shell top bar (chrome-only navy).
+    .ank-brand {
         font-weight: 600;
-        color: var(--fg);
-        background: transparent;
-        border: 0;
-        box-shadow: none;
-        padding: var(--space-sm);
-        border-radius: var(--border-radius);
-
-        &:hover {
-            background: var(--canvas);
-            border: 0;
-        }
-
-        &:focus-visible {
-            outline: 2px solid var(--accent) !important;
-            outline-offset: 2px;
-        }
+        letter-spacing: -0.01em;
+        color: var(--accent);
     }
 
     .ank-tabs {

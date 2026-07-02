@@ -7,7 +7,8 @@
 @use "../../../../../ts/lib/sass/button-mixins" as button;
 
 .smallLink {
-    font-size: 10px;
+    // Respect the 12px hard floor (Ledger constraint bodyMin.hardFloor).
+    font-size: var(--type-micro-size);
 }
 
 h3 {

@@ -16,6 +16,10 @@ ANKOUNTANT_PAGES = (
     "ankountant-dashboard",
     "ankountant-confusion",
     "ankountant-tbs",
+    # Stats is a first-class destination too, but it is navigated inside the
+    # shell webview (menu/tab -> open_ankountant("stats")) rather than a
+    # dedicated dialog, so it has a route but no separate webview kind.
+    "ankountant-stats",
 )
 
 ANKOUNTANT_KINDS = (

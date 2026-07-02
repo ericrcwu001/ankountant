@@ -41,7 +41,7 @@ from anki.utils import (
     is_win,
     split_fields,
 )
-from aqt import gui_hooks
+from aqt import colors, gui_hooks
 from aqt.addons import DownloadLogEntry, check_and_prompt_for_updates, show_log_to_user
 from aqt.debug_console import show_debug_console
 from aqt.flags import FlagManager
@@ -204,6 +204,11 @@ class AnkiQt(QMainWindow):
         self.app = app
         self.pm = profileManager
         self.fullscreen = False
+        # Ankountant-first layout: land on the SvelteKit shell with the classic
+        # Qt chrome (menubar, dock tab strip, top toolbar) hidden. Toggle with
+        # the escape-hatch shortcut to reach the classic tools. Set in
+        # loadProfile once the workspace exists.
+        self._ankountant_fullscreen = False
         # init rest of app
         self.safeMode = (
             bool(self.app.queryKeyboardModifiers() & Qt.KeyboardModifier.ShiftModifier)
@@ -528,6 +533,12 @@ class AnkiQt(QMainWindow):
         # re-open the workspace tool tabs + dock layout saved for this profile
         # (must run after restoreState so its own saveState blob wins)
         self.workspace.restore_layout()
+        # Ankountant is the app: land on the SvelteKit shell with the classic Qt
+        # chrome hidden, instead of the Python-rendered deck browser. The state
+        # machine still runs underneath (for the study flow); the shell dock
+        # simply sits on top. Escape-hatch shortcut reveals the classic tools.
+        self.set_ankountant_fullscreen(True)
+        self.workspace.enter_home_shell()
         # titlebar
         self.setWindowTitle(f"{self.pm.name} - Ankountant")
         # show and raise window for osx
@@ -792,10 +803,20 @@ class AnkiQt(QMainWindow):
             self.bottomWeb.adjustHeightToFit()
         # Bring the home tab forward when entering a home surface, in case the
         # user was in a tool tab (workspace is absent very early in startup).
-        if state in ("deckBrowser", "overview", "review") and getattr(
-            self, "workspace", None
-        ):
-            self.workspace.raise_home()
+        if getattr(self, "workspace", None):
+            if self._ankountant_fullscreen:
+                # Ankountant-first: the study surfaces show the home dock, but
+                # the deck browser (e.g. a post-sync/reset transition) and the
+                # end-of-session overview return to the shell instead, so the
+                # classic deck table / congrats never pops over it.
+                if state == "review" or (state == "overview" and oldState != "review"):
+                    self.workspace.show_home_only()
+                elif state == "deckBrowser" or (
+                    state == "overview" and oldState == "review"
+                ):
+                    self.workspace.return_to_shell()
+            elif state in ("deckBrowser", "overview", "review"):
+                self.workspace.raise_home()
         gui_hooks.state_did_change(state, oldState)
 
     def _deckBrowserState(self, oldState: MainWindowState) -> None:
@@ -1007,6 +1028,9 @@ title="{}" {}>{}</button>""".format(
         # dockable tabs alongside it. See qt/aqt/workspace.py.
         self.workspace = Workspace(self)
         self.workspace.build(self._home_content)
+        # Keep the Ankountant window frame painted with the design-system canvas
+        # across light/dark theme switches.
+        gui_hooks.theme_did_change.append(self._apply_ankountant_window_style)
 
         # force webengine processes to load before cwd is changed
         if is_win:
@@ -1235,6 +1259,22 @@ title="{}" {}>{}</button>""".format(
         debug_shortcut = QShortcut(QKeySequence("Ctrl+:"), self)
         debug_shortcut.setAutoRepeat(False)
         qconnect(debug_shortcut.activated, show_debug_console)
+        # Ankountant-first layout: an escape hatch to reveal the classic Qt
+        # chrome (menubar + deck browser + tools, for deck management etc.) and a
+        # quick way back to the Ankountant home shell. Application-scoped so they
+        # fire from any surface, including inside the SvelteKit webview and the
+        # reviewer.
+        chrome_toggle = QShortcut(QKeySequence("Ctrl+Shift+D"), self)
+        chrome_toggle.setContext(Qt.ShortcutContext.ApplicationShortcut)
+        qconnect(chrome_toggle.activated, self.toggle_ankountant_fullscreen)
+        home_shortcut = QShortcut(QKeySequence("Ctrl+Shift+H"), self)
+        home_shortcut.setContext(Qt.ShortcutContext.ApplicationShortcut)
+        qconnect(
+            home_shortcut.activated,
+            lambda: self.workspace.enter_home_shell()
+            if getattr(self, "workspace", None)
+            else None,
+        )
         self.stateShortcuts: list[QShortcut] = []
 
     def _close_active_window(self) -> None:
@@ -1556,6 +1596,18 @@ title="{}" {}>{}</button>""".format(
         menu = self.form.menubar.addMenu("&Ankountant")
         assert menu is not None
 
+        home = menu.addAction("Home")
+        qconnect(
+            home.triggered,
+            lambda: self.workspace.open_ankountant("home"),
+        )
+        workspace = menu.addAction("Study Workspace")
+        qconnect(
+            workspace.triggered,
+            lambda: self.workspace.open_ankountant("workspace"),
+        )
+        menu.addSeparator()
+
         dashboard = menu.addAction("Readiness Dashboard")
         qconnect(
             dashboard.triggered,
@@ -1571,35 +1623,83 @@ title="{}" {}>{}</button>""".format(
             tbs.triggered,
             lambda: self.workspace.open_ankountant("tbs"),
         )
+        stats = menu.addAction("Statistics")
+        qconnect(
+            stats.triggered,
+            lambda: self.workspace.open_ankountant("stats"),
+        )
 
         menu.addSeparator()
-        seed = menu.addAction("Load FAR demo content")
-        qconnect(seed.triggered, self.load_ankountant_far_seed)
+        # Three demo phases, each loading user data tuned so the Home
+        # phase-aware CTA lands in that phase (see load_ankountant_phase).
+        foundation = menu.addAction("Load demo \u00b7 Foundation (beginner)")
+        qconnect(
+            foundation.triggered,
+            lambda: self.load_ankountant_phase("foundation"),
+        )
+        discrimination = menu.addAction("Load demo \u00b7 Discrimination (exam far)")
+        qconnect(
+            discrimination.triggered,
+            lambda: self.load_ankountant_phase("discrimination"),
+        )
+        consolidation = menu.addAction("Load demo \u00b7 Consolidation (exam soon)")
+        qconnect(
+            consolidation.triggered,
+            lambda: self.load_ankountant_phase("consolidation"),
+        )
 
-    def load_ankountant_far_seed(self) -> None:
-        """Seed the current collection with the hand-authored FAR demo content
-        (confusion sets, sealed bank, TBS tasks) so the Ankountant screens have
-        data to show. Calls the LoadFarSeed backend RPC (F016) synchronously —
-        it is a single fast backend transaction — then refreshes the window."""
+    def load_ankountant_phase(self, phase: str) -> None:
+        """Seed the FAR demo profile tuned so the Home phase-aware CTA lands in a
+        specific phase, for demoing/QA of the dynamic study recommendation:
+
+        - "foundation": content only, no history and no exam date, so every topic
+          reads memory-insufficient (no memory base) and Home recommends "Build
+          foundation" (blocked recall).
+        - "discrimination": full history + the seed's own ~45-day exam date (far
+          from the exam), so Home recommends the "Discrimination drill" (confusion
+          set) — the core practice primitive.
+        - "consolidation": full history + an exam date 7 days out (inside the
+          final-stretch window), so Home recommends "Consolidate" (recall to peak).
+
+        Each calls the LoadFarSeed backend RPC (F016), then sets/clears the shared
+        exam-date config key, and refreshes. Best on a fresh/throwaway profile."""
         if self.col is None:
             return
         if not askUser(
-            "Add the FAR demo content (decks, cards, and TBS tasks) to your"
-            " current collection? This is sample data for trying out the"
-            " Ankountant features.",
+            f"Load the FAR demo profile in its '{phase}' state? This adds sample"
+            " CPA-FAR content (and, except for foundation, sample study history)"
+            " and sets the exam date so the Home screen's recommended action"
+            " reflects that phase. Best on a fresh/throwaway profile.",
             parent=self,
         ):
             return
 
-        resp = self.col._backend.load_far_seed(section="FAR")
+        import datetime
+
+        section = "FAR"
+        exam_key = f"ankountant.{section}.exam.date"
+        if phase == "foundation":
+            # No history => every topic is memory-insufficient => beginner. Clear
+            # the exam date so the countdown resets too.
+            resp = self.col._backend.load_far_seed(section=section, with_history=False)
+            self.col.remove_config(exam_key)
+        elif phase == "consolidation":
+            # History for a memory base; override the seed's far exam date with a
+            # near one so days-to-exam falls inside the final-stretch window.
+            resp = self.col._backend.load_far_seed(section=section, with_history=True)
+            iso = (datetime.date.today() + datetime.timedelta(days=7)).isoformat()
+            self.col.set_config(exam_key, iso)
+        else:  # "discrimination": the seed's own ~45-day exam date is far enough.
+            resp = self.col._backend.load_far_seed(section=section, with_history=True)
+
         self.reset()
+        history = "no history" if phase == "foundation" else "sample history"
         tooltip(
-            "Loaded FAR demo content: "
+            f"Loaded FAR demo \u00b7 {phase}: "
+            f"{resp.study_recall_cards} recall cards, "
             f"{resp.confusion_sets} confusion sets, "
-            f"{resp.sealed_items} sealed items, "
-            f"{resp.sealed_je_tbs} journal-entry + "
-            f"{resp.sealed_numeric_tbs} numeric TBS."
-            " Look for the new Ankountant::Study / Ankountant::Sealed decks.",
+            f"{resp.sealed_items} sealed items ({history})."
+            " Open the Ankountant Home to see the recommended action.",
             parent=self,
         )
 
@@ -1641,6 +1741,53 @@ title="{}" {}>{}</button>""".format(
     def show_menubar(self) -> None:
         self.form.menubar.setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX)
         self.form.menubar.setMinimumSize(0, 0)
+
+    # Ankountant-first chrome
+    ##########################################################################
+
+    def set_ankountant_fullscreen(self, on: bool) -> None:
+        """Hide (or restore) the classic Qt chrome so the Ankountant SvelteKit
+        shell is the whole app: the native menubar, the workspace North tab
+        strip, and the classic top toolbar. The bottom bar is left alone since
+        it carries the reviewer's answer buttons and the overview Study button.
+        Menu QActions keep their shortcuts, so Sync/Preferences/etc. still work
+        while the menubar is hidden."""
+        self._ankountant_fullscreen = on
+        if on:
+            self.hide_menubar()
+        else:
+            self.show_menubar()
+        # The toolbar's own hide()/show() only toggle CSS classes, so a real
+        # setVisible here isn't fought by the reviewer's auto-hide logic.
+        self.toolbarWeb.setVisible(not on)
+        if getattr(self, "workspace", None):
+            self.workspace.set_chrome_hidden(on)
+        self._apply_ankountant_window_style()
+
+    def toggle_ankountant_fullscreen(self) -> None:
+        """Escape hatch: flip between the Ankountant shell and the classic
+        chrome (deck browser + menubar + tools) for deck management etc."""
+        self.set_ankountant_fullscreen(not self._ankountant_fullscreen)
+        if getattr(self, "workspace", None):
+            if self._ankountant_fullscreen:
+                self.workspace.enter_home_shell()
+            else:
+                self.workspace.raise_home()
+
+    def _apply_ankountant_window_style(self) -> None:
+        """Paint the QMainWindow/QDockWidget frame with the design-system canvas
+        color while in Ankountant mode, so nothing flashes Qt gray around the
+        webviews. Re-applied on theme change."""
+        if self._ankountant_fullscreen:
+            from aqt.theme import theme_manager
+
+            canvas = theme_manager.var(colors.CANVAS)
+            self.setStyleSheet(
+                f"QMainWindow {{ background-color: {canvas}; }}"
+                f" QDockWidget {{ background-color: {canvas}; }}"
+            )
+        else:
+            self.setStyleSheet("")
 
     # Auto update
     ##########################################################################

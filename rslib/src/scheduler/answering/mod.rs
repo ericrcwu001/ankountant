@@ -339,6 +339,10 @@ impl Collection {
         self.maybe_bury_siblings(&original, &updater.config)?;
         let timing = updater.timing;
         let deckconfig_id = updater.original_deck.config_id();
+        // Ankountant A2: which study section (if any) this card belongs to,
+        // captured before the updater is consumed.
+        let ankountant_section =
+            crate::ankountant::schedule::section_for_deck_name(&updater.original_deck.human_name());
         let mut card = updater.into_card();
         if !matches!(
             answer.current_state,
@@ -349,6 +353,17 @@ impl Collection {
         if let Some(data) = answer.custom_data.take() {
             card.custom_data = data;
             card.validate_custom_data()?;
+        }
+        // Ankountant A2: set/clear the too-easy flag from this answer's rating,
+        // latency and recorded confidence, and update the rote latency cohort.
+        // The flag drives the retention reduction on the card's next scheduling.
+        if ankountant_section.is_some() {
+            self.ankountant_apply_latency_defund(
+                &mut card,
+                &original,
+                answer.rating.as_number(),
+                answer.milliseconds_taken,
+            )?;
         }
 
         self.update_card_inner(&mut card, original, usn)?;
@@ -457,7 +472,22 @@ impl Collection {
             .get_deck_config(home_deck.config_id().or_invalid("home deck is filtered")?)?
             .unwrap_or_default();
 
-        let desired_retention = home_deck.effective_desired_retention(&config);
+        let mut desired_retention = home_deck.effective_desired_retention(&config);
+        // Ankountant A1-live/A2: for `Ankountant::Study::<section>::*` decks,
+        // anchor the desired retention to the exam-date ramp, then apply the
+        // latency-defunding reduction when the card is flagged too-easy. Both
+        // flow unchanged into `fsrs.next_states` below, so button previews and
+        // the written interval stay consistent. Normal decks keep stock FSRS.
+        if let Some(section) =
+            crate::ankountant::schedule::section_for_deck_name(&home_deck.human_name())
+        {
+            desired_retention = self.ankountant_desired_retention(&section, "")? as f32;
+            if crate::ankountant::logic::custom_data_too_easy(&card.custom_data) {
+                desired_retention = (desired_retention
+                    - crate::ankountant::constants::TOO_EASY_RETENTION_REDUCTION as f32)
+                    .max(crate::ankountant::constants::TOO_EASY_RETENTION_FLOOR as f32);
+            }
+        }
         let fsrs_enabled = self.get_config_bool(BoolKey::Fsrs);
         let fsrs_next_states = if fsrs_enabled {
             let params = config.fsrs_params();

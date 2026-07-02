@@ -1,5 +1,7 @@
 import SwiftUI
 import AnkiBackend
+import AnkiClients
+import AnkiKit
 import AnkiServices
 import AnkiSync
 import Dependencies
@@ -9,10 +11,14 @@ struct DebugView: View {
     @Dependency(\.ankiBackend) var backend
     @Dependency(\.collectionService) var collectionService
     @Dependency(\.decksService) var decksService
+    @Dependency(\.schedulerService) var schedulerService
+    @Dependency(\.examConfigClient) var examConfigClient
     @State private var statusMessage = ""
     @State private var showResetConfirm = false
     @State private var exportedFileURL: URL?
     @State private var showShareSheet = false
+
+    private let section = "FAR"
 
     var body: some View {
         List {
@@ -33,6 +39,12 @@ struct DebugView: View {
                     KeychainHelper.deleteHostKey()
                     statusMessage = "Logged out. Tap sync to re-login."
                 }
+            }
+
+            Section("Ankountant demo phases") {
+                Button("Foundation — beginner (no history)") { loadPhase(.foundation) }
+                Button("Discrimination — mid-prep (exam far)") { loadPhase(.discrimination) }
+                Button("Consolidation — exam soon") { loadPhase(.consolidation) }
             }
 
             Section("Import / Export") {
@@ -88,6 +100,48 @@ struct DebugView: View {
                 ShareSheet(items: [url])
             }
         }
+    }
+
+    /// Load the FAR demo seed tuned so the Home phase-aware CTA lands in a given
+    /// phase, to demo/QA the dynamic study recommendation. Foundation loads
+    /// content with no history + no exam date (no memory base => "Build
+    /// foundation"); discrimination adds history + the seed's ~45-day exam date
+    /// (far => "Discrimination drill"); consolidation adds history + a 7-day exam
+    /// date (final stretch => "Consolidate"). Best on a fresh profile.
+    private func loadPhase(_ phase: StudyPhase) {
+        do {
+            switch phase {
+            case .foundation:
+                try schedulerService.loadFarSeed(false)
+                try examConfigClient.saveExamDate(section, "")
+            case .discrimination:
+                try schedulerService.loadFarSeed(true)
+            case .consolidation:
+                try schedulerService.loadFarSeed(true)
+                try examConfigClient.saveExamDate(section, Self.iso(daysFromNow: 7))
+            }
+            statusMessage = "Loaded \(phaseLabel(phase)) phase. Open Home to see the recommended action."
+        } catch {
+            statusMessage = "Load phase error: \(error)"
+        }
+    }
+
+    private func phaseLabel(_ phase: StudyPhase) -> String {
+        switch phase {
+        case .foundation: "Foundation"
+        case .discrimination: "Discrimination"
+        case .consolidation: "Consolidation"
+        }
+    }
+
+    private static func iso(daysFromNow days: Int) -> String {
+        let date = Calendar.current.date(byAdding: .day, value: days, to: Date()) ?? Date()
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
     }
 
     private func dumpDeckTree() {

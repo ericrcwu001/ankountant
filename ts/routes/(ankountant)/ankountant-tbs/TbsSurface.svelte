@@ -236,10 +236,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
         h1 {
             // Section heading
-            font-size: 22px;
-            font-weight: 600;
-            letter-spacing: -0.015em;
-            line-height: 1.2;
+            font-size: var(--type-section-heading-size);
+            font-weight: var(--type-section-heading-weight);
+            letter-spacing: var(--type-section-heading-tracking);
+            line-height: var(--type-section-heading-line);
             margin: 0;
         }
 
@@ -260,9 +260,9 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         background: var(--canvas-elevated);
         border: 1px solid var(--border-subtle);
         border-radius: var(--border-radius-medium);
-        box-shadow:
-            0 1px 2px rgba(14, 15, 19, 0.06),
-            0 1px 3px rgba(14, 15, 19, 0.05);
+        // Theme-aware Ledger elevation (dark mode gets a real shadow, not the
+        // near-invisible light-ink one).
+        box-shadow: var(--elevation-e1);
     }
 
     .task {

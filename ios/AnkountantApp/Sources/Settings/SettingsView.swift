@@ -63,6 +63,14 @@ struct SettingsView: View {
                     AboutView()
                 }
             }
+
+            #if DEBUG
+            Section("Developer") {
+                NavigationLink("Debug") {
+                    DebugView()
+                }
+            }
+            #endif
         }
         .navigationTitle("Settings")
     }

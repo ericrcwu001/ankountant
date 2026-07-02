@@ -19,18 +19,18 @@
 
 ---
 
-## A2 — Latency-aware "too-easy" defunding — rote cards only (SPOV 1/2) · P1 · _cut early_ · depends: A6
+## A2 — Latency-aware "too-easy" defunding — rote cards only (SPOV 1/2) · P1 · _shipped_ · depends: A6
 
 **Design principle (locked):** latency-defunding is a rote-fluency mechanism only. A2 fires **only** on cards tagged `cog::rote`; `cog::applied` (critical-thinking) cards are never latency-defunded (their readiness is measured on the Performance path, A4). Grounded in Sweller element-interactivity, ICAP, and the Kornell/Bjork fluency illusion.
 **Confidence decoupling (fixes the A2↔B1 phase-order bug):** the pre-reveal confidence A2 reads is stored in `card.custom_data` (latest) at answer time. The **reviewer UI (B1) supplies it**, but A2 depends only on the `custom_data` convention (a Phase-A data-model contract), **not** on B1's UI. Phase-A tests **seed** the confidence scalar directly — A2 is fully testable in Phase A with no Phase-B dependency.
 **Behavior (pinned):** on a `cog::rote`, stable card (interval ≥ 21d floor; never new/learning), when correct (Good/Easy) AND latest recorded confidence == Confident AND `taken_millis` < 0.5 × baseline → apply a pre-FSRS desired-retention reduction (−0.05, floored 0.70) for that card's `next_states` call (longer interval _through_ FSRS, not a post-hoc multiplier — FSRS has no post-multiply hook) and set `cd.te=1`. Baseline = median of trailing-5 `taken_millis` once ≥3 own reps, else the `ankountant.latency.rote` cohort median (EMA in `col` config). Slow/unconfident/incorrect clears `te`.
 
-- [ ] AC1 — `cog::rote` stable card, ≥3 reps (trailing-5 median M), answered Good + confidence Confident in <0.5·M → FSRS desired-retention input reduced (longer next interval than slow-Good) and `custom_data.te==1`. _(test-rust)_
-- [ ] AC2 — `cog::applied` card, fast+correct+Confident → NO defunding, no flag. _(test-rust)_
-- [ ] AC3 — new/learning rote card (below 21d floor), fast+correct → no defunding. _(test-rust)_
-- [ ] AC4 — rote card with <3 own reps → cohort median used as baseline; feature still fires. _(test-rust)_
-- [ ] AC5 — flagged card, next answer slow/unconfident/Again → `custom_data.te` cleared. _(test-rust)_
-- [ ] AC6 — `custom_data` stays within 100-byte / 8-byte-key limit. _(test-rust)_
+- [x] AC1 — `cog::rote` stable card, ≥3 reps (trailing-5 median M), answered Good + confidence Confident in <0.5·M → FSRS desired-retention input reduced (longer next interval than slow-Good) and `custom_data.te==1`. _(test-rust)_
+- [x] AC2 — `cog::applied` card, fast+correct+Confident → NO defunding, no flag. _(test-rust)_
+- [x] AC3 — new/learning rote card (below 21d floor), fast+correct → no defunding. _(test-rust)_
+- [x] AC4 — rote card with <3 own reps → cohort median used as baseline; feature still fires. _(test-rust)_
+- [x] AC5 — flagged card, next answer slow/unconfident/Again → `custom_data.te` cleared. _(test-rust)_
+- [x] AC6 — `custom_data` stays within 100-byte / 8-byte-key limit. _(test-rust)_
       **Done when:** fast+correct+confident on a stable rote card lengthens its interval through FSRS and is flagged; applied cards provably untouched. _If the night runs short this feature is cut first (see `build-spec.md`); if cut, it is marked `parked` in feature_list.json so it does not gate the contract._
 
 ---

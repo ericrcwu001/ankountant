@@ -35,23 +35,56 @@ test("insufficient memory renders no number", () => {
     expect(rows[0].memoryPct).toBe(null);
 });
 
-test("abstain view surfaces the reason and NO number (A55)", () => {
+test("topic rows carry memory/performance confidence ranges (#3)", () => {
+    const rows = buildTopicRows([
+        new TopicScore({
+            setId: "leases",
+            memory: 0.72,
+            performance: 0.6,
+            gap: 0.12,
+            memoryInsufficient: false,
+            memoryLow: 0.64,
+            memoryHigh: 0.8,
+            performanceLow: 0.5,
+            performanceHigh: 0.7,
+        }),
+    ]);
+    expect(rows[0].memoryRange).toBe("64–80%");
+    expect(rows[0].performanceRange).toBe("50–70%");
+});
+
+test("abstain view surfaces the reason + coverage and NO number (A55)", () => {
     const view = buildReadinessView(
-        new Readiness({ abstain: true, reason: "insufficient volume" }),
+        new Readiness({ abstain: true, reason: "insufficient volume", coverage: 0.4 }),
     );
     expect(view.abstain).toBe(true);
     expect(view.reason).toBe("insufficient volume");
     expect(view.bandLabel).toBe("");
+    expect(view.coveragePct).toBe(40);
 });
 
-test("sufficient view is a band, never a point (A54)", () => {
+test("sufficient view is a CPA band + point + coverage, never a bare point (A54)", () => {
     const view = buildReadinessView(
-        new Readiness({ abstain: false, bandLow: 62, bandHigh: 78, confidence: "High" }),
+        new Readiness({
+            abstain: false,
+            bandLow: 62,
+            bandHigh: 78,
+            pointEstimate: 70,
+            confidence: "High",
+            coverage: 0.75,
+            reasons: ["Coverage: 75% of topics; 40 sealed attempts"],
+        }),
     );
     expect(view.abstain).toBe(false);
     expect(view.bandLow).toBeLessThan(view.bandHigh);
-    expect(view.bandLabel).toBe("62%–78%");
+    // CPA scaled-score band (0-99), not a percentage.
+    expect(view.bandLabel).toBe("62–78");
+    expect(view.pointLabel).toBe("70");
+    expect(view.pointEstimate).toBeGreaterThan(view.bandLow);
+    expect(view.pointEstimate).toBeLessThan(view.bandHigh);
+    expect(view.coveragePct).toBe(75);
     expect(view.confidence).toBe("High");
+    expect(view.reasons.length).toBeGreaterThan(0);
 });
 
 test("fractionToPct rounds", () => {

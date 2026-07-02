@@ -83,13 +83,22 @@ def test_load_far_seed_dispatches_and_seeds():
     # cross-language guard against the service-index drift that must stay in
     # lockstep with the hand-maintained iOS dispatch table (FR-6).
     col = getEmptyCol()
-    resp = col._backend.load_far_seed(section="FAR")
+    # Content only (no injected history): the counts are the content layer.
+    resp = col._backend.load_far_seed(section="FAR", with_history=False)
     assert resp.confusion_sets >= 4
     assert resp.sealed_items >= 24
     assert resp.sealed_je_tbs >= 3
     assert resp.sealed_numeric_tbs >= 2
     assert len(resp.sealed_tbs_note_ids) >= 5
+    assert resp.study_recall_cards >= 120
 
     # The seed is real: GetReadiness now sees the CONFUSABLE map / sealed bank.
     queue = col._backend.build_confusion_queue(section="FAR", max_items=10)
     assert len(list(queue)) > 0
+
+    # with_history=True is the full demo profile: enough fake attempts that
+    # readiness emits a band instead of abstaining (matches the desktop menu).
+    col2 = getEmptyCol()
+    col2._backend.load_far_seed(section="FAR", with_history=True)
+    readiness = col2._backend.get_readiness(section="FAR").readiness
+    assert not readiness.abstain

@@ -55,10 +55,16 @@ _TOOL_TITLES = {
 }
 
 _ANKOUNTANT_ROUTES = {
+    "home": "ankountant-home",
+    "workspace": "ankountant-workspace",
     "dashboard": "ankountant-dashboard",
     "confusion": "ankountant-confusion",
     "tbs": "ankountant-tbs",
+    "stats": "ankountant-stats",
 }
+
+# The FAR study deck the Home "Review" button studies.
+_ANKOUNTANT_STUDY_DECK = "Ankountant::Study::FAR"
 
 _DOCK_AREA = Qt.DockWidgetArea.TopDockWidgetArea
 
@@ -88,9 +94,14 @@ class WorkspaceDock(QDockWidget):
             else f"workspace_dock_{tool_name}"
         )
         # Movable so a tab can be dragged into a split; never floatable (no
-        # separate windows) and no Closable feature (closing is routed through
-        # the tool's own veto chain via the tab close button instead).
-        self.setFeatures(QDockWidget.DockWidgetFeature.DockWidgetMovable)
+        # separate windows). Closable tool docks also expose a native title-bar
+        # close button when they are split out and lose their tab (see
+        # Workspace._sync_title_bars); the closeEvent below still routes closing
+        # through the tool's own veto chain.
+        features = QDockWidget.DockWidgetFeature.DockWidgetMovable
+        if closable:
+            features |= QDockWidget.DockWidgetFeature.DockWidgetClosable
+        self.setFeatures(features)
         self.setAllowedAreas(Qt.DockWidgetArea.AllDockWidgetAreas)
         # Browser-tab look: no per-dock title bar; the North tab is the handle.
         self.setTitleBarWidget(QWidget())
@@ -111,6 +122,9 @@ class Workspace:
         self._home: WorkspaceDock | None = None
         self._shell_web: AnkiWebView | None = None
         self._restoring = False
+        # When true the North dock tab strip is hidden (Ankountant-first layout,
+        # see set_chrome_hidden / AnkiQt.set_ankountant_fullscreen).
+        self._chrome_hidden = False
 
     # Construction
     ######################################################################
@@ -190,6 +204,70 @@ class Workspace:
     def raise_home(self) -> None:
         self.raise_tool(HOME_TOOL)
 
+    def _show_only(self, name: str) -> None:
+        """Show exactly one dock and hide every other, so QMainWindow renders no
+        dock tab strip — a single visible dock has no tabs. This is how the
+        Ankountant-first layout drops the classic "Decks | Ankountant" tab bar:
+        Qt re-creates and re-shows that bar on relayout, so hiding the QTabBar
+        directly does not stick, whereas hiding the sibling dock does."""
+        target = self._docks.get(name)
+        if target is None:
+            return
+        for other, dock in self._docks.items():
+            if other == name:
+                dock.show()
+                dock.raise_()
+            else:
+                dock.hide()
+        if widget := target.widget():
+            widget.setFocus()
+
+    def show_home_only(self) -> None:
+        """Study surfaces (overview/review) fill the window; the shell and any
+        tool docks are hidden so no tab strip appears."""
+        self._show_only(HOME_TOOL)
+
+    def restore_all_docks(self) -> None:
+        """Escape hatch: bring every dock back (classic tabbed workspace)."""
+        for dock in self._docks.values():
+            dock.show()
+        self.raise_home()
+
+    def enter_home_shell(self) -> None:
+        """Make the Ankountant SvelteKit shell the visible surface, opening it if
+        necessary and navigating it to Home. On launch and via the escape-hatch
+        toggle this is what the user lands on — not the classic deck browser."""
+        self.open_ankountant("home")
+        if self._chrome_hidden:
+            self._show_only(ANKOUNTANT_TOOL)
+
+    def return_to_shell(self) -> None:
+        """Raise the Ankountant shell wherever it currently is (no forced
+        navigation), opening it if it was closed. Called when a home-surface
+        transition (e.g. a post-sync reset back to the deck browser, or the
+        end-of-session overview) would otherwise pop the classic chrome over the
+        shell."""
+        if self._shell_web is None:
+            self.open_ankountant("home")
+        if self._chrome_hidden:
+            self._show_only(ANKOUNTANT_TOOL)
+        else:
+            self.raise_tool(ANKOUNTANT_TOOL)
+
+    def set_chrome_hidden(self, hidden: bool) -> None:
+        """Enter/leave the Ankountant-first layout. When hidden, only one dock is
+        ever visible (so QMainWindow shows no North tab strip — no leftover
+        "Decks" tab); when shown, all docks return (classic tabbed workspace)."""
+        self._chrome_hidden = hidden
+        if hidden:
+            # Collapse to the shell if it exists yet; on launch enter_home_shell
+            # opens it and collapses right after.
+            if self._shell_web is not None:
+                self._show_only(ANKOUNTANT_TOOL)
+        else:
+            self.restore_all_docks()
+        self._schedule_tab_sync()
+
     def is_open(self, name: str) -> bool:
         return name in self._docks
 
@@ -246,8 +324,8 @@ class Workspace:
     # Ankountant shell tab
     ######################################################################
 
-    def open_ankountant(self, page: str = "dashboard") -> None:
-        route = _ANKOUNTANT_ROUTES.get(page, "ankountant-dashboard")
+    def open_ankountant(self, page: str = "home") -> None:
+        route = _ANKOUNTANT_ROUTES.get(page, "ankountant-home")
         if self._shell_web is not None:
             # Already open: client-side navigate (SPA, no reload) + raise.
             self._shell_web.eval(f"window.__ankGoto && window.__ankGoto('/{route}')")
@@ -269,11 +347,28 @@ class Workspace:
         self._remove_dock(ANKOUNTANT_TOOL)
 
     def _ankountant_bridge(self, cmd: str) -> None:
-        """Bridge commands from ts/routes/(ankountant)/+layout.svelte."""
+        """Bridge commands from ts/routes/(ankountant)/+layout.svelte and the
+        Ankountant Home hero."""
         if cmd == "ankountant:exit":
             self.raise_home()
+        elif cmd == "ankountant:review":
+            self._start_ankountant_study()
+        elif cmd == "ankountant:stats":
+            aqt.dialogs.open("NewDeckStats", self.mw)
         elif cmd.startswith("ankountant:nav:"):
             self.open_ankountant(cmd.split(":")[-1])
+
+    def _start_ankountant_study(self) -> None:
+        """Home "Review" -> study the FAR study deck in the home dock's reviewer.
+
+        Routes through the deck overview (selecting the deck first) so new/review
+        limits and the empty-deck congrats screen behave exactly like a normal
+        "Study Now"."""
+        did = self.mw.col.decks.id_for_name(_ANKOUNTANT_STUDY_DECK)
+        if did is not None:
+            self.mw.col.decks.select(did)
+        self.show_home_only()
+        self.mw.moveToState("overview")
 
     # Tab bar close buttons
     ######################################################################
@@ -295,6 +390,10 @@ class Workspace:
             # bars inside embedded tools.
             if bar.parent() is not self.mw:
                 continue
+            # Best-effort: in the Ankountant-first layout only one dock is ever
+            # visible so Qt normally builds no strip at all, but hide any
+            # transient bar it does build during a relayout too.
+            bar.setVisible(not self._chrome_hidden)
             if not bar.property("workspace_wired"):
                 bar.setProperty("workspace_wired", True)
                 bar.setTabsClosable(True)
@@ -310,6 +409,29 @@ class Workspace:
                 if bar.tabText(i) == home_title:
                     bar.setTabButton(i, QTabBar.ButtonPosition.RightSide, None)
                     bar.setTabButton(i, QTabBar.ButtonPosition.LeftSide, None)
+        self._sync_title_bars()
+
+    def _sync_title_bars(self) -> None:
+        """Give split-out (untabbed) tool panes a native title bar — and thus a
+        close button — while keeping tabbed panes chrome-free.
+
+        Once a tab is dragged out of the North strip into its own split region
+        it has neither a tab nor a title bar, so there is no way to close it.
+        Restoring Qt's native title bar there (the dock is DockWidgetClosable)
+        brings back a close button; re-tabbing strips it again."""
+        for name, dock in self._docks.items():
+            if name == HOME_TOOL:
+                continue
+            # In the Ankountant-first layout the sole visible dock must stay
+            # chrome-free — never fall back to a native title bar (which would be
+            # a new bar with a close button).
+            if self._chrome_hidden or self.mw.tabifiedDockWidgets(dock):
+                # Tabbed / chrome-hidden: the tab strip (or nothing) owns chrome.
+                if dock.titleBarWidget() is None:
+                    dock.setTitleBarWidget(QWidget())
+            elif dock.titleBarWidget() is not None:
+                # Standalone/split: fall back to Qt's native title bar.
+                dock.setTitleBarWidget(None)  # type: ignore[arg-type]
 
     def _on_tab_close_requested(self, bar: QTabBar, index: int) -> None:
         title = bar.tabText(index)

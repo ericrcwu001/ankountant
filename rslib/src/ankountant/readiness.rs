@@ -41,6 +41,22 @@ impl PerfAccum {
             (None, None) => None,
         }
     }
+
+    /// Attempts backing this set's Performance — the effective sample size for
+    /// its Wilson band (MCQ items + TBS items).
+    fn effective_n(&self) -> f64 {
+        self.mcq_total + self.tbs_total
+    }
+}
+
+/// A5 — a Wilson band (as `0..1` fractions) centred on `point` given `n`
+/// backing attempts. `(0.0, 0.0)` when there is no evidence.
+fn fraction_band(point: f64, n: f64) -> (f64, f64) {
+    if n <= 0.0 {
+        return (0.0, 0.0);
+    }
+    let (low, high) = logic::wilson_band(point * n, n);
+    (low / 100.0, high / 100.0)
 }
 
 impl Collection {
@@ -88,25 +104,41 @@ impl Collection {
         // --- Memory per set from trailing-30d study-pile recall reps. ---
         let memory = self.ankountant_memory_by_set(section, &map)?;
 
-        // --- Per-topic scores. ---
+        // --- Per-topic scores, each with a Wilson band (A4/#3). ---
         let mut topics = Vec::new();
         for set_id in map.keys() {
-            let performance = perf.get(set_id).and_then(|p| p.performance());
-            let (mem_val, mem_insufficient) = match memory.get(set_id) {
-                Some(Some(m)) => (*m, false),
-                _ => (0.0, true),
+            let accum = perf.get(set_id);
+            let perf_val = accum.and_then(|p| p.performance()).unwrap_or(0.0);
+            let (perf_low, perf_high) =
+                fraction_band(perf_val, accum.map(|p| p.effective_n()).unwrap_or(0.0));
+
+            let (mem_correct, mem_total) = memory.get(set_id).copied().unwrap_or((0, 0));
+            let mem_insufficient = mem_total < constants::MEMORY_MIN_REPS;
+            let mem_val = if mem_insufficient {
+                0.0
+            } else {
+                mem_correct as f64 / mem_total as f64
             };
-            let perf_val = performance.unwrap_or(0.0);
+            let (mem_low, mem_high) = if mem_insufficient {
+                (0.0, 0.0)
+            } else {
+                fraction_band(mem_val, mem_total as f64)
+            };
+
             topics.push(TopicScore {
                 set_id: set_id.clone(),
                 memory: mem_val,
                 performance: perf_val,
                 gap: mem_val - perf_val,
                 memory_insufficient: mem_insufficient,
+                memory_low: mem_low,
+                memory_high: mem_high,
+                performance_low: perf_low,
+                performance_high: perf_high,
             });
         }
 
-        // --- Abstain-aware readiness band (A5). ---
+        // --- Abstain-aware readiness band (A5), projected to CPA 0-99. ---
         let sets_defined = map.len().max(1);
         let sets_covered = map
             .keys()
@@ -117,27 +149,41 @@ impl Collection {
             })
             .count();
         let coverage = sets_covered as f64 / sets_defined as f64;
+        let generated_at = TimestampSecs::now().0;
 
         let readiness = if sealed_attempts < constants::ABSTAIN_MIN_ATTEMPTS {
             Readiness {
                 abstain: true,
                 reason: "insufficient volume".to_string(),
+                coverage,
+                generated_at,
+                reasons: abstain_reasons(coverage, sealed_attempts),
                 ..Default::default()
             }
         } else if coverage < constants::ABSTAIN_MIN_COVERAGE {
             Readiness {
                 abstain: true,
                 reason: "insufficient coverage".to_string(),
+                coverage,
+                generated_at,
+                reasons: abstain_reasons(coverage, sealed_attempts),
                 ..Default::default()
             }
         } else {
-            let (band_low, band_high) = logic::wilson_band(sealed_correct, sealed_total);
+            // Wilson band on sealed accuracy (0..100), mapped onto the CPA
+            // scaled-score scale (0..99) through the monotonic ADR-0005 transform.
+            let (acc_low, acc_high) = logic::wilson_band(sealed_correct, sealed_total);
+            let point_acc = sealed_correct / sealed_total;
             Readiness {
                 abstain: false,
                 reason: String::new(),
-                band_low,
-                band_high,
+                band_low: logic::cpa_scale_from_accuracy(acc_low / 100.0),
+                band_high: logic::cpa_scale_from_accuracy(acc_high / 100.0),
                 confidence: logic::confidence_label(sealed_attempts).to_string(),
+                point_estimate: logic::cpa_scale_from_accuracy(point_acc),
+                coverage,
+                generated_at,
+                reasons: band_reasons(&topics, &perf, coverage, sealed_attempts),
             }
         };
 
@@ -147,13 +193,14 @@ impl Collection {
         })
     }
 
-    /// Trailing-30d recall accuracy on study-pile cards per confusion set.
-    /// Returns `Some(acc)` when >= MEMORY_MIN_REPS in-window reps, else `None`.
+    /// Trailing-30d recall reps on study-pile cards per confusion set, as
+    /// `(correct, total)` counts (so the caller can form both the accuracy and
+    /// its Wilson band). Memory is only meaningful at >= MEMORY_MIN_REPS.
     fn ankountant_memory_by_set(
         &mut self,
         section: &str,
         map: &super::config::ConfusableMap,
-    ) -> Result<std::collections::BTreeMap<String, Option<f64>>> {
+    ) -> Result<std::collections::BTreeMap<String, (u32, u32)>> {
         let window_start = TimestampSecs::now().0 - constants::MEMORY_WINDOW_DAYS * 86_400;
         let window_start_ms = window_start * 1000;
 
@@ -188,13 +235,71 @@ impl Collection {
                     }
                 }
             }
-            let mem = if total >= constants::MEMORY_MIN_REPS {
-                Some(correct as f64 / total as f64)
-            } else {
-                None
-            };
-            out.insert(set_id.clone(), mem);
+            out.insert(set_id.clone(), (correct, total));
         }
         Ok(out)
     }
+}
+
+/// Pretty-print a snake_case set id for a human-facing reason line.
+fn pretty_set_id(set_id: &str) -> String {
+    set_id.replace('_', " ")
+}
+
+/// Factual reasons shown while abstaining: just the two numbers behind the
+/// give-up decision (coverage + volume). No inferred cause.
+fn abstain_reasons(coverage: f64, sealed_attempts: u32) -> Vec<String> {
+    vec![
+        format!("Coverage: {:.0}% of topics", coverage * 100.0),
+        format!(
+            "Evidence: {sealed_attempts} sealed attempts (need >= {})",
+            constants::ABSTAIN_MIN_ATTEMPTS
+        ),
+    ]
+}
+
+/// Factual reasons behind an emitted band: the weakest covered topic, the
+/// largest memory-performance gap, and the coverage/volume — all restated
+/// numbers, never a claimed cause.
+fn band_reasons(
+    topics: &[TopicScore],
+    perf: &std::collections::BTreeMap<String, PerfAccum>,
+    coverage: f64,
+    sealed_attempts: u32,
+) -> Vec<String> {
+    let mut reasons = Vec::new();
+
+    // Weakest topic among those with sealed evidence.
+    let weakest = topics
+        .iter()
+        .filter(|t| perf.get(&t.set_id).map(|p| p.effective_n()).unwrap_or(0.0) > 0.0)
+        .min_by(|a, b| a.performance.partial_cmp(&b.performance).unwrap());
+    if let Some(t) = weakest {
+        reasons.push(format!(
+            "Lowest performance: {} ({:.0}%)",
+            pretty_set_id(&t.set_id),
+            t.performance * 100.0
+        ));
+    }
+
+    // Largest memory-minus-performance gap ("recall it, can't apply it").
+    let widest = topics
+        .iter()
+        .filter(|t| !t.memory_insufficient)
+        .max_by(|a, b| a.gap.partial_cmp(&b.gap).unwrap());
+    if let Some(t) = widest {
+        if t.gap > 0.0 {
+            reasons.push(format!(
+                "Largest gap: {} ({:.0} pts)",
+                pretty_set_id(&t.set_id),
+                t.gap * 100.0
+            ));
+        }
+    }
+
+    reasons.push(format!(
+        "Coverage: {:.0}% of topics; {sealed_attempts} sealed attempts",
+        coverage * 100.0
+    ));
+    reasons
 }

@@ -418,9 +418,9 @@ impl crate::services::SchedulerService for Collection {
 
     fn load_far_seed(
         &mut self,
-        _input: scheduler::LoadFarSeedRequest,
+        input: scheduler::LoadFarSeedRequest,
     ) -> Result<scheduler::LoadFarSeedResponse> {
-        self.ankountant_load_far_seed_response()
+        self.ankountant_load_far_seed_response(input.with_history)
     }
 }
 

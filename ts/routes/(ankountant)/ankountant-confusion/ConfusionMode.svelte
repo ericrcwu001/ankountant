@@ -145,7 +145,8 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
     .confusion-mode {
         display: grid;
         place-items: center;
-        min-height: calc(100vh - 48px);
+        // Fill the host (a workspace pane or the full shell), not the viewport.
+        min-height: 100%;
         padding: var(--space-xl) var(--space-lg);
         font-size: var(--font-size);
         color: var(--fg);
@@ -158,9 +159,8 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
         background: var(--canvas-elevated);
         border: 1px solid var(--border-subtle);
         border-radius: var(--border-radius-medium);
-        box-shadow:
-            0 1px 2px rgba(14, 15, 19, 0.06),
-            0 1px 3px rgba(14, 15, 19, 0.05);
+        // Theme-aware Ledger elevation (dark mode gets a real shadow).
+        box-shadow: var(--elevation-e1);
     }
 
     .item {
@@ -170,9 +170,9 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
     .prompt {
         // Card title
         margin: 0;
-        font-size: 20px;
-        font-weight: 600;
-        letter-spacing: -0.01em;
+        font-size: var(--type-card-title-size);
+        font-weight: var(--type-card-title-weight);
+        letter-spacing: var(--type-card-title-tracking);
         line-height: 1.35;
     }
 

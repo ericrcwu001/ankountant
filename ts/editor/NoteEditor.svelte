@@ -138,6 +138,13 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         fieldNames = newFieldNames;
     }
 
+    /** Ankountant: read the current field HTML. The web-native Add/Browse
+     *  surfaces own the note in TS (collecting fields on demand) instead of
+     *  round-tripping every keystroke through the Qt bridge. */
+    export function getFields(): string[] {
+        return fieldStores.map((store) => get(store));
+    }
+
     let fieldsCollapsed: boolean[] = [];
     export function setCollapsed(defaultCollapsed: boolean[]): void {
         fieldsCollapsed =

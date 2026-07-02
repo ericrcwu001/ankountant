@@ -22,9 +22,9 @@ struct ContentView: View {
 
     var body: some View {
         TabView {
-            Tab("Decks", systemImage: "rectangle.stack") {
+            Tab("Home", systemImage: "house") {
                 NavigationStack {
-                    DeckListView()
+                    HomeView(pendingReviewDeckId: $pendingReviewDeckId)
                         .id(refreshID)
                         .toolbar {
                             ToolbarItem(placement: .topBarLeading) {
@@ -68,20 +68,17 @@ struct ContentView: View {
                         .id(refreshID)
                 }
             }
+            // NOTE: Keep the top-level tab count at 5 or fewer on iPhone.
+            // A 6th tab makes iOS collapse the overflow into a system "More"
+            // tab, whose own UINavigationController then nests with each tab's
+            // NavigationStack and produces a doubled back button on subpages.
+            // Developer tools live inside Settings (below) instead of a 6th tab.
             Tab("Settings", systemImage: "gearshape") {
                 NavigationStack {
                     SettingsView()
                         .id(refreshID)
                 }
             }
-            #if DEBUG
-            Tab("Debug", systemImage: "wrench.and.screwdriver") {
-                NavigationStack {
-                    DebugView()
-                        .id(refreshID)
-                }
-            }
-            #endif
         }
         .sheet(isPresented: $showSync) {
             refreshID = UUID()

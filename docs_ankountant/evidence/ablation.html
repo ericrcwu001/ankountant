@@ -1,0 +1,219 @@
+<!doctype html>
+<!--
+  Copyright: Ankitects Pty Ltd and contributors
+  License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
+
+  GENERATED — do not edit by hand. Regenerate with `just ankountant-evidence`
+  (emitter: rslib/src/ankountant/ablation.rs::emit_ablation_evidence).
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ankountant — A2 Defunding Ablation Evidence</title>
+    <style>
+      :root {
+        --bg: #0f1420;
+        --panel: #172033;
+        --panel-2: #1e2a42;
+        --ink: #e8edf6;
+        --muted: #9fb0cc;
+        --accent: #6ea8ff;
+        --on: #4bd991;
+        --off: #6ea8ff;
+        --bad: #ff6b6b;
+        --border: #2a3a58;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+      .wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+      h1 { font-size: 26px; margin: 0 0 4px; }
+      h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 32px 0 12px; }
+      code { background: var(--panel-2); padding: 2px 6px; border-radius: 5px; font-size: 13px; }
+      .hyp { background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px; padding: 14px 18px; color: var(--ink); max-width: 78ch; }
+      .foot { color: var(--muted); font-size: 13px; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 4px 0 8px; }
+      .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+      .stat .k { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+      .stat .v { font-size: 28px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
+      .stat .v small { font-size: 15px; color: var(--muted); font-weight: 500; }
+      .win { color: var(--on); }
+      .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+      table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+      th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+      th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+      td.num, th.num { text-align: right; }
+      .bars { display: flex; flex-direction: column; gap: 10px; }
+      .barrow { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 10px; }
+      .barlabel { color: var(--muted); font-size: 13px; }
+      .bartrack { position: relative; height: 26px; }
+      .bar { position: absolute; top: 0; height: 12px; border-radius: 4px; }
+      .bar.off { top: 0; background: var(--off); opacity: .55; }
+      .bar.on { top: 14px; background: var(--on); }
+      .barnum { position: absolute; right: 6px; font-size: 11px; color: var(--ink); }
+      .verdict { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel); font-weight: 600; margin: 6px 0 0; }
+      .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--on); }
+      .note { color: var(--muted); font-size: 13px; margin-top: 12px; max-width: 78ch; }
+      details { margin-top: 16px; }
+      summary { cursor: pointer; color: var(--accent); }
+      pre { background: #0b0f18; border: 1px solid var(--border); border-radius: 10px; padding: 16px; overflow: auto; font-size: 12px; color: #c7d3e8; }
+      .legend { display: flex; gap: 16px; color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+      .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1 id="title"></h1>
+      <p class="foot">Reproduce: <code id="reproduce"></code> · generated <span id="ts"></span></p>
+
+      <h2>Feature &amp; hypothesis</h2>
+      <p class="hyp"><strong id="feature"></strong> — <span id="hypothesis"></span></p>
+
+      <h2>Summary (feature OFF vs ON)</h2>
+      <div class="cards" id="stats"></div>
+      <div class="verdict" id="verdict"><span class="dot"></span><span id="verdict-text"></span></div>
+
+      <h2>Per-card next interval</h2>
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--off);opacity:.55"></span>OFF (feature disabled)</span>
+        <span><span class="swatch" style="background:var(--on)"></span>ON (defunded)</span>
+      </div>
+      <div class="card"><div class="bars" id="bars"></div></div>
+
+      <h2>Per-card table</h2>
+      <div class="card"><table id="table"></table></div>
+
+      <h2>Control</h2>
+      <div class="card" id="control"></div>
+
+      <p class="note" id="safety"></p>
+
+      <details>
+        <summary>Raw JSON record</summary>
+        <pre id="raw"></pre>
+      </details>
+    </div>
+
+    <script>
+      const DATA = {
+  "cohort_size": 8,
+  "control": {
+    "card": "cog::applied (same fast+Good+Confident treatment)",
+    "expected": false,
+    "feature_fired": false
+  },
+  "feature": "A2 latency-aware too-easy defunding",
+  "generated_at": 1782961182,
+  "horizon_days": 90.0,
+  "hypothesis": "On a stable (>=21d) cog::rote card answered fast (<0.5x baseline), correct, and Confident, defunding lowers desired retention by 0.05 (floored 0.70), lengthening the next interval and reducing projected reviews. Non-rote/unstable/slow cards are unaffected.",
+  "per_card": [
+    {
+      "card": "rote #1",
+      "delta_days": 23,
+      "interval_off_days": 25,
+      "interval_on_days": 48
+    },
+    {
+      "card": "rote #2",
+      "delta_days": 31,
+      "interval_off_days": 34,
+      "interval_on_days": 65
+    },
+    {
+      "card": "rote #3",
+      "delta_days": 39,
+      "interval_off_days": 43,
+      "interval_on_days": 82
+    },
+    {
+      "card": "rote #4",
+      "delta_days": 47,
+      "interval_off_days": 52,
+      "interval_on_days": 99
+    },
+    {
+      "card": "rote #5",
+      "delta_days": 55,
+      "interval_off_days": 61,
+      "interval_on_days": 116
+    },
+    {
+      "card": "rote #6",
+      "delta_days": 63,
+      "interval_off_days": 70,
+      "interval_on_days": 133
+    },
+    {
+      "card": "rote #7",
+      "delta_days": 72,
+      "interval_off_days": 79,
+      "interval_on_days": 151
+    },
+    {
+      "card": "rote #8",
+      "delta_days": 80,
+      "interval_off_days": 88,
+      "interval_on_days": 168
+    }
+  ],
+  "reproduce": "just ankountant-evidence",
+  "safety_bound": "Retention is never reduced below TOO_EASY_RETENTION_FLOOR (0.70); this is a design bound, not a measured retention outcome.",
+  "summary": {
+    "mean_interval_off_days": 56.5,
+    "mean_interval_on_days": 107.75,
+    "projected_reviews_off": 14.993943210948842,
+    "projected_reviews_on": 7.850561843385386,
+    "review_reduction_pct": 47.64177953099911
+  },
+  "title": "A2 too-easy defunding — off/on ablation (rubric #5)"
+};
+      const $ = (id) => document.getElementById(id);
+
+      $("title").textContent = DATA.title;
+      $("reproduce").textContent = DATA.reproduce;
+      $("ts").textContent = new Date((DATA.generated_at || 0) * 1000).toISOString();
+      $("feature").textContent = DATA.feature;
+      $("hypothesis").textContent = DATA.hypothesis;
+      $("safety").textContent = DATA.safety_bound;
+      $("raw").textContent = JSON.stringify(DATA, null, 2);
+
+      const s = DATA.summary;
+      const f1 = (x) => Number(x).toFixed(1);
+      $("stats").innerHTML = `
+        <div class="stat"><div class="k">Mean interval OFF</div><div class="v">${f1(s.mean_interval_off_days)}<small> d</small></div></div>
+        <div class="stat"><div class="k">Mean interval ON</div><div class="v win">${f1(s.mean_interval_on_days)}<small> d</small></div></div>
+        <div class="stat"><div class="k">Projected reviews / ${f1(DATA.horizon_days)}d</div><div class="v">${f1(s.projected_reviews_off)} → <span class="win">${f1(s.projected_reviews_on)}</span></div></div>
+        <div class="stat"><div class="k">Review reduction</div><div class="v win">${f1(s.review_reduction_pct)}<small> %</small></div></div>`;
+
+      const cut = s.review_reduction_pct > 0 && s.mean_interval_on_days >= s.mean_interval_off_days;
+      $("verdict-text").textContent = cut
+        ? `Hypothesis supported: ON lengthens intervals and cuts projected reviews by ${f1(s.review_reduction_pct)}% across ${DATA.cohort_size} cards.`
+        : "Hypothesis NOT supported by this run.";
+      if (!cut) { $("verdict").style.borderColor = "var(--bad)"; document.querySelector("#verdict .dot").style.background = "var(--bad)"; }
+
+      const rows = DATA.per_card || [];
+      const maxIvl = Math.max(1, ...rows.map((r) => Math.max(r.interval_off_days, r.interval_on_days)));
+      $("bars").innerHTML = rows.map((r) => {
+        const wOff = (r.interval_off_days / maxIvl) * 100;
+        const wOn = (r.interval_on_days / maxIvl) * 100;
+        return `<div class="barrow">
+          <div class="barlabel">${r.card}</div>
+          <div class="bartrack">
+            <div class="bar off" style="width:${wOff}%"></div><span class="barnum" style="top:0">${r.interval_off_days}d</span>
+            <div class="bar on" style="width:${wOn}%"></div><span class="barnum" style="top:14px">${r.interval_on_days}d</span>
+          </div>
+        </div>`;
+      }).join("");
+
+      $("table").innerHTML =
+        `<tr><th>Card</th><th class="num">OFF (days)</th><th class="num">ON (days)</th><th class="num">Δ</th></tr>` +
+        rows.map((r) => `<tr><td>${r.card}</td><td class="num">${r.interval_off_days}</td><td class="num">${r.interval_on_days}</td><td class="num">+${r.delta_days}</td></tr>`).join("");
+
+      const c = DATA.control;
+      const ok = c.feature_fired === c.expected;
+      $("control").innerHTML =
+        `<table><tr><th>${c.card}</th><td class="num">feature fired: <strong style="color:${ok ? "var(--on)" : "var(--bad)"}">${c.feature_fired}</strong> (expected ${c.expected})</td></tr></table>
+         <p class="foot">Non-rote cards are inert — the ablation effect is specific to eligible rote cards, not a global interval change.</p>`;
+    </script>
+  </body>
+</html>

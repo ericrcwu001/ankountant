@@ -18,16 +18,24 @@ use serde_json::json;
 use super::config;
 use super::seed::SeedSummary;
 use crate::card::CardQueue;
+use crate::card::CardType;
+use crate::card::FsrsMemoryState;
 use crate::prelude::*;
 use crate::revlog::RevlogEntry;
 use crate::revlog::RevlogReviewKind;
+use crate::scheduler::answering::CardAnswer;
+use crate::scheduler::answering::Rating;
+use crate::scheduler::states::CardState;
+use crate::scheduler::states::NormalState;
 use crate::search::SortMode;
 use crate::services::SchedulerService;
 use crate::timestamp::TimestampMillis;
 
 fn seeded() -> (Collection, SeedSummary) {
     let mut col = Collection::new();
-    let summary = col.ankountant_load_far_seed().unwrap();
+    // Content only (no injected history) — the A4/A5 tests drive history
+    // themselves to exercise the thresholds.
+    let summary = col.ankountant_load_far_seed(false).unwrap();
     (col, summary)
 }
 
@@ -130,6 +138,231 @@ fn a1_exam_date_from_col_config_changes_ramp() {
     assert!(near > far);
 }
 
+// --- A1-live + A2 latency-defunding ------------------------------------------
+
+/// Enable FSRS and turn the first study card tagged `tag` into a mature review
+/// card with `interval` days, a memory state, and an optional recorded
+/// pre-reveal confidence (`cd.cf`). Returns its id.
+fn setup_study_card(
+    col: &mut Collection,
+    tag: &str,
+    interval: u32,
+    confidence: Option<&str>,
+) -> CardId {
+    col.ankountant_load_far_seed(false).unwrap();
+    col.set_config_bool(BoolKey::Fsrs, true, false).unwrap();
+    let cid = col
+        .search_cards(
+            &format!("tag:{tag} deck:Ankountant::Study::FAR::*"),
+            SortMode::NoOrder,
+        )
+        .unwrap()[0];
+    let custom_data = match confidence {
+        Some(c) => format!(r#"{{"cf":"{c}"}}"#),
+        None => String::new(),
+    };
+    col.transact(Op::UpdateCard, |col| {
+        let today = col.timing_today()?.days_elapsed as i32;
+        let mut card = col.storage.get_card(cid)?.unwrap();
+        card.ctype = CardType::Review;
+        card.queue = CardQueue::Review;
+        card.interval = interval;
+        card.reps = 8;
+        card.due = today;
+        card.last_review_time = Some(TimestampMillis::now().as_secs());
+        card.memory_state = Some(FsrsMemoryState {
+            stability: 50.0,
+            difficulty: 5.0,
+        });
+        card.custom_data = custom_data.clone();
+        col.storage.update_card(&card)?;
+        Ok(())
+    })
+    .unwrap();
+    cid
+}
+
+/// Add trailing recall reps (Good) with the given latencies (ms) to a card.
+fn seed_latency_reps(col: &mut Collection, cid: CardId, latencies: &[u32]) {
+    let now = TimestampMillis::now().0;
+    col.transact(Op::UpdateCard, |col| {
+        for (i, &ms) in latencies.iter().enumerate() {
+            col.storage.add_revlog_entry(
+                &RevlogEntry {
+                    id: crate::revlog::RevlogId(now + i as i64),
+                    cid,
+                    usn: Usn(-1),
+                    button_chosen: 3,
+                    review_kind: RevlogReviewKind::Review,
+                    taken_millis: ms,
+                    ..Default::default()
+                },
+                false,
+            )?;
+        }
+        Ok(())
+    })
+    .unwrap();
+}
+
+/// Answer `cid` with `rating`, taking `millis`, reusing the live preview states.
+fn answer_with(col: &mut Collection, cid: CardId, rating: Rating, millis: u32) {
+    let states = col.get_scheduling_states(cid).unwrap();
+    let new_state = match rating {
+        Rating::Again => states.again,
+        Rating::Hard => states.hard,
+        Rating::Good => states.good,
+        Rating::Easy => states.easy,
+    };
+    col.answer_card(&mut CardAnswer {
+        card_id: cid,
+        current_state: states.current,
+        new_state,
+        rating,
+        answered_at: TimestampMillis::now(),
+        milliseconds_taken: millis,
+        custom_data: None,
+        from_queue: false,
+    })
+    .unwrap();
+}
+
+fn card_is_too_easy(col: &mut Collection, cid: CardId) -> bool {
+    let card = col.storage.get_card(cid).unwrap().unwrap();
+    super::logic::custom_data_too_easy(&card.custom_data)
+}
+
+fn good_scheduled_days(col: &mut Collection, cid: CardId) -> u32 {
+    match col.get_scheduling_states(cid).unwrap().good {
+        CardState::Normal(NormalState::Review(r)) => r.scheduled_days,
+        other => panic!("expected a Review good state, got {other:?}"),
+    }
+}
+
+#[test]
+fn a1_live_previewed_interval_shortens_as_exam_nears() {
+    // A1-live — the live button preview for a FAR study card uses the deadline
+    // ramp, so a nearer exam (higher retention) yields a shorter next interval.
+    let mut col = Collection::new();
+    let cid = setup_study_card(&mut col, "cog::rote", 30, None);
+    let today = chrono::Local::now().date_naive();
+
+    set_exam_date(
+        &mut col,
+        &(today + chrono::Duration::days(90))
+            .format("%Y-%m-%d")
+            .to_string(),
+    );
+    let ivl_far = good_scheduled_days(&mut col, cid);
+
+    set_exam_date(
+        &mut col,
+        &(today + chrono::Duration::days(5))
+            .format("%Y-%m-%d")
+            .to_string(),
+    );
+    let ivl_near = good_scheduled_days(&mut col, cid);
+
+    assert!(
+        ivl_near < ivl_far,
+        "nearer exam should shorten the live interval: near={ivl_near} far={ivl_far}"
+    );
+}
+
+#[test]
+fn a2_ac1_defund_flags_and_lengthens_next_interval() {
+    // A2 AC1 — a stable rote card answered fast + Good + Confident is flagged
+    // too-easy, and the flag lowers desired retention so the next previewed
+    // interval is longer than the same card without the flag.
+    let mut col = Collection::new();
+    let cid = setup_study_card(&mut col, "cog::rote", 30, Some("Confident"));
+    // >= 3 trailing reps around 4s -> an 800ms answer is fast (< 0.5x).
+    seed_latency_reps(&mut col, cid, &[4000, 4200, 3800, 4100]);
+
+    answer_with(&mut col, cid, Rating::Good, 800);
+    assert!(
+        card_is_too_easy(&mut col, cid),
+        "fast+Good+Confident sets te"
+    );
+
+    let ivl_defunded = good_scheduled_days(&mut col, cid);
+
+    // Clear the flag (keeping everything else) and re-preview as the control.
+    col.transact(Op::UpdateCard, |col| {
+        let mut card = col.storage.get_card(cid)?.unwrap();
+        card.custom_data = super::logic::custom_data_without_te(&card.custom_data);
+        col.storage.update_card(&card)?;
+        Ok(())
+    })
+    .unwrap();
+    let ivl_control = good_scheduled_days(&mut col, cid);
+
+    assert!(
+        ivl_defunded > ivl_control,
+        "defunded interval should be longer: defunded={ivl_defunded} control={ivl_control}"
+    );
+}
+
+#[test]
+fn a2_ac2_applied_cards_never_defund() {
+    // A2 AC2 — a cog::applied card, fast + correct + Confident, is never flagged.
+    let mut col = Collection::new();
+    let cid = setup_study_card(&mut col, "cog::applied", 30, Some("Confident"));
+    seed_latency_reps(&mut col, cid, &[4000, 4200, 3800, 4100]);
+    answer_with(&mut col, cid, Rating::Good, 800);
+    assert!(!card_is_too_easy(&mut col, cid));
+}
+
+#[test]
+fn a2_ac3_new_or_learning_rote_never_defunds() {
+    // A2 AC3 — a rote card below the 21d stable floor is never flagged.
+    let mut col = Collection::new();
+    let cid = setup_study_card(&mut col, "cog::rote", 10, Some("Confident"));
+    seed_latency_reps(&mut col, cid, &[4000, 4200, 3800, 4100]);
+    answer_with(&mut col, cid, Rating::Good, 800);
+    assert!(!card_is_too_easy(&mut col, cid));
+}
+
+#[test]
+fn a2_ac4_cohort_baseline_used_when_few_own_reps() {
+    // A2 AC4 — with < 3 own reps, the rote cohort EMA is the baseline and the
+    // feature still fires.
+    let mut col = Collection::new();
+    let cid = setup_study_card(&mut col, "cog::rote", 30, Some("Confident"));
+    col.set_config_json(super::config::latency_rote_key(), &4000.0f64, false)
+        .unwrap();
+    // No own reps seeded -> the baseline falls back to the cohort EMA (4000ms).
+    answer_with(&mut col, cid, Rating::Good, 800);
+    assert!(card_is_too_easy(&mut col, cid));
+}
+
+#[test]
+fn a2_ac5_slow_or_incorrect_clears_flag() {
+    // A2 AC5 — a flagged card answered slow / Again drops the flag.
+    let mut col = Collection::new();
+    let cid = setup_study_card(&mut col, "cog::rote", 30, Some("Confident"));
+    seed_latency_reps(&mut col, cid, &[4000, 4200, 3800, 4100]);
+    answer_with(&mut col, cid, Rating::Good, 800);
+    assert!(card_is_too_easy(&mut col, cid));
+
+    answer_with(&mut col, cid, Rating::Again, 9000);
+    assert!(!card_is_too_easy(&mut col, cid));
+}
+
+#[test]
+fn a2_ac6_flag_stays_within_custom_data_limits() {
+    // A2 AC6 — the flag keeps custom_data a valid <=100-byte / <=8-byte-key
+    // object.
+    let mut col = Collection::new();
+    let cid = setup_study_card(&mut col, "cog::rote", 30, Some("Confident"));
+    seed_latency_reps(&mut col, cid, &[4000, 4200, 3800, 4100]);
+    answer_with(&mut col, cid, Rating::Good, 800);
+    let card = col.storage.get_card(cid).unwrap().unwrap();
+    assert!(card.validate_custom_data().is_ok());
+    assert!(card.custom_data.len() <= 100);
+    assert!(super::logic::custom_data_too_easy(&card.custom_data));
+}
+
 // --- A6 (A20–A23) ------------------------------------------------------------
 
 #[test]
@@ -175,7 +408,7 @@ fn a6_cards_filterable_by_cog_tag() {
 fn a6_tags_round_trip_through_save_reopen() {
     // A23.
     let (mut col, tmp) = crate::tests::open_fs_test_collection("ankountant_tags");
-    col.ankountant_load_far_seed().unwrap();
+    col.ankountant_load_far_seed(false).unwrap();
     let before = col
         .search_notes_unordered("tag:ds::lease::finance")
         .unwrap()
@@ -366,7 +599,7 @@ fn a8_attempt_notes_never_in_study_queue() {
 fn a8_no_schema_change_and_queryable_after_save_reopen() {
     // A30 — PRAGMA table_info identical before/after writing attempts + reopen.
     let (mut col, tmp) = crate::tests::open_fs_test_collection("ankountant_schema");
-    col.ankountant_load_far_seed().unwrap();
+    col.ankountant_load_far_seed(false).unwrap();
 
     let schema_before = table_info(&col);
 
@@ -929,7 +1162,7 @@ fn f016_load_far_seed_response_maps_summary_to_proto() {
     // and carries the sealed TBS note ids for the e2e fixture. Each returned id
     // resolves to a real Ankountant TBS note.
     let mut col = Collection::new();
-    let resp = col.ankountant_load_far_seed_response().unwrap();
+    let resp = col.ankountant_load_far_seed_response(false).unwrap();
     assert!(resp.confusion_sets >= 4);
     assert!(resp.sealed_items >= 24);
     assert!(resp.sealed_je_tbs >= 3);
@@ -940,6 +1173,148 @@ fn f016_load_far_seed_response_maps_summary_to_proto() {
         let note = col.storage.get_note(NoteId(*nid)).unwrap().unwrap();
         assert_eq!(note.notetype_id, tbs_ntid);
     }
+}
+
+#[test]
+fn f016_content_seed_has_real_recall_and_mcqs() {
+    // The content layer alone (no history) yields ~130 real recall cards and
+    // the real sealed MCQ/TBS bank.
+    let (mut col, summary) = seeded();
+    assert!(
+        summary.study_recall_cards >= 120,
+        "recall: {}",
+        summary.study_recall_cards
+    );
+    let sealed_tbs = col
+        .search_notes_unordered("deck:Ankountant::Sealed::FAR::* note:\"Ankountant TBS\"")
+        .unwrap();
+    assert!(
+        sealed_tbs.len() >= 24,
+        "sealed tbs notes: {}",
+        sealed_tbs.len()
+    );
+    // A real recall card exists for a topic that has no confusion set.
+    let taxes = col.search_notes_unordered("tag:far::taxes").unwrap();
+    assert!(!taxes.is_empty(), "expected far::taxes recall cards");
+}
+
+#[test]
+fn f016_demo_history_bands_with_one_undercovered_topic() {
+    // with_history=true injects fake reps + sealed attempts so readiness emits
+    // an honest band, while trading_afs_htm is deliberately left thin -> its
+    // per-topic readiness reads insufficient (the give-up rule) even though the
+    // overall band still emits (coverage 3/4 >= 60%).
+    let mut col = Collection::new();
+    col.ankountant_load_far_seed(true).unwrap();
+    let resp = readiness(&mut col);
+    let r = resp.readiness.clone().unwrap();
+    assert!(
+        !r.abstain,
+        "demo profile should band, abstained: {}",
+        r.reason
+    );
+    assert!(r.band_low < r.band_high);
+    assert!(!r.confidence.is_empty());
+
+    let covered = [
+        "capitalize_vs_expense",
+        "operating_vs_finance_lease",
+        "revrec_step_selection",
+    ];
+    for t in &resp.topics {
+        if covered.contains(&t.set_id.as_str()) {
+            assert!(
+                t.performance > 0.0,
+                "covered set {} should have performance",
+                t.set_id
+            );
+            assert!(
+                !t.memory_insufficient,
+                "covered set {} should have memory",
+                t.set_id
+            );
+        }
+    }
+    let trading = resp
+        .topics
+        .iter()
+        .find(|t| t.set_id == "trading_afs_htm")
+        .unwrap();
+    assert_eq!(
+        trading.performance, 0.0,
+        "under-covered set must have no performance"
+    );
+    assert!(
+        trading.memory_insufficient,
+        "under-covered set must read insufficient memory (give-up rule)"
+    );
+}
+
+#[test]
+fn f016_lived_in_history_reshapes_cards_and_spreads_activity() {
+    // with_history=true should leave a *used*-looking collection, not a flat New
+    // pile: FSRS on, an exam date set, a real mix of review/new study cards, and
+    // review activity spread across many past days (so the stats heatmap/streak
+    // and the deck due badges have something to show).
+    let mut col = Collection::new();
+    col.ankountant_load_far_seed(true).unwrap();
+
+    // FSRS on (memory states / retrievability are live) + exam date set.
+    assert!(col.get_config_bool(BoolKey::Fsrs), "FSRS should be enabled");
+    assert!(
+        col.ankountant_exam_date("FAR").is_some(),
+        "exam date should be seeded for the Home countdown"
+    );
+
+    // A believable mix: some cards reviewed, but still a fresh New pile left.
+    let reviewed = col
+        .search_cards("deck:Ankountant::Study::FAR::* -is:new", SortMode::NoOrder)
+        .unwrap();
+    let new = col
+        .search_cards("deck:Ankountant::Study::FAR::* is:new", SortMode::NoOrder)
+        .unwrap();
+    assert!(!reviewed.is_empty(), "expected some reviewed study cards");
+    assert!(!new.is_empty(), "expected a remaining New pile");
+
+    // History spans weeks, not the last few seconds.
+    let revlog = col
+        .storage
+        .get_all_revlog_entries(TimestampSecs(0))
+        .unwrap();
+    assert!(
+        revlog.len() > 50,
+        "expected a lived-in revlog, got {}",
+        revlog.len()
+    );
+    let day = |id: i64| id / 86_400_000;
+    let min_day = revlog.iter().map(|e| day(e.id.0)).min().unwrap();
+    let max_day = revlog.iter().map(|e| day(e.id.0)).max().unwrap();
+    assert!(
+        max_day - min_day >= 20,
+        "expected history spread across weeks, got {} days",
+        max_day - min_day
+    );
+}
+
+#[test]
+fn f016_content_only_seed_stays_a_clean_slate() {
+    // with_history=false must stay deterministic content-only (the e2e fixture +
+    // threshold tests drive their own history): no exam date, FSRS untouched,
+    // every study card still New, and no revlog.
+    let mut col = Collection::new();
+    col.ankountant_load_far_seed(false).unwrap();
+
+    assert!(col.ankountant_exam_date("FAR").is_none());
+    assert!(!col.get_config_bool(BoolKey::Fsrs));
+    let touched = col
+        .search_cards("deck:Ankountant::Study::FAR::* -is:new", SortMode::NoOrder)
+        .unwrap();
+    assert!(touched.is_empty(), "content-only seed must leave cards New");
+    let revlog = col
+        .storage
+        .get_all_revlog_entries(TimestampSecs(0))
+        .unwrap();
+    assert!(revlog.is_empty(), "content-only seed must add no revlog");
 }
 
 // --- helpers -----------------------------------------------------------------

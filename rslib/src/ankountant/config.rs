@@ -33,6 +33,13 @@ pub(crate) fn readiness_key(section: &str) -> String {
     format!("ankountant.readiness.{section}")
 }
 
+/// `ankountant.latency.rote` — cohort-wide EMA (milliseconds) of rote-card
+/// recall latency. A2 uses it as the latency baseline until a card has enough
+/// own reps to trust its trailing median (see `defund`).
+pub(crate) fn latency_rote_key() -> &'static str {
+    "ankountant.latency.rote"
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub(crate) struct ConfusionSet {
     #[serde(default)]

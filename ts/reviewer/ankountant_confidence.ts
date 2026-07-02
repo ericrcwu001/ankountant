@@ -5,7 +5,7 @@
 // The reviewer's card and its "Show Answer" button live in separate webviews,
 // so the reveal is gated on the Python side (reviewer.py). This module renders
 // the confidence control in the card webview, mirrors the committed level into
-// card.custom_data (the scalar the A2 backend reads), and then asks Python to
+// card.custom_data (`cd.cf`, the scalar the A2 backend reads), and then asks Python to
 // reveal. It fails open: if `ankountant_gate_ready` is never signalled (e.g. a
 // JS error here), Python does not block the reveal, so study can't soft-lock.
 
@@ -46,7 +46,9 @@ async function commit(level: ConfidenceLevel): Promise<void> {
             await mutate("ankountantConfidence", async (_states, customData) => {
                 for (const rating of ["again", "hard", "good", "easy"]) {
                     if (customData[rating]) {
-                        customData[rating]["confidence"] = level;
+                        // `cf` (not `confidence`): custom_data keys must be <= 8
+                        // bytes (rslib validate_custom_data); A2 reads `cd.cf`.
+                        customData[rating]["cf"] = level;
                     }
                 }
             });

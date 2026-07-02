@@ -1,0 +1,134 @@
+<!doctype html>
+<!--
+  Copyright: Ankitects Pty Ltd and contributors
+  License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
+
+  GENERATED — do not edit by hand. Regenerate with `just ankountant-evidence`
+  (emitter: rslib/src/ankountant/determinism.rs::emit_determinism_evidence).
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ankountant — Backend Determinism Evidence</title>
+    <style>
+      :root {
+        --bg: #0f1420;
+        --panel: #172033;
+        --panel-2: #1e2a42;
+        --ink: #e8edf6;
+        --muted: #9fb0cc;
+        --accent: #6ea8ff;
+        --ok: #4bd991;
+        --bad: #ff6b6b;
+        --border: #2a3a58;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+      h1 { font-size: 26px; margin: 0 0 4px; }
+      h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 32px 0 12px; }
+      p.claim { color: var(--muted); max-width: 70ch; }
+      code { background: var(--panel-2); padding: 2px 6px; border-radius: 5px; font-size: 13px; }
+      .badges { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0; }
+      .badge {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border);
+        background: var(--panel); font-weight: 600;
+      }
+      .badge .dot { width: 10px; height: 10px; border-radius: 50%; }
+      .pass .dot { background: var(--ok); } .pass { color: var(--ok); }
+      .fail .dot { background: var(--bad); } .fail { color: var(--bad); }
+      .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+      table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+      th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+      th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+      td.num, th.num { text-align: right; }
+      .foot { color: var(--muted); font-size: 13px; margin-top: 10px; }
+      details { margin-top: 16px; }
+      summary { cursor: pointer; color: var(--accent); }
+      pre { background: #0b0f18; border: 1px solid var(--border); border-radius: 10px; padding: 16px; overflow: auto; font-size: 12px; color: #c7d3e8; }
+      .hash { color: var(--accent); word-break: break-all; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1 id="title"></h1>
+      <p class="claim" id="claim"></p>
+      <p class="foot">Reproduce: <code id="reproduce"></code> · generated <span id="ts"></span></p>
+
+      <div class="badges" id="badges"></div>
+
+      <h2>Readiness projection (identical across runs)</h2>
+      <div class="card"><table id="readiness"></table></div>
+
+      <h2>Confusion-queue order (identical across runs)</h2>
+      <div class="card"><table id="queue"></table></div>
+
+      <h2>Next-card interval recommendations</h2>
+      <div class="card" id="intervals-card"><table id="intervals"></table></div>
+
+      <h2>Interval fuzz — pure function of (card_id + reps)</h2>
+      <div class="card"><table id="fuzz"></table></div>
+      <p class="foot">In production the fuzz RNG is seeded with <code>card_id + reps</code>; in tests fuzzing is disabled entirely. Either way the recommendation is reproducible — same seed, same day.</p>
+
+      <details>
+        <summary>Raw JSON record</summary>
+        <pre id="raw"></pre>
+      </details>
+    </div>
+
+    <script>
+      const DATA = /*__DATA__*/;
+
+      const $ = (id) => document.getElementById(id);
+      $("title").textContent = DATA.title;
+      $("claim").textContent = DATA.claim;
+      $("reproduce").textContent = DATA.reproduce;
+      $("ts").textContent = new Date((DATA.generated_at || 0) * 1000).toISOString();
+      $("raw").textContent = JSON.stringify(DATA, null, 2);
+
+      function badge(label, ok) {
+        const cls = ok ? "pass" : "fail";
+        const mark = ok ? "verified identical" : "MISMATCH";
+        return `<span class="badge ${cls}"><span class="dot"></span>${label}: ${mark}</span>`;
+      }
+      $("badges").innerHTML =
+        badge("Repeat run", DATA.verdicts.repeat_run_identical) +
+        badge("Independent seed", DATA.verdicts.independent_seed_agrees);
+
+      const r = DATA.run1.readiness;
+      const pct = (x) => (x == null ? "—" : (x * 100).toFixed(0) + "%");
+      const sc = (x) => (x == null ? "—" : Number(x).toFixed(1));
+      $("readiness").innerHTML = r.abstain
+        ? `<tr><th>Status</th><td>Abstains — ${r.reason} (give-up rule)</td></tr>
+           <tr><th>Coverage</th><td>${pct(r.coverage)}</td></tr>`
+        : `<tr><th>CPA band</th><td>${sc(r.band_low)} – ${sc(r.band_high)} (point ${sc(r.point_estimate)})</td></tr>
+           <tr><th>Confidence</th><td>${r.confidence}</td></tr>
+           <tr><th>Coverage</th><td>${pct(r.coverage)}</td></tr>`;
+
+      const q = DATA.run1.confusion_queue || [];
+      $("queue").innerHTML =
+        `<tr><th class="num">#</th><th>Topic (set_id)</th><th>Note</th></tr>` +
+        q.map((it, i) => `<tr><td class="num">${i + 1}</td><td>${it.set_id}</td><td>${it.note_id}</td></tr>`).join("");
+
+      const iv = DATA.run1.intervals || [];
+      $("intervals").innerHTML =
+        `<tr><th>Card</th><th class="num">Good interval (days)</th></tr>` +
+        (iv.length
+          ? iv.slice(0, 12).map((x) => `<tr><td>${x.card_id}</td><td class="num">${x.good_days}</td></tr>`).join("")
+          : `<tr><td colspan="2" class="foot">No review-state cards in this seed.</td></tr>`) +
+        (iv.length > 12 ? `<tr><td class="foot" colspan="2">… ${iv.length - 12} more (all identical across runs)</td></tr>` : "");
+
+      const fz = DATA.fuzz_reproducibility || [];
+      $("fuzz").innerHTML =
+        `<tr><th>card_id</th><th class="num">reps</th><th class="num">seed</th><th class="num">fuzz factor</th><th class="num">fuzzed ivl (from 100)</th></tr>` +
+        fz.map((x) => `<tr><td>${x.card_id}</td><td class="num">${x.reps}</td><td class="num">${x.seed}</td><td class="num">${Number(x.fuzz_factor).toFixed(4)}</td><td class="num">${x.fuzzed_interval_from_100}</td></tr>`).join("");
+    </script>
+  </body>
+</html>

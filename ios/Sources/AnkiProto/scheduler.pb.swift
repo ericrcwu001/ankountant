@@ -1548,6 +1548,298 @@ public nonisolated struct Anki_Scheduler_FuzzDeltaResponse: Sendable {
   public init() {}
 }
 
+public nonisolated struct Anki_Scheduler_ComputeExamScheduleRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var section: String = String()
+
+  /// Optional ISO-8601 exam date preview override. When empty, the date stored
+  /// in col config `ankountant.<section>.exam.date` is used.
+  public var examDate: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Anki_Scheduler_ComputeExamScheduleResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var desiredRetention: Double = 0
+
+  public var cards: [Anki_Scheduler_CardSchedulePreview] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Anki_Scheduler_CardSchedulePreview: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var cardID: Int64 = 0
+
+  public var nextIntervalDays: Int32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Anki_Scheduler_BuildConfusionQueueRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var section: String = String()
+
+  public var maxItems: Int32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Anki_Scheduler_BuildConfusionQueueResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var items: [Anki_Scheduler_ConfusionItem] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// The client-facing DTO deliberately omits any topic/category/deck label so the
+/// learner discriminates on content, not on a printed answer.
+public nonisolated struct Anki_Scheduler_ConfusionItem: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var noteID: Int64 = 0
+
+  public var prompt: String = String()
+
+  public var treatments: [String] = []
+
+  public var setID: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Anki_Scheduler_GetReadinessRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var section: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Anki_Scheduler_GetReadinessResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var topics: [Anki_Scheduler_TopicScore] = []
+
+  public var readiness: Anki_Scheduler_Readiness {
+    get {_readiness ?? Anki_Scheduler_Readiness()}
+    set {_readiness = newValue}
+  }
+  /// Returns true if `readiness` has been explicitly set.
+  public var hasReadiness: Bool {self._readiness != nil}
+  /// Clears the value of `readiness`. Subsequent reads from it will return its default value.
+  public mutating func clearReadiness() {self._readiness = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _readiness: Anki_Scheduler_Readiness? = nil
+}
+
+public nonisolated struct Anki_Scheduler_TopicScore: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var setID: String = String()
+
+  public var memory: Double = 0
+
+  public var performance: Double = 0
+
+  public var gap: Double = 0
+
+  /// memory is only meaningful with >= 5 trailing-30d reps.
+  public var memoryInsufficient: Bool = false
+
+  /// Wilson 95% confidence bands (0..1 fractions) around memory and performance,
+  /// so all three scores are shown as ranges, not points. Both endpoints are 0
+  /// when the metric is insufficient / has no sealed evidence.
+  public var memoryLow: Double = 0
+
+  public var memoryHigh: Double = 0
+
+  public var performanceLow: Double = 0
+
+  public var performanceHigh: Double = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Anki_Scheduler_Readiness: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var abstain: Bool = false
+
+  public var reason: String = String()
+
+  /// Wilson 95% band on sealed Performance accuracy, projected onto the CPA
+  /// scaled-score scale (0..99, 75 = pass) via the ADR-0005 transform. Both 0
+  /// when abstaining.
+  public var bandLow: Double = 0
+
+  public var bandHigh: Double = 0
+
+  public var confidence: String = String()
+
+  /// The band centre on the same CPA scale (0..99); 0 when abstaining.
+  public var pointEstimate: Double = 0
+
+  /// Fraction (0..1) of defined confusion sets with >= 1 sealed attempt.
+  /// Always populated (even when abstaining) so the UI can show exam coverage.
+  public var coverage: Double = 0
+
+  /// Unix seconds when this readiness was computed (last-updated indicator).
+  public var generatedAt: Int64 = 0
+
+  /// Factual, non-inferential drivers (restated numbers, e.g. weakest topic and
+  /// coverage) — never a claimed cause.
+  public var reasons: [String] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Anki_Scheduler_SubmitPerformanceAttemptRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var itemNoteID: Int64 = 0
+
+  /// "confusion" | "tbs"
+  public var mode: String = String()
+
+  /// confusion: {"choice":"..."}; tbs: {"steps":[{"id":..,"value":..}]}
+  public var submissionJson: String = String()
+
+  public var confidence: String = String()
+
+  public var latencyMs: UInt32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Anki_Scheduler_SubmitPerformanceAttemptResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var steps: [Anki_Scheduler_StepResult] = []
+
+  public var totalCredit: Double = 0
+
+  public var attemptNoteID: Int64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Anki_Scheduler_StepResult: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var id: String = String()
+
+  public var correct: Bool = false
+
+  public var weight: Double = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Anki_Scheduler_LoadFarSeedRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var section: String = String()
+
+  /// When true, also inject fake review/attempt history so the demo profile
+  /// shows a running review loop + an honest readiness band + the per-topic
+  /// give-up rule. Default false = deterministic content only (used by the
+  /// e2e fixture and the threshold tests, which control history themselves).
+  public var withHistory: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public nonisolated struct Anki_Scheduler_LoadFarSeedResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var confusionSets: UInt32 = 0
+
+  public var sealedItems: UInt32 = 0
+
+  public var sealedJeTbs: UInt32 = 0
+
+  public var sealedNumericTbs: UInt32 = 0
+
+  public var studyRecallCards: UInt32 = 0
+
+  public var roteCards: UInt32 = 0
+
+  /// Note ids of the sealed TBS notes, so the e2e fixture can deep-link the
+  /// TBS surface (?note=<id>) without a separate query RPC.
+  public var sealedTbsNoteIds: [Int64] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate nonisolated let _protobuf_package = "anki.scheduler"
@@ -4238,6 +4530,655 @@ nonisolated extension Anki_Scheduler_FuzzDeltaResponse: SwiftProtobuf.Message, S
 
   public static func ==(lhs: Anki_Scheduler_FuzzDeltaResponse, rhs: Anki_Scheduler_FuzzDeltaResponse) -> Bool {
     if lhs.deltaDays != rhs.deltaDays {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_ComputeExamScheduleRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ComputeExamScheduleRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}section\0\u{3}exam_date\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.section) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.examDate) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.section.isEmpty {
+      try visitor.visitSingularStringField(value: self.section, fieldNumber: 1)
+    }
+    if !self.examDate.isEmpty {
+      try visitor.visitSingularStringField(value: self.examDate, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_ComputeExamScheduleRequest, rhs: Anki_Scheduler_ComputeExamScheduleRequest) -> Bool {
+    if lhs.section != rhs.section {return false}
+    if lhs.examDate != rhs.examDate {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_ComputeExamScheduleResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ComputeExamScheduleResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}desired_retention\0\u{1}cards\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularDoubleField(value: &self.desiredRetention) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.cards) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.desiredRetention.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.desiredRetention, fieldNumber: 1)
+    }
+    if !self.cards.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.cards, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_ComputeExamScheduleResponse, rhs: Anki_Scheduler_ComputeExamScheduleResponse) -> Bool {
+    if lhs.desiredRetention != rhs.desiredRetention {return false}
+    if lhs.cards != rhs.cards {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_CardSchedulePreview: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CardSchedulePreview"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}card_id\0\u{3}next_interval_days\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularInt64Field(value: &self.cardID) }()
+      case 2: try { try decoder.decodeSingularInt32Field(value: &self.nextIntervalDays) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.cardID != 0 {
+      try visitor.visitSingularInt64Field(value: self.cardID, fieldNumber: 1)
+    }
+    if self.nextIntervalDays != 0 {
+      try visitor.visitSingularInt32Field(value: self.nextIntervalDays, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_CardSchedulePreview, rhs: Anki_Scheduler_CardSchedulePreview) -> Bool {
+    if lhs.cardID != rhs.cardID {return false}
+    if lhs.nextIntervalDays != rhs.nextIntervalDays {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_BuildConfusionQueueRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".BuildConfusionQueueRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}section\0\u{3}max_items\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.section) }()
+      case 2: try { try decoder.decodeSingularInt32Field(value: &self.maxItems) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.section.isEmpty {
+      try visitor.visitSingularStringField(value: self.section, fieldNumber: 1)
+    }
+    if self.maxItems != 0 {
+      try visitor.visitSingularInt32Field(value: self.maxItems, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_BuildConfusionQueueRequest, rhs: Anki_Scheduler_BuildConfusionQueueRequest) -> Bool {
+    if lhs.section != rhs.section {return false}
+    if lhs.maxItems != rhs.maxItems {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_BuildConfusionQueueResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".BuildConfusionQueueResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}items\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.items) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.items.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.items, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_BuildConfusionQueueResponse, rhs: Anki_Scheduler_BuildConfusionQueueResponse) -> Bool {
+    if lhs.items != rhs.items {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_ConfusionItem: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ConfusionItem"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}note_id\0\u{1}prompt\0\u{1}treatments\0\u{3}set_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularInt64Field(value: &self.noteID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.prompt) }()
+      case 3: try { try decoder.decodeRepeatedStringField(value: &self.treatments) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self.setID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.noteID != 0 {
+      try visitor.visitSingularInt64Field(value: self.noteID, fieldNumber: 1)
+    }
+    if !self.prompt.isEmpty {
+      try visitor.visitSingularStringField(value: self.prompt, fieldNumber: 2)
+    }
+    if !self.treatments.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.treatments, fieldNumber: 3)
+    }
+    if !self.setID.isEmpty {
+      try visitor.visitSingularStringField(value: self.setID, fieldNumber: 4)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_ConfusionItem, rhs: Anki_Scheduler_ConfusionItem) -> Bool {
+    if lhs.noteID != rhs.noteID {return false}
+    if lhs.prompt != rhs.prompt {return false}
+    if lhs.treatments != rhs.treatments {return false}
+    if lhs.setID != rhs.setID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_GetReadinessRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".GetReadinessRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}section\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.section) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.section.isEmpty {
+      try visitor.visitSingularStringField(value: self.section, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_GetReadinessRequest, rhs: Anki_Scheduler_GetReadinessRequest) -> Bool {
+    if lhs.section != rhs.section {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_GetReadinessResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".GetReadinessResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}topics\0\u{1}readiness\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.topics) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._readiness) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.topics.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.topics, fieldNumber: 1)
+    }
+    try { if let v = self._readiness {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_GetReadinessResponse, rhs: Anki_Scheduler_GetReadinessResponse) -> Bool {
+    if lhs.topics != rhs.topics {return false}
+    if lhs._readiness != rhs._readiness {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_TopicScore: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".TopicScore"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}set_id\0\u{1}memory\0\u{1}performance\0\u{1}gap\0\u{3}memory_insufficient\0\u{3}memory_low\0\u{3}memory_high\0\u{3}performance_low\0\u{3}performance_high\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.setID) }()
+      case 2: try { try decoder.decodeSingularDoubleField(value: &self.memory) }()
+      case 3: try { try decoder.decodeSingularDoubleField(value: &self.performance) }()
+      case 4: try { try decoder.decodeSingularDoubleField(value: &self.gap) }()
+      case 5: try { try decoder.decodeSingularBoolField(value: &self.memoryInsufficient) }()
+      case 6: try { try decoder.decodeSingularDoubleField(value: &self.memoryLow) }()
+      case 7: try { try decoder.decodeSingularDoubleField(value: &self.memoryHigh) }()
+      case 8: try { try decoder.decodeSingularDoubleField(value: &self.performanceLow) }()
+      case 9: try { try decoder.decodeSingularDoubleField(value: &self.performanceHigh) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.setID.isEmpty {
+      try visitor.visitSingularStringField(value: self.setID, fieldNumber: 1)
+    }
+    if self.memory.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.memory, fieldNumber: 2)
+    }
+    if self.performance.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.performance, fieldNumber: 3)
+    }
+    if self.gap.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.gap, fieldNumber: 4)
+    }
+    if self.memoryInsufficient != false {
+      try visitor.visitSingularBoolField(value: self.memoryInsufficient, fieldNumber: 5)
+    }
+    if self.memoryLow.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.memoryLow, fieldNumber: 6)
+    }
+    if self.memoryHigh.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.memoryHigh, fieldNumber: 7)
+    }
+    if self.performanceLow.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.performanceLow, fieldNumber: 8)
+    }
+    if self.performanceHigh.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.performanceHigh, fieldNumber: 9)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_TopicScore, rhs: Anki_Scheduler_TopicScore) -> Bool {
+    if lhs.setID != rhs.setID {return false}
+    if lhs.memory != rhs.memory {return false}
+    if lhs.performance != rhs.performance {return false}
+    if lhs.gap != rhs.gap {return false}
+    if lhs.memoryInsufficient != rhs.memoryInsufficient {return false}
+    if lhs.memoryLow != rhs.memoryLow {return false}
+    if lhs.memoryHigh != rhs.memoryHigh {return false}
+    if lhs.performanceLow != rhs.performanceLow {return false}
+    if lhs.performanceHigh != rhs.performanceHigh {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_Readiness: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".Readiness"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}abstain\0\u{1}reason\0\u{3}band_low\0\u{3}band_high\0\u{1}confidence\0\u{3}point_estimate\0\u{1}coverage\0\u{3}generated_at\0\u{1}reasons\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.abstain) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.reason) }()
+      case 3: try { try decoder.decodeSingularDoubleField(value: &self.bandLow) }()
+      case 4: try { try decoder.decodeSingularDoubleField(value: &self.bandHigh) }()
+      case 5: try { try decoder.decodeSingularStringField(value: &self.confidence) }()
+      case 6: try { try decoder.decodeSingularDoubleField(value: &self.pointEstimate) }()
+      case 7: try { try decoder.decodeSingularDoubleField(value: &self.coverage) }()
+      case 8: try { try decoder.decodeSingularInt64Field(value: &self.generatedAt) }()
+      case 9: try { try decoder.decodeRepeatedStringField(value: &self.reasons) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.abstain != false {
+      try visitor.visitSingularBoolField(value: self.abstain, fieldNumber: 1)
+    }
+    if !self.reason.isEmpty {
+      try visitor.visitSingularStringField(value: self.reason, fieldNumber: 2)
+    }
+    if self.bandLow.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.bandLow, fieldNumber: 3)
+    }
+    if self.bandHigh.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.bandHigh, fieldNumber: 4)
+    }
+    if !self.confidence.isEmpty {
+      try visitor.visitSingularStringField(value: self.confidence, fieldNumber: 5)
+    }
+    if self.pointEstimate.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.pointEstimate, fieldNumber: 6)
+    }
+    if self.coverage.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.coverage, fieldNumber: 7)
+    }
+    if self.generatedAt != 0 {
+      try visitor.visitSingularInt64Field(value: self.generatedAt, fieldNumber: 8)
+    }
+    if !self.reasons.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.reasons, fieldNumber: 9)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_Readiness, rhs: Anki_Scheduler_Readiness) -> Bool {
+    if lhs.abstain != rhs.abstain {return false}
+    if lhs.reason != rhs.reason {return false}
+    if lhs.bandLow != rhs.bandLow {return false}
+    if lhs.bandHigh != rhs.bandHigh {return false}
+    if lhs.confidence != rhs.confidence {return false}
+    if lhs.pointEstimate != rhs.pointEstimate {return false}
+    if lhs.coverage != rhs.coverage {return false}
+    if lhs.generatedAt != rhs.generatedAt {return false}
+    if lhs.reasons != rhs.reasons {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_SubmitPerformanceAttemptRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SubmitPerformanceAttemptRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}item_note_id\0\u{1}mode\0\u{3}submission_json\0\u{1}confidence\0\u{3}latency_ms\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularInt64Field(value: &self.itemNoteID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.mode) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.submissionJson) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self.confidence) }()
+      case 5: try { try decoder.decodeSingularUInt32Field(value: &self.latencyMs) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.itemNoteID != 0 {
+      try visitor.visitSingularInt64Field(value: self.itemNoteID, fieldNumber: 1)
+    }
+    if !self.mode.isEmpty {
+      try visitor.visitSingularStringField(value: self.mode, fieldNumber: 2)
+    }
+    if !self.submissionJson.isEmpty {
+      try visitor.visitSingularStringField(value: self.submissionJson, fieldNumber: 3)
+    }
+    if !self.confidence.isEmpty {
+      try visitor.visitSingularStringField(value: self.confidence, fieldNumber: 4)
+    }
+    if self.latencyMs != 0 {
+      try visitor.visitSingularUInt32Field(value: self.latencyMs, fieldNumber: 5)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_SubmitPerformanceAttemptRequest, rhs: Anki_Scheduler_SubmitPerformanceAttemptRequest) -> Bool {
+    if lhs.itemNoteID != rhs.itemNoteID {return false}
+    if lhs.mode != rhs.mode {return false}
+    if lhs.submissionJson != rhs.submissionJson {return false}
+    if lhs.confidence != rhs.confidence {return false}
+    if lhs.latencyMs != rhs.latencyMs {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_SubmitPerformanceAttemptResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SubmitPerformanceAttemptResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}steps\0\u{3}total_credit\0\u{3}attempt_note_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.steps) }()
+      case 2: try { try decoder.decodeSingularDoubleField(value: &self.totalCredit) }()
+      case 3: try { try decoder.decodeSingularInt64Field(value: &self.attemptNoteID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.steps.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.steps, fieldNumber: 1)
+    }
+    if self.totalCredit.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.totalCredit, fieldNumber: 2)
+    }
+    if self.attemptNoteID != 0 {
+      try visitor.visitSingularInt64Field(value: self.attemptNoteID, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_SubmitPerformanceAttemptResponse, rhs: Anki_Scheduler_SubmitPerformanceAttemptResponse) -> Bool {
+    if lhs.steps != rhs.steps {return false}
+    if lhs.totalCredit != rhs.totalCredit {return false}
+    if lhs.attemptNoteID != rhs.attemptNoteID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_StepResult: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".StepResult"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}correct\0\u{1}weight\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
+      case 2: try { try decoder.decodeSingularBoolField(value: &self.correct) }()
+      case 3: try { try decoder.decodeSingularDoubleField(value: &self.weight) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.id.isEmpty {
+      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    }
+    if self.correct != false {
+      try visitor.visitSingularBoolField(value: self.correct, fieldNumber: 2)
+    }
+    if self.weight.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.weight, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_StepResult, rhs: Anki_Scheduler_StepResult) -> Bool {
+    if lhs.id != rhs.id {return false}
+    if lhs.correct != rhs.correct {return false}
+    if lhs.weight != rhs.weight {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_LoadFarSeedRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".LoadFarSeedRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}section\0\u{3}with_history\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.section) }()
+      case 2: try { try decoder.decodeSingularBoolField(value: &self.withHistory) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.section.isEmpty {
+      try visitor.visitSingularStringField(value: self.section, fieldNumber: 1)
+    }
+    if self.withHistory != false {
+      try visitor.visitSingularBoolField(value: self.withHistory, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_LoadFarSeedRequest, rhs: Anki_Scheduler_LoadFarSeedRequest) -> Bool {
+    if lhs.section != rhs.section {return false}
+    if lhs.withHistory != rhs.withHistory {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Anki_Scheduler_LoadFarSeedResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".LoadFarSeedResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}confusion_sets\0\u{3}sealed_items\0\u{3}sealed_je_tbs\0\u{3}sealed_numeric_tbs\0\u{3}study_recall_cards\0\u{3}rote_cards\0\u{3}sealed_tbs_note_ids\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.confusionSets) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.sealedItems) }()
+      case 3: try { try decoder.decodeSingularUInt32Field(value: &self.sealedJeTbs) }()
+      case 4: try { try decoder.decodeSingularUInt32Field(value: &self.sealedNumericTbs) }()
+      case 5: try { try decoder.decodeSingularUInt32Field(value: &self.studyRecallCards) }()
+      case 6: try { try decoder.decodeSingularUInt32Field(value: &self.roteCards) }()
+      case 7: try { try decoder.decodeRepeatedInt64Field(value: &self.sealedTbsNoteIds) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.confusionSets != 0 {
+      try visitor.visitSingularUInt32Field(value: self.confusionSets, fieldNumber: 1)
+    }
+    if self.sealedItems != 0 {
+      try visitor.visitSingularUInt32Field(value: self.sealedItems, fieldNumber: 2)
+    }
+    if self.sealedJeTbs != 0 {
+      try visitor.visitSingularUInt32Field(value: self.sealedJeTbs, fieldNumber: 3)
+    }
+    if self.sealedNumericTbs != 0 {
+      try visitor.visitSingularUInt32Field(value: self.sealedNumericTbs, fieldNumber: 4)
+    }
+    if self.studyRecallCards != 0 {
+      try visitor.visitSingularUInt32Field(value: self.studyRecallCards, fieldNumber: 5)
+    }
+    if self.roteCards != 0 {
+      try visitor.visitSingularUInt32Field(value: self.roteCards, fieldNumber: 6)
+    }
+    if !self.sealedTbsNoteIds.isEmpty {
+      try visitor.visitPackedInt64Field(value: self.sealedTbsNoteIds, fieldNumber: 7)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Anki_Scheduler_LoadFarSeedResponse, rhs: Anki_Scheduler_LoadFarSeedResponse) -> Bool {
+    if lhs.confusionSets != rhs.confusionSets {return false}
+    if lhs.sealedItems != rhs.sealedItems {return false}
+    if lhs.sealedJeTbs != rhs.sealedJeTbs {return false}
+    if lhs.sealedNumericTbs != rhs.sealedNumericTbs {return false}
+    if lhs.studyRecallCards != rhs.studyRecallCards {return false}
+    if lhs.roteCards != rhs.roteCards {return false}
+    if lhs.sealedTbsNoteIds != rhs.sealedTbsNoteIds {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

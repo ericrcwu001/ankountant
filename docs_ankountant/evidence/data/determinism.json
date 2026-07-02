@@ -1,0 +1,1532 @@
+{
+  "claim": "Given a fixed collection, the shared Rust core's scores, readiness band, confusion-queue order, and next-card intervals are identical on repeat runs. The only scheduling randomness (interval fuzz) is a pure function of (card_id + reps).",
+  "fuzz_reproducibility": [
+    {
+      "card_id": 1001,
+      "fuzz_factor": 0.6605027914047241,
+      "fuzzed_interval_from_100": 102,
+      "reps": 0,
+      "seed": 1001
+    },
+    {
+      "card_id": 1001,
+      "fuzz_factor": 0.5816593170166016,
+      "fuzzed_interval_from_100": 101,
+      "reps": 1,
+      "seed": 1002
+    },
+    {
+      "card_id": 2002,
+      "fuzz_factor": 0.03469967842102051,
+      "fuzzed_interval_from_100": 93,
+      "reps": 0,
+      "seed": 2002
+    },
+    {
+      "card_id": 2002,
+      "fuzz_factor": 0.21693956851959229,
+      "fuzzed_interval_from_100": 96,
+      "reps": 5,
+      "seed": 2007
+    }
+  ],
+  "generated_at": 1782961182,
+  "reproduce": "just ankountant-evidence",
+  "run1": {
+    "confusion_queue": [
+      {
+        "note_id": 1782961182634,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182636,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182635,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182638,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182640,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182637,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182642,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182644,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182639,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182646,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182688,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182641,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182689,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182697,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182643,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182706,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182645,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182648,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182650,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182647,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182651,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182654,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182649,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182656,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182652,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182658,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182653,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182686,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182655,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182690,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182657,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182691,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182659,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182696,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182660,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182662,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182661,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182664,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182663,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182666,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182665,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182668,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182667,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182670,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182669,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182692,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182671,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182693,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182672,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182699,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182687,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182673,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182675,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182674,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182677,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182679,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182676,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182681,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182678,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182684,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182680,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182694,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182682,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182695,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182683,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182698,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182685,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182701,
+        "set_id": "trading_afs_htm"
+      }
+    ],
+    "intervals": [
+      {
+        "card_id": 1782961182509,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182510,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182511,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182512,
+        "good_days": 79
+      },
+      {
+        "card_id": 1782961182513,
+        "good_days": 118
+      },
+      {
+        "card_id": 1782961182514,
+        "good_days": 18
+      },
+      {
+        "card_id": 1782961182515,
+        "good_days": 57
+      },
+      {
+        "card_id": 1782961182516,
+        "good_days": 86
+      },
+      {
+        "card_id": 1782961182517,
+        "good_days": 81
+      },
+      {
+        "card_id": 1782961182518,
+        "good_days": 122
+      },
+      {
+        "card_id": 1782961182519,
+        "good_days": 153
+      },
+      {
+        "card_id": 1782961182520,
+        "good_days": 481
+      },
+      {
+        "card_id": 1782961182521,
+        "good_days": 513
+      },
+      {
+        "card_id": 1782961182522,
+        "good_days": 170
+      },
+      {
+        "card_id": 1782961182523,
+        "good_days": 335
+      },
+      {
+        "card_id": 1782961182524,
+        "good_days": 410
+      },
+      {
+        "card_id": 1782961182529,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182530,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182531,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182532,
+        "good_days": 80
+      },
+      {
+        "card_id": 1782961182533,
+        "good_days": 107
+      },
+      {
+        "card_id": 1782961182534,
+        "good_days": 27
+      },
+      {
+        "card_id": 1782961182535,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182536,
+        "good_days": 141
+      },
+      {
+        "card_id": 1782961182537,
+        "good_days": 28
+      },
+      {
+        "card_id": 1782961182538,
+        "good_days": 72
+      },
+      {
+        "card_id": 1782961182539,
+        "good_days": 103
+      },
+      {
+        "card_id": 1782961182540,
+        "good_days": 318
+      },
+      {
+        "card_id": 1782961182541,
+        "good_days": 578
+      },
+      {
+        "card_id": 1782961182542,
+        "good_days": 628
+      },
+      {
+        "card_id": 1782961182543,
+        "good_days": 189
+      },
+      {
+        "card_id": 1782961182544,
+        "good_days": 259
+      },
+      {
+        "card_id": 1782961182549,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182550,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182551,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182552,
+        "good_days": 44
+      },
+      {
+        "card_id": 1782961182553,
+        "good_days": 178
+      },
+      {
+        "card_id": 1782961182554,
+        "good_days": 61
+      },
+      {
+        "card_id": 1782961182555,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182556,
+        "good_days": 129
+      },
+      {
+        "card_id": 1782961182557,
+        "good_days": 40
+      },
+      {
+        "card_id": 1782961182558,
+        "good_days": 68
+      },
+      {
+        "card_id": 1782961182559,
+        "good_days": 166
+      },
+      {
+        "card_id": 1782961182560,
+        "good_days": 210
+      },
+      {
+        "card_id": 1782961182561,
+        "good_days": 295
+      },
+      {
+        "card_id": 1782961182562,
+        "good_days": 360
+      },
+      {
+        "card_id": 1782961182563,
+        "good_days": 409
+      },
+      {
+        "card_id": 1782961182564,
+        "good_days": 443
+      },
+      {
+        "card_id": 1782961182569,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182570,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182571,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182572,
+        "good_days": 79
+      },
+      {
+        "card_id": 1782961182573,
+        "good_days": 118
+      },
+      {
+        "card_id": 1782961182574,
+        "good_days": 18
+      },
+      {
+        "card_id": 1782961182575,
+        "good_days": 57
+      },
+      {
+        "card_id": 1782961182576,
+        "good_days": 86
+      },
+      {
+        "card_id": 1782961182577,
+        "good_days": 81
+      },
+      {
+        "card_id": 1782961182578,
+        "good_days": 122
+      },
+      {
+        "card_id": 1782961182579,
+        "good_days": 153
+      },
+      {
+        "card_id": 1782961182580,
+        "good_days": 542
+      },
+      {
+        "card_id": 1782961182581,
+        "good_days": 165
+      },
+      {
+        "card_id": 1782961182582,
+        "good_days": 224
+      },
+      {
+        "card_id": 1782961182583,
+        "good_days": 417
+      },
+      {
+        "card_id": 1782961182584,
+        "good_days": 484
+      },
+      {
+        "card_id": 1782961182589,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182590,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182591,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182592,
+        "good_days": 80
+      },
+      {
+        "card_id": 1782961182593,
+        "good_days": 107
+      },
+      {
+        "card_id": 1782961182594,
+        "good_days": 27
+      },
+      {
+        "card_id": 1782961182595,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182596,
+        "good_days": 141
+      },
+      {
+        "card_id": 1782961182597,
+        "good_days": 28
+      },
+      {
+        "card_id": 1782961182598,
+        "good_days": 72
+      },
+      {
+        "card_id": 1782961182599,
+        "good_days": 103
+      },
+      {
+        "card_id": 1782961182600,
+        "good_days": 369
+      },
+      {
+        "card_id": 1782961182601,
+        "good_days": 654
+      },
+      {
+        "card_id": 1782961182602,
+        "good_days": 182
+      },
+      {
+        "card_id": 1782961182603,
+        "good_days": 261
+      },
+      {
+        "card_id": 1782961182604,
+        "good_days": 323
+      },
+      {
+        "card_id": 1782961182609,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182610,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182611,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182612,
+        "good_days": 44
+      },
+      {
+        "card_id": 1782961182613,
+        "good_days": 178
+      },
+      {
+        "card_id": 1782961182614,
+        "good_days": 61
+      },
+      {
+        "card_id": 1782961182615,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182616,
+        "good_days": 129
+      },
+      {
+        "card_id": 1782961182617,
+        "good_days": 40
+      },
+      {
+        "card_id": 1782961182618,
+        "good_days": 68
+      },
+      {
+        "card_id": 1782961182619,
+        "good_days": 166
+      },
+      {
+        "card_id": 1782961182620,
+        "good_days": 292
+      },
+      {
+        "card_id": 1782961182621,
+        "good_days": 366
+      },
+      {
+        "card_id": 1782961182622,
+        "good_days": 423
+      },
+      {
+        "card_id": 1782961182623,
+        "good_days": 466
+      },
+      {
+        "card_id": 1782961182624,
+        "good_days": 121
+      },
+      {
+        "card_id": 1782961182629,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182630,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182631,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182632,
+        "good_days": 79
+      },
+      {
+        "card_id": 1782961182633,
+        "good_days": 118
+      },
+      {
+        "card_id": 1782961182634,
+        "good_days": 18
+      }
+    ],
+    "readiness": {
+      "abstain": false,
+      "band_high": 74.63049313572935,
+      "band_low": 44.19411876855265,
+      "confidence": "Med",
+      "coverage": 0.75,
+      "point_estimate": 60.41666666666666,
+      "reason": "",
+      "reasons": [
+        "Lowest performance: capitalize vs expense (61%)",
+        "Largest gap: revrec step selection (14 pts)",
+        "Coverage: 75% of topics; 36 sealed attempts"
+      ]
+    },
+    "topics": [
+      {
+        "gap": 0.13749999999999996,
+        "memory": 0.75,
+        "memory_high": 0.9110583316059452,
+        "memory_insufficient": false,
+        "memory_low": 0.4676946650664344,
+        "performance": 0.6125,
+        "performance_high": 0.8266705926171916,
+        "performance_low": 0.34376825588537924,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "gap": 0.13749999999999996,
+        "memory": 0.75,
+        "memory_high": 0.9110583316059452,
+        "memory_insufficient": false,
+        "memory_low": 0.4676946650664344,
+        "performance": 0.6125,
+        "performance_high": 0.8266705926171916,
+        "performance_low": 0.34376825588537924,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "gap": 0.13749999999999996,
+        "memory": 0.75,
+        "memory_high": 0.9110583316059452,
+        "memory_insufficient": false,
+        "memory_low": 0.4676946650664344,
+        "performance": 0.6125,
+        "performance_high": 0.8266705926171916,
+        "performance_low": 0.34376825588537924,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "gap": 0.0,
+        "memory": 0.0,
+        "memory_high": 0.0,
+        "memory_insufficient": true,
+        "memory_low": 0.0,
+        "performance": 0.0,
+        "performance_high": 0.0,
+        "performance_low": 0.0,
+        "set_id": "trading_afs_htm"
+      }
+    ]
+  },
+  "run2": {
+    "confusion_queue": [
+      {
+        "note_id": 1782961182634,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182636,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182635,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182638,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182640,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182637,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182642,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182644,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182639,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182646,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182688,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182641,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182689,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182697,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182643,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182706,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182645,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "note_id": 1782961182648,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182650,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182647,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182651,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182654,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182649,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182656,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182652,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182658,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182653,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182686,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182655,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182690,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182657,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182691,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182659,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182696,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "note_id": 1782961182660,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182662,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182661,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182664,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182663,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182666,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182665,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182668,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182667,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182670,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182669,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182692,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182671,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182693,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182672,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182699,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182687,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "note_id": 1782961182673,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182675,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182674,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182677,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182679,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182676,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182681,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182678,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182684,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182680,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182694,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182682,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182695,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182683,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182698,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182685,
+        "set_id": "trading_afs_htm"
+      },
+      {
+        "note_id": 1782961182701,
+        "set_id": "trading_afs_htm"
+      }
+    ],
+    "intervals": [
+      {
+        "card_id": 1782961182509,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182510,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182511,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182512,
+        "good_days": 79
+      },
+      {
+        "card_id": 1782961182513,
+        "good_days": 118
+      },
+      {
+        "card_id": 1782961182514,
+        "good_days": 18
+      },
+      {
+        "card_id": 1782961182515,
+        "good_days": 57
+      },
+      {
+        "card_id": 1782961182516,
+        "good_days": 86
+      },
+      {
+        "card_id": 1782961182517,
+        "good_days": 81
+      },
+      {
+        "card_id": 1782961182518,
+        "good_days": 122
+      },
+      {
+        "card_id": 1782961182519,
+        "good_days": 153
+      },
+      {
+        "card_id": 1782961182520,
+        "good_days": 481
+      },
+      {
+        "card_id": 1782961182521,
+        "good_days": 513
+      },
+      {
+        "card_id": 1782961182522,
+        "good_days": 170
+      },
+      {
+        "card_id": 1782961182523,
+        "good_days": 335
+      },
+      {
+        "card_id": 1782961182524,
+        "good_days": 410
+      },
+      {
+        "card_id": 1782961182529,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182530,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182531,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182532,
+        "good_days": 80
+      },
+      {
+        "card_id": 1782961182533,
+        "good_days": 107
+      },
+      {
+        "card_id": 1782961182534,
+        "good_days": 27
+      },
+      {
+        "card_id": 1782961182535,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182536,
+        "good_days": 141
+      },
+      {
+        "card_id": 1782961182537,
+        "good_days": 28
+      },
+      {
+        "card_id": 1782961182538,
+        "good_days": 72
+      },
+      {
+        "card_id": 1782961182539,
+        "good_days": 103
+      },
+      {
+        "card_id": 1782961182540,
+        "good_days": 318
+      },
+      {
+        "card_id": 1782961182541,
+        "good_days": 578
+      },
+      {
+        "card_id": 1782961182542,
+        "good_days": 628
+      },
+      {
+        "card_id": 1782961182543,
+        "good_days": 189
+      },
+      {
+        "card_id": 1782961182544,
+        "good_days": 259
+      },
+      {
+        "card_id": 1782961182549,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182550,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182551,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182552,
+        "good_days": 44
+      },
+      {
+        "card_id": 1782961182553,
+        "good_days": 178
+      },
+      {
+        "card_id": 1782961182554,
+        "good_days": 61
+      },
+      {
+        "card_id": 1782961182555,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182556,
+        "good_days": 129
+      },
+      {
+        "card_id": 1782961182557,
+        "good_days": 40
+      },
+      {
+        "card_id": 1782961182558,
+        "good_days": 68
+      },
+      {
+        "card_id": 1782961182559,
+        "good_days": 166
+      },
+      {
+        "card_id": 1782961182560,
+        "good_days": 210
+      },
+      {
+        "card_id": 1782961182561,
+        "good_days": 295
+      },
+      {
+        "card_id": 1782961182562,
+        "good_days": 360
+      },
+      {
+        "card_id": 1782961182563,
+        "good_days": 409
+      },
+      {
+        "card_id": 1782961182564,
+        "good_days": 443
+      },
+      {
+        "card_id": 1782961182569,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182570,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182571,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182572,
+        "good_days": 79
+      },
+      {
+        "card_id": 1782961182573,
+        "good_days": 118
+      },
+      {
+        "card_id": 1782961182574,
+        "good_days": 18
+      },
+      {
+        "card_id": 1782961182575,
+        "good_days": 57
+      },
+      {
+        "card_id": 1782961182576,
+        "good_days": 86
+      },
+      {
+        "card_id": 1782961182577,
+        "good_days": 81
+      },
+      {
+        "card_id": 1782961182578,
+        "good_days": 122
+      },
+      {
+        "card_id": 1782961182579,
+        "good_days": 153
+      },
+      {
+        "card_id": 1782961182580,
+        "good_days": 542
+      },
+      {
+        "card_id": 1782961182581,
+        "good_days": 165
+      },
+      {
+        "card_id": 1782961182582,
+        "good_days": 224
+      },
+      {
+        "card_id": 1782961182583,
+        "good_days": 417
+      },
+      {
+        "card_id": 1782961182584,
+        "good_days": 484
+      },
+      {
+        "card_id": 1782961182589,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182590,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182591,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182592,
+        "good_days": 80
+      },
+      {
+        "card_id": 1782961182593,
+        "good_days": 107
+      },
+      {
+        "card_id": 1782961182594,
+        "good_days": 27
+      },
+      {
+        "card_id": 1782961182595,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182596,
+        "good_days": 141
+      },
+      {
+        "card_id": 1782961182597,
+        "good_days": 28
+      },
+      {
+        "card_id": 1782961182598,
+        "good_days": 72
+      },
+      {
+        "card_id": 1782961182599,
+        "good_days": 103
+      },
+      {
+        "card_id": 1782961182600,
+        "good_days": 369
+      },
+      {
+        "card_id": 1782961182601,
+        "good_days": 654
+      },
+      {
+        "card_id": 1782961182602,
+        "good_days": 182
+      },
+      {
+        "card_id": 1782961182603,
+        "good_days": 261
+      },
+      {
+        "card_id": 1782961182604,
+        "good_days": 323
+      },
+      {
+        "card_id": 1782961182609,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182610,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182611,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182612,
+        "good_days": 44
+      },
+      {
+        "card_id": 1782961182613,
+        "good_days": 178
+      },
+      {
+        "card_id": 1782961182614,
+        "good_days": 61
+      },
+      {
+        "card_id": 1782961182615,
+        "good_days": 100
+      },
+      {
+        "card_id": 1782961182616,
+        "good_days": 129
+      },
+      {
+        "card_id": 1782961182617,
+        "good_days": 40
+      },
+      {
+        "card_id": 1782961182618,
+        "good_days": 68
+      },
+      {
+        "card_id": 1782961182619,
+        "good_days": 166
+      },
+      {
+        "card_id": 1782961182620,
+        "good_days": 292
+      },
+      {
+        "card_id": 1782961182621,
+        "good_days": 366
+      },
+      {
+        "card_id": 1782961182622,
+        "good_days": 423
+      },
+      {
+        "card_id": 1782961182623,
+        "good_days": 466
+      },
+      {
+        "card_id": 1782961182624,
+        "good_days": 121
+      },
+      {
+        "card_id": 1782961182629,
+        "good_days": 4
+      },
+      {
+        "card_id": 1782961182630,
+        "good_days": 7
+      },
+      {
+        "card_id": 1782961182631,
+        "good_days": 2
+      },
+      {
+        "card_id": 1782961182632,
+        "good_days": 79
+      },
+      {
+        "card_id": 1782961182633,
+        "good_days": 118
+      },
+      {
+        "card_id": 1782961182634,
+        "good_days": 18
+      }
+    ],
+    "readiness": {
+      "abstain": false,
+      "band_high": 74.63049313572935,
+      "band_low": 44.19411876855265,
+      "confidence": "Med",
+      "coverage": 0.75,
+      "point_estimate": 60.41666666666666,
+      "reason": "",
+      "reasons": [
+        "Lowest performance: capitalize vs expense (61%)",
+        "Largest gap: revrec step selection (14 pts)",
+        "Coverage: 75% of topics; 36 sealed attempts"
+      ]
+    },
+    "topics": [
+      {
+        "gap": 0.13749999999999996,
+        "memory": 0.75,
+        "memory_high": 0.9110583316059452,
+        "memory_insufficient": false,
+        "memory_low": 0.4676946650664344,
+        "performance": 0.6125,
+        "performance_high": 0.8266705926171916,
+        "performance_low": 0.34376825588537924,
+        "set_id": "capitalize_vs_expense"
+      },
+      {
+        "gap": 0.13749999999999996,
+        "memory": 0.75,
+        "memory_high": 0.9110583316059452,
+        "memory_insufficient": false,
+        "memory_low": 0.4676946650664344,
+        "performance": 0.6125,
+        "performance_high": 0.8266705926171916,
+        "performance_low": 0.34376825588537924,
+        "set_id": "operating_vs_finance_lease"
+      },
+      {
+        "gap": 0.13749999999999996,
+        "memory": 0.75,
+        "memory_high": 0.9110583316059452,
+        "memory_insufficient": false,
+        "memory_low": 0.4676946650664344,
+        "performance": 0.6125,
+        "performance_high": 0.8266705926171916,
+        "performance_low": 0.34376825588537924,
+        "set_id": "revrec_step_selection"
+      },
+      {
+        "gap": 0.0,
+        "memory": 0.0,
+        "memory_high": 0.0,
+        "memory_insufficient": true,
+        "memory_low": 0.0,
+        "performance": 0.0,
+        "performance_high": 0.0,
+        "performance_low": 0.0,
+        "set_id": "trading_afs_htm"
+      }
+    ]
+  },
+  "title": "Backend determinism (rubric #4)",
+  "verdicts": {
+    "independent_seed_agrees": true,
+    "repeat_run_identical": true
+  }
+}

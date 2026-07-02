@@ -8,10 +8,17 @@
 //! tables/columns (FR-5). The four new RPCs are appended to `SchedulerService`
 //! and implemented in [`service`].
 
+#[cfg(test)]
+mod ablation;
 pub(crate) mod attempt_log;
 pub(crate) mod config;
 pub(crate) mod confusion;
 pub(crate) mod constants;
+pub(crate) mod defund;
+#[cfg(test)]
+mod determinism;
+#[cfg(test)]
+mod evidence;
 pub(crate) mod grading;
 pub(crate) mod logic;
 pub(crate) mod notetypes;

@@ -28,6 +28,73 @@ pub(crate) fn exam_desired_retention(days_to_exam: i64) -> f64 {
     }
 }
 
+/// A2 — should this answer defund a "too-easy" rote card?
+///
+/// True only for a rote card that is stable (interval >= the floor, so never
+/// new/learning), answered correctly (Good/Easy) with a recorded pre-reveal
+/// confidence of "Confident", in under `TOO_EASY_FAST_FACTOR` x its latency
+/// baseline. `rating` is the answer-button number (1=Again..4=Easy).
+pub(crate) fn too_easy_defund(
+    interval_days: u32,
+    taken_millis: u32,
+    baseline_ms: f64,
+    confidence: Option<&str>,
+    rating: u8,
+    is_rote: bool,
+) -> bool {
+    let correct = matches!(rating, 3 | 4);
+    let confident = matches!(confidence, Some(c) if c.eq_ignore_ascii_case("confident"));
+    let stable = interval_days >= constants::TOO_EASY_STABLE_FLOOR_DAYS;
+    let fast =
+        baseline_ms > 0.0 && (taken_millis as f64) < constants::TOO_EASY_FAST_FACTOR * baseline_ms;
+    is_rote && stable && correct && confident && fast
+}
+
+/// Decode a card's `custom_data` JSON object (empty/invalid -> empty map).
+fn custom_data_map(custom_data: &str) -> serde_json::Map<String, serde_json::Value> {
+    if custom_data.trim().is_empty() {
+        return serde_json::Map::new();
+    }
+    serde_json::from_str(custom_data).unwrap_or_default()
+}
+
+/// A2 — the pre-reveal confidence level recorded on the card (B1 writes `cf`).
+pub(crate) fn custom_data_confidence(custom_data: &str) -> Option<String> {
+    custom_data_map(custom_data)
+        .get("cf")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+}
+
+/// A2 — is the card currently flagged too-easy (`te == 1`)?
+pub(crate) fn custom_data_too_easy(custom_data: &str) -> bool {
+    custom_data_map(custom_data)
+        .get("te")
+        .and_then(|v| v.as_i64())
+        == Some(1)
+}
+
+/// A2 — return `custom_data` with the too-easy flag set (`te = 1`), preserving
+/// every other key (confidence, FSRS scheduling state, ...).
+pub(crate) fn custom_data_with_te(custom_data: &str) -> String {
+    let mut map = custom_data_map(custom_data);
+    map.insert("te".to_string(), serde_json::json!(1));
+    serde_json::to_string(&map).unwrap_or_default()
+}
+
+/// A2 — return `custom_data` with the too-easy flag cleared, preserving every
+/// other key. Serializes to `{}` (treated as empty) when nothing else remains.
+pub(crate) fn custom_data_without_te(custom_data: &str) -> String {
+    let mut map = custom_data_map(custom_data);
+    if map.remove("te").is_none() {
+        return custom_data.to_string();
+    }
+    if map.is_empty() {
+        return String::new();
+    }
+    serde_json::to_string(&map).unwrap_or_default()
+}
+
 /// A5 — Wilson score interval (95%) on an observed accuracy, returned as a
 /// percentage band `(low, high)` in `0..=100`. Widens as `n` shrinks.
 pub(crate) fn wilson_band(correct: f64, total: f64) -> (f64, f64) {
@@ -53,6 +120,33 @@ pub(crate) fn confidence_label(attempts: u32) -> &'static str {
         "High"
     } else {
         "Med"
+    }
+}
+
+/// A5 — project a sealed-bank accuracy in `0..=1` onto the CPA scaled-score
+/// scale (`CPA_MIN_SCORE..=CPA_MAX_SCORE`, pass = `CPA_PASS_SCORE`) via a
+/// documented, monotonic piecewise-linear transform anchored on the pass line
+/// (`CPA_PASS_ACCURACY` -> `CPA_PASS_SCORE`).
+///
+/// This is an explicit, auditable heuristic — NOT the (non-public) AICPA
+/// scaling — hence the "rough projection" label in the UI. Because it is
+/// monotonic, mapping the two endpoints of a Wilson accuracy band through it
+/// yields a valid CPA band (low stays below high). See ADR 0005.
+pub(crate) fn cpa_scale_from_accuracy(accuracy: f64) -> f64 {
+    let acc = accuracy.clamp(0.0, 1.0);
+    if acc <= constants::CPA_PASS_ACCURACY {
+        // [0, pass_acc] -> [min, pass_score]
+        let frac = if constants::CPA_PASS_ACCURACY > 0.0 {
+            acc / constants::CPA_PASS_ACCURACY
+        } else {
+            0.0
+        };
+        constants::CPA_MIN_SCORE + (constants::CPA_PASS_SCORE - constants::CPA_MIN_SCORE) * frac
+    } else {
+        // (pass_acc, 1] -> (pass_score, max]
+        let span = (1.0 - constants::CPA_PASS_ACCURACY).max(f64::EPSILON);
+        let frac = (acc - constants::CPA_PASS_ACCURACY) / span;
+        constants::CPA_PASS_SCORE + (constants::CPA_MAX_SCORE - constants::CPA_PASS_SCORE) * frac
     }
 }
 
@@ -180,6 +274,57 @@ mod tests {
     }
 
     #[test]
+    fn too_easy_defund_fires_only_when_all_signals_align() {
+        let base = 4000.0;
+        // Fast (< 0.5x), correct, confident, stable, rote -> defund.
+        assert!(too_easy_defund(30, 1000, base, Some("Confident"), 3, true));
+        assert!(too_easy_defund(30, 1000, base, Some("Confident"), 4, true));
+        // A2 AC2 — not rote -> never.
+        assert!(!too_easy_defund(
+            30,
+            1000,
+            base,
+            Some("Confident"),
+            3,
+            false
+        ));
+        // A2 AC3 — below the stable floor (new/learning) -> never.
+        assert!(!too_easy_defund(20, 1000, base, Some("Confident"), 3, true));
+        // Slow (>= 0.5x baseline) -> never.
+        assert!(!too_easy_defund(30, 3000, base, Some("Confident"), 3, true));
+        // Unconfident -> never.
+        assert!(!too_easy_defund(30, 1000, base, Some("Unsure"), 3, true));
+        assert!(!too_easy_defund(30, 1000, base, None, 3, true));
+        // Incorrect (Again/Hard) -> never.
+        assert!(!too_easy_defund(30, 1000, base, Some("Confident"), 1, true));
+        assert!(!too_easy_defund(30, 1000, base, Some("Confident"), 2, true));
+        // No baseline yet -> never (avoids div/zero false-positives).
+        assert!(!too_easy_defund(30, 1000, 0.0, Some("Confident"), 3, true));
+    }
+
+    #[test]
+    fn custom_data_te_roundtrips_and_preserves_other_keys() {
+        // A2 AC6 — stays a compact object within the key/size limits.
+        let with = custom_data_with_te(r#"{"cf":"Confident"}"#);
+        assert!(custom_data_too_easy(&with));
+        assert_eq!(custom_data_confidence(&with).as_deref(), Some("Confident"));
+        assert!(with.len() <= 100);
+
+        // Clearing keeps the confidence, drops the flag.
+        let without = custom_data_without_te(&with);
+        assert!(!custom_data_too_easy(&without));
+        assert_eq!(
+            custom_data_confidence(&without).as_deref(),
+            Some("Confident")
+        );
+
+        // Setting on empty data yields just the flag; clearing empties it.
+        let only = custom_data_with_te("");
+        assert_eq!(only, r#"{"te":1}"#);
+        assert_eq!(custom_data_without_te(&only), "");
+    }
+
+    #[test]
     fn wilson_band_is_an_interval_not_a_point() {
         let (lo, hi) = wilson_band(20.0, 40.0);
         assert!(lo < hi);
@@ -192,6 +337,52 @@ mod tests {
         let (l1, h1) = wilson_band(20.0, 40.0);
         let (l2, h2) = wilson_band(10.0, 20.0);
         assert!((h2 - l2) > (h1 - l1));
+    }
+
+    #[test]
+    fn cpa_scale_hits_the_documented_anchor_points() {
+        // ADR 0005 — 0% -> 0, pass-accuracy -> 75, 100% -> 99.
+        assert!(approx(
+            cpa_scale_from_accuracy(0.0),
+            constants::CPA_MIN_SCORE
+        ));
+        assert!(approx(
+            cpa_scale_from_accuracy(constants::CPA_PASS_ACCURACY),
+            constants::CPA_PASS_SCORE
+        ));
+        assert!(approx(
+            cpa_scale_from_accuracy(1.0),
+            constants::CPA_MAX_SCORE
+        ));
+        // Clamped outside [0,1].
+        assert!(approx(
+            cpa_scale_from_accuracy(-0.5),
+            constants::CPA_MIN_SCORE
+        ));
+        assert!(approx(
+            cpa_scale_from_accuracy(1.5),
+            constants::CPA_MAX_SCORE
+        ));
+    }
+
+    #[test]
+    fn cpa_scale_is_strictly_monotonic_so_a_band_stays_ordered() {
+        // Monotonic transform: mapping a Wilson band's endpoints preserves order
+        // (low < high) and keeps the point estimate inside the band.
+        let samples = [0.0, 0.2, 0.4, 0.5, 0.6, 0.75, 0.8, 0.9, 1.0];
+        for w in samples.windows(2) {
+            assert!(
+                cpa_scale_from_accuracy(w[0]) < cpa_scale_from_accuracy(w[1]),
+                "not monotonic between {} and {}",
+                w[0],
+                w[1]
+            );
+        }
+        let (lo, hi) = wilson_band(30.0, 50.0); // 0..100
+        let cpa_lo = cpa_scale_from_accuracy(lo / 100.0);
+        let cpa_hi = cpa_scale_from_accuracy(hi / 100.0);
+        let cpa_point = cpa_scale_from_accuracy(30.0 / 50.0);
+        assert!(cpa_lo < cpa_point && cpa_point < cpa_hi);
     }
 
     #[test]

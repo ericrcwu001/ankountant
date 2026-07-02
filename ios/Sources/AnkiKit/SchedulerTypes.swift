@@ -66,6 +66,96 @@ public struct QueuedCardsResult: Sendable {
     }
 }
 
+/// A4/A5 — the exam-day readiness band for a section. When `abstain` is true
+/// there is too little evidence to project a score (surface `reason`, no
+/// number); otherwise `bandLow`..`bandHigh` is the Wilson 95% projection mapped
+/// onto the CPA scaled-score scale (0-99, pass 75) via the ADR-0005 transform,
+/// with `pointEstimate` the band centre. `coverage` (0..1) and `generatedAt`
+/// (unix seconds) are always populated; `reasons` are factual drivers.
+public struct ReadinessBand: Sendable, Equatable {
+    public let abstain: Bool
+    public let reason: String
+    public let bandLow: Double
+    public let bandHigh: Double
+    public let pointEstimate: Double
+    public let confidence: String
+    public let coverage: Double
+    public let generatedAt: Int64
+    public let reasons: [String]
+
+    public init(
+        abstain: Bool,
+        reason: String,
+        bandLow: Double,
+        bandHigh: Double,
+        pointEstimate: Double = 0,
+        confidence: String,
+        coverage: Double = 0,
+        generatedAt: Int64 = 0,
+        reasons: [String] = []
+    ) {
+        self.abstain = abstain
+        self.reason = reason
+        self.bandLow = bandLow
+        self.bandHigh = bandHigh
+        self.pointEstimate = pointEstimate
+        self.confidence = confidence
+        self.coverage = coverage
+        self.generatedAt = generatedAt
+        self.reasons = reasons
+    }
+}
+
+/// A4 — per-topic Memory vs Performance on a shared 0..1 scale, each with a
+/// Wilson confidence band (`*Low`..`*High`, also 0..1). `memory` is only
+/// meaningful when `memoryInsufficient` is false.
+public struct TopicScoreModel: Sendable, Equatable, Identifiable {
+    public let setId: String
+    public let memory: Double
+    public let performance: Double
+    public let gap: Double
+    public let memoryInsufficient: Bool
+    public let memoryLow: Double
+    public let memoryHigh: Double
+    public let performanceLow: Double
+    public let performanceHigh: Double
+
+    public var id: String { setId }
+
+    public init(
+        setId: String,
+        memory: Double,
+        performance: Double,
+        gap: Double,
+        memoryInsufficient: Bool,
+        memoryLow: Double = 0,
+        memoryHigh: Double = 0,
+        performanceLow: Double = 0,
+        performanceHigh: Double = 0
+    ) {
+        self.setId = setId
+        self.memory = memory
+        self.performance = performance
+        self.gap = gap
+        self.memoryInsufficient = memoryInsufficient
+        self.memoryLow = memoryLow
+        self.memoryHigh = memoryHigh
+        self.performanceLow = performanceLow
+        self.performanceHigh = performanceHigh
+    }
+}
+
+/// The full readiness rollup for a section (band + per-topic scores).
+public struct ReadinessSummary: Sendable, Equatable {
+    public let band: ReadinessBand
+    public let topics: [TopicScoreModel]
+
+    public init(band: ReadinessBand, topics: [TopicScoreModel]) {
+        self.band = band
+        self.topics = topics
+    }
+}
+
 public struct RenderedCard: Sendable {
     public let frontHTML: String
     public let backHTML: String

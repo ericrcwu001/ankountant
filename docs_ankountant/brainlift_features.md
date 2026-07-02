@@ -70,6 +70,20 @@ Three items above quietly assume schema changes: "add an effort/latency field to
 
 The full RAG generation pipeline, deferred whole. Decoupled from the study loop by design (**Runs AI-off**): a build-time batch tool that pre-generates the deck; study / scheduling / scoring never call a model live — which is exactly why it can wait (the MVP studies pre-made / hand-authored cards).
 
+> **📋 Fully planned:** the 50,000-card scale-up is specified in
+> **[`rag/README.md`](rag/README.md)** (a cross-referenced doc set: sources &
+> licensing, blueprint-driven taxonomy/allocation, the RAG stack, the generation
+> pipeline, the quality/eval/baseline protocol, and provenance/output/ops).
+> **Chosen stack (build-time Python batch, `tools/cardgen/`):** ingest
+> public-domain / CC-licensed corpora (OpenStax, IRC, IRS pubs, PCAOB/SEC/GAO,
+> AICPA Blueprints as taxonomy) → **LanceDB** (embedded vector + BM25) with
+> **Voyage AI** embeddings → generate with **Anthropic Claude** (Sonnet bulk /
+> Opus for hard TBS + flagged) → **independent LLM judge + human gold set**
+> (3-bucket gate) → **Ragas** faithfulness + a **BM25/vector/RAG baseline A/B/C**
+> → emit **ordinary Anki notes** (provenance fields populated) as an `.apkg`.
+> Copyrighted standards (FASB ASC, GASB, AICPA questions) are **cited, never
+> ingested** — the licensing firewall that keeps provenance defensible.
+
 - **RAG card generator:** Pull from source docs (textbook chapters, notes, FASB/IRC) → generate full Q&A flashcards at scale, targeting the 50k deck. Every card stores the source passage it came from. (Assignment rule: AI output with no traceable source zeroes that section.)
 - **RAG generates TBS items** — start with research + numeric (cleanly checkable), document-review later. _(TBS note-type coverage is a Phase 1 data-model item; generation lives here — the 2A split.)_
 - **Quality checker:** A gold set of known-correct Q&A; run generated cards through it, report 3 counts (correct+useful / wrong / correct-but-bad-teaching). Set the passing cutoff _before_ looking; auto-block anything that fails. "A wrong fact is worse than no card."

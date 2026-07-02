@@ -422,9 +422,12 @@ def is_sveltekit_page(path: str) -> bool:
         "import-csv",
         "import-page",
         "image-occlusion",
+        "ankountant-home",
         "ankountant-dashboard",
         "ankountant-confusion",
         "ankountant-tbs",
+        "ankountant-stats",
+        "ankountant-workspace",
     ]
 
 
@@ -740,6 +743,9 @@ exposed_backend_list = [
     # NotesService
     "get_field_names",
     "get_note",
+    "new_note",
+    "add_note",
+    "defaults_for_adding",
     # NotetypesService
     "get_notetype_names",
     "get_change_notetype_info",
@@ -772,8 +778,14 @@ exposed_backend_list = [
     "load_far_seed",
     # ConfigService
     "get_config_json",
+    "set_config_json",
     # SearchService
     "search_notes",
+    "search_cards",
+    "all_browser_columns",
+    "browser_row_for_id",
+    "set_active_browser_columns",
+    "find_and_replace",
     # DeckConfigService
     "get_ignored_before_count",
     "get_retention_workload",

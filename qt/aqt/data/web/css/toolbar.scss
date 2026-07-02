@@ -42,8 +42,9 @@
 }
 
 .hitem {
-    font-weight: bold;
-    padding: 5px 12px;
+    // Ledger uses 600 semibold for emphasis, never 700 bold (§2).
+    font-weight: var(--type-body-emphasis-weight);
+    padding: var(--space-xs) var(--space-md);
     color: color(fg);
     display: inline-block;
     &:hover {

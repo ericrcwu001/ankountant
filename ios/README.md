@@ -75,12 +75,16 @@ For the full architecture walkthrough, see **[ARCHITECTURE.md](ARCHITECTURE.md)*
 
 ## Getting Started
 
-### 1. Clone with submodules
+The iOS client lives in the [`ankountant`](https://github.com/ericrcwu001/ankountant) monorepo under `ios/`, alongside the shared Rust core (`rslib/`) it builds against.
+
+### 1. Clone the monorepo
 
 ```bash
-git clone --recursive https://github.com/antigluten/amgi.git
-cd ankountant
+git clone --recursive https://github.com/ericrcwu001/ankountant.git
+cd ankountant/ios
 ```
+
+The Rust backend is **not** a submodule — `ios/anki-bridge-rs` links `rslib/` directly as an in-repo path dependency. The `--recursive` flag pulls the repo's Fluent translation submodules (`ftl/`), which `rslib` compiles into the framework.
 
 ### 2. Install dependencies
 
@@ -138,11 +142,14 @@ The AGPL requires that if you distribute this software or run it as a network se
 
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines, code style, and the development setup. A list of contributors is maintained in [CONTRIBUTORS.md](CONTRIBUTORS.md).
+Ankountant is developed in the [`ankountant`](https://github.com/ericrcwu001/ankountant) monorepo; the iOS client lives under `ios/`. Follow the build and code-style conventions in [`ios/CLAUDE.md`](CLAUDE.md) and [ARCHITECTURE.md](ARCHITECTURE.md), and run the checks documented there before opening a pull request. A list of contributors is maintained in [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
 ## Acknowledgments
 
+Ankountant's iOS client began as a fork of **[antigluten/amgi](https://github.com/antigluten/amgi)** by **[Vladimir Gusev](https://github.com/antigluten)**, and would not exist without that groundwork. It has since been integrated into the `ankountant` monorepo and now builds against this repo's shared Rust core.
+
+- **[Vladimir Gusev](https://github.com/antigluten)** and the [antigluten/amgi](https://github.com/antigluten/amgi) project — the original iOS client this app is built upon
 - **[Damien Elmes](https://github.com/dae)** and the [ankitects/anki](https://github.com/ankitects/anki) contributors for the Rust backend that powers this app
-- **[DreamAfar](https://github.com/DreamAfar)** for the v0.0.3 fork that contributed Image Occlusion, the multi-theme system, the Settings tab, the card template editor, retrievability stats, tag management, the rich note editor, and the GitHub Actions IPA workflow
+- **[DreamAfar](https://github.com/DreamAfar)** for the v0.0.3/v0.0.4 forks of amgi that contributed Image Occlusion, the multi-theme system, the Settings tab, the card template editor, retrievability stats, tag management, the rich note editor, and the GitHub Actions IPA workflow
 - **[AnkiDroid](https://github.com/ankidroid/Anki-Android)** for pioneering the Rust backend bridge pattern on mobile
 - **[Point-Free](https://www.pointfree.co/)** for [swift-dependencies](https://github.com/pointfreeco/swift-dependencies)

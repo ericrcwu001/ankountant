@@ -5,13 +5,14 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 <script lang="ts">
     import type { GetReadinessResponse } from "@generated/anki/scheduler_pb";
 
-    import { buildReadinessView, buildTopicRows } from "./lib";
+    import { buildReadinessView, buildTopicRows, formatUpdated } from "./lib";
 
     export let readiness: GetReadinessResponse;
     export let examDate = "";
 
     $: rows = buildTopicRows(readiness.topics);
     $: view = buildReadinessView(readiness.readiness);
+    $: updated = formatUpdated(view.generatedAt);
     $: examLabel = examDate
         ? `Exam-day projection (${examDate})`
         : "Exam-day projection";
@@ -40,22 +41,50 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                 <div class="abstain-text">
                     <p class="abstain-title">Not enough data yet</p>
                     <p class="abstain-reason">{view.reason}.</p>
+                    <!-- Coverage is shown even while abstaining (one of the seven
+                         required fields), so the give-up state is legible. -->
+                    <p class="coverage" data-testid="coverage">
+                        {view.coveragePct}% of exam topics covered
+                    </p>
                 </div>
             </div>
         {:else}
             <p class="band" data-testid="readiness-band">
                 <span class="range tabular hero">{view.bandLabel}</span>
+                <span class="point tabular" data-testid="point-estimate">
+                    point {view.pointLabel}
+                </span>
                 <span class="confidence" data-testid="confidence">
                     {view.confidence} confidence
                 </span>
             </p>
-            <!-- Graded/faded Wilson band (navy, fading at the edges) — never a
-                 crisp point (uncertainty honesty, C12). -->
-            <div class="band-track" aria-hidden="true">
-                <div class="band-fill"></div>
+            <!-- Graded/faded Wilson band on the CPA 0–99 scale, with a pass tick
+                 at 75 — never a crisp point (uncertainty honesty, C12). -->
+            <div
+                class="band-track"
+                role="img"
+                aria-label="Projected CPA band {view.bandLabel}, pass line 75"
+            >
+                <div
+                    class="band-fill"
+                    style="left:{view.trackLeftPct}%; width:{view.trackWidthPct}%"
+                ></div>
+                <div class="pass-tick" style="left:{view.trackPassPct}%"></div>
             </div>
+            <div class="meta" data-testid="readiness-meta">
+                <span data-testid="coverage">{view.coveragePct}% of exam covered</span>
+                {#if updated}<span data-testid="updated">{updated}</span>{/if}
+            </div>
+            {#if view.reasons.length}
+                <ul class="reasons" data-testid="reasons">
+                    {#each view.reasons as reason}
+                        <li>{reason}</li>
+                    {/each}
+                </ul>
+            {/if}
             <p class="band-help">
-                Projected exam-day score; the band is the confidence range.
+                Rough projection on the CPA 0–99 scale (pass 75); the band is the
+                confidence range, not an official AICPA score.
             </p>
         {/if}
     </section>
@@ -87,6 +116,14 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                     <span class="insufficient">insufficient</span>
                                 {:else}
                                     <span class="pct">{row.memoryPct}%</span>
+                                    {#if row.memoryRange}
+                                        <span
+                                            class="range-sub"
+                                            data-testid="memory-range"
+                                        >
+                                            {row.memoryRange}
+                                        </span>
+                                    {/if}
                                     <span class="meter" aria-hidden="true">
                                         <span
                                             class="meter-fill"
@@ -97,6 +134,14 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                             </td>
                             <td class="performance num" data-testid="performance">
                                 <span class="pct">{row.performancePct}%</span>
+                                {#if row.performanceRange}
+                                    <span
+                                        class="range-sub"
+                                        data-testid="performance-range"
+                                    >
+                                        {row.performanceRange}
+                                    </span>
+                                {/if}
                                 <span class="meter" aria-hidden="true">
                                     <span
                                         class="meter-fill"
@@ -146,10 +191,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
         h1 {
             // Section heading — the score below is the display hero, not this.
-            font-size: 22px;
-            font-weight: 600;
-            letter-spacing: -0.015em;
-            line-height: 1.2;
+            font-size: var(--type-section-heading-size);
+            font-weight: var(--type-section-heading-weight);
+            letter-spacing: var(--type-section-heading-tracking);
+            line-height: var(--type-section-heading-line);
             margin: 0;
         }
     }
@@ -159,9 +204,9 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         background: var(--canvas-elevated);
         border: 1px solid var(--border-subtle);
         border-radius: var(--border-radius-medium);
-        box-shadow:
-            0 1px 2px rgba(14, 15, 19, 0.06),
-            0 1px 3px rgba(14, 15, 19, 0.05);
+        // Theme-aware Ledger elevation (dark mode gets a real shadow, not the
+        // near-invisible light-ink one).
+        box-shadow: var(--elevation-e1);
     }
 
     .card-label {
@@ -189,10 +234,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     // Display hero (the score / projection) — the largest thing on the page.
     .hero {
-        font-size: 44px;
-        font-weight: 600;
-        letter-spacing: -0.02em;
-        line-height: 1;
+        font-size: var(--type-display-hero-size);
+        font-weight: var(--type-display-hero-weight);
+        letter-spacing: var(--type-display-hero-tracking);
+        line-height: var(--type-display-hero-line);
     }
 
     .band {
@@ -207,34 +252,84 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         color: var(--accent);
     }
 
+    .band .point {
+        font-size: 14px;
+        color: var(--fg-subtle);
+        font-variant-numeric: tabular-nums lining-nums;
+    }
+
     .band .confidence {
         font-size: 14px;
         color: var(--fg-subtle);
     }
 
+    // Wilson band positioned on the 0–99 CPA scale, with a pass tick at 75.
     .band-track {
-        height: 8px;
+        position: relative;
+        height: 10px;
         margin: var(--space-md) 0 var(--space-sm);
         border-radius: var(--border-radius);
         background: var(--canvas);
-        overflow: hidden;
     }
 
     .band-fill {
+        position: absolute;
+        top: 0;
         height: 100%;
+        min-width: 2px;
+        border-radius: var(--border-radius);
         // Faded navy Wilson band — soft edges, never a crisp point.
         background: linear-gradient(
             90deg,
             transparent 0%,
-            var(--accent) 28%,
-            var(--accent) 72%,
+            var(--accent) 30%,
+            var(--accent) 70%,
             transparent 100%
         );
-        opacity: 0.6;
+        opacity: 0.75;
+    }
+
+    // The pass line (scaled 75) as a reference tick across the track.
+    .pass-tick {
+        position: absolute;
+        top: -3px;
+        width: 2px;
+        height: 16px;
+        margin-left: -1px;
+        background: var(--fg-subtle);
+        opacity: 0.7;
+    }
+
+    .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-sm) var(--space-lg);
+        font-size: 13px;
+        color: var(--fg-subtle);
+        font-variant-numeric: tabular-nums lining-nums;
+    }
+
+    // Factual drivers (restated numbers, not claimed causes).
+    .reasons {
+        margin: var(--space-sm) 0 0;
+        padding-left: 1.1em;
+        font-size: 13px;
+        color: var(--fg-subtle);
+
+        li {
+            margin: 2px 0;
+        }
+    }
+
+    .coverage {
+        margin: var(--space-xs) 0 0;
+        font-size: 13px;
+        color: var(--fg-subtle);
+        font-variant-numeric: tabular-nums lining-nums;
     }
 
     .band-help {
-        margin: 0;
+        margin: var(--space-sm) 0 0;
         font-size: 13px;
         color: var(--fg-faint);
     }
@@ -342,6 +437,15 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         height: 100%;
         min-width: 0;
         background: var(--fg-faint);
+    }
+
+    // The Wilson confidence range under a topic's point score.
+    .range-sub {
+        display: block;
+        margin-top: 2px;
+        font-size: 11px;
+        color: var(--fg-faint);
+        font-variant-numeric: tabular-nums lining-nums;
     }
 
     .topic-row.gap-warning {

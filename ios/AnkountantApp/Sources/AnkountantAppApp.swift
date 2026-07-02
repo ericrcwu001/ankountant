@@ -21,6 +21,16 @@ struct AnkiAppApp: App {
     }
 
     init() {
+        // Sharing namespaces @Shared(.appStorage:) keys per profile with a "."
+        // separator (e.g. "sync_pref_needs_full_sync.default"). KVO can't observe
+        // dotted keys, so Sharing logs a format warning and silently falls back to
+        // NotificationCenter. Cross-process observation of these keys isn't needed
+        // (they're SyncCoordinator-internal), so silence the warning. This must run
+        // before any dotted @Shared key is created, hence its own prepare call.
+        prepareDependencies {
+            $0.appStorageKeyFormatWarningEnabled = false
+        }
+
         #if DEBUG
 //        if KeychainHelper.loadEndpoint() == nil {
 //            try? KeychainHelper.saveEndpoint("https://sync.ankiweb.net")

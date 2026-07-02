@@ -14,6 +14,19 @@ public struct SchedulerService: Sendable {
     public var getQueuedCards: @Sendable (_ fetchLimit: Int32) throws -> QueuedCardsResult
     /// Answer with scheduling states previously returned by getQueuedCards.
     public var answerReviewCard: @Sendable (_ cardId: Int64, _ rating: Rating, _ timeSpent: UInt32, _ states: ReviewSchedulingStates) throws -> Void
+    /// F016 FAR demo seed loader. `withHistory` also injects fake review/attempt
+    /// history so the review loop, the readiness band, and the per-topic give-up
+    /// rule light up (matches the desktop "Load FAR demo content" action).
+    public var loadFarSeed: @Sendable (_ withHistory: Bool) throws -> Void
+    /// A10 — step-grade a TBS/confusion Performance submission and persist the
+    /// Attempt Log note. `mode` is "tbs" | "confusion"; `submissionJson` is the
+    /// shape produced by the AnkiKit submission builders.
+    public var submitPerformanceAttempt: @Sendable (_ itemNoteId: Int64, _ mode: String, _ submissionJson: String, _ confidence: String, _ latencyMs: UInt32) throws -> PerformanceAttemptResult
+    /// A3 — build the label-stripped, interleaved confusion-set review queue.
+    public var buildConfusionQueue: @Sendable (_ section: String, _ maxItems: Int32) throws -> [ConfusionItemModel]
+    /// A4/A5 — the section's readiness rollup: the exam-day Wilson band plus
+    /// per-topic Memory vs Performance. Powers the Home hero + Readiness screen.
+    public var getReadiness: @Sendable (_ section: String) throws -> ReadinessSummary
 }
 
 extension SchedulerService: DependencyKey {
@@ -92,6 +105,79 @@ extension SchedulerService: DependencyKey {
                     method: AnkiBackend.SchedulerMethod.answerCard,
                     request: answer
                 )
+            },
+            loadFarSeed: { withHistory in
+                var req = Anki_Scheduler_LoadFarSeedRequest()
+                req.section = "FAR"
+                req.withHistory = withHistory
+                try backend.callVoid(
+                    service: AnkiBackend.Service.scheduler,
+                    method: AnkiBackend.SchedulerMethod.loadFarSeed,
+                    request: req
+                )
+            },
+            submitPerformanceAttempt: { itemNoteId, mode, submissionJson, confidence, latencyMs in
+                var req = Anki_Scheduler_SubmitPerformanceAttemptRequest()
+                req.itemNoteID = itemNoteId
+                req.mode = mode
+                req.submissionJson = submissionJson
+                req.confidence = confidence
+                req.latencyMs = latencyMs
+                let resp: Anki_Scheduler_SubmitPerformanceAttemptResponse = try backend.invoke(
+                    service: AnkiBackend.Service.scheduler,
+                    method: AnkiBackend.SchedulerMethod.submitPerformanceAttempt,
+                    request: req
+                )
+                return PerformanceAttemptResult(
+                    steps: resp.steps.map { PerformanceStepResult(id: $0.id, correct: $0.correct, weight: $0.weight) },
+                    totalCredit: resp.totalCredit,
+                    attemptNoteId: resp.attemptNoteID
+                )
+            },
+            buildConfusionQueue: { section, maxItems in
+                var req = Anki_Scheduler_BuildConfusionQueueRequest()
+                req.section = section
+                req.maxItems = maxItems
+                let resp: Anki_Scheduler_BuildConfusionQueueResponse = try backend.invoke(
+                    service: AnkiBackend.Service.scheduler,
+                    method: AnkiBackend.SchedulerMethod.buildConfusionQueue,
+                    request: req
+                )
+                return resp.items.map { ConfusionItemModel(noteId: $0.noteID, prompt: $0.prompt, treatments: $0.treatments, setId: $0.setID) }
+            },
+            getReadiness: { section in
+                var req = Anki_Scheduler_GetReadinessRequest()
+                req.section = section
+                let resp: Anki_Scheduler_GetReadinessResponse = try backend.invoke(
+                    service: AnkiBackend.Service.scheduler,
+                    method: AnkiBackend.SchedulerMethod.getReadiness,
+                    request: req
+                )
+                let band = ReadinessBand(
+                    abstain: resp.readiness.abstain,
+                    reason: resp.readiness.reason,
+                    bandLow: resp.readiness.bandLow,
+                    bandHigh: resp.readiness.bandHigh,
+                    pointEstimate: resp.readiness.pointEstimate,
+                    confidence: resp.readiness.confidence,
+                    coverage: resp.readiness.coverage,
+                    generatedAt: resp.readiness.generatedAt,
+                    reasons: resp.readiness.reasons
+                )
+                let topics = resp.topics.map {
+                    TopicScoreModel(
+                        setId: $0.setID,
+                        memory: $0.memory,
+                        performance: $0.performance,
+                        gap: $0.gap,
+                        memoryInsufficient: $0.memoryInsufficient,
+                        memoryLow: $0.memoryLow,
+                        memoryHigh: $0.memoryHigh,
+                        performanceLow: $0.performanceLow,
+                        performanceHigh: $0.performanceHigh
+                    )
+                }
+                return ReadinessSummary(band: band, topics: topics)
             }
         )
     }()

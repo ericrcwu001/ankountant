@@ -5,43 +5,75 @@ import AnkiClients
 import Dependencies
 
 struct DeckListView: View {
+    /// Optional hero rendered as the first list section (the Ankountant Home
+    /// hub injects its countdown/readiness widgets here so they scroll with the
+    /// deck list). `nil` renders the plain deck list.
+    var header: AnyView? = nil
+    var navigationTitle: String = "Decks"
+
     @Dependency(\.deckClient) var deckClient
     @State private var tree: [DeckTreeNode] = []
     @State private var isLoading = true
     @State private var showCreateSheet = false
 
     var body: some View {
-        Group {
+        List {
+            if let header {
+                Section {
+                    header
+                }
+                .listRowInsets(.init(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            }
+
             if isLoading {
-                ProgressView()
+                Section {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
+                    }
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             } else if tree.isEmpty {
-                ContentUnavailableView(
-                    "No Decks",
-                    systemImage: "rectangle.stack",
-                    description: Text("Sync with your server to get your decks.")
-                )
+                Section {
+                    ContentUnavailableView(
+                        "No Decks",
+                        systemImage: "rectangle.stack",
+                        description: Text("Sync with your server to get your decks.")
+                    )
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             } else {
-                List {
-                    Section {
-                        DecksReviewsChart()
-                            .listRowInsets(.init(top: 4, leading: 0, bottom: 8, trailing: 0))
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                    }
-                    ForEach(tree) { node in
-                        DeckRowView(node: node, onMutated: {
-                            await loadDecks()
-                        })
+                Section {
+                    DecksReviewsChart()
+                        .listRowInsets(.init(top: 4, leading: 0, bottom: 8, trailing: 0))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
+                Section {
+                    NavigationLink {
+                        SimulationsHubView()
+                    } label: {
+                        Label("Simulations", systemImage: "list.bullet.clipboard")
                     }
                 }
-                .navigationDestination(for: DeckInfo.self) { deck in
-                    DeckDetailView(deck: deck)
+                ForEach(tree) { node in
+                    DeckRowView(node: node, onMutated: {
+                        await loadDecks()
+                    })
                 }
-                .scrollContentBackground(.hidden)
-                .ankountantSectionBackground()
             }
         }
-        .navigationTitle("Decks")
+        .navigationDestination(for: DeckInfo.self) { deck in
+            DeckDetailView(deck: deck)
+        }
+        .scrollContentBackground(.hidden)
+        .ankountantSectionBackground()
+        .navigationTitle(navigationTitle)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

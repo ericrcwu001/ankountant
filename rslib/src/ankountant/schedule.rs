@@ -25,6 +25,16 @@ pub(crate) fn days_to_exam(iso_date: &str) -> Option<i64> {
     Some((exam - today).num_days())
 }
 
+/// A1-live/A2 — derive the section from a deck's human name when it is an
+/// `Ankountant::Study::<section>::…` study deck (the only decks the live
+/// deadline ramp and latency-defunding touch). `None` for every other deck, so
+/// normal Anki decks keep stock FSRS scheduling.
+pub(crate) fn section_for_deck_name(human_name: &str) -> Option<String> {
+    let rest = human_name.strip_prefix("Ankountant::Study::")?;
+    let section = rest.split("::").next()?;
+    (!section.is_empty()).then(|| section.to_string())
+}
+
 impl Collection {
     /// A1 — resolve the desired retention for a section: the deadline ramp when
     /// an exam date is set (or an explicit `exam_date` preview override),

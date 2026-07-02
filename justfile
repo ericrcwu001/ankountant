@@ -77,6 +77,16 @@ test-e2e ui='': _install-playwright-browsers
 test-ios:
     @echo "iOS is a non-gated demo track; no automated tests wired up. (no-op)"
 
+# Regenerate the reproducible honesty-evidence artifacts into
+# docs_ankountant/evidence/: backend determinism (rubric #4) and the A2 too-easy
+# defunding off/on ablation (rubric #5). Runs the `#[ignore]`d Rust emitters,
+# which recompute the numbers and write <name>.{json,html}. Run `just check`
+# (or `just test-rust`) once first so the protobuf descriptors exist; this
+# reuses the ninja build's Cargo target dir so it needs no from-scratch rebuild.
+ankountant-evidence:
+    CARGO_TARGET_DIR=out/rust cargo test -p anki _evidence -- --ignored --nocapture
+    @echo "Evidence written to docs_ankountant/evidence/{determinism,ablation}.html"
+
 [private]
 _test:
     {{ ninja }} check:rust_test check:pytest check:vitest

@@ -49,6 +49,30 @@ $utilities: (
     font-variant-numeric: tabular-nums lining-nums;
 }
 
+/* Ledger semantic type scale (§2 / design-tokens.json). Prefer .t-<role> or the
+   --type-<role>-* custom properties over ad-hoc font-size, so the scale stays
+   single-sourced and re-tunable. */
+@each $role
+    in (display-hero, section-heading, card-title, body, body-emphasis, callout,
+        caption, micro, mono)
+{
+    .t-#{$role} {
+        font-size: var(--type-#{$role}-size);
+        font-weight: var(--type-#{$role}-weight);
+        line-height: var(--type-#{$role}-line);
+        letter-spacing: var(--type-#{$role}-tracking);
+    }
+}
+
+.t-micro {
+    text-transform: uppercase;
+}
+
+.t-mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums lining-nums;
+}
+
 /* Honor Reduce Motion (Ledger §3 / accessibility floor C9): collapse animation
    + transitions to instant, no loops, no motion-only information. */
 @media (prefers-reduced-motion: reduce) {

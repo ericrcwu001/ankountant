@@ -555,14 +555,33 @@ message TopicScore {
   double gap = 4;
   // memory is only meaningful with >= 5 trailing-30d reps.
   bool memory_insufficient = 5;
+  // Wilson 95% confidence bands (0..1 fractions) around memory and performance,
+  // so all three scores are shown as ranges, not points. Both endpoints are 0
+  // when the metric is insufficient / has no sealed evidence.
+  double memory_low = 6;
+  double memory_high = 7;
+  double performance_low = 8;
+  double performance_high = 9;
 }
 message Readiness {
   bool abstain = 1;
   string reason = 2;
-  // Wilson 95% band on Performance accuracy, 0..100 (%). Exam-day projection.
+  // Wilson 95% band on sealed Performance accuracy, projected onto the CPA
+  // scaled-score scale (0..99, 75 = pass) via the ADR-0005 transform. Both 0
+  // when abstaining.
   double band_low = 3;
   double band_high = 4;
   string confidence = 5;
+  // The band centre on the same CPA scale (0..99); 0 when abstaining.
+  double point_estimate = 6;
+  // Fraction (0..1) of defined confusion sets with >= 1 sealed attempt.
+  // Always populated (even when abstaining) so the UI can show exam coverage.
+  double coverage = 7;
+  // Unix seconds when this readiness was computed (last-updated indicator).
+  int64 generated_at = 8;
+  // Factual, non-inferential drivers (restated numbers, e.g. weakest topic and
+  // coverage) — never a claimed cause.
+  repeated string reasons = 9;
 }
 
 message SubmitPerformanceAttemptRequest {
@@ -587,6 +606,11 @@ message StepResult {
 
 message LoadFarSeedRequest {
   string section = 1;
+  // When true, also inject fake review/attempt history so the demo profile
+  // shows a running review loop + an honest readiness band + the per-topic
+  // give-up rule. Default false = deterministic content only (used by the
+  // e2e fixture and the threshold tests, which control history themselves).
+  bool with_history = 2;
 }
 message LoadFarSeedResponse {
   uint32 confusion_sets = 1;

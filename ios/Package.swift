@@ -109,6 +109,11 @@ let package = Package(
             dependencies: ["AnkountantCardWeb"],
             swiftSettings: sharedSwiftSettings
         ),
+        .testTarget(
+            name: "AnkiKitTests",
+            dependencies: ["AnkiKit"],
+            swiftSettings: sharedSwiftSettings
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

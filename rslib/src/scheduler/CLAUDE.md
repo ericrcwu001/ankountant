@@ -62,13 +62,17 @@ SM-2 and FSRS scheduling both live.
 ## Ankountant work
 
 This is THE core engine for the roadmap's deadline-anchored scheduler + FSRS
-rework. No days-to-exam / deadline logic exists yet — it must be added here.
+rework. The deadline ramp is wired into the live answer path (A1-live + A2).
 
-- Desired-retention is the natural anchor point. It is read in
+- Desired-retention is the anchor point. It is read in
   `answering/mod.rs::card_state_updater` via `Deck::effective_desired_retention`
   (`rslib/src/decks/mod.rs`) and flows into `fsrs.next_states(...)`.
-- Retention is currently a per-preset deck-config value
-  (`config.inner.desired_retention`, proto `deck_config.proto` field 37) with an
-  optional per-deck override; there is no single global key. Deadline anchoring
-  will mean deriving retention from days-to-exam rather than a static config
-  number, then feeding it into the same FSRS call.
+- For `Ankountant::Study::<section>::*` decks, `card_state_updater` overrides
+  that value with `Collection::ankountant_desired_retention` (the days-to-exam
+  ramp in `rslib/src/ankountant/schedule.rs`; open-horizon fallback to the
+  preset value when no exam date is set), then subtracts the A2 latency-defund
+  reduction when the card's `cd.te` flag is set (`rslib/src/ankountant/defund.rs`).
+  `fsrs/memory_state.rs::compute_memory_state` mirrors the same override.
+- Normal decks keep the stock per-preset value (`config.inner.desired_retention`,
+  proto `deck_config.proto` field 37) with an optional per-deck override; the
+  exam date itself lives in `col` config (`ankountant.<section>.exam.date`).

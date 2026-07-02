@@ -47,8 +47,11 @@ targets:
         type: folder
       - path: Resources/Review
         type: folder
+      # Group (not folder reference) so the .ttf files are copied to the bundle
+      # root, where UIAppFonts (Info.plist) resolves them by bare filename. A
+      # folder reference would nest them under Fonts/ and break font loading.
       - path: Resources/Fonts
-        type: folder
+        type: group
     dependencies:
       - package: AnkiBridge
         product: AnkiKit
