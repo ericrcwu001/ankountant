@@ -109,8 +109,8 @@ impl Collection {
         self.get_config_optional(latency_rote_key())
     }
 
-    /// Fold `taken_millis` into the rote latency cohort EMA (seed on first use).
-    /// Non-transactional: must run inside an existing transaction.
+    /// Fold `taken_millis` into the rote latency cohort EMA (seed on first
+    /// use). Non-transactional: must run inside an existing transaction.
     fn ankountant_update_rote_latency_ema(&mut self, taken_millis: u32) -> Result<()> {
         let sample = taken_millis as f64;
         let next = match self.ankountant_rote_latency_ema() {

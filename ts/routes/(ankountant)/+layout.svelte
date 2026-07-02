@@ -23,6 +23,8 @@ Ledger design tokens (--accent = Ink Navy, --canvas*, --border*).
         { id: "dashboard", label: "Readiness", href: "/ankountant-dashboard" },
         { id: "confusion", label: "Confusion", href: "/ankountant-confusion" },
         { id: "tbs", label: "TBS", href: "/ankountant-tbs" },
+        { id: "research", label: "Research", href: "/ankountant-research" },
+        { id: "doc-review", label: "Doc Review", href: "/ankountant-doc-review" },
         { id: "stats", label: "Stats", href: "/ankountant-stats" },
         { id: "workspace", label: "Workspace", href: "/ankountant-workspace" },
     ];

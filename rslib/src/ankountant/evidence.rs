@@ -5,9 +5,9 @@
 //! (#4 determinism, #5 A2 ablation). The emitters themselves are `#[ignore]`d
 //! tests in [`super::determinism`] and [`super::ablation`], run by
 //! `just ankountant-evidence`; each recomputes its backing numbers and writes a
-//! JSON record plus a self-contained HTML artifact (with the JSON inlined) under
-//! `docs_ankountant/evidence/`. Nothing here runs in the normal `just test-rust`
-//! suite, and nothing here is on any product code path.
+//! JSON record plus a self-contained HTML artifact (with the JSON inlined)
+//! under `docs_ankountant/evidence/`. Nothing here runs in the normal `just
+//! test-rust` suite, and nothing here is on any product code path.
 
 use std::path::PathBuf;
 

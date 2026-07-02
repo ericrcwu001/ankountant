@@ -62,6 +62,12 @@ let package = Package(
         // MARK: - Libraries
         .target(
             name: "AnkiKit",
+            // Bundled per-section authoritative-literature corpus for the
+            // client-side research search (a verbatim copy of the Rust
+            // rslib/src/ankountant/seed_literature.json — kept in sync).
+            resources: [
+                .process("Resources/seed_literature.json"),
+            ],
             swiftSettings: sharedSwiftSettings
         ),
         .target(

@@ -35,7 +35,7 @@ no deep-link inside the workspace) and build its render model.
                 return;
             }
             const note = await getNote({ nid: noteId });
-            model = buildTbsModel(note.fields);
+            model = buildTbsModel(note.fields, note.tags);
             phase = "ready";
         } catch (err) {
             message = err instanceof Error ? err.message : String(err);

@@ -72,6 +72,50 @@ pub(crate) fn grade(
     (outcomes, total)
 }
 
+/// T1 — grade a research submission. A research item carries a single gradable
+/// step (id `"citation"`) whose `answer_key` is either a scalar canonical
+/// citation OR an array of accepted citation variants (spelling variants and,
+/// when the author lists them, the exact paragraph and its parent section). The
+/// step is correct iff the submitted citation citation-normalizes-equal to ANY
+/// accepted variant. Credit is all-or-nothing per step (Σ of correct weights);
+/// with the conventional single 1.0-weight step this is exactly 1.0 / 0.0.
+/// Time-to-cite is recorded separately (`Outcome.elapsed_ms`), never folded
+/// into credit (OQ-2).
+pub(crate) fn grade_research(
+    steps: &[GradableStep],
+    submitted: &std::collections::HashMap<String, Value>,
+) -> (Vec<StepOutcome>, f64) {
+    let weights = effective_weights(steps);
+    let mut total = 0.0;
+    let mut outcomes = Vec::with_capacity(steps.len());
+    for (step, weight) in steps.iter().zip(weights) {
+        let correct = submitted
+            .get(&step.id)
+            .is_some_and(|v| citation_step_matches(&step.answer_key, v));
+        if correct {
+            total += weight;
+        }
+        outcomes.push(StepOutcome {
+            id: step.id.clone(),
+            correct,
+            weight,
+        });
+    }
+    (outcomes, total)
+}
+
+/// Match a submitted citation against a research step's `answer_key`, which is
+/// a scalar OR an array of accepted variants.
+fn citation_step_matches(answer_key: &Value, submitted: &Value) -> bool {
+    let sub = value_to_plain_string(submitted);
+    match answer_key {
+        Value::Array(accepted) => accepted
+            .iter()
+            .any(|a| logic::citation_matches(&value_to_plain_string(a), &sub)),
+        other => logic::citation_matches(&value_to_plain_string(other), &sub),
+    }
+}
+
 fn step_matches(step: &GradableStep, submitted: &Value) -> bool {
     let tolerance = step
         .tolerance
@@ -200,6 +244,67 @@ mod tests {
         assert!(outcomes[0].correct);
         assert!(!outcomes[1].correct);
         assert!((total - 0.5).abs() < 1e-9);
+    }
+
+    fn research_step(answer_key: Value) -> Vec<GradableStep> {
+        vec![GradableStep {
+            id: "citation".into(),
+            answer_key,
+            weight: Some(1.0),
+            tolerance: None,
+        }]
+    }
+
+    fn cite(value: &str) -> HashMap<String, Value> {
+        let mut sub = HashMap::new();
+        sub.insert("citation".into(), serde_json::json!(value));
+        sub
+    }
+
+    #[test]
+    fn research_all_or_nothing_with_normalization() {
+        // T1 AC1 — one citation step; correct is 1.0, else 0.0, and spelling
+        // variants normalize-match.
+        let steps = research_step(serde_json::json!(["ASC 606-10-32-31"]));
+        let (out, total) = grade_research(&steps, &cite("fasb asc 606 10 32 31"));
+        assert!(out[0].correct);
+        assert!((total - 1.0).abs() < 1e-9);
+
+        let (out, total) = grade_research(&steps, &cite("ASC 606-10-32-39"));
+        assert!(!out[0].correct);
+        assert!(total.abs() < 1e-9);
+
+        // A blank/missing citation is wrong, not a panic.
+        let (out, total) = grade_research(&steps, &HashMap::new());
+        assert!(!out[0].correct);
+        assert!(total.abs() < 1e-9);
+    }
+
+    #[test]
+    fn research_multi_valued_key_accepts_any_listed_variant() {
+        // T1 — multi-valued accepted list: exact paragraph, spelling variant,
+        // AND the parent section are all accepted (the key lists them); an
+        // unlisted sibling paragraph is not.
+        let steps = research_step(serde_json::json!([
+            "ASC 842-20-25-1",
+            "842-20-25-01",
+            "ASC 842-20-25" // parent section, explicitly accepted
+        ]));
+        assert!(grade_research(&steps, &cite("842-20-25-1")).0[0].correct);
+        assert!(grade_research(&steps, &cite("FASB ASC 842-20-25-1")).0[0].correct);
+        // Section-vs-paragraph acceptance: submitting the parent section is OK
+        // because the key lists it.
+        assert!(grade_research(&steps, &cite("ASC 842-20-25")).0[0].correct);
+        // A sibling paragraph the key does NOT list is wrong.
+        assert!(!grade_research(&steps, &cite("ASC 842-20-25-4")).0[0].correct);
+    }
+
+    #[test]
+    fn research_scalar_key_also_supported() {
+        // The answer_key may be a bare string, not only an array.
+        let steps = research_step(serde_json::json!("ASC 360-10-30-1"));
+        assert!(grade_research(&steps, &cite("asc 360 10 30 1")).0[0].correct);
+        assert!(!grade_research(&steps, &cite("asc 360 10 30 9")).0[0].correct);
     }
 
     #[test]

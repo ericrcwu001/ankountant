@@ -49,6 +49,20 @@ struct TbsTaskView: View {
 
     @ViewBuilder
     private func content(_ model: TbsModel) -> some View {
+        switch model.shape {
+        case .research:
+            // Section-agnostic research surface (literature search + citation).
+            ResearchTaskView(noteId: noteId, model: model)
+        case .docReview:
+            // Section-agnostic document-review surface (blanks + partial credit).
+            DocReviewTaskView(noteId: noteId, model: model)
+        case .numeric, .journalEntry:
+            jeNumericContent(model)
+        }
+    }
+
+    @ViewBuilder
+    private func jeNumericContent(_ model: TbsModel) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text(model.prompt)
@@ -63,12 +77,8 @@ struct TbsTaskView: View {
                 case .journalEntry:
                     journalEntryGrid(model)
                     submitSection(model)
-                case .research, .docReview:
-                    Text("This simulation type isn't supported yet.")
-                        .ankountantFont(.body)
-                        .foregroundStyle(palette.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 8)
+                default:
+                    EmptyView()
                 }
 
                 if !model.exhibits.isEmpty {

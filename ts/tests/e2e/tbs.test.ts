@@ -21,7 +21,8 @@ test("a JE TBS renders an editable grid and shows per-line + partial-credit tota
     // wrong amount -> expect [ok,ok,ok,wrong] and 75% (reconciles with A35).
     const fill = async (idx: number, account: string, side: string, amount: string) => {
         const row = rows.nth(idx);
-        await row.getByTestId("je-account").fill(account);
+        // Account is now a controlled picker (agent 07), not a free-text input.
+        await row.getByTestId("je-account").selectOption(account);
         await row.getByTestId("je-side").selectOption(side);
         await row.getByTestId("je-amount").fill(amount);
     };

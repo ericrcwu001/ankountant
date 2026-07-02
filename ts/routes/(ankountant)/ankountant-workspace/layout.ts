@@ -10,7 +10,16 @@
 // ! renderer without duplication.
 
 /** The study surfaces that can be mounted in a pane. */
-export type SurfaceKind = "dashboard" | "confusion" | "tbs" | "stats" | "add" | "browse";
+export type SurfaceKind =
+    | "dashboard"
+    | "confusion"
+    | "tbs"
+    | "research"
+    | "doc_review"
+    | "literature"
+    | "stats"
+    | "add"
+    | "browse";
 
 /** Split orientation. `row` = children left/right; `col` = children top/bottom. */
 export type SplitDir = "row" | "col";
@@ -53,6 +62,9 @@ export const SURFACE_KINDS: readonly SurfaceKind[] = [
     "dashboard",
     "confusion",
     "tbs",
+    "research",
+    "doc_review",
+    "literature",
     "stats",
     "add",
     "browse",

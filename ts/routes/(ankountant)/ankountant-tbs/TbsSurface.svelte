@@ -7,7 +7,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     import { submitPerformanceAttempt } from "@generated/backend";
 
     import type { JeLineInput, NumericCellInput, TbsModel } from "./lib";
-    import { buildJeSubmission, buildNumericSubmission } from "./lib";
+    import { buildJeSubmission, buildNumericSubmission, JE_ACCOUNTS } from "./lib";
 
     export let noteId: bigint;
     export let model: TbsModel;
@@ -19,7 +19,29 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         account: "",
         side: "",
         amount: "",
+        noEntry: false,
     }));
+
+    // B4 (agent 07) — spare scratch rows so the number of lines isn't a cue.
+    // They are NOT graded (not part of the submission), just a work affordance.
+    const SPARE_ROWS = 2;
+    const spareLines = Array.from({ length: SPARE_ROWS }, () => ({
+        account: "",
+        side: "",
+        amount: "",
+    }));
+
+    function toggleNoEntry(i: number): void {
+        const l = jeLines[i];
+        l.noEntry = !l.noEntry;
+        if (l.noEntry) {
+            l.account = "";
+            l.side = "";
+            l.amount = "";
+        }
+        // Reassign to trigger reactivity on the parallel array.
+        jeLines[i] = l;
+    }
     const numericCells: NumericCellInput[] = model.steps.map((s) => ({
         id: s.id,
         value: "",
@@ -119,6 +141,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                             <th>Account</th>
                             <th>Debit / Credit</th>
                             <th class="amount-col">Amount</th>
+                            <th class="noentry-col">No entry</th>
                             <th class="result-col">
                                 <span class="sr-only">Result</span>
                             </th>
@@ -128,22 +151,32 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                         {#each model.steps as step, i (step.id)}
                             <tr
                                 class="je-row"
+                                class:no-entry={jeLines[i].noEntry}
                                 data-testid="je-row"
                                 data-step-id={step.id}
                             >
                                 <td>
-                                    <input
-                                        type="text"
+                                    <!-- Controlled account picker (not free text), agent 07. -->
+                                    <select
                                         data-testid="je-account"
                                         data-step-id={step.id}
                                         bind:value={jeLines[i].account}
-                                    />
+                                        disabled={jeLines[i].noEntry ||
+                                            resultById.has(step.id)}
+                                    >
+                                        <option value="">Select account…</option>
+                                        {#each JE_ACCOUNTS as acct (acct)}
+                                            <option value={acct}>{acct}</option>
+                                        {/each}
+                                    </select>
                                 </td>
                                 <td>
                                     <select
                                         data-testid="je-side"
                                         data-step-id={step.id}
                                         bind:value={jeLines[i].side}
+                                        disabled={jeLines[i].noEntry ||
+                                            resultById.has(step.id)}
                                     >
                                         <option value="">Select</option>
                                         <option value="dr">Debit</option>
@@ -157,6 +190,19 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                         data-testid="je-amount"
                                         data-step-id={step.id}
                                         bind:value={jeLines[i].amount}
+                                        disabled={jeLines[i].noEntry ||
+                                            resultById.has(step.id)}
+                                    />
+                                </td>
+                                <td class="noentry-col">
+                                    <input
+                                        type="checkbox"
+                                        data-testid="je-no-entry"
+                                        data-step-id={step.id}
+                                        aria-label="No entry required for this line"
+                                        checked={jeLines[i].noEntry}
+                                        disabled={resultById.has(step.id)}
+                                        on:change={() => toggleNoEntry(i)}
                                     />
                                 </td>
                                 <td class="result" data-testid="je-result">
@@ -173,6 +219,43 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                         </span>
                                     {/if}
                                 </td>
+                            </tr>
+                        {/each}
+                        <!-- Spare scratch rows (ungraded): the number of lines is
+                             not a cue, and the learner has room to work. -->
+                        {#each spareLines as spare, i (i)}
+                            <tr class="je-row spare" data-testid="je-spare-row">
+                                <td>
+                                    <select
+                                        bind:value={spare.account}
+                                        aria-label="Spare account"
+                                    >
+                                        <option value="">Spare (not graded)…</option>
+                                        {#each JE_ACCOUNTS as acct (acct)}
+                                            <option value={acct}>{acct}</option>
+                                        {/each}
+                                    </select>
+                                </td>
+                                <td>
+                                    <select
+                                        bind:value={spare.side}
+                                        aria-label="Spare debit/credit"
+                                    >
+                                        <option value="">Select</option>
+                                        <option value="dr">Debit</option>
+                                        <option value="cr">Credit</option>
+                                    </select>
+                                </td>
+                                <td class="amount-col">
+                                    <input
+                                        type="text"
+                                        inputmode="decimal"
+                                        bind:value={spare.amount}
+                                        aria-label="Spare amount"
+                                    />
+                                </td>
+                                <td class="noentry-col"></td>
+                                <td class="result"></td>
                             </tr>
                         {/each}
                     </tbody>
@@ -344,6 +427,16 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         .result {
             width: 2rem;
             text-align: center;
+        }
+
+        .noentry-col {
+            width: 4rem;
+            text-align: center;
+        }
+
+        // Spare scratch rows read as secondary (they are ungraded).
+        .spare {
+            opacity: 0.7;
         }
 
         input,

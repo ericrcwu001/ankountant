@@ -205,7 +205,8 @@ fn seed_latency_reps(col: &mut Collection, cid: CardId, latencies: &[u32]) {
     .unwrap();
 }
 
-/// Answer `cid` with `rating`, taking `millis`, reusing the live preview states.
+/// Answer `cid` with `rating`, taking `millis`, reusing the live preview
+/// states.
 fn answer_with(col: &mut Collection, cid: CardId, rating: Rating, millis: u32) {
     let states = col.get_scheduling_states(cid).unwrap();
     let new_state = match rating {
@@ -688,14 +689,39 @@ fn a9_steps_support_n_weighted_steps_summing_to_one() {
 
 #[test]
 fn a9_doc_review_and_research_stored_without_schema_change() {
-    // A33.
+    // A33 — research + doc_review are stored on the shared union note type (no
+    // new field/table), now as real content (ADR 0008), not stored-only stubs.
     let (mut col, _) = seeded();
     for shape in ["research", "doc_review"] {
-        let found = col
-            .search_notes_unordered(&format!("note:\"Ankountant TBS\" \"Stored-only {shape}*\""))
-            .unwrap();
-        assert!(!found.is_empty(), "missing stored-only {shape} TBS");
+        assert!(
+            !tbs_notes_of_type(&mut col, shape).is_empty(),
+            "missing {shape} TBS"
+        );
     }
+}
+
+/// All `Ankountant TBS` note ids whose `tbs_type` (field 0) equals `shape`.
+fn tbs_notes_of_type(col: &mut Collection, shape: &str) -> Vec<NoteId> {
+    col.search_notes_unordered("note:\"Ankountant TBS\"")
+        .unwrap()
+        .into_iter()
+        .filter(|nid| {
+            let note = col.storage.get_note(*nid).unwrap().unwrap();
+            note.fields()[super::notetypes::tbs_fields::TBS_TYPE] == shape
+        })
+        .collect()
+}
+
+/// First `Ankountant TBS` note of `shape` tagged `sec::<section>`.
+fn section_tbs_note(col: &mut Collection, section: &str, shape: &str) -> NoteId {
+    let want = format!("{}{}", super::SEC_TAG_PREFIX, section);
+    tbs_notes_of_type(col, shape)
+        .into_iter()
+        .find(|nid| {
+            let note = col.storage.get_note(*nid).unwrap().unwrap();
+            note.tags.iter().any(|t| t == &want)
+        })
+        .unwrap_or_else(|| panic!("no {section} {shape} note"))
 }
 
 #[test]
@@ -899,6 +925,7 @@ fn seed_confusion_accuracy(col: &mut Collection, set_id: &str, correct: u32, wro
                 outcome: Outcome {
                     credit: 1.0,
                     steps: vec![],
+                    elapsed_ms: None,
                 },
                 section: "FAR".into(),
                 sealed: true,
@@ -914,6 +941,7 @@ fn seed_confusion_accuracy(col: &mut Collection, set_id: &str, correct: u32, wro
                 outcome: Outcome {
                     credit: 0.0,
                     steps: vec![],
+                    elapsed_ms: None,
                 },
                 section: "FAR".into(),
                 sealed: true,
@@ -949,6 +977,7 @@ fn seed_sealed_attempts(col: &mut Collection, per_set: u32, correct_frac: f64) {
                     outcome: Outcome {
                         credit: if correct { 1.0 } else { 0.0 },
                         steps: vec![],
+                        elapsed_ms: None,
                     },
                     section: "FAR".into(),
                     sealed: true,
@@ -1000,6 +1029,7 @@ fn a4_performance_only_from_sealed_no_study_leakage() {
                 outcome: Outcome {
                     credit: 1.0,
                     steps: vec![],
+                    elapsed_ms: None,
                 },
                 section: "FAR".into(),
                 sealed: false,
@@ -1036,6 +1066,7 @@ fn a4_tbs_partial_credit_moves_performance() {
             outcome: Outcome {
                 credit: 0.5,
                 steps: vec![],
+                elapsed_ms: None,
             },
             section: "FAR".into(),
             sealed: true,
@@ -1081,6 +1112,7 @@ fn a5_abstain_on_insufficient_coverage() {
                 outcome: Outcome {
                     credit: if i % 2 == 0 { 1.0 } else { 0.0 },
                     steps: vec![],
+                    elapsed_ms: None,
                 },
                 section: "FAR".into(),
                 sealed: true,
@@ -1407,4 +1439,238 @@ fn seed_memory_reps(col: &mut Collection, tag: &str, total: u32, correct: u32) {
         Ok(())
     })
     .unwrap();
+}
+
+// --- ADR 0008: section-agnostic TBS (research/doc_review across sections)
+// -----
+
+#[test]
+fn seed_spans_all_six_sections_with_typed_items() {
+    // D8 — at least one seeded TBS item per CPA section, all on the single union
+    // note type, discriminated by the sec:: tag.
+    let (mut col, summary) = seeded();
+    for section in super::SECTIONS {
+        let n = col
+            .search_notes_unordered(&format!("tag:sec::{section} note:\"Ankountant TBS\""))
+            .unwrap();
+        assert!(!n.is_empty(), "no seeded TBS item for section {section}");
+    }
+    assert_eq!(
+        summary.sections_seeded.len(),
+        6,
+        "sections seeded: {:?}",
+        summary.sections_seeded
+    );
+    assert!(
+        summary.sealed_research_tbs >= 5,
+        "research items: {}",
+        summary.sealed_research_tbs
+    );
+    assert!(
+        summary.sealed_doc_review_tbs >= 4,
+        "doc_review items: {}",
+        summary.sealed_doc_review_tbs
+    );
+}
+
+#[test]
+fn typed_section_item_schema_is_validated_at_seed_time() {
+    // D9 — well-formed items validate; each structural/logical defect is rejected
+    // (correctness is validated, not "unknown keys ignored").
+    let good = r#"[
+      {"section":"REG","tbs_type":"research","set_id":"reg_capitalize_vs_deduct",
+       "prompt":"cite it","source":"s",
+       "steps":[{"kind":"citation","id":"citation","accepted":["IRC \u00a7162"]}]}
+    ]"#;
+    assert_eq!(super::seed::validate_section_items_json(good).unwrap(), 1);
+
+    let bad_cases = [
+        // unknown section
+        r#"[{"section":"XXX","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"citation","accepted":["IRC 162"]}]}]"#,
+        // research with an empty accepted list
+        r#"[{"section":"REG","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"citation","accepted":[]}]}]"#,
+        // research step id is not "citation"
+        r#"[{"section":"REG","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"c","accepted":["IRC 162"]}]}]"#,
+        // doc_review blank answer_key is not one of the option ids
+        r#"[{"section":"FAR","tbs_type":"doc_review","set_id":"s","prompt":"p","source":"s","exhibits":[{"title":"d","kind":"document","role":"document","body":"x <blank step=\"b1\">y</blank>"}],"steps":[{"kind":"blank","id":"b1","answer_key":"o9","options":[{"id":"o1","text":"a"},{"id":"o2","text":"b"}]}]}]"#,
+        // doc_review missing a role:document exhibit
+        r#"[{"section":"FAR","tbs_type":"doc_review","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"blank","id":"b1","answer_key":"o1","options":[{"id":"o1","text":"a"},{"id":"o2","text":"b"}]}]}]"#,
+        // doc_review blank with no marker in the document body
+        r#"[{"section":"FAR","tbs_type":"doc_review","set_id":"s","prompt":"p","source":"s","exhibits":[{"title":"d","kind":"document","role":"document","body":"no markers"}],"steps":[{"kind":"blank","id":"b1","answer_key":"o1","options":[{"id":"o1","text":"a"},{"id":"o2","text":"b"}]}]}]"#,
+        // serde structural error: citation step missing required `accepted`
+        r#"[{"section":"REG","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"citation"}]}]"#,
+    ];
+    for (i, bad) in bad_cases.iter().enumerate() {
+        assert!(
+            super::seed::validate_section_items_json(bad).is_err(),
+            "bad case {i} should have failed validation"
+        );
+    }
+}
+
+#[test]
+fn research_submit_is_all_or_nothing_and_records_time() {
+    // T1 end-to-end via the real submit path: the seeded FAR lease research item
+    // grades correct on a normalized citation, wrong on a bad one, and writes
+    // time-to-cite into outcome_json (never into credit).
+    let (mut col, _) = seeded();
+    let nid = section_tbs_note(&mut col, "FAR", "research"); // ASC 842-20-25-1
+
+    let ok = submit(
+        &mut col,
+        nid,
+        "research",
+        json!({"citation":"fasb asc 842 20 25 1"}),
+        "confident",
+    );
+    assert_eq!(ok.steps.len(), 1);
+    assert!(ok.steps[0].correct);
+    assert!((ok.total_credit - 1.0).abs() < 1e-9);
+
+    let bad = submit(
+        &mut col,
+        nid,
+        "research",
+        json!({"citation":"ASC 999-10-10-1"}),
+        "guess",
+    );
+    assert!(!bad.steps[0].correct);
+    assert!(bad.total_credit.abs() < 1e-9);
+
+    let attempts = col.ankountant_attempts("FAR").unwrap();
+    let research = attempts.iter().find(|a| a.mode == "research").unwrap();
+    assert_eq!(research.outcome.elapsed_ms, Some(4200));
+}
+
+#[test]
+fn doc_review_partial_credit_feeds_fractional_readiness_per_section() {
+    // T3 — a REG doc_review with 4 equally weighted blanks: 3/4 correct -> 0.75
+    // credit, landing in the FRACTIONAL Performance bucket (A1) of the REG
+    // section, not the pass/fail bucket (which would read 1.0).
+    let (mut col, _) = seeded();
+    let nid = section_tbs_note(&mut col, "REG", "doc_review");
+
+    let resp = submit(
+        &mut col,
+        nid,
+        "doc_review",
+        json!({"steps":[
+            {"id":"b1","value":"o1"},
+            {"id":"b2","value":"o2"},
+            {"id":"b3","value":"o2"},
+            {"id":"b4","value":"o2"}
+        ]}),
+        "unsure",
+    );
+    assert_eq!(resp.steps.len(), 4);
+    assert!((resp.total_credit - 0.75).abs() < 1e-9);
+
+    let r = SchedulerService::get_readiness(
+        &mut col,
+        GetReadinessRequest {
+            section: "REG".into(),
+        },
+    )
+    .unwrap();
+    let topic = r
+        .topics
+        .iter()
+        .find(|t| t.set_id == "reg_capitalize_vs_deduct")
+        .unwrap();
+    assert!(
+        (topic.performance - 0.75).abs() < 1e-9,
+        "doc_review credit must feed fractional performance, got {}",
+        topic.performance
+    );
+}
+
+#[test]
+fn every_research_item_citation_exists_in_its_section_corpus() {
+    // T2 AC3 — each seeded research item's accepted citation resolves to a
+    // passage in that section's committed literature corpus.
+    let (mut col, _) = seeded();
+    let mut checked = 0;
+    for nid in tbs_notes_of_type(&mut col, "research") {
+        let note = col.storage.get_note(nid).unwrap().unwrap();
+        let section = super::note_section(&note.tags);
+        let corpus = super::literature::committed_corpus_for_section(&section);
+        let steps =
+            super::grading::parse_steps(&note.fields()[super::notetypes::tbs_fields::STEPS_JSON])
+                .unwrap();
+        let accepted: Vec<String> = match &steps[0].answer_key {
+            serde_json::Value::Array(a) => a
+                .iter()
+                .filter_map(|v| v.as_str().map(str::to_string))
+                .collect(),
+            serde_json::Value::String(s) => vec![s.clone()],
+            _ => vec![],
+        };
+        assert!(
+            !accepted.is_empty(),
+            "research item has no accepted citation"
+        );
+        let hit = accepted.iter().any(|acc| {
+            corpus
+                .iter()
+                .any(|p| super::logic::citation_matches(&p.citation, acc))
+        });
+        assert!(
+            hit,
+            "no {section} corpus entry for research accepted={accepted:?}"
+        );
+        checked += 1;
+    }
+    assert!(checked >= 5, "expected >=5 research items, got {checked}");
+}
+
+#[test]
+fn literature_loader_scopes_by_section_and_body() {
+    // D10 — one loader, per-section bodies: FAR/BAR cite-only, REG verbatim.
+    let (col, _) = seeded();
+    let far = col.ankountant_literature("FAR").unwrap();
+    assert!(!far.is_empty());
+    assert!(far
+        .iter()
+        .all(|p| !p.verbatim && p.overlay_excerpt.is_none()));
+
+    let reg = col.ankountant_literature("REG").unwrap();
+    assert!(reg.iter().any(|p| p.verbatim && p.citation.contains("162")));
+}
+
+#[test]
+fn research_and_doc_review_attempts_add_no_schema_change() {
+    // A5 gate — a PRAGMA table_info round-trip proves the new section-agnostic
+    // modes add NO new SQLite table/column and survive save + reopen.
+    let (mut col, tmp) = crate::tests::open_fs_test_collection("ankountant_section_schema");
+    col.ankountant_load_far_seed(false).unwrap();
+    let before = table_info(&col);
+
+    let research = section_tbs_note(&mut col, "AUD", "research");
+    let _ = submit(
+        &mut col,
+        research,
+        "research",
+        json!({"citation":"AS 1105"}),
+        "confident",
+    );
+    let dr = section_tbs_note(&mut col, "ISC", "doc_review");
+    let _ = submit(
+        &mut col,
+        dr,
+        "doc_review",
+        json!({"steps":[{"id":"b1","value":"o1"}]}),
+        "unsure",
+    );
+
+    assert_eq!(
+        table_info(&col),
+        before,
+        "schema changed after section-item attempts"
+    );
+
+    let mut builder = col.as_builder();
+    col.close(None).unwrap();
+    let col = builder.build().unwrap();
+    assert_eq!(table_info(&col), before);
+    drop(tmp);
 }

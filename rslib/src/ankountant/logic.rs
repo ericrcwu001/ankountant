@@ -223,6 +223,79 @@ pub(crate) fn text_matches(answer_key: &str, submitted: &str) -> bool {
     normalize_text(answer_key) == normalize_text(submitted)
 }
 
+/// A4 — modes whose stored `credit` is fractional partial credit (averaged into
+/// Performance) rather than pass/fail. Keeping the set of fractional modes in
+/// one place lets `readiness.rs` bucket consistently. `research` is NOT here:
+/// it is binary (correctness-only), so it lands in the pass/fail bucket
+/// alongside `confusion`/MCQ.
+pub(crate) fn is_partial_credit_mode(mode: &str) -> bool {
+    matches!(mode, "tbs" | "doc_review")
+}
+
+/// T1 — canonicalize an authoritative-literature citation for comparison. Drops
+/// an optional corpus prefix (`FASB ASC` / `ASC` / `IRC` / `AU-C` / `AS` /
+/// `§`), unifies every separator (space / hyphen / en- or em-dash / dot /
+/// slash) to a single `-`, and makes each numeric component
+/// leading-zero-insensitive while preserving any trailing subsection letter
+/// (`45A` stays `45A`, `05` -> `5`). So `FASB ASC 842-20-25-1`, `asc 842 20 25
+/// 1`, and `842-20-25-01` all normalize to `842-20-25-1`.
+pub(crate) fn citation_normalize(s: &str) -> String {
+    let upper = s.trim().to_uppercase();
+    // Everything before the first digit is a corpus prefix (ASC / FASB ASC /
+    // IRC / AU-C / …) — drop it. A citation always contains digits; if it does
+    // not, fall back to a whitespace-collapsed upper form.
+    let Some(start) = upper.find(|c: char| c.is_ascii_digit()) else {
+        return upper.split_whitespace().collect::<Vec<_>>().join(" ");
+    };
+    upper[start..]
+        .split(|c: char| c.is_whitespace() || is_citation_separator(c))
+        .filter(|p| !p.is_empty())
+        .map(normalize_citation_component)
+        .collect::<Vec<_>>()
+        .join("-")
+}
+
+/// T1 — do two citations refer to the same paragraph/section after
+/// normalization? The "accept the exact paragraph OR its parent section"
+/// behaviour is authored into the multi-valued accepted-citation list (the
+/// answer key lists both), so this stays a strict normalized equality.
+pub(crate) fn citation_matches(accepted: &str, submitted: &str) -> bool {
+    let sub = citation_normalize(submitted);
+    !sub.is_empty() && citation_normalize(accepted) == sub
+}
+
+/// Separator characters unified to `-` inside a citation (hyphen family, dot,
+/// slash). Whitespace is handled separately by the caller.
+fn is_citation_separator(c: char) -> bool {
+    matches!(
+        c,
+        '-' | '\u{2010}' // hyphen
+            | '\u{2011}' // non-breaking hyphen
+            | '\u{2012}' // figure dash
+            | '\u{2013}' // en dash
+            | '\u{2014}' // em dash
+            | '\u{2212}' // minus sign
+            | '.'
+            | '/'
+            | '_'
+    )
+}
+
+/// Strip leading zeros from a component's numeric prefix while keeping any
+/// trailing subsection letters (`007A` -> `7A`, `05` -> `5`, `0` -> `0`).
+fn normalize_citation_component(part: &str) -> String {
+    let digits_end = part
+        .find(|c: char| !c.is_ascii_digit())
+        .unwrap_or(part.len());
+    let (num, rest) = part.split_at(digits_end);
+    if num.is_empty() {
+        return part.to_string();
+    }
+    let trimmed = num.trim_start_matches('0');
+    let num = if trimmed.is_empty() { "0" } else { trimmed };
+    format!("{num}{rest}")
+}
+
 fn normalize_text(s: &str) -> String {
     s.trim().to_lowercase()
 }
@@ -429,5 +502,62 @@ mod tests {
     fn default_weights_sum_to_one() {
         let w = default_weight(4);
         assert!(approx(w * 4.0, 1.0));
+    }
+
+    #[test]
+    fn is_partial_credit_mode_only_for_tbs_and_doc_review() {
+        // A4 — fractional partial-credit modes vs the pass/fail bucket.
+        assert!(is_partial_credit_mode("tbs"));
+        assert!(is_partial_credit_mode("doc_review"));
+        // research is binary (correctness-only), confusion/mcq are pass/fail.
+        assert!(!is_partial_credit_mode("research"));
+        assert!(!is_partial_credit_mode("confusion"));
+        assert!(!is_partial_credit_mode("mcq"));
+    }
+
+    #[test]
+    fn citation_normalize_strips_prefix_and_unifies_separators() {
+        // T1 AC1 — prefix (ASC / FASB ASC), separator, and leading-zero variance
+        // all collapse to one canonical form.
+        let canonical = "842-20-25-1";
+        for spelling in [
+            "ASC 842-20-25-1",
+            "FASB ASC 842-20-25-1",
+            "asc 842 20 25 1",
+            "842-20-25-01",
+            "842.20.25.1",
+            "  842 – 20 — 25 - 1  ",
+            "FASB ASC 842-20-25-1.",
+        ] {
+            assert_eq!(
+                citation_normalize(spelling),
+                canonical,
+                "normalize({spelling:?}) should be {canonical}"
+            );
+        }
+    }
+
+    #[test]
+    fn citation_normalize_preserves_trailing_subsection_letter() {
+        // "1, 2, or 3 digits followed in some cases by an upper case letter."
+        assert_eq!(citation_normalize("ASC 225-20-45-2A"), "225-20-45-2A");
+        assert_eq!(citation_normalize("asc 830-10-45-7"), "830-10-45-7");
+    }
+
+    #[test]
+    fn citation_matches_is_normalized_equality() {
+        // T1 — many spellings of one cite match; a different paragraph does not.
+        assert!(citation_matches(
+            "ASC 606-10-32-31",
+            "fasb asc 606 10 32 31"
+        ));
+        assert!(citation_matches("606-10-32-31", "ASC 606-10-32-31"));
+        assert!(!citation_matches("ASC 606-10-32-31", "ASC 606-10-32-39"));
+        // A parent section is a distinct cite (acceptance comes from the key
+        // listing it explicitly, exercised in grading::tests).
+        assert!(!citation_matches("ASC 606-10-32-31", "ASC 606-10-32"));
+        // Blank/garbage never matches.
+        assert!(!citation_matches("ASC 606-10-32-31", ""));
+        assert!(!citation_matches("ASC 606-10-32-31", "   "));
     }
 }

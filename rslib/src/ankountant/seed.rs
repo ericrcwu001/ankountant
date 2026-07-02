@@ -27,6 +27,7 @@ use super::config;
 use super::config::ConfusableMap;
 use super::config::ConfusionSet;
 use super::constants;
+use super::logic;
 use super::notetypes::tbs_fields;
 use super::TAG_COG_APPLIED;
 use super::TAG_COG_ROTE;
@@ -69,6 +70,11 @@ struct SeedContent {
     recall: Vec<RecallCard>,
     mcqs: std::collections::BTreeMap<String, Vec<McqItem>>,
     tbs: Vec<TbsItem>,
+    /// Section-agnostic, typed-and-validated TBS items (ADR 0008 / D9):
+    /// research, doc_review, numeric, journal_entry across all six CPA
+    /// sections.
+    #[serde(default)]
+    section_items: Vec<SectionItem>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -106,6 +112,124 @@ struct Exhibit {
     body: String,
 }
 
+// --- D9: first-class typed schemas for section-agnostic TBS items. These are
+// parsed from `seed_content.json` and VALIDATED at seed time (no reliance on
+// the "unknown keys ignored" trick). They are transformed into the grader's
+// stored `steps_json` / `exhibits_json` shape by `section_item_steps` / serde.
+
+/// Typed exhibit model (D9): shared by every shape. `role:"document"` marks the
+/// doc-review primary document whose `body` carries `<blank
+/// step="id">…</blank>` markers; `kind:"table"` carries `columns`/`rows`.
+#[derive(Debug, Deserialize, serde::Serialize)]
+struct SeedExhibit {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    id: Option<String>,
+    title: String,
+    #[serde(default = "default_exhibit_kind")]
+    kind: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    role: Option<String>,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    body: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    columns: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    rows: Vec<Vec<String>>,
+}
+
+fn default_exhibit_kind() -> String {
+    "text".to_string()
+}
+
+/// One selectable option for a doc-review blank (label-stripped for the
+/// client).
+#[derive(Debug, Deserialize, serde::Serialize)]
+struct SeedOption {
+    id: String,
+    text: String,
+    /// "keep" (Retain the original text) | "delete" | "replace".
+    #[serde(default = "default_option_kind")]
+    kind: String,
+}
+
+fn default_option_kind() -> String {
+    "replace".to_string()
+}
+
+/// Typed step, a union discriminated by `kind` (D9). The grader still reads
+/// only `id`/`answer_key`/`weight`/`tolerance` from the stored JSON; this typed
+/// layer validates the rest and drives the clients.
+#[derive(Debug, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum SeedStep {
+    /// research: one citation step; `accepted` is the multi-valued answer key.
+    Citation {
+        id: String,
+        #[serde(default)]
+        label: String,
+        #[serde(default)]
+        weight: Option<f64>,
+        accepted: Vec<String>,
+        #[serde(default)]
+        corpus_refs: Vec<String>,
+        #[serde(default)]
+        granularity: Option<String>,
+    },
+    /// doc_review blank: `answer_key` is the correct OPTION id.
+    Blank {
+        id: String,
+        #[serde(default)]
+        label: String,
+        #[serde(default)]
+        weight: Option<f64>,
+        answer_key: String,
+        options: Vec<SeedOption>,
+        #[serde(default)]
+        confusion_set_id: String,
+        #[serde(default)]
+        original_text: Option<String>,
+        #[serde(default)]
+        exhibit_refs: Vec<String>,
+    },
+    /// journal-entry line.
+    Je {
+        id: String,
+        #[serde(default)]
+        weight: Option<f64>,
+        account: String,
+        side: String,
+        amount: f64,
+    },
+    /// numeric cell (signed values allowed).
+    Numeric {
+        id: String,
+        #[serde(default)]
+        label: String,
+        #[serde(default)]
+        weight: Option<f64>,
+        answer_key: f64,
+        #[serde(default)]
+        tolerance: Option<f64>,
+    },
+}
+
+/// A section-agnostic TBS item (ADR 0008). `section` + `tbs_type` together
+/// discriminate the union note type; `set_id` places it in the sealed bank and
+/// resolves its confusion set.
+#[derive(Debug, Deserialize)]
+struct SectionItem {
+    section: String,
+    tbs_type: String,
+    set_id: String,
+    #[serde(default)]
+    schema_version: Option<u32>,
+    prompt: String,
+    #[serde(default)]
+    exhibits: Vec<SeedExhibit>,
+    steps: Vec<SeedStep>,
+    source: String,
+}
+
 fn seed_content() -> SeedContent {
     serde_json::from_str(SEED_CONTENT_JSON).expect("embedded seed_content.json must parse")
 }
@@ -119,10 +243,17 @@ pub(crate) struct SeedSummary {
     pub(crate) sealed_numeric_tbs: usize,
     pub(crate) study_recall_cards: usize,
     pub(crate) rote_cards: usize,
-    /// Note ids of the playable sealed TBS notes (JE + numeric). Anchors first,
-    /// then the extra content TBS, so the e2e fixture can rely on index 0 being
-    /// the 4-line anchor JE.
+    /// Note ids of the playable sealed TBS notes (JE + numeric anchors, extra
+    /// content TBS, then the section-agnostic research/doc_review/numeric
+    /// items). Anchors are pushed first, so the e2e fixture can rely on
+    /// index 0 being the 4-line anchor JE.
     pub(crate) sealed_tbs_note_ids: Vec<NoteId>,
+    /// Section-agnostic TBS items seeded (ADR 0008), by shape.
+    pub(crate) sealed_research_tbs: usize,
+    pub(crate) sealed_doc_review_tbs: usize,
+    /// Sections that received at least one sealed section-item (for coverage
+    /// assertions across AUD/FAR/REG/BAR/ISC/TCP).
+    pub(crate) sections_seeded: std::collections::BTreeSet<String>,
 }
 
 /// One confusion set's authoring spec.
@@ -157,6 +288,65 @@ const SETS: [SetSpec; 4] = [
         ],
     },
 ];
+
+// Multi-section confusion sets (ADR 0008 / D8). FAR keeps `SETS`; each other
+// section that carries seeded TBS gets ≥1 set so doc-review blanks can reuse it
+// and Performance attributes correctly. Config keys are
+// `ankountant.confusable.<section>`.
+const AUD_SETS: [SetSpec; 2] = [
+    SetSpec {
+        set_id: "aud_evidence_sufficiency",
+        tags: ["ds::aud::sufficient", "ds::aud::insufficient"],
+        treatments: ["Sufficient appropriate evidence", "Insufficient evidence"],
+    },
+    SetSpec {
+        set_id: "aud_request_relevance",
+        tags: ["ds::aud::retain", "ds::aud::revise"],
+        treatments: ["Retain as drafted", "Revise the request"],
+    },
+];
+
+const REG_SETS: [SetSpec; 1] = [SetSpec {
+    set_id: "reg_capitalize_vs_deduct",
+    tags: ["ds::reg::deduct", "ds::reg::capitalize"],
+    treatments: ["Currently deductible", "Capitalize and recover over time"],
+}];
+
+const BAR_SETS: [SetSpec; 1] = [SetSpec {
+    set_id: "bar_segment_reporting",
+    tags: ["ds::bar::reportable", "ds::bar::not_reportable"],
+    treatments: ["Reportable segment", "Not separately reportable"],
+}];
+
+const ISC_SETS: [SetSpec; 1] = [SetSpec {
+    set_id: "isc_control_type",
+    tags: ["ds::isc::preventive", "ds::isc::detective"],
+    treatments: ["Preventive control", "Detective control"],
+}];
+
+const TCP_SETS: [SetSpec; 1] = [SetSpec {
+    set_id: "tcp_cost_recovery",
+    tags: ["ds::tcp::expense", "ds::tcp::capitalize"],
+    treatments: ["Expense currently", "Capitalize and recover"],
+}];
+
+/// The confusion sets defined for a section (empty for an unseeded section).
+fn section_sets(section: &str) -> &'static [SetSpec] {
+    match section {
+        "FAR" => &SETS,
+        "AUD" => &AUD_SETS,
+        "REG" => &REG_SETS,
+        "BAR" => &BAR_SETS,
+        "ISC" => &ISC_SETS,
+        "TCP" => &TCP_SETS,
+        _ => &[],
+    }
+}
+
+/// Resolve a `(section, set_id)` to its `SetSpec`, if defined.
+fn find_set(section: &str, set_id: &str) -> Option<&'static SetSpec> {
+    section_sets(section).iter().find(|s| s.set_id == set_id)
+}
 
 /// A shared cursor for placing seeded revlog rows on specific past days while
 /// keeping every id unique across the whole seed. `seq` is decremented into the
@@ -218,19 +408,29 @@ impl Collection {
         let mut summary = SeedSummary::default();
         let content = seed_content();
 
-        // --- CONFUSABLE map in col config (A3/A6). ---
-        let mut map: ConfusableMap = ConfusableMap::new();
-        for spec in &SETS {
-            map.insert(
-                spec.set_id.to_string(),
-                ConfusionSet {
-                    tags: spec.tags.iter().map(|s| s.to_string()).collect(),
-                    treatments: spec.treatments.iter().map(|s| s.to_string()).collect(),
-                },
-            );
+        // --- CONFUSABLE map in col config, PER SECTION (A3/A6; ADR 0008). ---
+        // FAR keeps its four sets; AUD/REG/BAR/ISC/TCP get their own so
+        // doc-review blanks reuse them and Performance attributes per section.
+        let mut total_sets = 0usize;
+        for sec in super::SECTIONS {
+            let specs = section_sets(sec);
+            if specs.is_empty() {
+                continue;
+            }
+            let mut map: ConfusableMap = ConfusableMap::new();
+            for spec in specs {
+                map.insert(
+                    spec.set_id.to_string(),
+                    ConfusionSet {
+                        tags: spec.tags.iter().map(|s| s.to_string()).collect(),
+                        treatments: spec.treatments.iter().map(|s| s.to_string()).collect(),
+                    },
+                );
+            }
+            total_sets += map.len();
+            self.set_config(config::confusable_key(sec).as_str(), &map)?;
         }
-        self.set_config(config::confusable_key(section).as_str(), &map)?;
-        summary.confusion_sets = map.len();
+        summary.confusion_sets = total_sets;
 
         let sealed_deck_base = format!("Ankountant::Sealed::{section}");
         let study_nt = self.ankountant_study_notetype()?;
@@ -409,18 +609,60 @@ impl Collection {
             summary.sealed_tbs_note_ids.push(note.id);
         }
 
-        // --- 4) Stored-only shapes (A9 AC3): one research + one doc_review. ---
-        let misc_deck =
-            self.ankountant_get_or_create_deck_inner(&format!("{sealed_deck_base}::misc"))?;
-        for shape in ["research", "doc_review"] {
+        // --- 4) Section-agnostic TBS items (ADR 0008 / D9): real research,
+        //         doc_review, and numeric items across AUD/FAR/REG/BAR/ISC/TCP,
+        //         parsed from typed schemas and VALIDATED before seeding. Each is
+        //         sealed (suspended, in `Ankountant::Sealed::<section>::<set_id>`)
+        //         and carries a `sec::<section>` tag so submit resolves its
+        //         section. Replaces the old stored-only stubs. ---
+        for item in &content.section_items {
+            validate_section_item(item)?;
+            let (deck, schema_tag) = match find_set(&item.section, &item.set_id) {
+                Some(spec) => (
+                    self.ankountant_get_or_create_deck_inner(&format!(
+                        "Ankountant::Sealed::{}::{}",
+                        item.section, spec.set_id
+                    ))?,
+                    spec.tags[0].to_string(),
+                ),
+                None => (
+                    self.ankountant_get_or_create_deck_inner(&format!(
+                        "Ankountant::Sealed::{}::misc",
+                        item.section
+                    ))?,
+                    String::new(),
+                ),
+            };
+            let steps = section_item_steps(item);
             let mut note = tbs_nt.new_note();
-            note.set_field(tbs_fields::TBS_TYPE, shape)?;
-            note.set_field(tbs_fields::PROMPT, format!("Stored-only {shape} task"))?;
-            note.set_field(tbs_fields::EXHIBITS_JSON, "[]")?;
-            note.set_field(tbs_fields::STEPS_JSON, "[]")?;
-            note.set_field(tbs_fields::SCHEMA_TAG, SETS[0].tags[0])?;
-            self.add_note_inner(&mut note, misc_deck)?;
+            note.set_field(tbs_fields::TBS_TYPE, &item.tbs_type)?;
+            note.set_field(tbs_fields::PROMPT, &item.prompt)?;
+            note.set_field(
+                tbs_fields::EXHIBITS_JSON,
+                serde_json::to_string(&item.exhibits)?,
+            )?;
+            note.set_field(tbs_fields::STEPS_JSON, steps.to_string())?;
+            note.set_field(tbs_fields::SCHEMA_TAG, &schema_tag)?;
+            note.set_field(tbs_fields::SOURCE_PASSAGE, &item.source)?;
+            note.set_field(tbs_fields::GEN_METHOD, GEN_METHOD_SEED)?;
+            note.set_field(tbs_fields::CHECKER_STATUS, "pass")?;
+            let mut tags = vec![format!("{}{}", super::SEC_TAG_PREFIX, item.section)];
+            if !schema_tag.is_empty() {
+                tags.push(schema_tag.clone());
+            }
+            note.tags = tags;
+            self.add_note_inner(&mut note, deck)?;
             self.suspend_note_cards(note.id)?;
+            match item.tbs_type.as_str() {
+                "research" => summary.sealed_research_tbs += 1,
+                "doc_review" => summary.sealed_doc_review_tbs += 1,
+                "numeric" => summary.sealed_numeric_tbs += 1,
+                "journal_entry" => summary.sealed_je_tbs += 1,
+                _ => {}
+            }
+            summary.sealed_items += 1;
+            summary.sealed_tbs_note_ids.push(note.id);
+            summary.sections_seeded.insert(item.section.clone());
         }
 
         // --- 5) Demo history (opt-in): a lived-in profile, not a clean slate. ---
@@ -574,9 +816,10 @@ impl Collection {
     /// retrievability charts populate) and spread weeks of review activity for
     /// the heatmap + streak.
     ///
-    /// Confusion-set study cards are reshaped for looks too, but get no activity
-    /// revlog here, so the readiness Memory metric stays exactly what
-    /// `seed_memory_history` produced and the thin 4th set stays insufficient.
+    /// Confusion-set study cards are reshaped for looks too, but get no
+    /// activity revlog here, so the readiness Memory metric stays exactly
+    /// what `seed_memory_history` produced and the thin 4th set stays
+    /// insufficient.
     fn seed_lived_in_card_states(&mut self, section: &str, clock: &mut RevlogClock) -> Result<()> {
         let today = self.timing_today()?.days_elapsed as i32;
         let usn = self.usn()?;
@@ -732,6 +975,7 @@ impl Collection {
                 outcome: Outcome {
                     credit: if correct { 1.0 } else { 0.0 },
                     steps: vec![],
+                    elapsed_ms: None,
                 },
                 section: section.to_string(),
                 sealed: true,
@@ -748,6 +992,7 @@ impl Collection {
                 outcome: Outcome {
                     credit,
                     steps: vec![],
+                    elapsed_ms: None,
                 },
                 section: section.to_string(),
                 sealed: true,
@@ -849,4 +1094,229 @@ fn content_tbs_steps(t: &TbsItem) -> Value {
         })
         .collect();
     Value::Array(steps)
+}
+
+/// Transform a typed [`SectionItem`]'s steps into the grader's stored
+/// `steps_json` array. `answer_key`/`weight`/`tolerance` land where the grader
+/// reads them; the client-only extras (kind, options, accepted, corpus_refs,
+/// confusion_set_id, …) ride along and are ignored by `GradableStep`.
+fn section_item_steps(item: &SectionItem) -> Value {
+    let n = item.steps.len();
+    let default_w = if n > 0 { 1.0 / n as f64 } else { 0.0 };
+    let steps: Vec<Value> = item
+        .steps
+        .iter()
+        .map(|s| match s {
+            SeedStep::Citation {
+                id,
+                label,
+                weight,
+                accepted,
+                corpus_refs,
+                granularity,
+            } => json!({
+                "id": id,
+                "kind": "citation",
+                "answer_key": accepted,
+                "weight": weight.unwrap_or(default_w),
+                "label": label,
+                "corpus_refs": corpus_refs,
+                "granularity": granularity,
+            }),
+            SeedStep::Blank {
+                id,
+                label,
+                weight,
+                answer_key,
+                options,
+                confusion_set_id,
+                original_text,
+                exhibit_refs,
+            } => json!({
+                "id": id,
+                "kind": "blank",
+                "answer_key": answer_key,
+                "weight": weight.unwrap_or(default_w),
+                "label": label,
+                "options": options,
+                "confusion_set_id": confusion_set_id,
+                "original_text": original_text,
+                "exhibit_refs": exhibit_refs,
+            }),
+            SeedStep::Je {
+                id,
+                weight,
+                account,
+                side,
+                amount,
+            } => json!({
+                "id": id,
+                "kind": "je",
+                "answer_key": { "account": account, "side": side, "amount": amount },
+                "weight": weight.unwrap_or(default_w),
+            }),
+            SeedStep::Numeric {
+                id,
+                label,
+                weight,
+                answer_key,
+                tolerance,
+            } => json!({
+                "id": id,
+                "kind": "numeric",
+                "answer_key": answer_key,
+                "weight": weight.unwrap_or(default_w),
+                "label": label,
+                "tolerance": tolerance.unwrap_or(constants::DEFAULT_NUMERIC_TOLERANCE),
+            }),
+        })
+        .collect();
+    Value::Array(steps)
+}
+
+/// Return `Err(InvalidInput)` unless `cond` holds — the seed-time validation
+/// primitive (D9: correctness is validated, not assumed).
+fn check(cond: bool, msg: impl Into<String>) -> Result<()> {
+    cond.then_some(()).or_invalid(msg)
+}
+
+/// D9 — validate one typed section item before it is seeded. Enforces the
+/// section/shape vocabulary, the per-shape step invariants, and that a
+/// doc-review's blanks are each anchored by a marker in its document exhibit.
+fn validate_section_item(item: &SectionItem) -> Result<()> {
+    check(
+        super::SECTIONS.contains(&item.section.as_str()),
+        format!("unknown section {:?}", item.section),
+    )?;
+    check(
+        matches!(
+            item.tbs_type.as_str(),
+            "research" | "doc_review" | "numeric" | "journal_entry"
+        ),
+        format!("unknown tbs_type {:?} ({})", item.tbs_type, item.section),
+    )?;
+    check(
+        !item.set_id.trim().is_empty(),
+        format!("empty set_id ({} {})", item.section, item.tbs_type),
+    )?;
+    check(
+        !item.prompt.trim().is_empty(),
+        format!("empty prompt ({} {})", item.section, item.tbs_type),
+    )?;
+    check(
+        !item.steps.is_empty(),
+        format!("no steps ({} {})", item.section, item.tbs_type),
+    )?;
+    if let Some(v) = item.schema_version {
+        check(v == 1, format!("unsupported schema_version {v}"))?;
+    }
+    for ex in &item.exhibits {
+        check(!ex.title.trim().is_empty(), "exhibit is missing a title")?;
+        if ex.kind == "table" {
+            check(
+                !ex.rows.is_empty(),
+                format!("table exhibit {:?} has no rows", ex.title),
+            )?;
+        }
+    }
+
+    match item.tbs_type.as_str() {
+        "research" => {
+            check(
+                item.steps.len() == 1,
+                "research item must have exactly one citation step",
+            )?;
+            match &item.steps[0] {
+                SeedStep::Citation { id, accepted, .. } => {
+                    check(id == "citation", "research step id must be \"citation\"")?;
+                    check(
+                        !accepted.is_empty(),
+                        "research citation needs >=1 accepted variant",
+                    )?;
+                    for a in accepted {
+                        check(
+                            !logic::citation_normalize(a).is_empty(),
+                            format!("un-normalizable citation {a:?}"),
+                        )?;
+                    }
+                }
+                _ => check(false, "research step must be kind:citation")?,
+            }
+        }
+        "doc_review" => {
+            let doc_body = item
+                .exhibits
+                .iter()
+                .find(|e| e.role.as_deref() == Some("document"))
+                .map(|e| e.body.clone());
+            check(
+                doc_body.is_some(),
+                "doc_review needs an exhibit with role:\"document\"",
+            )?;
+            let doc_body = doc_body.unwrap_or_default();
+            for s in &item.steps {
+                match s {
+                    SeedStep::Blank {
+                        id,
+                        answer_key,
+                        options,
+                        ..
+                    } => {
+                        check(options.len() >= 2, format!("blank {id} needs >=2 options"))?;
+                        check(
+                            options.iter().any(|o| &o.id == answer_key),
+                            format!("blank {id} answer_key {answer_key:?} is not an option id"),
+                        )?;
+                        let mut seen = std::collections::HashSet::new();
+                        for o in options {
+                            check(
+                                seen.insert(o.id.as_str()),
+                                format!("blank {id} has duplicate option id {:?}", o.id),
+                            )?;
+                        }
+                        check(
+                            doc_body.contains(&format!("step=\"{id}\""))
+                                || doc_body.contains(&format!("[[{id}]]")),
+                            format!("blank {id} has no marker in the document exhibit"),
+                        )?;
+                    }
+                    _ => check(false, "doc_review steps must be kind:blank")?,
+                }
+            }
+        }
+        "numeric" => {
+            for s in &item.steps {
+                check(
+                    matches!(s, SeedStep::Numeric { .. }),
+                    "numeric item steps must be kind:numeric",
+                )?;
+            }
+        }
+        "journal_entry" => {
+            for s in &item.steps {
+                match s {
+                    SeedStep::Je { side, .. } => check(
+                        matches!(side.to_lowercase().as_str(), "dr" | "cr"),
+                        format!("je side must be dr/cr, got {side:?}"),
+                    )?,
+                    _ => check(false, "journal_entry steps must be kind:je")?,
+                }
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+/// Parse + validate a `section_items` JSON array. Test hook for the typed
+/// schema (D9): serde structure errors and every validation rule surface here.
+/// (The seed itself validates each item inline via [`validate_section_item`].)
+#[cfg(test)]
+pub(crate) fn validate_section_items_json(json: &str) -> Result<usize> {
+    let items: Vec<SectionItem> =
+        serde_json::from_str(json).or_invalid("invalid section_items json")?;
+    for item in &items {
+        validate_section_item(item)?;
+    }
+    Ok(items.len())
 }

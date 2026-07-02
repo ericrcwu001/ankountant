@@ -16,6 +16,11 @@ ANKOUNTANT_PAGES = (
     "ankountant-dashboard",
     "ankountant-confusion",
     "ankountant-tbs",
+    # Research + doc-review are section-agnostic TBS surfaces (ADR 0008). Like
+    # Stats they live inside the shell webview (tab / open_ankountant(...)) and
+    # in the tiling workspace, so they have routes but no dedicated webview kind.
+    "ankountant-research",
+    "ankountant-doc-review",
     # Stats is a first-class destination too, but it is navigated inside the
     # shell webview (menu/tab -> open_ankountant("stats")) rather than a
     # dedicated dialog, so it has a route but no separate webview kind.
