@@ -18,6 +18,10 @@ dependencies = [
 
 [project.optional-dependencies]
 eval = ["ragas", "datasets"]
+
+# Installed by default by `uv run` (PEP 735 dependency group), so the
+# `just test-cardgen` recipe (`uv run pytest`) works with no extra flags.
+[dependency-groups]
 dev = ["pytest"]
 
 [build-system]

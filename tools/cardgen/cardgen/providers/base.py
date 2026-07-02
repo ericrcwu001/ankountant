@@ -46,7 +46,12 @@ def get_generator(cfg: RunConfig) -> Generator:
         return OfflineGenerator()
     from .openai_generate import OpenAIGenerator
 
-    return OpenAIGenerator(cfg.gen_model, cfg.prompt_version)
+    return OpenAIGenerator(
+        cfg.gen_model,
+        cfg.prompt_version,
+        fallback_model=cfg.gen_fallback_model,
+        reasoning_effort=cfg.gen_reasoning_effort,
+    )
 
 
 def get_judge(cfg: RunConfig) -> Judge:

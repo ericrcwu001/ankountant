@@ -51,7 +51,31 @@ class CursorSubagentJudge:
             p = queue_dir / f"batch_{i // batch:03d}.json"
             write_json(p, {"batch": i // batch, "rubric_ref": "RUBRIC.md", "cards": cards[i : i + batch]})
             paths.append(p)
+        # A wave plan so the operator can fan out N parallel judge subagents at a
+        # time (each subagent grades one batch, writing verdicts/<batch>.json).
+        write_json(queue_dir / "plan.json", self.plan(paths))
         return paths
+
+    def plan(self, batch_paths: list[Path]) -> dict:
+        """Partition batches into waves of ``cfg.judge_parallelism`` for parallel
+        Cursor judge subagents. Each subagent grades exactly one batch file."""
+        names = [p.name for p in batch_paths]
+        n = max(1, int(self.cfg.judge_parallelism or 1))
+        waves = [names[i : i + n] for i in range(0, len(names), n)]
+        return {
+            "parallelism": n,
+            "batch_count": len(names),
+            "card_batch_size": self.cfg.judge_batch or 25,
+            "waves": waves,
+            "instructions": (
+                "For each wave, launch one Cursor judge subagent per listed batch "
+                "file IN PARALLEL. Each subagent: read RUBRIC.md + queue/<batch>.json, "
+                "grade every card into correct_useful|wrong|bad_teaching judging "
+                "FAITHFULNESS against each card's retrieved_passage, and write "
+                "verdicts/<batch>.json as {\"verdicts\":[{item_id,bucket,reason,faithful}]}. "
+                "Run waves sequentially; within a wave, batches are independent."
+            ),
+        }
 
     def read_verdicts(self, verdicts_dir: str | Path) -> list[Verdict]:
         verdicts_dir = Path(verdicts_dir)

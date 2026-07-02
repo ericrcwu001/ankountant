@@ -242,12 +242,14 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-dev = [
-    { name = "pytest" },
-]
 eval = [
     { name = "datasets" },
     { name = "ragas" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
 ]
 
 [package.metadata]
@@ -259,14 +261,16 @@ requires-dist = [
     { name = "openai" },
     { name = "pyarrow" },
     { name = "pymupdf" },
-    { name = "pytest", marker = "extra == 'dev'" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "ragas", marker = "extra == 'eval'" },
     { name = "tenacity" },
     { name = "tiktoken" },
 ]
-provides-extras = ["eval", "dev"]
+provides-extras = ["eval"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest" }]
 
 [[package]]
 name = "certifi"

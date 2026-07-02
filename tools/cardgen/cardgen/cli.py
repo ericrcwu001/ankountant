@@ -36,6 +36,14 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--target", type=int, default=900)
     ap.add_argument("--run-id", default="proof")
     ap.add_argument("--offline", action="store_true")
+    # Optional overrides (env/RunConfig defaults apply when omitted).
+    ap.add_argument("--gen-model", default=None, help="override generator model (default gpt-5-mini)")
+    ap.add_argument("--prompt-version", default=None, choices=["v1", "v2"])
+    ap.add_argument("--no-rerank", action="store_true", help="disable the hybrid-arm reranker")
+    ap.add_argument("--concurrency", type=int, default=None, help="live generation concurrency")
+    ap.add_argument("--batch-api", action="store_true", help="use the OpenAI Batch API for generation")
+    ap.add_argument("--judge-mode", default=None, choices=["full", "audit"])
+    ap.add_argument("--judge-parallelism", type=int, default=None, help="parallel judge subagents/wave")
     args = ap.parse_args(argv)
 
     cfg = RunConfig(
@@ -44,7 +52,25 @@ def main(argv: list[str] | None = None) -> None:
         target_total=args.target,
         offline=args.offline,
     )
-    print(f"[cardgen] run_id={cfg.run_id} sections={cfg.sections} target={cfg.target_total} offline={cfg.offline}")
+    if args.gen_model:
+        cfg.gen_model = args.gen_model
+    if args.prompt_version:
+        cfg.prompt_version = args.prompt_version
+    if args.no_rerank:
+        cfg.rerank = False
+    if args.concurrency is not None:
+        cfg.gen_concurrency = args.concurrency
+    if args.batch_api:
+        cfg.use_batch_api = True
+    if args.judge_mode:
+        cfg.judge_mode = args.judge_mode
+    if args.judge_parallelism is not None:
+        cfg.judge_parallelism = args.judge_parallelism
+    print(
+        f"[cardgen] run_id={cfg.run_id} sections={cfg.sections} target={cfg.target_total} "
+        f"offline={cfg.offline} gen_model={cfg.gen_model} prompt={cfg.prompt_version} "
+        f"rerank={cfg.rerank} judge_mode={cfg.judge_mode}"
+    )
 
     if args.stage == "all":
         for s in PRE:

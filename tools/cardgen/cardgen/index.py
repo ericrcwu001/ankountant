@@ -55,6 +55,26 @@ def _embed_batched(embedder: Any, texts: list[str]) -> list[list[float]]:
     return vectors
 
 
+def _embed_concurrent(cfg: RunConfig, embedder: Any, texts: list[str]) -> list[list[float]]:
+    """Embed batches concurrently (live throughput), reassembled in order.
+
+    Determinism is preserved: results are placed back at their batch index, so
+    the vector list is identical to the sequential path.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    batches = [texts[i : i + _EMBED_BATCH] for i in range(0, len(texts), _EMBED_BATCH)]
+    results: list[list[list[float]]] = [[] for _ in batches]
+    with ThreadPoolExecutor(max_workers=max(1, cfg.embed_concurrency)) as ex:
+        futs = {ex.submit(embedder.embed, b): i for i, b in enumerate(batches)}
+        for fut in as_completed(futs):
+            results[futs[fut]] = fut.result()
+    out: list[list[float]] = []
+    for r in results:
+        out.extend(r)
+    return out
+
+
 def _arrow_table(records: list[dict], dim: int):
     import pyarrow as pa
 
@@ -84,7 +104,10 @@ def run(cfg: RunConfig) -> None:
     embedder = get_embedder(cfg)
     dim = embedder.dim
     texts = [c.get("text", "") for c in chunks]
-    vectors = _embed_batched(embedder, texts)
+    if cfg.offline or cfg.embed_concurrency <= 1:
+        vectors = _embed_batched(embedder, texts)
+    else:
+        vectors = _embed_concurrent(cfg, embedder, texts)
 
     records = [
         {

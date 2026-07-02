@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 from cardgen.config import RunConfig
-from cardgen.generate import generate_one
+from cardgen.generate import finalize_candidate, generate_one
 from cardgen.models import (
     CARD_TYPES,
     MCQ,
@@ -25,7 +25,7 @@ from cardgen.models import (
     Passage,
 )
 from cardgen.providers.offline import OfflineGenerator
-from cardgen.retrieve import rrf_fuse
+from cardgen.retrieve import _build_query, _heuristic_rerank, _rerank, rrf_fuse
 from cardgen.util import is_substring_normalized
 
 PASSAGE_TEXT = (
@@ -95,9 +95,10 @@ def test_generate_one_offline_grounded(card_type: str) -> None:
 
     # gen_method fully populated + records the hybrid retrieval config.
     assert cand.gen_method.get("model")
-    assert cand.gen_method.get("prompt_version") == "v1"
+    assert cand.gen_method.get("prompt_version") == "v2"  # v2 is the default now
     assert cand.gen_method.get("retrieval_config", {}).get("arm") == "hybrid"
     assert cand.gen_method.get("retrieval_config", {}).get("top_k") == _cfg().top_k
+    assert "rerank" in cand.gen_method.get("retrieval_config", {})
     assert cand.gen_method.get("seed") == 7
     assert "index_version" in cand.gen_method
 
@@ -122,6 +123,65 @@ def test_generate_one_recall_is_rote_for_low_skill() -> None:
 
 def test_generate_one_no_passages_returns_none() -> None:
     assert generate_one(_cfg(), _item(RECALL), [], gen=OfflineGenerator()) is None
+
+
+# ---- v2 decline / skip -----------------------------------------------------
+def test_finalize_candidate_honors_skip() -> None:
+    """A v2 {"skip": true} response is dropped (no card), not forced."""
+    raw = '{"skip": true, "reason": "no numbers in passage"}'
+    assert finalize_candidate(_cfg(), _item(TBS_NUMERIC), _passages(), raw) is None
+
+
+def test_generate_one_skips_when_generator_declines() -> None:
+    class Declining:
+        def generate(self, req) -> str:  # type: ignore[no-untyped-def]
+            return '{"skip": true, "reason": "unsupported"}'
+
+    assert generate_one(_cfg(), _item(RECALL), _passages(), gen=Declining()) is None
+
+
+# ---- richer query (confusion treatments) -----------------------------------
+def test_build_query_adds_confusion_treatments_for_mcq() -> None:
+    cfg = _cfg()  # taxonomy_dir points at the real tools/cardgen/taxonomy/
+    item = {
+        "section": "FAR",
+        "area": "Leases",
+        "topic": "Lease classification",
+        "task_id": "FAR.confusion.operating_vs_finance_lease",
+        "card_type": MCQ,
+    }
+    q = _build_query(item, cfg)
+    # The contrasted treatments are pulled in so retrieval can discriminate them.
+    assert "Operating lease" in q and "Finance lease" in q
+
+
+def test_build_query_plain_topic_without_cfg() -> None:
+    q = _build_query({"section": "FAR", "topic": "Revenue Recognition", "area": "Revenue"})
+    assert "Revenue Recognition" in q and "FAR" in q
+
+
+# ---- reranker (hybrid arm) -------------------------------------------------
+def test_heuristic_rerank_orders_by_query_overlap() -> None:
+    query = "goodwill impairment annual test"
+    passages = [
+        Passage(chunk_id="a", text="Office supplies are expensed as incurred.", source_id="s", locator="p1", score=0.9),
+        Passage(chunk_id="b", text="Goodwill impairment is tested annually.", source_id="s", locator="p2", score=0.1),
+    ]
+    ranked = _heuristic_rerank(query, passages)
+    assert ranked[0].chunk_id == "b"  # higher lexical overlap wins despite lower score
+    # Deterministic: same input -> same order.
+    assert [p.chunk_id for p in _heuristic_rerank(query, passages)] == ["b", "a"]
+
+
+def test_rerank_offline_uses_heuristic() -> None:
+    cfg = _cfg()  # offline -> never calls the LLM reranker
+    query = "depreciation straight line method"
+    passages = [
+        Passage(chunk_id="x", text="Unrelated content about revenue.", source_id="s", locator="p1", score=0.8),
+        Passage(chunk_id="y", text="Straight-line depreciation method allocates cost evenly.", source_id="s", locator="p2", score=0.2),
+    ]
+    ranked = _rerank(cfg, query, passages)
+    assert ranked[0].chunk_id == "y"
 
 
 def test_generate_one_repairs_ungrounded_source_passage() -> None:
