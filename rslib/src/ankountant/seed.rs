@@ -574,9 +574,10 @@ impl Collection {
     /// retrievability charts populate) and spread weeks of review activity for
     /// the heatmap + streak.
     ///
-    /// Confusion-set study cards are reshaped for looks too, but get no activity
-    /// revlog here, so the readiness Memory metric stays exactly what
-    /// `seed_memory_history` produced and the thin 4th set stays insufficient.
+    /// Confusion-set study cards are reshaped for looks too, but get no
+    /// activity revlog here, so the readiness Memory metric stays exactly
+    /// what `seed_memory_history` produced and the thin 4th set stays
+    /// insufficient.
     fn seed_lived_in_card_states(&mut self, section: &str, clock: &mut RevlogClock) -> Result<()> {
         let today = self.timing_today()?.days_elapsed as i32;
         let usn = self.usn()?;

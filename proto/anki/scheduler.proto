@@ -88,6 +88,13 @@ service SchedulerService {
   // spec. Appended LAST (tail) so existing method indices stay stable across
   // Rust/Python/TS codegen and the hand-maintained iOS dispatch table.
   rpc LoadFarSeed(LoadFarSeedRequest) returns (LoadFarSeedResponse);
+  // Sync-safe exam-date write/read. The exam date is stored as a per-object
+  // "Ankountant Settings" note (not col config) so it MERGES across devices by
+  // USN, instead of being clobbered by col config's whole-blob last-writer-wins
+  // sync. Appended at the tail to keep method indices stable across the
+  // Rust/Python/TS codegen and the hand-maintained iOS dispatch table.
+  rpc SetExamDate(SetExamDateRequest) returns (generic.Empty);
+  rpc GetExamDate(GetExamDateRequest) returns (GetExamDateResponse);
 }
 
 // Implicitly includes any of the above methods that are not listed in the
@@ -622,4 +629,17 @@ message LoadFarSeedResponse {
   // Note ids of the sealed TBS notes, so the e2e fixture can deep-link the
   // TBS surface (?note=<id>) without a separate query RPC.
   repeated int64 sealed_tbs_note_ids = 7;
+}
+
+message SetExamDateRequest {
+  string section = 1;
+  // ISO-8601 (YYYY-MM-DD). An empty string clears the exam date.
+  string date = 2;
+}
+message GetExamDateRequest {
+  string section = 1;
+}
+message GetExamDateResponse {
+  // ISO-8601 date, or an empty string when unset.
+  string date = 1;
 }

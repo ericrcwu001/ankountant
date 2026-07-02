@@ -205,7 +205,8 @@ fn seed_latency_reps(col: &mut Collection, cid: CardId, latencies: &[u32]) {
     .unwrap();
 }
 
-/// Answer `cid` with `rating`, taking `millis`, reusing the live preview states.
+/// Answer `cid` with `rating`, taking `millis`, reusing the live preview
+/// states.
 fn answer_with(col: &mut Collection, cid: CardId, rating: Rating, millis: u32) {
     let states = col.get_scheduling_states(cid).unwrap();
     let new_state = match rating {
@@ -1262,7 +1263,7 @@ fn f016_lived_in_history_reshapes_cards_and_spreads_activity() {
     // FSRS on (memory states / retrievability are live) + exam date set.
     assert!(col.get_config_bool(BoolKey::Fsrs), "FSRS should be enabled");
     assert!(
-        col.ankountant_exam_date("FAR").is_some(),
+        col.ankountant_exam_date("FAR").unwrap().is_some(),
         "exam date should be seeded for the Home countdown"
     );
 
@@ -1304,7 +1305,7 @@ fn f016_content_only_seed_stays_a_clean_slate() {
     let mut col = Collection::new();
     col.ankountant_load_far_seed(false).unwrap();
 
-    assert!(col.ankountant_exam_date("FAR").is_none());
+    assert!(col.ankountant_exam_date("FAR").unwrap().is_none());
     assert!(!col.get_config_bool(BoolKey::Fsrs));
     let touched = col
         .search_cards("deck:Ankountant::Study::FAR::* -is:new", SortMode::NoOrder)
@@ -1315,6 +1316,39 @@ fn f016_content_only_seed_stays_a_clean_slate() {
         .get_all_revlog_entries(TimestampSecs(0))
         .unwrap();
     assert!(revlog.is_empty(), "content-only seed must add no revlog");
+}
+
+#[test]
+fn exam_date_is_sync_safe_note_backed_newest_wins() {
+    // The exam date must NOT live in col config (which syncs whole-blob,
+    // last-writer-wins, so unrelated activity on another device could clobber
+    // it). It is stored as a per-object Settings note; newest write wins. The
+    // legacy col-config fallback is covered by the seed tests above, which write
+    // the old key and read it back through ankountant_exam_date.
+    let mut col = Collection::new();
+    assert!(col.ankountant_exam_date("FAR").unwrap().is_none());
+
+    col.ankountant_set_exam_date("FAR", "2026-05-01").unwrap();
+    assert_eq!(
+        col.ankountant_exam_date("FAR").unwrap().as_deref(),
+        Some("2026-05-01")
+    );
+
+    // A later set wins (append + read-newest), and nothing lands in col config.
+    col.ankountant_set_exam_date("FAR", "2026-06-15").unwrap();
+    assert_eq!(
+        col.ankountant_exam_date("FAR").unwrap().as_deref(),
+        Some("2026-06-15")
+    );
+    let legacy: Option<String> = col.get_config_optional(config::exam_date_key("FAR").as_str());
+    assert!(
+        legacy.is_none(),
+        "exam date must not be written to col config (clobber-prone)"
+    );
+
+    // An empty date clears it.
+    col.ankountant_set_exam_date("FAR", "").unwrap();
+    assert!(col.ankountant_exam_date("FAR").unwrap().is_none());
 }
 
 #[test]

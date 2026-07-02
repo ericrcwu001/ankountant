@@ -29,7 +29,8 @@
         "qt/installer/*-template",
         "ios/AnkountantApp/Resources/Review/CardWebViewBridge.js",
         "ios/AnkountantApp/Resources/mathjax",
-        ".agentic-loop"
+        ".agentic-loop",
+        ".claude"
     ],
     "plugins": [
         "https://plugins.dprint.dev/typescript-0.91.6.wasm",

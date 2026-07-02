@@ -422,6 +422,22 @@ impl crate::services::SchedulerService for Collection {
     ) -> Result<scheduler::LoadFarSeedResponse> {
         self.ankountant_load_far_seed_response(input.with_history)
     }
+
+    fn set_exam_date(&mut self, input: scheduler::SetExamDateRequest) -> Result<()> {
+        let section = ankountant_section(&input.section);
+        self.ankountant_set_exam_date(&section, &input.date)?;
+        Ok(())
+    }
+
+    fn get_exam_date(
+        &mut self,
+        input: scheduler::GetExamDateRequest,
+    ) -> Result<scheduler::GetExamDateResponse> {
+        let section = ankountant_section(&input.section);
+        Ok(scheduler::GetExamDateResponse {
+            date: self.ankountant_exam_date(&section)?.unwrap_or_default(),
+        })
+    }
 }
 
 /// Default the section to the MVP's FAR when the caller leaves it blank.

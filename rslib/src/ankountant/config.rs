@@ -1,9 +1,15 @@
 // Copyright: Ankitects Pty Ltd and contributors
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
-//! Sync-safe `col` config storage for Ankountant (FR-5): the exam date, the
-//! CONFUSABLE map, and the cached readiness rollup all live under
-//! `ankountant.<section>.*` config JSON keys — no new SQLite tables/columns.
+//! Sync-safe `col` config storage for Ankountant (FR-5): the CONFUSABLE map and
+//! the cached readiness rollup live under `ankountant.<section>.*` config JSON
+//! keys — no new SQLite tables/columns.
+//!
+//! NOTE: the **exam date** used to live here too, but `col` config syncs as one
+//! whole-blob, last-writer-wins snapshot, so an exam date edited on one device
+//! could be silently clobbered by unrelated activity on another. It now lives
+//! in a per-object "Ankountant Settings" note (see `settings.rs`) that merges
+//! by USN; the legacy config key below is only read as a migration fallback.
 
 use std::collections::BTreeMap;
 
@@ -12,11 +18,16 @@ use serde::Serialize;
 
 use crate::prelude::*;
 
-/// `ankountant.<section>.exam.date` — ISO-8601 (YYYY-MM-DD) exam date. Stored
-/// via the standard config-set RPC; there is no dedicated setter (A1 note).
+/// Legacy `ankountant.<section>.exam.date` config key — ISO-8601 (YYYY-MM-DD).
+/// Read-only migration fallback for collections written before the exam date
+/// moved to a sync-safe Settings note; new writes go through the note.
 pub(crate) fn exam_date_key(section: &str) -> String {
     format!("ankountant.{section}.exam.date")
 }
+
+/// The Settings-note key (see `settings.rs`) under which the exam date is
+/// stored per section.
+pub(crate) const EXAM_DATE_SETTING_KEY: &str = "exam.date";
 
 /// `ankountant.confusable.<section>` — the CONFUSABLE map (A3/A6): set_id ->
 /// {tags, treatments}. `set_id` is derived from a note's `ds::` tag via this
@@ -58,8 +69,29 @@ impl Collection {
             .unwrap_or_default()
     }
 
-    pub(crate) fn ankountant_exam_date(&self, section: &str) -> Option<String> {
-        self.get_config_optional(exam_date_key(section).as_str())
+    /// A1 — the section's exam date (ISO-8601), or `None`. Reads the sync-safe
+    /// Settings note (newest wins), falling back to the legacy `col` config key
+    /// for collections written before the note-based store. Takes `&mut self`
+    /// because reading the note requires a search.
+    pub(crate) fn ankountant_exam_date(&mut self, section: &str) -> Result<Option<String>> {
+        if let Some(v) = self.ankountant_get_setting(section, EXAM_DATE_SETTING_KEY)? {
+            let v = v.trim().to_string();
+            return Ok((!v.is_empty()).then_some(v));
+        }
+        // Legacy fallback: pre-migration collections stored it in col config.
+        let legacy: Option<String> = self.get_config_optional(exam_date_key(section).as_str());
+        Ok(legacy.and_then(|v| {
+            let v = v.trim().to_string();
+            (!v.is_empty()).then_some(v)
+        }))
+    }
+
+    /// A1 — persist the section's exam date (ISO-8601; empty clears it) to the
+    /// sync-safe Settings note. A lingering legacy config key, if any, is
+    /// ignored on read once a note exists, so no explicit migration write is
+    /// needed.
+    pub(crate) fn ankountant_set_exam_date(&mut self, section: &str, date: &str) -> Result<()> {
+        self.ankountant_set_setting(section, EXAM_DATE_SETTING_KEY, date.trim())
     }
 
     /// Resolve a `ds::` tag to its confusion set_id, if the map assigns one.

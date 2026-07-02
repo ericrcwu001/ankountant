@@ -5,9 +5,9 @@
 //! scores. Given the same collection, the three scores, the readiness band, the
 //! confusion-queue order and every card's next "Good" interval are identical on
 //! repeated computation. The only randomness in scheduling is the interval
-//! *fuzz*, which in production is seeded from `(card_id + reps)` and in the test
-//! harness is disabled outright (`get_fuzz_seed_for_id_and_reps` -> `None`), so
-//! the recommendation is reproducible either way.
+//! *fuzz*, which in production is seeded from `(card_id + reps)` and in the
+//! test harness is disabled outright (`get_fuzz_seed_for_id_and_reps` ->
+//! `None`), so the recommendation is reproducible either way.
 //!
 //! The `#[ignore]`d `emit_determinism_evidence` recomputes the snapshot and
 //! writes `docs_ankountant/evidence/determinism.{json,html}`; it runs only via
@@ -114,8 +114,8 @@ fn recommendation_snapshot(col: &mut Collection) -> Value {
     })
 }
 
-/// The content-addressed part of a snapshot (drops per-collection card ids so it
-/// can be compared across independently seeded collections).
+/// The content-addressed part of a snapshot (drops per-collection card ids so
+/// it can be compared across independently seeded collections).
 fn content_snapshot(snap: &Value) -> Value {
     let queue_order: Vec<&Value> = snap["confusion_queue"]
         .as_array()

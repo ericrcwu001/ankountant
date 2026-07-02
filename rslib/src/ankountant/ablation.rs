@@ -11,17 +11,18 @@
 //! "Confident" pre-reveal confidence, marking it too-easy lowers desired
 //! retention by `TOO_EASY_RETENTION_REDUCTION` (0.05), floored at
 //! `TOO_EASY_RETENTION_FLOOR` (0.70). That **lengthens the next interval**,
-//! which **reduces the projected review count** over a fixed horizon. Cards that
-//! are not rote / not stable / answered slowly are **unaffected**. The 0.70
-//! floor is a stated safety bound (we never let retention fall arbitrarily); it
-//! is not an empirical retention measurement.
+//! which **reduces the projected review count** over a fixed horizon. Cards
+//! that are not rote / not stable / answered slowly are **unaffected**. The
+//! 0.70 floor is a stated safety bound (we never let retention fall
+//! arbitrarily); it is not an empirical retention measurement.
 //!
 //! **Metric:** across a fixed cohort of eligible rote cards, the mean next
 //! "Good" interval and the implied review count over a 90-day horizon, with the
 //! feature OFF (flag cleared) vs ON (flag set) on the very same cards.
 //!
 //! The `#[ignore]`d `emit_ablation_evidence` writes
-//! `docs_ankountant/evidence/ablation.{json,html}` via `just ankountant-evidence`.
+//! `docs_ankountant/evidence/ablation.{json,html}` via `just
+//! ankountant-evidence`.
 
 use serde_json::json;
 use serde_json::Value;
@@ -77,9 +78,9 @@ fn make_mature(col: &mut Collection, cid: CardId, interval: u32, stability: f32,
 
 /// Add trailing recall reps (Good) with the given latencies (ms) so the A2
 /// latency baseline is established. Ids are spaced one minute apart in the
-/// recent past so they are unambiguously *prior* reps (the upcoming answer stays
-/// newest) and `uniquify: true` guarantees every rep is inserted, not IGNORE-d
-/// on an id collision.
+/// recent past so they are unambiguously *prior* reps (the upcoming answer
+/// stays newest) and `uniquify: true` guarantees every rep is inserted, not
+/// IGNORE-d on an id collision.
 fn seed_latency_reps(col: &mut Collection, cid: CardId, latencies: &[u32]) {
     let now = TimestampMillis::now().0;
     let n = latencies.len() as i64;

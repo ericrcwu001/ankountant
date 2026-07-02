@@ -33,6 +33,16 @@ pub struct HttpSyncClient {
     pub io_timeout: Duration,
 }
 
+/// Ankountant syncs against its own self-hosted server, never AnkiWeb. The URL
+/// is baked at build time via the `ANKOUNTANT_SYNC_URL` env var, falling back
+/// to a local dev server. There is deliberately no user-facing AnkiWeb/endpoint
+/// option, so this default is what ships unless a client explicitly supplies an
+/// endpoint.
+pub fn default_sync_endpoint() -> Url {
+    let raw = option_env!("ANKOUNTANT_SYNC_URL").unwrap_or("http://localhost:8080/");
+    Url::try_from(raw).expect("ANKOUNTANT_SYNC_URL must be a valid absolute URL")
+}
+
 impl HttpSyncClient {
     pub fn new(auth: SyncAuth, client: Client) -> HttpSyncClient {
         let io_timeout = Duration::from_secs(auth.io_timeout_secs.unwrap_or(30) as u64);
@@ -40,9 +50,7 @@ impl HttpSyncClient {
             sync_key: auth.hkey,
             session_key: simple_session_id(),
             client,
-            endpoint: auth
-                .endpoint
-                .unwrap_or_else(|| Url::try_from("https://sync.ankiweb.net/").unwrap()),
+            endpoint: auth.endpoint.unwrap_or_else(default_sync_endpoint),
             io_timeout,
         }
     }

@@ -4,22 +4,28 @@
 > state of `feature_list.json` plus the last evaluator verdict. Small and
 > scannable — this is the file a human skims to see "where is it right now."
 
-**Status:** i4 — All P0 features (F001,F003–F016) implemented, in-idiom, and
-green. This iteration cleared the LAST blocker: `just check` now exits 0
-end-to-end (all 4 objective gates pass). No feature code changed — i3 had left
-everything green except a chain of PRE-EXISTING minilint failures that had been
-masked by the CONTRIBUTORS `exit(1)`. Gates: `just check` PASS,
-`just test-rust` 581/581, `just test-py` (73 aqt + pylib/tools) PASS,
-`just test-ts` 63/63, `just lint` PASS.
-**Current iteration:** i4 (build:generate)
-**Current feature:** all P0 done + all 4 gates green; only F002 (A2,
-parkable/P1, deliberately NOT in contract) remains `todo` by design.
+**Status:** reconcile — ALL 16 features (F001–F016) are implemented, in-idiom,
+and green, **including F002** (A2 latency defunding — the previously-parked P1).
+The Phase-1 FAR MVP is feature-complete: `feature_list.json` has every feature at
+`status: done`, and the work is merged to `main` (clean tree). Gates last seen
+green: `just check` PASS, `just test-rust` 581/581, `just test-py` PASS,
+`just test-ts` 63/63, `just lint` PASS. NOTE: this file was stale at i4 (it left
+F002 `todo`); it is now reconciled against the committed tree.
+**Current iteration:** reconcile (tracker ↔ disk)
+**Current feature:** none — all P0 features plus the P1 F002 are done and merged.
+Everything remaining is out of this feature list's scope (e2e verification + the
+deferred Phase-2 workstreams; see Todo).
 
 ## Done
 
-Phase-A shared core (Rust) — confirmed still-green this iteration:
+Phase-A shared core (Rust) — confirmed on disk, merged to `main`:
 
 - [x] F001 — A1 Deadline-anchored scheduler (ComputeExamSchedule RPC + ramp)
+- [x] F002 — A2 Latency-aware too-easy defunding, rote-only — NOW DONE (was the
+      parked P1). `rslib/src/ankountant/defund.rs`: pre-FSRS desired-retention
+      reduction + `cd.te` flag on stable `cog::rote` cards; `cog::applied` and
+      new/learning untouched; cohort-median cold start. Tests: `a2_ac1/ac2/ac3`
+      (`ankountant/tests.rs`), `too_easy_defund_*` (`logic.rs`), `ablation.rs`.
 - [x] F003 — A3 Confusion-set queue builder (BuildConfusionQueue RPC)
 - [x] F004 — A4 Mastery + gap query (GetReadiness scores)
 - [x] F005 — A5 Abstain rule (Wilson band)
@@ -31,18 +37,26 @@ Phase-A shared core (Rust) — confirmed still-green this iteration:
 - [x] F016 — FAR seed content builder + Playwright e2e fixture loader (via the
       `LoadFarSeed` RPC, method 43, iOS enum resynced)
 
-Phase-B desktop (F011–F015) — confirmed still-green this iteration:
+Phase-B desktop (F011–F015) — confirmed on disk, merged to `main`. NOTE: the
+`ankountant-*` routes now live under the SvelteKit group `ts/routes/(ankountant)/`
+(single-window shell, `+layout.svelte`); URLs unchanged.
 
 - [x] F011 — B1 Attempt-before-reveal + confidence capture
-      (`ts/lib/components/ConfidenceGate.svelte`). e2e: `ts/tests/e2e/confusion.test.ts`.
-- [x] F012 — B2 Which-treatment-applies gate (`ts/routes/ankountant-confusion/`;
+      (`ts/lib/components/ConfidenceGate.svelte`, also wired into the card reviewer).
+      e2e: `ts/tests/e2e/confusion.test.ts`.
+- [x] F012 — B2 Which-treatment-applies gate (`ts/routes/(ankountant)/ankountant-confusion/`;
       no `data-testid="category-label"`; `SubmitPerformanceAttempt(mode=confusion)`).
 - [x] F013 — B3 Confusion-set review mode (A3 interleaved queue + B1 + B2 per item).
-- [x] F014 — B4 TBS review surface JE + numeric (`ts/routes/ankountant-tbs/`;
+- [x] F014 — B4 TBS review surface JE + numeric (`ts/routes/(ankountant)/ankountant-tbs/`;
       NO Again/Hard/Good/Easy; `SubmitPerformanceAttempt(mode=tbs)`). e2e `tbs.test.ts`.
-- [x] F015 — B5 Three-score dashboard (`ts/routes/ankountant-dashboard/`; Memory/
-      Performance/gap + Wilson band + confidence or abstain; `gap-warning` @gap>=0.25).
-      e2e `dashboard.test.ts`.
+- [x] F015 — B5 Three-score dashboard (`ts/routes/(ankountant)/ankountant-dashboard/`;
+      Memory/Performance/gap + Wilson band + confidence or abstain; `gap-warning`
+      @gap>=0.25). e2e `dashboard.test.ts`.
+
+Beyond the feature list (separate workstreams, also on `main`): the Ledger design
+system + single-window shell, a tiling study workspace (`ankountant-workspace/`,
+ADR 0002), `ankountant-home`/`ankountant-stats` routes, the CPA 0-99 readiness
+scale (ADR 0005), and extensive (non-gated) iOS SwiftUI surfaces.
 
 ## In progress
 
@@ -50,18 +64,28 @@ Phase-B desktop (F011–F015) — confirmed still-green this iteration:
 
 ## Todo
 
-- [ ] F002 — A2 Latency-aware too-easy defunding — PARKABLE, P1, NOT in
-      contract (constants/gate-shape stubbed in `constants.rs`; logic deferred).
-      Left todo by design (cut order ②). All P0 features + all 4 gates are green,
-      so a future iteration MAY implement it, but it is not required to ship.
+Nothing remains in `feature_list.json` — F001–F016 are all `done` (F002 included).
+Remaining work is OUT of this tracker's scope (PRD §4 non-goals + companion PRDs):
+
+- [ ] Run the Playwright e2e suite (`just test-e2e`, A41–A57). Specs + FAR-seed
+      fixture exist but are kept out of the gated `testCmd` by design and have not
+      been run in a browser.
+- [ ] iOS demo pass — non-gated checklist (`prd/rubrics-frontend.md`); the SwiftUI
+      surfaces exist but have no XCTest/contract gate.
+- [ ] Phase 2a — AI/RAG content pipeline (no `tools/cardgen/` yet; also populate the
+      stored-but-empty TBS provenance fields). Planned in `docs_ankountant/rag/`.
+- [ ] Phase 2b — self-hosted sync server + Firebase accounts.
+- [ ] Deferred TBS surfaces — research-sim + document-review (`PRD-tbs-shapes-future.md`).
 
 ## Last evaluator verdict
 
-(i3 verdict not re-fetched; i3 self-reported all gated suites green with the
-CONTRIBUTORS minilint as the sole `just check` failure.) i4 root-caused and
-fixed that final blocker and the two additional PRE-EXISTING minilint failures
-it had been masking. All four objective gates now pass with no outstanding
-blockers.
+No new evaluator run this pass — this is a tracker reconcile, not a build
+iteration. i4 was the last loop iteration (all four objective gates green, no
+blockers). Since then F002 (A2) was implemented + tested and the whole Phase-1
+MVP was merged to `main`; `feature_list.json` marks F001–F016 all `done`. The
+contract (A01–A40 gated; A41–A57 desktop-e2e non-gated) is satisfied by the
+green suites; F002 was excluded from the contract by design, so completing it
+adds coverage without changing the contract outcome.
 
 ## Next action
 
@@ -69,8 +93,9 @@ blockers.
    desktop-UI assertions A41–A57 in a browser. It is OUT of the gated testCmd by
    design (slow/flaky); the specs + FAR-seed fixture are in place
    (`ts/tests/e2e/{confusion,tbs,dashboard}.test.ts`, `fixtures.ts`).
-2. **(Optional) F002 / A2** latency defunding — parkable; implement only if a
-   later iteration has spare budget (not contract-gated).
+2. **Pick up a Phase-2 workstream** when ready — 2a (AI/RAG `tools/cardgen/` +
+   provenance population), 2b (sync server + Firebase), or the deferred
+   research-sim / document-review TBS surfaces. All are out of this feature list.
 3. **Environment note (carried):** build with `~/.cargo/bin` first on PATH so
    `cargo` = the pinned 1.92.0 (Homebrew's 1.96 shadows it and its stricter
    clippy fails on PRE-EXISTING files). All `just` gates above were run this way.
@@ -80,6 +105,23 @@ blockers.
 <!-- One short entry per build iteration, most recent first. Append here;
      do not delete prior entries — this section is a running summary, the
      full detail lives in log.md. -->
+
+### reconcile (tracker ↔ disk, 2026-07-02)
+
+Manual reconcile of this tracker against the committed tree (not a loop
+iteration). Found `progress.md` stale from i4: it still listed F002 (A2 latency
+defunding) as the sole `todo`, but `feature_list.json` marks it `done` and the
+implementation is on disk — `rslib/src/ankountant/defund.rs`
+(`ankountant_apply_latency_defund`: pre-FSRS retention reduction + `cd.te` flag,
+rote-only, applied/new/learning untouched, cohort-median cold start), covered by
+`a2_ac1/ac2/ac3` in `ankountant/tests.rs`, `too_easy_defund_*` in `logic.rs`, and
+the `ablation.rs` module. So ALL 16 features (F001–F016) are now done. Also noted
+that the Phase-B `ankountant-*` routes moved under `ts/routes/(ankountant)/` (the
+single-window shell), and that several post-MVP workstreams have since merged to
+`main` (Ledger design system + shell, tiling workspace / ADR 0002, home + stats
+routes, CPA 0-99 readiness scale / ADR 0005, iOS surfaces). Updated Status,
+Done (added F002 + corrected paths), Todo (now only out-of-scope e2e + Phase-2
+items), Last evaluator verdict, and Next action to match. No code changed.
 
 ### i4 (build:generate)
 

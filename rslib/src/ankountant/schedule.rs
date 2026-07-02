@@ -45,7 +45,7 @@ impl Collection {
         exam_date_override: &str,
     ) -> Result<f64> {
         let date = if exam_date_override.trim().is_empty() {
-            self.ankountant_exam_date(section)
+            self.ankountant_exam_date(section)?
         } else {
             Some(exam_date_override.to_string())
         };

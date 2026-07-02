@@ -16,6 +16,19 @@ use crate::prelude::*;
 pub(crate) const ATTEMPT_LOG_NOTETYPE: &str = "Ankountant Attempt Log";
 pub(crate) const TBS_NOTETYPE: &str = "Ankountant TBS";
 pub(crate) const STUDY_NOTETYPE: &str = "Ankountant Study";
+pub(crate) const SETTINGS_NOTETYPE: &str = "Ankountant Settings";
+
+/// Field order for the Settings note type: a sync-safe per-(section, key) value
+/// store (see `settings.rs`). Kept as notes (not `col` config) so each setting
+/// merges per-object across devices instead of being clobbered by col config's
+/// whole-blob last-writer-wins sync.
+pub(crate) mod settings_fields {
+    pub(crate) const SECTION: usize = 0;
+    pub(crate) const KEY: usize = 1;
+    pub(crate) const VALUE: usize = 2;
+    pub(crate) const UPDATED_AT: usize = 3;
+    pub(crate) const NAMES: &[&str] = &["section", "key", "value", "updated_at"];
+}
 
 /// Field order for the Attempt Log note type (A8). Indices are referenced by
 /// `attempt_log.rs`, so keep them in sync.
@@ -109,6 +122,12 @@ impl Collection {
     /// Unlike the others, its cards ARE queued for normal FSRS study.
     pub(crate) fn ankountant_study_notetype(&mut self) -> Result<Arc<Notetype>> {
         self.get_or_create_hidden_notetype(STUDY_NOTETYPE, &["Front", "Back"])
+    }
+
+    /// Fetch (creating on first use) the Settings note type (sync-safe per-key
+    /// settings store; see `settings.rs`).
+    pub(crate) fn ankountant_settings_notetype(&mut self) -> Result<Arc<Notetype>> {
+        self.get_or_create_hidden_notetype(SETTINGS_NOTETYPE, settings_fields::NAMES)
     }
 
     fn get_or_create_hidden_notetype(

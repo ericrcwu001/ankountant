@@ -30,6 +30,21 @@ the `.dmg` for your Mac:
    **Applications** folder.
 2. Eject the mounted disk and delete the `.dmg` if you like.
 
+On macOS 15 Sequoia / macOS 26 and later the `.dmg` itself may be blocked before
+it even mounts, with _"Apple could not verify 'ankountant-…-mac-apple.dmg' is
+free of malware that may harm your Mac…"_ offering only **Move to Trash** /
+**Done**. Don't trash it — this is Gatekeeper, the same check covered in step 3.
+Click **Done**, then either approve it under **System Settings → Privacy &
+Security → Open Anyway**, or strip the download flag in Terminal and reopen the
+`.dmg`:
+
+```bash
+xattr -dr com.apple.quarantine ~/Downloads/ankountant-*-mac-*.dmg
+```
+
+Removing the flag from the `.dmg` before mounting also de-quarantines the app you
+copy out of it, so it launches without another prompt in step 3.
+
 ### 3. First launch on macOS — getting past Gatekeeper
 
 These builds are **not signed or notarized by Apple** (that requires a paid

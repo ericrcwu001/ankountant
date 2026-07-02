@@ -26,6 +26,7 @@ pub(crate) mod readiness;
 pub(crate) mod schedule;
 pub(crate) mod seed;
 pub(crate) mod service;
+pub(crate) mod settings;
 #[cfg(test)]
 mod tests;
 
