@@ -22,6 +22,7 @@ tiktoken is imported lazily (and cached) so importing this module stays cheap.
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -40,6 +41,65 @@ MIN_TOKENS = 400
 MAX_TOKENS = 800
 TARGET_TOKENS = 700
 OVERLAP_TOKENS = 80
+
+# ---- chunk quality filter --------------------------------------------------
+# A chunk must hold enough *answer-bearing prose* to ground a card. We drop
+# fragments that are too short, mostly a heading / table-of-contents, a numeric
+# table with little prose, or a bare exam question-stem + answer choices (which
+# also carries a leakage risk). Thresholds are deliberately lenient so real
+# textbook/standard prose (400–800 tokens) is always kept.
+MIN_PROSE_TOKENS = 50
+_MIN_ALPHA_RATIO = 0.45
+_WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]+")
+_SENTENCE_END = re.compile(r"[.!?][\"')\]]?\s*$")
+_DOTTED_LEADER = re.compile(r"\.{5,}|\u2026\s*\d+\s*$")
+_CHOICE_MARKER = re.compile(r"(?m)^\s*(?:[A-Da-d]|[1-5]|[ivx]+)[\.\)]\s+\S")
+
+
+def _alpha_ratio(text: str) -> float:
+    nonspace = sum(1 for c in text if not c.isspace())
+    if not nonspace:
+        return 0.0
+    return sum(1 for c in text if c.isalpha()) / nonspace
+
+
+def _is_low_value(text: str) -> tuple[bool, str]:
+    """Return ``(drop, reason)`` for a candidate chunk.
+
+    Pure + deterministic (unit-tested) so re-runs are reproducible.
+    """
+    t = (text or "").strip()
+    if not t:
+        return True, "empty"
+
+    # 1) Too little text to teach a concept (heading / stub / fragment).
+    if count_tokens(t) < MIN_PROSE_TOKENS:
+        return True, "too_short"
+
+    # 2) Mostly numbers/symbols (a table, a figure caption dump, an index).
+    if _alpha_ratio(t) < _MIN_ALPHA_RATIO:
+        return True, "low_prose_ratio"
+
+    lines = [ln.strip() for ln in t.splitlines() if ln.strip()]
+
+    # 3) Table-of-contents / index: many lines with dotted page leaders.
+    if len(lines) >= 4:
+        leadered = sum(1 for ln in lines if _DOTTED_LEADER.search(ln))
+        if leadered >= max(3, len(lines) // 2):
+            return True, "toc_or_index"
+
+    # 4) Mostly-heading list: many short lines, few of which end a sentence.
+    if len(lines) >= 5:
+        sentence_lines = sum(1 for ln in lines if _SENTENCE_END.search(ln))
+        avg_words = sum(len(_WORD_RE.findall(ln)) for ln in lines) / len(lines)
+        if sentence_lines / len(lines) < 0.15 and avg_words < 6:
+            return True, "mostly_headings"
+
+    # 5) Bare exam item: a stem plus stacked answer choices (A. B. C. D.).
+    if len(_CHOICE_MARKER.findall(t)) >= 4:
+        return True, "question_stem"
+
+    return False, ""
 
 _ENC: Any = None
 
@@ -94,6 +154,8 @@ def run(cfg: RunConfig) -> None:
     manifest = _section_map(cfg)
     ingest_dir = cfg.stage_dir(INGEST_STAGE)
     by_section: dict[str, list[Chunk]] = defaultdict(list)
+    dropped = 0
+    drop_reasons: dict[str, int] = defaultdict(int)
 
     for jsonl in sorted(ingest_dir.glob("*.jsonl")):
         for row in read_jsonl(jsonl):
@@ -105,6 +167,11 @@ def run(cfg: RunConfig) -> None:
             heading_path = row.get("heading_path", "")
 
             for idx, piece in enumerate(split_text(row.get("text", ""))):
+                low, reason = _is_low_value(piece)
+                if low:
+                    dropped += 1
+                    drop_reasons[reason] += 1
+                    continue
                 by_section[section].append(
                     Chunk(
                         chunk_id=content_hash(source_id, locator, idx),
@@ -123,4 +190,6 @@ def run(cfg: RunConfig) -> None:
         write_jsonl(out_dir / f"{section}.jsonl", chunks)
         total += len(chunks)
         print(f"[cardgen] chunk: {section} -> {len(chunks)} chunk(s)")
+    if dropped:
+        print(f"[cardgen] chunk: dropped {dropped} low-value chunk(s) {dict(drop_reasons)}")
     print(f"[cardgen] chunk: {total} chunk(s) across {len(by_section)} section(s)")
