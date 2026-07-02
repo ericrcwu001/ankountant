@@ -211,6 +211,10 @@ impl Collection {
 
     fn load_far_seed_inner(&mut self, with_history: bool) -> Result<SeedSummary> {
         let section = super::DEFAULT_SECTION;
+        // Idempotency: wipe any prior FAR seed first, so re-running "Load FAR
+        // demo content" REPLACES the demo profile instead of stacking a second
+        // copy of every deck/card on top of the old one.
+        self.wipe_prior_far_seed()?;
         let mut summary = SeedSummary::default();
         let content = seed_content();
 
@@ -468,6 +472,45 @@ impl Collection {
         }
 
         Ok(summary)
+    }
+
+    /// Idempotency helper: remove everything a previous FAR seed created so a
+    /// re-seed is a clean REPLACE, not an append. Two passes, both inside the
+    /// seed transaction:
+    ///
+    /// 1. All notes of the seed's hidden notetypes (Study / TBS / Attempt Log),
+    ///    which also drops their cards + revlog — clearing the study pile, the
+    ///    sealed MCQ/TBS bank, and the attempt history wherever they live.
+    /// 2. The now-empty `Ankountant::` deck tree (parent + all descendants), so
+    ///    a stale/renamed topic subdeck from an earlier seed cannot linger.
+    ///
+    /// User-authored decks and notes of other notetypes are untouched; the
+    /// CONFUSABLE map, exam date, and FSRS flag are overwritten by the seed
+    /// itself, so they need no explicit reset here.
+    fn wipe_prior_far_seed(&mut self) -> Result<()> {
+        let usn = self.usn()?;
+        for nt_name in [
+            super::notetypes::STUDY_NOTETYPE,
+            super::notetypes::TBS_NOTETYPE,
+            super::notetypes::ATTEMPT_LOG_NOTETYPE,
+        ] {
+            if let Some(nt) = self.get_notetype_by_name(nt_name)? {
+                let nids = self.search_notes_unordered(nt.id)?;
+                if !nids.is_empty() {
+                    self.remove_notes_inner(&nids, usn)?;
+                }
+            }
+        }
+        if let Some(did) = self.get_deck_id("Ankountant")? {
+            if let Some(deck) = self.storage.get_deck(did)? {
+                let children = self.storage.child_decks(&deck)?;
+                self.remove_single_deck(&deck, usn)?;
+                for child in children {
+                    self.remove_single_deck(&child, usn)?;
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Inject `total` recall revlog rows across `cids` (`correct` of them a

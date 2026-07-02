@@ -190,7 +190,7 @@ def _init_message_box(
     global _mbox
 
     _mbox = QMessageBox(parent=parent)
-    _mbox.setWindowTitle("Anki")
+    _mbox.setWindowTitle("Ankountant")
     _mbox.setText(user_text)
     _mbox.setIcon(QMessageBox.Icon.Warning)
     _mbox.setTextFormat(text_format)

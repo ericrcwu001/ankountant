@@ -1,72 +1,72 @@
 {
-  "cohort_size": 8,
-  "control": {
-    "card": "cog::applied (same fast+Good+Confident treatment)",
-    "expected": false,
-    "feature_fired": false
-  },
-  "feature": "A2 latency-aware too-easy defunding",
-  "generated_at": 1782961182,
-  "horizon_days": 90.0,
-  "hypothesis": "On a stable (>=21d) cog::rote card answered fast (<0.5x baseline), correct, and Confident, defunding lowers desired retention by 0.05 (floored 0.70), lengthening the next interval and reducing projected reviews. Non-rote/unstable/slow cards are unaffected.",
-  "per_card": [
-    {
-      "card": "rote #1",
-      "delta_days": 23,
-      "interval_off_days": 25,
-      "interval_on_days": 48
+    "cohort_size": 8,
+    "control": {
+        "card": "cog::applied (same fast+Good+Confident treatment)",
+        "expected": false,
+        "feature_fired": false
     },
-    {
-      "card": "rote #2",
-      "delta_days": 31,
-      "interval_off_days": 34,
-      "interval_on_days": 65
+    "feature": "A2 latency-aware too-easy defunding",
+    "generated_at": 1782961182,
+    "horizon_days": 90.0,
+    "hypothesis": "On a stable (>=21d) cog::rote card answered fast (<0.5x baseline), correct, and Confident, defunding lowers desired retention by 0.05 (floored 0.70), lengthening the next interval and reducing projected reviews. Non-rote/unstable/slow cards are unaffected.",
+    "per_card": [
+        {
+            "card": "rote #1",
+            "delta_days": 23,
+            "interval_off_days": 25,
+            "interval_on_days": 48
+        },
+        {
+            "card": "rote #2",
+            "delta_days": 31,
+            "interval_off_days": 34,
+            "interval_on_days": 65
+        },
+        {
+            "card": "rote #3",
+            "delta_days": 39,
+            "interval_off_days": 43,
+            "interval_on_days": 82
+        },
+        {
+            "card": "rote #4",
+            "delta_days": 47,
+            "interval_off_days": 52,
+            "interval_on_days": 99
+        },
+        {
+            "card": "rote #5",
+            "delta_days": 55,
+            "interval_off_days": 61,
+            "interval_on_days": 116
+        },
+        {
+            "card": "rote #6",
+            "delta_days": 63,
+            "interval_off_days": 70,
+            "interval_on_days": 133
+        },
+        {
+            "card": "rote #7",
+            "delta_days": 72,
+            "interval_off_days": 79,
+            "interval_on_days": 151
+        },
+        {
+            "card": "rote #8",
+            "delta_days": 80,
+            "interval_off_days": 88,
+            "interval_on_days": 168
+        }
+    ],
+    "reproduce": "just ankountant-evidence",
+    "safety_bound": "Retention is never reduced below TOO_EASY_RETENTION_FLOOR (0.70); this is a design bound, not a measured retention outcome.",
+    "summary": {
+        "mean_interval_off_days": 56.5,
+        "mean_interval_on_days": 107.75,
+        "projected_reviews_off": 14.993943210948842,
+        "projected_reviews_on": 7.850561843385386,
+        "review_reduction_pct": 47.64177953099911
     },
-    {
-      "card": "rote #3",
-      "delta_days": 39,
-      "interval_off_days": 43,
-      "interval_on_days": 82
-    },
-    {
-      "card": "rote #4",
-      "delta_days": 47,
-      "interval_off_days": 52,
-      "interval_on_days": 99
-    },
-    {
-      "card": "rote #5",
-      "delta_days": 55,
-      "interval_off_days": 61,
-      "interval_on_days": 116
-    },
-    {
-      "card": "rote #6",
-      "delta_days": 63,
-      "interval_off_days": 70,
-      "interval_on_days": 133
-    },
-    {
-      "card": "rote #7",
-      "delta_days": 72,
-      "interval_off_days": 79,
-      "interval_on_days": 151
-    },
-    {
-      "card": "rote #8",
-      "delta_days": 80,
-      "interval_off_days": 88,
-      "interval_on_days": 168
-    }
-  ],
-  "reproduce": "just ankountant-evidence",
-  "safety_bound": "Retention is never reduced below TOO_EASY_RETENTION_FLOOR (0.70); this is a design bound, not a measured retention outcome.",
-  "summary": {
-    "mean_interval_off_days": 56.5,
-    "mean_interval_on_days": 107.75,
-    "projected_reviews_off": 14.993943210948842,
-    "projected_reviews_on": 7.850561843385386,
-    "review_reduction_pct": 47.64177953099911
-  },
-  "title": "A2 too-easy defunding — off/on ablation (rubric #5)"
+    "title": "A2 too-easy defunding — off/on ablation (rubric #5)"
 }

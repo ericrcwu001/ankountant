@@ -6,6 +6,7 @@ import AnkiServices
 import AnkiSync
 import Dependencies
 import Foundation
+import Sharing
 
 struct DebugView: View {
     @Dependency(\.ankiBackend) var backend
@@ -17,6 +18,9 @@ struct DebugView: View {
     @State private var showResetConfirm = false
     @State private var exportedFileURL: URL?
     @State private var showShareSheet = false
+
+    // Signals Home (in another tab) to reload after a demo reseed.
+    @Shared(.appStorage(DemoSeed.versionKey)) private var demoSeedVersion = 0
 
     private let section = "FAR"
 
@@ -120,6 +124,9 @@ struct DebugView: View {
                 try schedulerService.loadFarSeed(true)
                 try examConfigClient.saveExamDate(section, Self.iso(daysFromNow: 7))
             }
+            // Tell Home to reload so the new phase (CTA, countdown, readiness)
+            // shows immediately instead of Home's stale one-shot load.
+            $demoSeedVersion.withLock { $0 += 1 }
             statusMessage = "Loaded \(phaseLabel(phase)) phase. Open Home to see the recommended action."
         } catch {
             statusMessage = "Load phase error: \(error)"

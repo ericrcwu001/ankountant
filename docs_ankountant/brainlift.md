@@ -27,18 +27,12 @@ This brainlift grounds product design in cognitive/learning science rather than 
 
 ## DOK 4 - Spiky Points of View (SPOVs)
 
-- ! **SPOV 1:** Anki rewards comfortable, high-frequency review - not effortful retrieval that actually builds durable memory -> Ankountant weights gates every review with answer + confidence before the reveal and uses answer latency to flag easy cards and push their intervals out hard.
-  - **Elaboration:** Anki and FSRS reward streaks and raw review count and target ~90% success, so most reps are easy by design - but effortful retrieval, not comfortable review, is what builds durable memory. Roediger & Karpicke (2006) found repeated testing beat repeated study 61% to 40% on a one-week delayed test (d = 1.26), and the restudy group both forgot far more (52% vs 14%) and grew _more_ confident while doing worse. Kornell & Bjork (2008) showed learners keep preferring the easier (massed) condition even after seeing the harder one work better. So Ankountant should capture an answer and a confidence _before_ the reveal, reward effortful reps over volume, and use answer latency (a signal Anki records but ignores) to detect a too-easy card and either push its interval out hard or swap in a harder transfer probe. Crucially, difficulty is _time-relative_: effortful retrieval is the regime far from the exam, when there is runway to struggle and recover; in the final stretch the scheduler shifts toward consolidation, raising the retention target so material reliably peaks on exam day. The single dial is days-to-exam (see SPOV 3). Boundary: you cannot withhold the answer for material never taught (worked-example effect), so "defund easy" only fires once an item is genuinely stable.
-- ! **SPOV 2:** FSRS has no concept of an exam date - it targets open-ended retention with no finish line -> Ankountant introduces a deadline-anchored scheduler that computes intervals backward from the exam date so recall peaks on the day that counts
-  - **Elaboration:** FSRS was trained to minimize lifelong review cost at a fixed ~90% retention target (Ye et al., 2022, on 220M MaiMemo logs) and has no concept of a deadline - its retention knob is even global, not per-deck. But a CPA section is one four-hour sitting on a candidate-chosen date inside a 30-month window, so the goal is maximum recall _on that day_, not indefinite maintenance. Cepeda et al. (2006) established that the optimal inter-study gap grows with the target retention interval (the spacing advantage was largest at 8-30 days, 62% vs 33%), which means the right gap is a function of days-to-exam - exactly the variable FSRS never sees. And because passing is a threshold (75), not a maximum, there is no payoff for driving a known card from 90% to 95%; those minutes should be reclaimed for weak topics. Ankountant therefore needs a deadline-anchored scheduler: exam date as a first-class object, intervals computed backward from it, desired retention ramping up as the date nears, and recall projected for exam day rather than today. This is the core change to Anki's Rust engine, and it unifies with SPOV 2: effort weighted early, consolidation late, dialed by days-to-exam. Boundary: early Core knowledge resurfaces later (FAR concepts reappear in BAR), so only section-idiosyncratic, low-reuse items should be allowed to decay, and the scheduler falls back to an open-horizon default when no date is set.
-- ! **SPOV 3:** Topic decks hand the candidate the category before they answer - training the surface-feature habit that kills candidates on FAR and BAR (the FAR and BAR are CPA test categories) -> Ankountant replaces the deck with the _confusion set_ as its core primitive and scores discrimination ("which standard applies?") instead of rote recall.
-  - **Elaboration:** A topic-named deck hands the student the category for free - open the "Leases" deck and you already know it is a lease question - which rehearses exactly the wrong habit. Chi, Feltovich & Glaser (1981) found all 8 novices sorted problems by surface features while 6 of 8 experts sorted by the deep principle; a plain flashcard trains the novice move. Rohrer & Taylor (2007) found interleaved practice beat blocked 63% to 20% on a one-week test, and the blockers' errors were choosing the _wrong_ procedure, not mis-executing it - discrimination is trained only when confusable items are mixed (Rohrer et al., 2015 showed it persists at 30 days, 74% vs 42%). This bites hardest where the CPA is hardest: FAR and BAR have the lowest pass rates (~42%) and are precisely the "which standard applies" sections. So Ankountant should make the confusion set its core practice primitive - a curated map of classic CPA traps (capitalize vs expense, operating vs finance lease, the revenue-recognition steps), a label-stripped "which treatment?" gate before any computation, and mastery scored on cross-item discrimination - while topic decks are demoted to a reference glossary. Boundary: rank beginners need a brief blocked introduction first (expertise reversal), and only genuinely confusable categories should be interleaved.
-- ! **SPOV 4:** Scoring readiness on items the student already drilled is just measuring recall again -> Ankountant firewalls a sealed, never-studied item bank per topic and reports Readiness as a calibrated score range that abstains when evidence is too thin to trust.
-  - **Elaboration:** Scoring "performance" on items built from the same source the student studied is just measuring recall again. Gick & Holyoak (1983) showed transfer requires novel surface (spontaneous transfer was only ~30% even when the analog had been seen), and language models regurgitate their training data (Ji et al., 2023), so a generator that wrote the study cards will leak them into supposedly novel tests unless the pipelines are firewalled. Ankountant therefore keeps two pools per topic: study cards revised normally (the Memory pillar - no topic goes unstudied) and a separate _sealed_ bank of same-topic, new-surface items that are never shown for study and exist only to measure. The memory-to-performance gap (recall on the study pile vs accuracy on the sealed pile) is the honest transfer signal; a large gap is the operational form of "feels ready, isn't." Readiness is then a projected score on the real 0-99 scale, expressed as a _range with a confidence level_, computed only on the firewalled items, and it _abstains_ (the give-up rule) when held-out coverage or volume is too thin - a confident number with nothing behind it is not a prediction. Boundary: new-surface-same-method items are still _near_ transfer, a single item is noise (several, difficulty-equated, are needed), and the sealed bank must pass a leakage check against the study cards to stay honest.
-- ! **SPOV 5:** TBSs (non MCQs, multistep quesdtions) are roughly half of every section's score, but the flashcard loop structurally cannot represent them - every incumbent just bolts a TBS bank onto a flashcard app -> Ankountant makes TBS a first-class, step-graded review mode with partial credit per step that feeds one honest Performance score on a separate data path.
-  - **Elaboration:** TBSs are roughly half of every section's score (three of the five testlets; weighted 50/50, or 60/40 MCQ/TBS for ISC) and they are multi-step _application_ tasks, so the flashcard primitive (one recall, one self-graded button) structurally cannot represent them. Ankountant should treat review as three distinct modes, only one of which is a flashcard: recall flashcards (Memory/FSRS) for atomic facts, confusion-set discrimination (the Performance MCQ mode of SPOV 4), and a dedicated TBS task surface. Each TBS type is handled on its own terms: research simulations as a navigation drill against the embedded FASB Codification / IRC / PCAOB literature (find and cite, scored on correctness and time), journal-entry and numeric simulations as procedural tasks graded line-by-line with partial credit, and document-review simulations as a set of "which treatment?" sub-decisions reusing the confusion-set logic. Grading is step-level (method vs slip) rather than one binary lapse - the right fix for Anki's "fail resets the interval" model - and TBS attempts feed Performance and Readiness on a separate data path from flashcard recall, which keeps the sealed-bank firewall clean. This is where differentiation is sharpest: every incumbent and every Anki-based CPA deck bolts a TBS bank onto a flashcard app, whereas making TBS a first-class, step-graded review mode that feeds one honest Performance number is the actual product.
-- ! **SPOV 6:** Becker's (Biggest CPA test prep comp.) dominance is B2B lock-in, not product superiority - attacking that channel head-on is a $10-20M dead end -> Ankountant enters B2C as the honest diagnosis tool for the ~70-80k annual retakers who already failed with an incumbent, then layers a readiness-and-analytics offer onto firms after scale.
-  - **Elaboration:** Becker's dominance is a B2B lock-in, not a product advantage: firms hand each new hire a paid Becker license, so the candidate never makes the purchase decision and only shops for an alternative once they have already failed. Attacking that channel head-on is a capital and time sink (a full institutional competitor is estimated near $10-20M and 3-5 years, sold to risk-averse L&D buyers on multi-year cycles). The accessible opening is B2C, aimed first at the people who choose for themselves: the roughly half of section attempts that fail each year (about 70,000-80,000 failed attempts), where incumbents are structurally _disadvantaged_ because the candidate already used them and still failed; plus the self-funded international and career-changer cohorts outside the employer-sponsorship system. These buyers do not need another full course, they need an honest diagnosis of what to fix, which is exactly what Ankountant's three scores (Memory, Performance, Readiness) deliver. The move to B2B comes _after_ scale, not instead of it: once the product has real outcome and calibration data plus brand trust from B2C users, the defensible enterprise offer is the readiness/analytics layer sold to firms on top of their existing Becker contracts, rather than a rival course fighting for the standard-course slot. (Market-size and market-share figures here are vendor estimates, so treat them as directional, not audited.)
+- ! **SPOV 1:** Anki + FSRS reward comfy, high-volume review (streaks + raw review counts + a ~90% success target), so most reps are easy by design; but effortful retrieval, not comfortable review, is what actually builds durable memory (Roediger & Karpicke: testing beat studying 61% vs 40% at one week, and the studiers forgot more _and_ grew more confident while doing worse; Kornell & Bjork: learners keep preferring the easy option even after seeing the hard one win) --> Ankountant makes you commit an answer + a confidence _before_ the reveal, rewards effortful reps over volume, and uses answer latency (which Anki logs but ignores) to catch too-easy cards and shove their intervals way out or swap in a harder probe; difficulty is time-relative, so the one dial is days-to-exam: effort early, consolidation late.
+- ! **SPOV 2:** FSRS was trained to minimize lifelong review cost at a fixed ~90% retention (Ye et al., 220M MaiMemo logs) and has no finish line (its retention knob is even global, not per-deck); but a CPA section is one 4-hour sitting on a candidate-chosen date, so you want recall to peak _that day_, not forever (Cepeda: the ideal spacing gap grows with how long you need to remember) + passing is a threshold (75), not a max, so grinding a known card from 90% to 95% is wasted effort that should go to weak topics --> Ankountant adds a deadline-anchored scheduler: exam date as a first-class object, intervals computed backward from it, desired retention ramping up as the date nears, and recall projected for exam day rather than today.
+- ! **SPOV 3:** A topic-named deck hands you the category for free (open the "Leases" deck and you already know it's a lease question), drilling exactly the surface-feature habit that sinks candidates: experts sort by deep principle, novices by surface features (Chi 1981), interleaving crushes blocking (Rohrer 63% vs 20%, still 74% vs 42% at 30 days), and blockers' errors are wrong-_method_ picks, not mis-execution; this bites hardest on FAR + BAR (~42% pass, precisely the "which standard applies?" sections) --> Ankountant makes the _confusion set_ the core primitive: a curated map of classic CPA traps (capitalize vs expense, operating vs finance lease, the rev-rec steps), a label-stripped "which treatment?" gate before any math, mastery scored on discrimination, and topic decks demoted to a reference glossary.
+- ! **SPOV 4:** Scoring "readiness" on the same items someone already drilled is just re-measuring recall; real transfer needs a novel surface (Gick & Holyoak: only ~30% spontaneous transfer even after seeing the analog), and since LLMs regurgitate their training data (Ji et al.), a generator that wrote the study cards will leak them into supposedly "new" tests unless the pipelines are firewalled --> Ankountant keeps two pools per topic: normal study cards (the Memory pillar) + a _sealed_, never-studied, same-topic/new-surface bank that exists only to measure; the recall-vs-sealed gap is the honest "feels ready, isn't" signal, and Readiness is a projected 0-99 score _range with a confidence level_ computed only on the firewalled items that _abstains_ when held-out coverage or volume is too thin.
+- ! **SPOV 5:** TBSs are ~half of every section's score (three of five testlets, 50/50, or 60/40 for ISC) and they're multi-step _application_ tasks, so the flashcard primitive (one recall + one self-graded button) structurally can't represent them, yet every incumbent just bolts a TBS bank onto a flashcard app --> Ankountant makes TBS a first-class, step-graded review mode with partial credit per step (research sims = cite-lookup drills against embedded FASB/IRC/PCAOB scored on correctness + time, journal-entry + numeric = line-by-line grading, doc-review = reused "which treatment?" calls), grades method-vs-slip instead of one binary lapse (fixing Anki's "fail resets the interval"), and feeds one honest Performance score on a separate data path that keeps the sealed-bank firewall clean.
+- ! **SPOV 6:** Becker's dominance is B2B lock-in, not a better product: firms hand each new hire a paid license, so the candidate never makes the purchase call and only shops for an alternative _after_ they've already failed, which makes attacking that channel head-on a ~$10-20M, 3-5-year dead end selling to risk-averse L&D buyers --> Ankountant enters B2C first, aimed at the ~70-80k annual failed attempts (retakers + self-funded international + career-changers) who choose for themselves and where incumbents are structurally weak, selling the honest diagnosis its 3 scores deliver (Memory + Performance + Readiness); the B2B readiness/analytics layer comes _after_ scale, layered on top of existing Becker contracts rather than fighting for the course slot. _(Market figures are vendor estimates, directional not audited.)_
 
 ## Experts
 
@@ -107,11 +101,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Cepeda, N. J., Pashler, H., Vul, E., Wixted, J. T., & Rohrer, D. (2006). Distributed practice in verbal recall tasks: A review and quantitative synthesis. _Psychological Bulletin, 132_(3), 354-380.
 
 - **DOK 1 - Facts:**
-  - Meta-analysis identified **839 assessments** of distributed practice drawn from **317 experiments** in **184 articles**; all studies used verbal recall tasks (paired associates, list recall, paragraph recall, etc.) with recall - not recognition - as the performance measure. (Note: Ebbinghaus, 1885/1964, is cited in the introduction as the historical origin of the distributed-practice literature.)
-  - Of **271 massed-vs.-spaced comparisons**, only **12** showed no effect or a negative effect for spacing; **259 comparisons (≈95.6%)** favored spaced over massed presentations.
-  - Across all retention intervals combined, mean final-test accuracy was **47.3% (spaced)** vs. **36.7% (massed)**; _t_(540) = 6.6, _p_ < .001.
-  - For retention intervals of **8-30 days**, the advantage was largest: spaced = **62.2%** vs. massed = **32.8%** correct.
-  - Key joint finding: the interstudy interval (ISI) producing maximal retention **increased as the target retention interval increased** - longer desired retention requires proportionally wider spacing gaps. The optimal ISI is non-linear with respect to the retention goal; no single fixed gap is universally optimal.
+  - Meta-analysis (**839 assessments / 317 experiments**, verbal recall): **259 of 271** massed-vs.-spaced comparisons (~95.6%) favored spacing.
+  - Final-test accuracy **47.3% spaced vs. 36.7% massed** overall, widening to **62.2% vs. 32.8%** at 8-30 day retention; the optimal inter-study gap **grows with the target retention interval** - no single fixed gap is universally optimal.
 - **Link:** https://doi.org/10.1037/0033-2909.132.3.354
 
 - ! **DOK 2 - Summary:** spacing study sessions out beats cramming for durable recall (~47% vs ~37% overall, 62% vs 33% at 8-30 days); the longer you need to retain something, the wider the gaps should be --> no single fixed interval is optimal
@@ -123,11 +114,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Roediger, H. L., III, & Karpicke, J. D. (2006). Test-enhanced learning: Taking memory tests improves long-term retention. _Psychological Science, 17_(3), 249-255.
 
 - **DOK 1 - Facts:**
-  - Two experiments; students studied prose passages and were assigned to one of three conditions: four study periods (SSSS), three study + one test (SSST), or one study + three tests (STTT); final recall tested at 5 min, 2 days, or 1 week.
-  - At the **5-min** final test, repeated study outperformed repeated testing: SSSS = **83%** vs. STTT = **71%** correct - an immediate performance advantage for studying.
-  - At the **1-week** final test, the pattern fully reversed: STTT = **61%** vs. SSSS = **40%** correct - a **21 percentage-point** advantage for the testing condition; Cohen's _d_ = 1.26 for the STTT vs. SSSS comparison.
-  - Proportional forgetting from initial recall to the 1-week final test: SSSS group forgot **52%** of material; STTT group forgot only **14%**.
-  - Despite lower delayed retention, repeated studying **increased students' expressed confidence** in their ability to remember the material - a metacognitive inversion: students predicted the wrong condition would win on the delayed test.
+  - Repeated study (SSSS) vs. repeated testing (STTT) on prose passages: at **5 min** study won (**83% vs. 71%**), but at **1 week** it fully reversed - **STTT 61% vs. SSSS 40%** (Cohen's _d_ = 1.26).
+  - The study group forgot far more (**52% vs. 14%**) yet grew _more_ confident it would remember - a metacognitive inversion.
 - **DOK 2 - Summary:** long-term memory/recall is boosted by more testing blocks compared to study; pure studying creates the dunning-kruger effect --> increased self-perceived confidence
 - **Link:** https://doi.org/10.1111/j.1467-9280.2006.01693.x
 
@@ -138,20 +126,15 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Woźniak, P. A. (1990). _Optimization of learning_ (Master's thesis, University of Technology in Poznan). [SM-2 algorithm; archived at supermemo.guru / supermemo.com]
 
 - **DOK 1 - Facts:**
-  - SM-2 was the **first computer algorithm** for computing optimum review schedules in spaced repetition; first implemented in **SuperMemo 1.0 for DOS on December 13, 1987**. Named "SM-2" after SuperMemo 2.0 (released as freeware in 1991); there was never an "SM-1."
-  - SM-2 assigns each item a per-item **ease factor (E-Factor)** updated via a **0-5 quality-of-response rating** after each review; initial intervals are **1 day** and **6 days**, growing multiplicatively by the E-Factor on each subsequent review.
-  - During Woźniak's first year using SM-2 to learn English vocabulary (1987-1988): **10,255 items memorized** at an average of **41 minutes/day**, achieving overall retention of **89.3%** (92% when excluding items with intervals below 3 weeks).
-  - Anki's scheduling algorithm was based on SM-2 from its inception and remained so until FSRS support was added in Anki 23.10 (2023).
+  - SM-2 was the **first SR scheduling algorithm** (SuperMemo, 1987): a per-item **ease factor** updated by a **0-5** response rating, with initial intervals of **1 and 6 days** growing multiplicatively.
+  - Anki ran on SM-2 from its inception until FSRS support arrived in **Anki 23.10 (2023)**.
 - **Link:** https://www-beta.supermemo.com/archives1990-2015/english/ol/sm2
 
 **Source:** Ye, J., Su, J., & Cao, Y. (2022). A stochastic shortest path algorithm for optimizing spaced repetition scheduling. In _Proceedings of the 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining_ (KDD '22), pp. 4381-4390. ACM. [FSRS foundational paper + Anki 23.10 integration]
 
 - **DOK 1 - Facts:**
-  - Ye et al. trained a Markov-property memory model on **220 million students' memory behavior logs** collected from the MaiMemo language-learning app; the scheduler was designed to minimize total review cost.
-  - The resulting scheduler achieved a **12.6% performance improvement** over state-of-the-art methods in the paper's benchmarks; deployed to production in MaiMemo "to help millions of students."
-  - FSRS (Free Spaced Repetition Scheduler) was **natively integrated into Anki starting with version 23.10**, released **October 31, 2023** (GitHub release tag 23.10); prior to that version, FSRS required a custom-scheduling add-on.
-  - FSRS is an **opt-in alternative** to SM-2 in Anki; per Anki's official manual (as of June 2026): "When you turn on FSRS, some new options become available, and SM-2 specific options, such as Graduating interval, Easy bonus, etc. are hidden. This option is shared by all presets." FSRS can only be enabled globally; it cannot be enabled for individual deck presets.
-  - FSRS's default desired-retention target is **90%**; the manual notes that "above 97% the workload can be overwhelming" and that workload increases non-linearly with retention target above the default.
+  - FSRS trained a memory model on **220M MaiMemo review logs** to minimize total review cost, benchmarking **~12.6% better** than prior methods.
+  - Shipped natively in **Anki 23.10** (Oct 31, 2023) as an **opt-in, global-only** alternative to SM-2; default desired retention is **90%** (the manual warns workload balloons above 97%).
 - **Link:** https://doi.org/10.1145/3534678.3539081 (paper); https://github.com/ankitects/anki/releases/tag/23.10 (Anki 23.10 release notes); https://docs.ankiweb.net/deck-options.html (Anki manual - FSRS section)
 
 - ! **DOK 2 - Summary:** SM-2 (1987) is the original spaced-repetition scheduler anki was built on; FSRS is the modern ML-trained successor (220M review logs, ~12.6% better) anki now ships opt-in at a default 90% target retention --> SR has moved from hand-tuned heuristics to data-trained scheduling
@@ -165,11 +148,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Chi, M. T. H., Feltovich, P. J., & Glaser, R. (1981). Categorization and representation of physics problems by experts and novices. _Cognitive Science_, 5(2), 121-152.
 
 - **DOK 1 - Facts:**
-  - 8 advanced PhD physics students (experts) and 8 undergraduates who had completed an introductory mechanics course (novices) each sorted 24 problems drawn from Halliday and Resnick's introductory mechanics textbook "based on similarities in how they would be solved"; conducted across 4 experiments using sorting tasks and verbal protocols.
-  - All 8 novices grouped surface-feature problems together (e.g., "blocks on incline [inclined plane]," "rotational things [rotation]"); 6 of 8 experts grouped the same problems by underlying physics principle instead.
-  - Expert sorts clustered around deep physics principles: Law of Conservation of Energy, Newton's Second Law (F = MA); novice sorts clustered around literal surface features (inclined plane, spring, rotation, pulley).
-  - Expert verbal protocols immediately named the applicable physics principle and the conditions under which it applies; novice protocols focused on surface objects and keywords, rarely mentioning physics principles-and when mentioned, did not link them to solution procedures.
-  - Direct quote from paper: "If 'deep structure' is defined as the underlying physics law applicable to a problem; then, clearly, this deep structure is the basis by which experts group the problems."
+  - **8 experts** (physics PhDs) and **8 novices** each sorted 24 mechanics problems "by how they would be solved."
+  - **All 8 novices** grouped by **surface features** (inclined plane, pulley, spring); **6 of 8 experts** grouped by **deep principle** (conservation of energy, F = MA) - "this deep structure is the basis by which experts group the problems."
 - **Link:** https://doi.org/10.1207/s15516709cog0502_2
 
 - ! **DOK 2 - Summary:** experts sort problems by deep structure (the underlying principle); novices sort by surface features (the objects in the problem) --> spotting 'which principle applies' is the real skill, not memorizing surface details
@@ -181,11 +161,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Gick, M. L., & Holyoak, K. J. (1983). Schema induction and analogical transfer. _Cognitive Psychology_, 15(1), 1-38.
 
 - **DOK 1 - Facts:**
-  - All experiments used Duncker's (1945) "radiation problem" (convergence solution) as the target transfer task; base rate ≈ 10% (established across multiple control replications with no prior analog).
-  - With one appropriate military story analog, providing an explicit hint to use it yielded ~75% convergence solutions; without any hint (spontaneous transfer only): ~30%-paper states "only a third or less of the subjects who could potentially apply the analogy spontaneously noticed it."
-  - Part I (Experiments 1-3): separate attempts to promote schema abstraction from a single analog using summarization instructions, a verbal statement of the underlying principle, or a diagrammatic representation-"none of these devices achieved a notable degree of success."
-  - Part II experiments: with two prior story analogs whose similarities subjects were asked to describe, spontaneous (no-hint) transfer rose from ~30% to ~45%, and total solution frequency (including hint-prompted) rose from ~75% to ~80%.
-  - Schema quality-rated from subjects' written descriptions of the similarities between the two analogs-was strongly predictive of subsequent transfer performance: G²(4) = 15.8, p < .005.
+  - On Duncker's radiation problem (base rate ~10%): one analog **plus an explicit hint** yielded **~75%** solutions, but **spontaneous** (no-hint) transfer was only **~30%**.
+  - Comparing **two** analogs (describing their similarity) raised spontaneous transfer to **~45%**, and the quality of the abstracted schema strongly predicted transfer - one worked example wasn't enough.
 - **Link:** https://doi.org/10.1016/0010-0285(83)90002-6
 
 - ! **DOK 2 - Summary:** people rarely apply a known method to a new-looking problem on their own (~30% even when they've seen the analog); comparing two examples of the same principle is what builds a transferable schema --> one worked example isn't enough
@@ -197,21 +174,15 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Rohrer, D., & Taylor, K. (2007). The shuffling of mathematics problems improves learning. _Instructional Science_, 35(6), 481-498.
 
 - **DOK 1 - Facts:**
-  - Two experiments with college undergraduates learning novel math procedures (Exp. 1: permutations; Exp. 2: volumes of 4 geometric solids); total number of practice problems held constant across conditions.
-  - Experiment 1 (N = 66; spaced vs. massed practice; 1-week delayed test): spacers 74% (SE = 8%) vs. massers 49% (SE = 10%) and light massers 46% (SE = 7%); F(2, 57) = 3.59, p < .05, ηp² = .11; null effect of overlearning-massers vs. light massers not significantly different (p = .8).
-  - Experiment 2 (N = 18; mixed/interleaved vs. blocked practice; 1-week delayed test): mixers 63% (SE = 12%) vs. blockers 20% (SE = 9%); d = 1.34; paper states "test performance improved 250% when practice problems of different types were mixed together and not blocked by type."
-  - During practice in Experiment 2, the reverse held: blockers (89%, SE = 4%) outscored mixers (60%, SE = 7%), d = 1.06, p < .01; paper labels this a "desirable difficulty"-"learning strategy which provides superior test performance is not necessarily the one that optimizes practice performance."
-  - Post-hoc analysis (Experiment 2): virtually all blocker errors at test involved selecting the wrong formula (not inability to execute after selecting it); paper concludes "students received the necessary discrimination training only when practice problems were mixed by type."
+  - Interleaved/mixed practice beat blocked on a 1-week test - **63% vs. 20%** (d = 1.34) - even though blockers scored higher _during_ practice (89% vs. 60%): a "desirable difficulty."
+  - Nearly all blocker errors were **choosing the wrong formula**, not misexecuting it - discrimination is trained only when problem types are mixed.
 - **Link:** https://doi.org/10.1007/s11251-007-9015-8
 
 **Source:** Rohrer, D., Dedrick, R. F., & Stershic, S. (2015). Interleaved practice improves mathematics learning. _Journal of Educational Psychology_, 107(3), 900-908.
 
 - **DOK 1 - Facts:**
-  - Classroom experiment (N = 126 seventh-grade students; ~3-month study; 10 practice assignments); same graph-equation and slope problems arranged as interleaved or blocked; practice-assignment accuracy approximately equal: blocked 81% vs. interleaved 84% (note: students self-corrected assignments before submission-paper treats these as compliance measures, not learning measures).
-  - 1-day delayed unannounced test: interleaved 80% (SD = 33%) vs. blocked 64% (SD = 42%); t(62) = 2.39, p = .02, d = 0.42, 95% CI [0.07, 0.77].
-  - 30-day delayed unannounced test: interleaved 74% (SD = 39%) vs. blocked 42% (SD = 43%); t(62) = 4.54, p < .001, d = 0.79, 95% CI [0.43, 1.15]; main effect of practice schedule: F(1, 124) = 24.43, p < .001, ηp² = .165.
-  - Direct quote: "interleaved practice provided near immunity against forgetting, as the 30-fold increase in test delay reduced test scores by less than a tenth (from 80% to 74%)."
-  - Laboratory interleaving studies uniformly produced larger effects (d = 1.34, d = 1.21; ηp² = .32) than this classroom study (d = 0.42 and 0.79), consistent with typical lab-to-classroom attenuation; paper notes this is "not a violation" of the expected pattern.
+  - Classroom replication (**N = 126**, 7th grade, ~3 months): interleaved beat blocked **80% vs. 64%** at 1 day and **74% vs. 42%** at 30 days (d = 0.79), despite near-equal practice accuracy.
+  - Interleaving gave "near immunity against forgetting" - a 30× longer delay dropped scores only from 80% to 74%.
 - **Link:** https://doi.org/10.1037/edu0000001
 
 - ! **DOK 2 - Summary:** interleaved practice is far superior is enhancing long-term recall compared to blocking --> only slight percentage drop-off in recall after 30 days
@@ -225,12 +196,9 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Sweller, J., van Merriënboer, J. J. G., & Paas, F. (2019). Cognitive Architecture and Instructional Design: 20 Years Later. _Educational Psychology Review_, 31(2), 261-292.
 
 - **DOK 1 - Facts:**
-  - CLT was first fully described in Sweller (1988), "Cognitive Load During Problem Solving: Effects on Learning," _Cognitive Science_, 12, 275-285; the 1998 update (Sweller et al., _Educational Psychology Review_, 10, 251-296) has over 5,000 Google Scholar citations.
-  - Three categories of cognitive load: **intrinsic** (element interactivity relative to the learner's existing knowledge - can only be changed by changing the material or the learner's expertise), **extraneous** (load imposed by how information is presented - can be reduced by changing instructional procedures), and **germane** (the redistribution of working memory resources away from extraneous activities toward processing intrinsic content; the 2019 paper revises the 1998 definition: germane load redistributes rather than adds to total load).
-  - Working memory is strictly limited in capacity and duration _only for novel information_; once information is stored in long-term memory, these limits effectively disappear.
-  - **Worked example effect**: first reported by Sweller & Cooper (1985) in algebra; studying a fully worked solution facilitates knowledge construction and transfer performance more than solving an equivalent problem, because problem-solving from scratch consumes all working memory and leaves none for schema acquisition.
-  - **Expertise reversal effect**: instructional procedures designed for novices (e.g., worked examples, detailed guidance) first decrease in benefit, then disappear in benefit, and can eventually _reverse_ - harming performance - as learner expertise increases (Kalyuga et al., 2003, cited in paper).
-  - The 1998 article described 7 CLT instructional effects; the 2019 review reports 8 additional effects (for 15 total in Table 1), including the element interactivity, expertise reversal, guidance-fading, and transient information effects.
+  - Three load types: **intrinsic** (element interactivity of the material), **extraneous** (how it's presented), and **germane** (WM devoted to schema-building); working memory is limited **only for novel information** - the limit disappears once it's in long-term memory.
+  - **Worked-example effect**: for novices, studying a fully worked solution beats solving from scratch (which consumes all WM, leaving none for schema acquisition).
+  - **Expertise-reversal effect**: novice-oriented guidance loses value and can eventually _reverse_, harming performance, as expertise grows.
 - **Link:** https://doi.org/10.1007/s10648-019-09465-5
 
 - ! **DOK 2 - Summary:** Worked examples first when learners have little-to-no pre-existing schema to retrieve from; working memory gets bogged down otherwise and cannot properly learn. When the learner can reliably follow and self-explain solutions, drop guidance; self-testing w/o guidance becomes more effective for further learning.
@@ -242,20 +210,15 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Kluger, A. N., & DeNisi, A. (1996). The effects of feedback interventions on performance: A historical review, a meta-analysis, and a preliminary feedback intervention theory. _Psychological Bulletin_, 119(2), 254-284.
 
 - **DOK 1 - Facts:**
-  - Meta-analysis scope: 131 studies, **607 effect sizes**, 23,663 observations.
-  - Feedback interventions (FIs) improved performance on average (d = .41), but **over one-third of FIs decreased performance** (commonly cited as ~38% of effect sizes were negative); this finding cannot be explained by sampling error or feedback sign alone.
-  - The authors proposed Feedback Intervention Theory (FIT): FIs change the locus of attention among three hierarchically organized levels - task learning, task motivation, and meta-tasks (including self-related processes).
-  - FIT central finding: **FI effectiveness decreases as attention moves up the hierarchy closer to the self and away from the task**; feedback aimed at the self (ego/identity) is the most likely to decrease performance.
+  - Meta-analysis (**607 effect sizes**, 131 studies): feedback helped on average (d = .41) but **over a third of interventions made performance _worse_**.
+  - Effectiveness drops as attention shifts up from the task toward the **self** - ego/identity-directed feedback is the most likely to hurt.
 - **Link:** https://doi.org/10.1037/0033-2909.119.2.254
 
 **Source:** Hattie, J., & Timperley, H. (2007). The power of feedback. _Review of Educational Research_, 77(1), 81-112.
 
 - **DOK 1 - Facts:**
-  - Meta-synthesis scope: 12 meta-analyses encompassing 196 studies and 6,972 effect sizes; average effect size for feedback = **0.79** (described as "twice the average effect," placing feedback in the top 5-10 influences on achievement).
-  - Effective feedback answers **three questions**: _Feed Up_ ("Where am I going?" - goals), _Feed Back_ ("How am I going?" - progress relative to goals), _Feed Forward_ ("Where to next?" - next actions to close the gap); the paper states feed-forward "can have some of the most powerful impacts on learning."
-  - Feedback operates at **four levels**: Task (FT - how well the task is performed), Process (FP - strategies used to complete the task), Self-Regulation (FR - self-monitoring and directing of actions), and Self (FS - personal evaluations of the learner as a person).
-  - Feedback at the self level (e.g., praise directed at the person) is typically ineffective and often counterproductive: teacher praise meta-analysis (Wilkinson, 1981; 14 studies) yielded ES = 0.12; self-level feedback "deflects attention from the task" and is "too diluted, too often unrelated to performance."
-  - Feedback at the process and self-regulation levels is more effective than task-level feedback; task-level feedback is most powerful when it corrects faulty interpretations rather than supplies missing information.
+  - Feedback is a top influence on achievement (avg ES **0.79**) and answers three questions - _Feed Up_ / _Feed Back_ / _Feed Forward_ - across four levels: Task, Process, Self-Regulation, Self.
+  - It works best at the **task / process / self-regulation** levels; **self-level** feedback (praise at the person) is weak (ES 0.12) and "deflects attention from the task."
 
 - **Link:** https://doi.org/10.3102/003465430298487
 
@@ -268,10 +231,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Kruger, J., & Dunning, D. (1999). Unskilled and unaware of it: How difficulties in recognizing one's own incompetence lead to inflated self-assessments. _Journal of Personality and Social Psychology_, 77(6), 1121-1134.
 
 - **DOK 1 - Facts:**
-  - Across 4 studies using tests of humor, grammar, and logical reasoning, participants in the bottom quartile scored at the 12th percentile on average but estimated their own ability at the 62nd percentile - an overestimation gap of approximately 50 percentile points.
-  - The authors identify a "dual burden": incompetence not only causes poor performance but simultaneously robs learners of the metacognitive capacity to recognize their own errors (a self-compounding deficit).
-  - Several analyses linked miscalibration specifically to deficits in metacognitive skill - the capacity to distinguish accurate from erroneous responses - rather than to global self-serving bias.
-  - Improving participants' skills via brief training (e.g., in logical reasoning) led to markedly better recognition of the limitations of their prior performance, confirming that metacognitive calibration tracks competence level.
+  - Across 4 studies, the **bottom quartile** scored at the **12th percentile** but rated themselves at the **62nd** - a ~50-point overestimation.
+  - A "dual burden": being unskilled also strips the metacognitive skill needed to notice it; brief training improved self-recognition.
 - **Link:** https://doi.org/10.1037/0022-3514.77.6.1121
 
 - ! **DOK 2 - Summary:** the least skilled overestimate themselves the most (bottom quartile scored at the 12th percentile but felt like the 62nd); being bad at something also strips the ability to notice you're bad --> weak students' self-assessments can't be trusted
@@ -283,22 +244,15 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Koriat, A., & Bjork, R. A. (2005). Illusions of competence in monitoring one's knowledge during study. _Journal of Experimental Psychology: Learning, Memory, and Cognition_, 31(2), 187-194.
 
 - **DOK 1 - Facts:**
-  - JOLs (Judgments of Learning) - predictions of future recall made during study - are systematically inflated because they are formed while the target/answer is visible, a condition absent at test; the authors term this a "foresight bias."
-  - The driving mechanism is the distinction between _a priori_ relatedness (the probability a cue word alone elicits the target, which governs actual recall) and _a posteriori_ relatedness (the perceived association when cue and target appear together, which governs JOLs).
-  - Using backward-associated word pairs (e.g., cue "cheese" → target "cheddar," where the dominant association runs opposite to the study direction): JOLs averaged 75.7% while actual recall was 60.3% - a ~16 percentage-point overestimation; forward-associated control pairs showed near-perfect calibration (JOLs ~78.1%, recall ~78.7%).
-  - Purely a posteriori pairs - word pairs with zero a priori cue-to-target association but high perceived relatedness when seen together - consistently produced marked illusions of competence across experiments.
-  - The illusion reflects a mismatch inherent to standard educational practice: answers are present during study but absent at test, so the learner cannot easily adopt the examinee's perspective when judging their own future recall.
+  - Judgments of learning are systematically inflated because they're made **while the answer is visible** - a condition absent at test - which the authors call a "foresight bias."
+  - On backward-associated pairs, predicted recall averaged **75.7%** but actual recall was **60.3%** (~16-point overestimation).
 - **Link:** https://doi.org/10.1037/0278-7393.31.2.187
 
 **Source:** Kornell, N., & Bjork, R. A. (2008). Learning concepts and categories: Is spacing the "enemy of induction"? _Psychological Science_, 19(6), 585-592.
 
 - **DOK 1 - Facts:**
-  - In 3 experiments where participants (Ns = 120, 72, and 80 UCLA undergraduates) studied paintings by 12 different artists, interleaved/spaced presentation produced significantly better inductive classification on a later test than massed (blocked) presentation - contrary to the researchers' own prior expectation.
-  - On the first (feedback-uncontaminated) test block of Experiment 1a, spaced outperformed massed: 61% vs 35% correct artist attribution, Cohen's d = 0.99.
-  - 78% of participants performed better in the spaced condition, yet 78% judged massing as equally effective or better - a direct inversion of metacognitive judgment relative to actual performance.
-  - Across Experiments 1a and 2 combined, 85% of participants performed at least as well in the spaced condition; 83% nonetheless rated massed as equally or more effective.
-  - The authors attribute the preference for massing to processing fluency: consecutive presentations of the same artist's paintings feel highly fluent, generating a misleading impression of having learned the style.
-  - Participants' post-test metacognitive judgments were based on subjective study-phase experience (fluency) rather than on their own test outcomes - the illusion persisted even after participants had observed their results.
+  - Learning to classify 12 artists' painting styles: **spaced/interleaved beat massed** (61% vs. 35%, d = 0.99).
+  - Yet ~**78-83% rated massing as equal or better** even after seeing their own results - fluency masquerades as learning.
 - **Link:** https://doi.org/10.1111/j.1467-9280.2008.02127.x
 
 - ! **DOK 2 - Summary:** feeling fluent while studying does not equal being able to recall later; learners consistently rate the worse method (massing / seeing the answer) as better, and the illusion holds even after they see their own results --> subjective confidence is a bad readiness signal
@@ -310,11 +264,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Murphy, A. H. (1973). A new vector partition of the probability score. _Journal of Applied Meteorology_, 12(4), 595-600.
 
 - **DOK 1 - Facts:**
-  - Murphy decomposes the Brier (probability) score into three independent terms: (1) **uncertainty** - the inherent variability of event outcomes, equal to the Brier score if one always forecasts the sample base rate (irreducible by the forecaster); (2) **reliability** - how closely the issued forecast probabilities match observed outcome frequencies (the calibration component; lower is better); (3) **resolution** - the forecaster's ability to assign different probabilities on occasions with different actual outcome rates (higher is better).
-  - Reliability and resolution are separable properties: a forecaster can achieve perfect reliability (zero miscalibration) by always issuing the climatological base-rate probability, yet have zero resolution - contributing no discriminative skill beyond knowing the base rate.
-  - The total Brier score (lower = better) decreases by reducing reliability (removing miscalibration) and/or by increasing resolution (better discrimination between easy and hard cases); the uncertainty term is fixed by the event base rate and cannot be improved by the forecaster.
-  - The paper introduces this decomposition as an improvement over Murphy's 1972 partition because reliability and resolution here are not linearly equivalent to their counterparts in the earlier partition, providing cleaner geometric interpretation.
-  - The Brier score itself was defined by Brier (1950) as the mean squared error between forecast probabilities and binary outcomes: BS = (1/N) Σ(fₜ − oₜ)², where 0 = perfect accuracy and 1 = maximally inaccurate for binary events (_Monthly Weather Review_, 78(1), 1-3; doi: 10.1175/1520-0493(1950)078<0001:VOFEIT>2.0.CO;2).
+  - The Brier score (mean squared error of probabilistic forecasts; Brier 1950) decomposes into **reliability** (do forecast probabilities match reality?), **resolution** (can you separate hard from easy cases?), and irreducible **uncertainty**.
+  - Always forecasting the base rate gives **perfect reliability but zero resolution** - so both must be measured, not calibration alone.
 - **Link:** https://journals.ametsoc.org/view/journals/apme/12/4/1520-0450_1973_012_0595_anvpot_2_0_co_2.xml
 
 - ! **DOK 2 - Summary:** you can score how honest a probability is with a brier score, which splits into reliability (do your confidences match reality?) and resolution (can you separate hard from easy?); always forecasting the base rate gives perfect reliability but zero resolution --> measure both, not just calibration
@@ -326,12 +277,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Embretson, S. E., & Reise, S. P. (2000). _Item Response Theory for Psychologists_. Lawrence Erlbaum Associates.
 
 - **DOK 1 - Facts:**
-  - IRT models the probability of a correct response as a logistic function of (1) a continuous latent ability parameter θ (theta) and (2) item-specific parameters; the standard scaling constant 1.7 is used so the logistic curve approximates the normal ogive.
-  - The one-parameter logistic (1PL) / Rasch model estimates only item difficulty (b) per item; all items share a fixed, constant discrimination; under the Rasch model the total raw score is a sufficient statistic for θ.
-  - The two-parameter logistic (2PL) model adds an item discrimination parameter (a), producing item characteristic curves (ICCs) with different slopes; items with higher _a_ values differentiate ability more sharply near their difficulty level b.
-  - The three-parameter logistic (3PL) model adds a lower-asymptote parameter (c), representing the probability of a correct response at very low ability (pseudo-guessing); the three item parameters are difficulty (b), discrimination (a), and guessing (c).
-  - IRT item parameters are theoretically sample-invariant and person ability estimates are item-set-invariant (the local invariance property), a property not shared by classical test theory (CTT) statistics such as item difficulty p-values or point-biserial correlations.
-  - The book covers polytomous IRT models (for rating-scale data) alongside dichotomous models (pass/fail), and includes a chapter on CAT and DIF applications (Chapter 11).
+  - IRT models the probability of a correct answer as a logistic function of a latent ability **θ** plus item parameters: **difficulty (b)** in the 1PL/Rasch, **+ discrimination (a)** in the 2PL, **+ guessing (c)** in the 3PL.
+  - Item parameters and ability estimates are **sample-invariant** (unlike classical test theory), so they sit on a shared scale.
 - **Link:** https://doi.org/10.4324/9781410605269
 
 - ! **DOK 2 - Summary:** IRT predicts the chance of a correct answer from a student's latent ability (theta) plus item params - difficulty, discrimination, guessing - estimated on a shared, sample-invariant scale --> the math for projecting a score from question-by-question performance
@@ -343,11 +290,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** van der Linden, W. J., & Glas, C. A. W. (Eds.). (2010). _Elements of Adaptive Testing_. Springer.
 
 - **DOK 1 - Facts:**
-  - CAT uses pre-estimated IRT item parameters to adapt item selection in real time: after each response the ability estimate θ̂ is updated and the next item is chosen to be maximally informative at the new θ̂.
-  - Maximum Fisher information at the current θ̂ is the predominant item selection criterion in CAT; selecting the item with the highest information function value at θ̂ maximizes the rate at which the standard error of estimation (SEE) decreases.
-  - The book identifies three standard CAT termination criteria: (a) a fixed test length, (b) a target SEE threshold (test stops when SEE falls below a preset value), and (c) adaptive mastery/classification rules that stop once a pass/fail decision can be made with sufficient confidence.
-  - Multistage adaptive testing (MST) is described as a CAT variant in which pre-assembled testlet panels (groups of items) replace individual items; MST allows review of content before delivery and supports pretesting of item sets within live administrations.
-  - Item-pool design is identified as a critical operational concern in CAT programs: pool size, item exposure control, and content balancing must be jointly managed to ensure security and construct coverage.
+  - CAT uses IRT to pick each next item to be **maximally informative** at the current ability estimate (max Fisher information), shrinking the standard error fastest.
+  - It can stop on a **fixed length**, a **precision threshold**, or once a **pass/fail decision** is confident enough - a built-in stop/abstain rule.
 - **Link:** https://link.springer.com/book/10.1007/978-0-387-85461-8
 
 - ! **DOK 2 - Summary:** adaptive testing picks each next item to be most informative at the current ability estimate, reaching a confident estimate in fewer questions; it can stop on a fixed length, a precision target, or once a pass/fail call is confident enough --> efficient ability estimation + a natural stopping/abstain rule
@@ -359,21 +303,15 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** El-Yaniv, R., & Wiener, Y. (2010). On the foundations of noise-free selective classification. _Journal of Machine Learning Research_, 11, 1605-1641.
 
 - **DOK 1 - Facts:**
-  - Selective classification is formally defined as "classification with a reject option": the learner outputs either a class label or abstains (rejects) for any given input.
-  - The core tradeoff is named the risk-coverage (RC) tradeoff: coverage Φ(f,g) = E[g(X)] (fraction of inputs the model accepts); risk R(f,g) = conditional error rate on accepted inputs only.
-  - A selective classifier is a pair (f, g), where f is the base classifier and g: X → {0, 1} is a deterministic selection function; g(x) = 1 means classify, g(x) = 0 means abstain.
-  - The paper traces the reject option to Chow (1957, 1970), who proved that the Bayes-optimal rejection rule is to abstain whenever the maximum a posteriori class probability falls below a threshold, yielding a monotone error-reject tradeoff.
-  - For noise-free (realizable) settings, the paper proves that "perfect learning" - zero risk with non-trivial coverage - is achievable; tight upper and lower bounds on achievable RC tradeoffs are established for general hypothesis classes.
+  - **Selective classification** = "classification with a reject option": the model either predicts or **abstains**, trading **coverage** for lower **risk** on what it does accept.
+  - The Bayes-optimal rule (Chow) is to abstain whenever the top class probability falls below a threshold.
 - **Link:** https://www.jmlr.org/papers/v11/el-yaniv10a.html
 
 **Source:** Gneiting, T., & Raftery, A. E. (2007). Strictly proper scoring rules, prediction, and estimation. _Journal of the American Statistical Association_, 102(477). DOI: 10.1198/016214506000001437.
 
 - **DOK 1 - Facts:**
-  - A scoring rule S is **strictly proper** if S(Q, Q) ≥ S(P, Q) for all P, Q, with equality if and only if P = Q; this property uniquely incentivizes a forecaster to report their true predictive distribution rather than any distorted one.
-  - Strictly proper scoring rules are characterized by strictly convex generalized entropy functions G: a regular scoring rule is (strictly) proper if and only if it corresponds to a (strictly) convex function on the space of predictive distributions.
-  - The Brier score - S(P, x) = Σᵢ(pᵢ − 𝟙{x=i})² - is identified as a strictly proper scoring rule; the paper credits its introduction to Brier (1950), who published it in _Monthly Weather Review_, 78(1), 1-3.
-  - The logarithmic score S(P, x) = log p(x) is also strictly proper; the paper shows that maximum likelihood estimation is a special case of optimum score estimation using the logarithmic rule.
-  - The paper notes that an improper scoring rule can produce perverse incentives (forecaster's expected score is maximized by reporting a distribution other than their true belief), illustrated by a case study on probabilistic weather forecasts.
+  - A **strictly proper** scoring rule uniquely rewards reporting your **true** probabilities (S(Q,Q) ≥ S(P,Q), equality iff P = Q).
+  - The **Brier** and **logarithmic** scores are strictly proper; improper rules create perverse incentives to distort forecasts.
 - **Link:** https://doi.org/10.1198/016214506000001437
 
 - ! **DOK 2 - Summary:** models can be allowed to abstain (a 'reject option') when unsure, trading coverage for accuracy; and strictly-proper scoring rules (brier, log) only reward reporting your true probability --> the formal basis for 'abstain when unsure' and 'don't fake a number'
@@ -385,12 +323,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Haladyna, T. M., Downing, S. M., & Rodriguez, M. C. (2002). A review of multiple-choice item-writing guidelines for classroom assessment. _Applied Measurement in Education_, 15(3), 309-334.
 
 - **DOK 1 - Facts:**
-  - Validated a taxonomy of 31 multiple-choice (MC) item-writing guidelines using two independent evidence sources: (1) consensus from 27 educational testing textbooks, and (2) results of 27 empirical research studies and reviews published since 1990.
-  - Taxonomy is organized into 5 structural categories: Content Concerns (8 guidelines), Formatting Concerns (2), Style Concerns (3), Writing the Stem (4), Writing the Choices (14, of which Guideline 28 has 6 sub-variations dealing with clues to the right answer).
-  - Guideline 15 ("include the central idea in the stem rather than the choices") was cited and endorsed in 100% of the 27 textbooks reviewed - the only guideline achieving unanimous textbook citation.
-  - Guideline 18 states: "Develop as many effective choices as you can, but research suggests three [options] is adequate."
-  - Guideline 17: word the stem positively; avoid negatives such as NOT or EXCEPT; if used, capitalize and boldface the negative word.
-  - Guideline 29: make all distractors plausible; Guideline 30: use typical student errors to write distractors.
+  - A validated taxonomy of **31 MC item-writing guidelines** (drawn from 27 textbooks + 27 empirical studies).
+  - Key rules: put the **central idea in the stem** (the only unanimously endorsed guideline), **~3 good options** is enough, and build **plausible distractors from typical student errors**.
 - **Link:** https://doi.org/10.1207/s15324818ame1503_5
 
 - ! **DOK 2 - Summary:** there's a validated set of 31 rules for writing sound multiple-choice items (central idea in the stem, plausible distractors built from real student errors, ~3 good options is enough) --> the quality bar any AI-generated card has to clear
@@ -402,12 +336,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Gierl, M. J., Lai, H., & Turner, S. R. (2012). Using automatic item generation to create multiple-choice test items. _Medical Education_, 46(8), 757-765.
 
 - **DOK 1 - Facts:**
-  - Presents a three-stage AIG methodology: Stage 1 - content specialists build a cognitive model structure (3 hours); Stage 2 - item models are derived from the cognitive model (2 hours); Stage 3 - computer software (IGOR, Item GeneratOR, a Java-based program) combines content elements subject to constraints to generate items (1 hour). Total development time in the illustrative example: 6 hours.
-  - Using this methodology on one surgery medical licensure item model, the method generated 1,248 unique multiple-choice items.
-  - An "item model" is defined as a prototypical representation of a test item in which content elements are systematically varied by computer to produce unique new items; unlike human-authored items, each new item is generated algorithmically from a pre-validated template.
-  - Rudner (cited) estimated the cost of developing a single item for a high-stakes licensure examination at US$1,500 to US$2,000.
-  - Breithaupt et al. (cited) estimated a minimum of 2,000 items needed for a 40-item computerized adaptive test (CAT) with two annual administrations; at Rudner's per-item cost, building that item bank would require US$3,000,000-$4,000,000.
-  - AIG is proposed as a scalable alternative to fully manual item development; however, the paper notes that AIG items must still "adhere to the highest standards of quality through the use of rigorous guidelines and item development practices."
+  - A 3-stage pipeline generated **1,248 unique MC items from one human-built "cognitive model"** - humans own correctness, the machine only varies surface content.
+  - Hand-writing high-stakes items runs **~$1,500-2,000 each** (a 2,000-item bank ≈ $3-4M), so AIG's value is scaling variation, not sourcing truth.
 - **Link:** https://doi.org/10.1111/j.1365-2923.2012.04289.x
 
 - ! **DOK 2 - Summary:** automatic item generation spins many items from one human-built 'cognitive model' (1,248 from a single model); humans own correctness, the machine only varies surface; hand-writing items is expensive (~$1.5-2k each) --> AI's value is scaling variation, not sourcing truth
@@ -419,22 +349,15 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Ji, Z., Lee, N., Frieske, R., Yu, T., Su, D., Xu, Y., Ishii, E., Bang, Y., Chen, D., Chan, H. S., Dai, W., Madotto, A., & Fung, P. (2023). Survey of hallucination in natural language generation. _ACM Computing Surveys_, 55(12), Article 248, 1-38.
 
 - **DOK 1 - Facts:**
-  - Two primary hallucination categories are defined: (1) **Intrinsic hallucination** - generated output contradicts the source content (e.g., stating "the first Ebola vaccine was approved in 2021" when the source says 2019); (2) **Extrinsic hallucination** - generated output can neither be supported nor contradicted by the source content.
-  - Extrinsic hallucination is not always factually wrong (it may draw on correct background knowledge) but is "treated with caution because its unverifiable aspect of the additional information increases the risk from a factual safety perspective."
-  - Three related terms are clarified: _hallucination_ (unfaithful or nonsensical generated text), _faithfulness_ (antonym - staying consistent with the provided source), and _factuality_ (being based on fact, where "fact" may mean source content or world knowledge depending on definition).
-  - In high-stakes domains the survey authors note that "a hallucinatory summary generated from a patient information form could pose a risk to the patient" and that hallucinatory machine-translated medicine instructions "may provoke a life-threatening incident."
-  - Carlini et al. (2020), cited in the survey, demonstrated that language models can be prompted to recover sensitive personal information (e-mail address, phone/fax number, physical address) from the training corpus - a form of hallucination the survey terms _memorization_.
-  - The survey covers six NLG downstream tasks: abstractive summarization, dialogue generation, generative question answering, data-to-text generation, machine translation, and visual-language generation; a section on hallucinations in large language models (LLMs) was added in January 2024.
+  - Two hallucination types: **intrinsic** (output contradicts the source) and **extrinsic** (can't be verified against the source) - both poison in an answer key.
+  - LLMs can also **memorize and regurgitate** training data (Carlini et al.) - a leakage risk.
 - **Link:** https://doi.org/10.1145/3571730
 
 **Source:** OWASP GenAI Security Project. (2025). _OWASP Top 10 for Large Language Model Applications v2025_ - LLM01:2025 Prompt Injection.
 
 - **DOK 1 - Facts:**
-  - Prompt Injection is ranked **LLM01:2025** - the #1 critical vulnerability in the OWASP Top 10 for LLM Applications 2025 list.
-  - Official definition: "A Prompt Injection Vulnerability occurs when user prompts alter the LLM's behavior or output in unintended ways. These inputs can affect the model even if they are imperceptible to humans, therefore prompt injections do not need to be human-visible/readable, as long as the content is parsed by the model."
-  - Two sub-types: (a) **Direct injection** - user input directly and intentionally alters model behavior; (b) **Indirect injection** - hidden instructions embedded in external content (documents, websites, e-mails) that the LLM processes alter its behavior without user awareness.
-  - OWASP states that both Retrieval Augmented Generation (RAG) and fine-tuning "aim to make LLM outputs more relevant and accurate" but "research shows that they do not fully mitigate prompt injection vulnerabilities."
-  - OWASP acknowledges a fundamental limitation: "Given the stochastic nature of generative AI, fool-proof prevention methods remain unclear."
+  - **Prompt injection is the #1 LLM risk** (OWASP LLM01:2025), including **indirect** injection - hidden instructions buried in documents the model reads.
+  - RAG and fine-tuning **do not fully mitigate** it, and "fool-proof prevention methods remain unclear."
 - **Link:** https://genai.owasp.org/llmrisk/llm01-prompt-injection/
 
 - ! **DOK 2 - Summary:** LLMs hallucinate (intrinsic = contradicts the source; extrinsic = unverifiable), which is poison in an answer key; prompt injection - especially indirect, hidden inside documents the model reads - is the #1 LLM risk with no fool-proof fix --> RAG-ing over FASB/IRC text is an attack surface, not a safe input
@@ -448,20 +371,14 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** AICPA (2026). _Uniform CPA Examination Blueprints (effective January 1, 2026)._ Association of International Certified Professional Accountants.
 
 - **DOK 1 - Facts:**
-  - CPA Evolution format (effective January 10, 2024): all candidates must pass 3 Core sections - Auditing and Attestation (AUD), Financial Accounting and Reporting (FAR), and Taxation and Regulation (REG) - plus exactly 1 chosen Discipline section from Business Analysis and Reporting (BAR), Information Systems and Controls (ISC), or Tax Compliance and Planning (TCP). BEC (Business Environment and Concepts) testing officially ended December 2023.
-  - Each of the 6 sections is 4 hours long and divided into exactly 5 testlets: testlets 1-2 contain multiple-choice questions (MCQs); testlets 3-5 contain task-based simulations (TBSs).
-  - Per-section question counts (Blueprint effective January 1, 2026): AUD 78 MCQs / 7 TBSs; FAR 50 / 7; REG 72 / 8; BAR 50 / 7; ISC 82 / 6; TCP 68 / 7.
-  - Score weighting of MCQs vs. TBSs: 50% / 50% for all sections except ISC, which is 60% MCQs / 40% TBSs.
-  - Research TBSs use embedded authoritative literature specific to each section: FAR and BAR → FASB Accounting Standards Codification; REG and TCP → Internal Revenue Code (and Treasury Regulations); AUD → auditing and attestation standards (including PCAOB Auditing Standards and AICPA Auditing Standards).
+  - CPA Evolution (Jan 2024): **3 Core (AUD/FAR/REG) + 1 chosen Discipline (BAR/ISC/TCP)**, each a **4-hour, 5-testlet** exam (testlets 1-2 MCQ, 3-5 TBS); BEC retired Dec 2023.
+  - MCQ/TBS score weight is **50/50** (ISC 60/40); research TBSs use embedded authoritative literature (FASB ASC / IRC / PCAOB & AICPA standards).
 - **Link:** https://www.aicpa-cima.com/resources/article/learn-what-is-tested-on-the-cpa-exam
 
 **Source:** AICPA (2023). _Infrastructure Changes to the CPA Exam in 2024._ Association of International Certified Professional Accountants. (Distributed via state CPA societies.)
 
 - **DOK 1 - Facts:**
-  - Effective January 2024: multistage adaptive testing (MST) was eliminated from MCQ testlets; MCQ testlets now use a **linear (non-adaptive) design**. ⚠ NOTE: multiple review-course guides (written before or without awareness of this change) still describe adaptive MCQ testlets - this is outdated for the current (CPA Evolution) exam.
-  - Prior MCQ design (2004-2023): two-stage adaptive - all candidates received a medium-difficulty testlet 1, then were routed to either a medium-difficulty or a difficult testlet 2 based on testlet 1 performance; harder questions carried more score weight.
-  - BEC's Written Communication Task (essay question) was eliminated effective January 2024; the current CPA Evolution exam has no written essays.
-  - MST was in place from CPA Exam computerization in 2004 through December 2023 (approximately 20 years); removal motivated by reduced MCQ count per form (2 testlets, down from 3 pre-2017), heavier TBS emphasis, and operational efficiency under the new driver software.
+  - As of Jan 2024, MCQ testlets are **linear (non-adaptive)** - the old two-stage adaptive MST (2004-2023) and the written-communication essay were both removed. ⚠ Many review-course guides still wrongly describe adaptive MCQs.
 - **Link:** https://www.ficpa.org/publication/aicpa-announces-2024-infrastructure-changes-cpa-exam
 
 - ! **DOK 2 - Summary:** post-2024 'CPA Evolution' = 3 core sections (AUD/FAR/REG) + 1 chosen discipline (BAR/ISC/TCP), each a 4-hour exam of 5 testlets (2 MCQ then 3 TBS), ~50/50 MCQ/TBS weight (ISC 60/40); MCQs are now LINEAR (adaptive MST killed Jan 2024) and essays are gone --> the format a performance model has to mirror
@@ -473,11 +390,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** AICPA (2026). _Learn more about CPA Exam scoring and pass rates_ (updated April 20, 2026). AICPA & CIMA.
 
 - **DOK 1 - Facts:**
-  - Passing score: 75 on a scale of 0-99; this is a scaled score, not a percent-correct; a score of 75 does not mean 75% of questions were answered correctly. Scores are not curved; no quotas.
-  - Scaled scores are calculated using Item Response Theory (IRT): each question's contribution to the score reflects both correctness and the relative difficulty of that question.
-  - 2025 full-year cumulative pass rates (official AICPA, all 4 quarters): AUD 48.21%; FAR 42.12%; REG 63.12%; BAR 41.94%; ISC 67.79%; TCP 77.65%.
-  - FAR had the lowest cumulative pass rate of all 6 sections in 2025 (42.12%); TCP had the highest (77.65%).
-  - Elijah Watt Sells Award: candidates must achieve a cumulative average above 95.50 across all 4 sections and must have passed all 4 on the first attempt; the AICPA contacts eligible candidates the following spring.
+  - Passing is a **scaled 75 on a 0-99 IRT scale** (not 75% correct) and is not curved.
+  - 2025 pass rates ran from **~42% (FAR and BAR, the hardest)** up to **~78% (TCP, the easiest)** - base rates differ sharply by section.
 - **Link:** https://www.aicpa-cima.com/resources/article/learn-more-about-cpa-exam-scoring-and-pass-rates
 
 - ! **DOK 2 - Summary:** passing is a scaled 75 on a 0-99 scale (NOT 75% correct), computed via IRT and not curved; 2025 section pass rates run from FAR ~42% (hardest) to TCP ~78% (easiest) --> the real scale readiness projects onto, with base rates that differ a lot by section
@@ -489,10 +403,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** NASBA (2023). _NASBA Announces Historic Rule Amendment Following Record Exposure Draft Response_ (April 24, 2023). National Association of State Boards of Accountancy.
 
 - **DOK 1 - Facts:**
-  - NASBA UAA Model Rule 5-7 was amended on April 21, 2023: candidates now have a rolling **30-month** window to pass all 4 required sections, extended from the prior 18-month limit that had been in place since CPA Exam computerization in 2004.
-  - The 30-month rolling period begins on the date the first passing score is released by NASBA (not the exam date); if all 4 sections are not passed within 30 months of that date, credit for any section passed outside the window expires and the section must be retaken.
-  - The NASBA exposure draft initially proposed a 24-month extension; the NASBA Board of Directors elected to approve the longer 30-month period.
-  - ⚠ The UAA Model Rules are recommendations to state boards, not mandatory law; each of the 55 U.S. jurisdictions must independently adopt the amendment. NASBA states: "Current Exam candidates remain under existing rules until, if and when, the board to which they applied makes changes." Verify the rule in your specific jurisdiction.
+  - NASBA extended the credit window to a rolling **30 months** (up from 18) to pass all 4 sections, starting when the **first passing score is released**.
+  - ⚠ It's a **model rule** each of the 55 jurisdictions must adopt on its own - verify locally.
 - **Link:** https://nasba.org/blog/2023/04/24/nasba-announces-historic-exam-rule-amendment/
 
 - ! **DOK 2 - Summary:** candidates now get a rolling 30-month window (up from 18) to pass all 4 sections, starting when the first passing score is released - but it's a NASBA model rule each state adopts on its own --> a real deadline to study toward, but jurisdiction-dependent
@@ -506,18 +418,13 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** NASBA (Nov. 2024; Aug. 2025). "2020-2023 CPA Exam Statistics Now Available" and "2024 NASBA Report Released." NASBA.org press releases; data drawn from _The NASBA Report: Candidate Performance on the Uniform CPA Examination_, 2023 and 2024 Editions.
 
 - **DOK 1 - Facts:**
-  - 84,980 unique candidates sat for the Uniform CPA Examination in 2023; 41,415 were new candidates; 20,036 completed their final section.
-  - 74,165 unique candidates sat in 2024; 27,994 were new candidates; 13,070 completed their final section.
-  - Total candidate volume fell by 10,815 (−12.7%) from 2023 to 2024; new candidates fell by 13,421 (−32.4%); candidates completing their final section fell by 6,966 (−34.8%).
-  - NASBA paused publication of its annual Candidate Performance Book during the CPA Evolution transition; the 2020-2023 editions were released together in November 2024 and the 2024 edition in August 2025.
+  - Unique candidates fell from **84,980 (2023) to 74,165 (2024)** - down **12.7%**, with new candidates down **32.4%** and final-section completers down **34.8%**.
 - **Link:** https://nasba.org/blog/2024/11/27/2020-2023-cpa-exam-statistics-now-available/ ; https://nasba.org/blog/2025/08/18/explore-the-numbers-behind-cpa-exam-success-2024-nasba-report-released/
 
 **Source:** AICPA & CIMA (June 2, 2025). "Accounting Enrollment Increased 12% for Spring Semester." AICPA-CIMA.com; underlying data from the National Student Clearinghouse Research Center.
 
 - **DOK 1 - Facts:**
-  - Total undergraduate accounting enrollment for spring 2025: 266,507 students - an increase of 29,312 students (+12%) vs. spring 2024.
-  - Spring 2025 marked the third consecutive semester of enrollment growth and the second consecutive semester of double-digit percentage increases.
-  - 2-year institution enrollment rose 24% to 77,936 students; 4-year institution enrollment rose 11% to 188,571 students.
+  - But undergrad accounting **enrollment rose +12%** in spring 2025 (to 266,507) - a third straight semester of growth, hinting at a turnaround.
 - **Link:** https://www.aicpa-cima.com/news/article/accounting-enrollment-increased-12-for-spring-semester
 
 - ! **DOK 2 - Summary:** CPA volume is shrinking (~85k candidates in 2023 --> ~74k in 2024, -12.7%, new candidates -32%) but may be turning around (accounting enrollment +12% in spring 2025) --> a contracting-but-maybe-recovering market
@@ -529,10 +436,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Verified Market Reports (2026). "Global CPA Exam Reviews Market Size, Share, Trends & Industry Forecast 2026-2034." VerifiedMarketReports.com.
 
 - **DOK 1 - Facts:**
-  - ⚠ Global CPA Exam Reviews market stated at USD 1.2 billion (2025 base year), projected to reach USD 2.5 billion by 2034 at a CAGR of 9.2% (forecast window 2026-2034). Non-audited commercial projection; methodology not disclosed publicly.
-  - ⚠ The same report page states North America alone at USD 2.5 billion in 2024 - a figure larger than the report's own stated global figure of USD 1.2 billion for 2025, indicating internal inconsistency in the vendor data.
-  - ⚠ Competing vendors give widely divergent 2024 base-year estimates for the same market: Verified Market Research (a different firm, verifiedmarketresearch.com) values it at USD 285 million with CAGR 6.5%; WiseGuy Reports values it at USD 1.95 billion with CAGR 5.4%. The spread across vendors spans nearly 7× from low to high.
-  - No independently audited revenue figure for the CPA exam review sector is publicly available; AICPA does not publish industry revenue data.
+  - ⚠ Vendor market-size estimates diverge nearly **7×** (~$285M to ~$1.95B), and one report even contradicts itself (global $1.2B in 2025 vs. North America alone $2.5B in 2024).
+  - No independently audited revenue figure for CPA review exists publicly.
 - **Link:** https://www.verifiedmarketreports.com/product/cpa-exam-reviews-market/
 
 - ! **DOK 2 - Summary:** the CPA-review market is real but un-auditable: vendor size estimates span ~7x ($285M to $1.95B) and one report even contradicts itself --> treat every market-size figure as a rough guess, not a fact
@@ -544,18 +449,14 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** AICPA Board of Examiners (Apr. 2024 and subsequent quarters). "24Q1 CPA Exam Pass Rates" and later quarterly releases. AICPA-CIMA.com; full-year 2024 figures aggregated from AICPA quarterly releases by UWorld CPA Review (accounting.uworld.com/cpa-review/cpa-exam/pass-rates/).
 
 - **DOK 1 - Facts:**
-  - 2024 full-year cumulative pass rates by section: AUD 45.79%; FAR 39.59%; REG 62.61%; BAR 38.08%; ISC 58.00%; TCP 73.91%.
-  - Derived failure rates (100% − pass rate): FAR ~60.4%; BAR ~61.9%; AUD ~54.2%; REG ~37.4%; ISC ~42.0%; TCP ~26.1%.
-  - BAR (38.08%) had the lowest pass rate of any section in 2024; TCP (73.91%) had the highest.
-  - AICPA's Board of Examiners noted in its 24Q1 announcement that TCP candidates were "generally better prepared to take TCP than the BAR candidates were to take BAR and ISC candidates were to take ISC."
+  - 2024 section pass rates ran from **BAR 38.1% / FAR 39.6%** (lowest) up to **TCP 73.9%** (highest) - roughly **60% fail** BAR and FAR.
 - **Link:** https://www.aicpa-cima.com/certifications/article/24q1-cpa-exam-pass-rates ; https://accounting.uworld.com/cpa-review/cpa-exam/pass-rates/
 
 **Source:** Journal of Accountancy (March 2012). "In memoriam: Newton Becker." JournalOfAccountancy.com.
 
 - **DOK 1 - Facts:**
-  - "It's been estimated that as many as half the CPAs in the United States passed the exam with the help of his [Becker's] course." ⚠ The source of this underlying estimate is unnamed in the obituary; the claim predates 2012 and the 2024 CPA Evolution format change; it cannot be independently verified from primary data.
-  - As of early 2012, more than 400,000 people who completed Becker's course had passed the exam and become licensed CPAs.
-  - ⚠ The claim that Becker + UWorld + NINJA together hold "90%+ of the U.S. market": no primary or independently audited source was found; treat as an unverified industry estimate.
+  - Becker is deeply entrenched - allegedly **~half of US CPAs** used it (400k+ passers by 2012). ⚠ Unverified.
+  - ⚠ Claims that Becker + UWorld + NINJA hold **"90%+ of the U.S. market"** have no audited source.
 - **Link:** https://www.journalofaccountancy.com/issues/2012/mar/becker/
 
 - ! **DOK 2 - Summary:** becker is entrenched (allegedly ~half of US CPAs used it, though unverified) and ~50% of section attempts fail (BAR/FAR worst) --> a big, motivated retaker pool, and incumbent market-share claims you can't take at face value
@@ -567,9 +468,8 @@ This brainlift grounds product design in cognitive/learning science rather than 
 **Source:** Derived from NASBA candidate counts (Subcat 8.1) + the CPA market analysis (internal deep-research synthesis). ⚠ Derived figures and market estimates, not single audited statistics.
 
 - **DOK 1 - Facts:**
-  - ~148,000 total section attempts were taken in 2024 (candidates sit up to 4 sections; retakes are roughly half of all attempts). ⚠ Derived from NASBA candidate counts, not a separately published figure.
-  - With section pass rates averaging ~45-50%, roughly **70,000-80,000 section attempts fail per year** in the U.S. - the addressable retaker pool. ⚠ Derived estimate.
-  - Building a full institutional competitor (all sections, ~~5,000+ items per section, video lectures, TBS tooling, authoritative-literature integration, and a B2B sales motion) is estimated at **~~$10-20M and 3-5 years** to institutional credibility. ⚠ Market-analysis estimate, not audited.
+  - ~**148,000 section attempts** in 2024, of which roughly **70,000-80,000 fail per year** - the addressable retaker pool. ⚠ Derived.
+  - Building a full institutional competitor is estimated at **~$10-20M and 3-5 years**. ⚠ Estimate, not audited.
 - **Link:** https://nasba.org/blog/2025/08/18/explore-the-numbers-behind-cpa-exam-success-2024-nasba-report-released/
 
 - ! **DOK 2 - Summary:** ~70-80k failed section attempts a year --> the retaker pool, and a full head-on competitor to Becker and other B2B companies is ~$10-20M / 3-5yr --> attack retakers, not Becker's B2B channel (grounds SPOV 1)

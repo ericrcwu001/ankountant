@@ -1317,6 +1317,65 @@ fn f016_content_only_seed_stays_a_clean_slate() {
     assert!(revlog.is_empty(), "content-only seed must add no revlog");
 }
 
+#[test]
+fn f016_reseed_replaces_instead_of_stacking() {
+    // The seed is idempotent: pressing "Load FAR demo content" again wipes the
+    // prior FAR seed and rebuilds it, so counts stay put instead of doubling.
+    let count_study = |col: &mut Collection| {
+        col.search_cards("deck:Ankountant::Study::FAR::*", SortMode::NoOrder)
+            .unwrap()
+            .len()
+    };
+    let count_tbs = |col: &mut Collection| {
+        col.search_notes_unordered("note:\"Ankountant TBS\"")
+            .unwrap()
+            .len()
+    };
+    let count_decks = |col: &Collection| {
+        col.get_all_deck_names(false)
+            .unwrap()
+            .into_iter()
+            .filter(|(_, name)| name.starts_with("Ankountant"))
+            .count()
+    };
+
+    let mut col = Collection::new();
+    col.ankountant_load_far_seed(true).unwrap();
+    let (study1, tbs1, decks1) = (
+        count_study(&mut col),
+        count_tbs(&mut col),
+        count_decks(&col),
+    );
+    assert!(study1 > 100, "expected the full recall pile, got {study1}");
+
+    // Re-seed twice more — every count must be unchanged (a replace, not append).
+    col.ankountant_load_far_seed(true).unwrap();
+    col.ankountant_load_far_seed(true).unwrap();
+    assert_eq!(
+        count_study(&mut col),
+        study1,
+        "study cards doubled on reseed"
+    );
+    assert_eq!(
+        count_tbs(&mut col),
+        tbs1,
+        "sealed TBS notes doubled on reseed"
+    );
+    assert_eq!(
+        count_decks(&col),
+        decks1,
+        "Ankountant decks doubled on reseed"
+    );
+
+    // The demo still bands after a reseed (attempt history was rebuilt, not lost).
+    let r = readiness(&mut col).readiness.unwrap();
+    assert!(
+        !r.abstain,
+        "reseeded demo should still emit a band: {}",
+        r.reason
+    );
+}
+
 // --- helpers -----------------------------------------------------------------
 
 /// Seed recall revlog entries in the trailing-30d window for the study cards

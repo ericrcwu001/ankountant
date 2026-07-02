@@ -4,6 +4,7 @@ import AnkiKit
 import AnkiClients
 import AnkiServices
 import Dependencies
+import Sharing
 
 /// The Ankountant Home hub — the Decks tab root. Its hero widget is a
 /// days-until-exam countdown fed by a user-entered exam date; saving that date
@@ -27,11 +28,16 @@ struct HomeView: View {
     @State private var farDeckId: Int64?
     @State private var showConfusion = false
 
+    // Bumped by the Debug "demo phases" actions after they reseed. Observed via
+    // .task(id:) below so Home reloads when the demo profile changes, even
+    // though Home lives in a different tab and stays alive in the background.
+    @Shared(.appStorage(DemoSeed.versionKey)) private var demoSeedVersion = 0
+
     private let section = "FAR"
 
     var body: some View {
         DeckListView(header: AnyView(hero), navigationTitle: "Home")
-            .task { await load() }
+            .task(id: demoSeedVersion) { await load() }
             .navigationDestination(isPresented: $showConfusion) {
                 ConfusionDrillView()
             }
@@ -330,15 +336,23 @@ struct HomeView: View {
     }
 
     private func load() async {
+        // Reset exam state first: switching demo phases (e.g. consolidation's
+        // 7-day date back to foundation's no-date) must clear the old countdown
+        // rather than keep the previous phase's value. An empty stored string
+        // (foundation) counts as "no date".
         if let iso = try? examConfigClient.loadExamDate(section),
+           !iso.isEmpty,
            let parsed = Self.isoFormatter.date(from: iso) {
             examDate = parsed
             hasExamDate = true
+        } else {
+            examDate = Date()
+            hasExamDate = false
         }
         readiness = try? schedulerService.getReadiness(section)
         readinessLoaded = true
-        if let tree = try? deckClient.fetchTree() {
-            farDeckId = Self.findDeckId(in: tree, fullName: "Ankountant::Study::FAR")
+        farDeckId = (try? deckClient.fetchTree()).flatMap {
+            Self.findDeckId(in: $0, fullName: "Ankountant::Study::FAR")
         }
     }
 

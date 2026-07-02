@@ -1283,7 +1283,7 @@ class DownloaderInstaller(QObject):
 
 
 def show_log_to_user(
-    parent: QWidget, log: list[DownloadLogEntry], title: str = "Anki"
+    parent: QWidget, log: list[DownloadLogEntry], title: str = "Ankountant"
 ) -> None:
     have_problem = download_encountered_problem(log)
 

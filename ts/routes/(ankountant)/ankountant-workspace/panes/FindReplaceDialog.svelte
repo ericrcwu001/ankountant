@@ -133,11 +133,11 @@ specific field; regex + case options map straight onto FindAndReplaceRequest.
     <div class="fr-opts">
         <label>
             <input type="checkbox" bind:checked={regex} />
-             Treat input as regex
+            Treat input as regex
         </label>
         <label>
             <input type="checkbox" bind:checked={matchCase} />
-             Match case
+            Match case
         </label>
     </div>
 

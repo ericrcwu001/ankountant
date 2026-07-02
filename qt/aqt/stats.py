@@ -95,7 +95,7 @@ class NewDeckStats(QDialog):
 
     def _imagePath(self) -> str | None:
         name = time.strftime("-%Y-%m-%d@%H-%M-%S.pdf", time.localtime(time.time()))
-        name = f"anki-{tr.statistics_stats()}{name}"
+        name = f"ankountant-{tr.statistics_stats()}{name}"
         file = getSaveFile(
             self,
             title=tr.statistics_save_pdf(),
@@ -200,7 +200,7 @@ class DeckStats(QDialog):
 
     def _imagePath(self) -> str | None:
         name = time.strftime("-%Y-%m-%d@%H-%M-%S.pdf", time.localtime(time.time()))
-        name = f"anki-{tr.statistics_stats()}{name}"
+        name = f"ankountant-{tr.statistics_stats()}{name}"
         file = getSaveFile(
             self,
             title=tr.statistics_save_pdf(),

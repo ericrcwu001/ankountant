@@ -10,6 +10,15 @@ public enum StudyPhase: String, Sendable, Equatable, CaseIterable {
     case consolidation
 }
 
+/// Cross-view signal that the FAR demo profile was reseeded. The Debug screen's
+/// "demo phases" actions bump this `@Shared(.appStorage)` counter after they
+/// reseed; `HomeView` observes it via `.task(id:)` and reloads, so a phase
+/// change is reflected even though Home lives in a different tab and stays alive
+/// in the background (its one-shot `.task` would otherwise never re-run).
+public enum DemoSeed {
+    public static let versionKey = "ankountant.demoSeedVersion"
+}
+
 /// Final-stretch window (days). Sits below the backend's 60-day ramp horizon
 /// (rslib `RAMP_HORIZON_DAYS`, where desired retention climbs toward its peak);
 /// tunable.

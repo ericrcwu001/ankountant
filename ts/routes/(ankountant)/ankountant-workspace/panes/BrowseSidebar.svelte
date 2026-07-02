@@ -221,7 +221,7 @@ Section collapse is kept local (not yet persisted to col config).
                 data-testid="whole-collection"
             >
                 <span class="glyph" aria-hidden="true">✦</span>
-                 Whole collection
+                Whole collection
             </button>
 
             {#if savedSearches.length > 0 && (!filtering || savedRows.length)}
