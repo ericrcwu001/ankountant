@@ -76,8 +76,8 @@ choices (no reversal of the above):
 
 - **Generator → `gpt-5-mini`** (a reasoning model) with a **model-aware** chat
   API (omit `temperature`/`seed`; use `max_completion_tokens` + `reasoning_effort`)
-  and a **`gpt-4o` fallback** on 404/no-access. A **v2 prompt** adds a *decline
-  rule* (`{"skip": true}` when the passages can't ground a faithful card), bans
+  and a **`gpt-4o` fallback** on 404/no-access. A **v2 prompt** adds a _decline
+  rule_ (`{"skip": true}` when the passages can't ground a faithful card), bans
   schema placeholders, and requires TBS numbers to come from the passage — "a
   wrong card is worse than no card", enforced at generation, not just judging.
 - **Retrieval quality:** a Stage-2 **chunk-quality filter** (drop

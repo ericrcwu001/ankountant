@@ -24,12 +24,12 @@ the bounded **live** `gpt-5-mini` proof2 + full 50k run need an `OPENAI_API_KEY`
   the app; runtime stays AI-off). 12-stage DAG with deterministic **offline**
   backends so tests run keyless.
 - **Live proof** in `tools/cardgen/out/proof/`: 6 sections, real `gpt-4o-mini` gen
-  + `text-embedding-3-small`, parallel Cursor-subagent judge.
-  - Funnel: 60 targeted → 59 generated → 54 self-check → judged **24 ok / 7 bad /
+  - `text-embedding-3-small`, parallel Cursor-subagent judge.
+  * Funnel: 60 targeted → 59 generated → 54 self-check → judged **24 ok / 7 bad /
     23 wrong** → leakage −0 → dedup −4 → **20 shipped**.
-  - `baseline_report.md`: **PASS** (hybrid evidence-hit 91.7% vs BM25 58.3% /
+  * `baseline_report.md`: **PASS** (hybrid evidence-hit 91.7% vs BM25 58.3% /
     vector 75%).
-  - `cpa_bank.apkg`: 20 notes, exact app note types, **20/20 provenance populated**
+  * `cpa_bank.apkg`: 20 notes, exact app note types, **20/20 provenance populated**
     (`gen_method`/`source_passage`/`checker_status`).
 - **Rust:** `Ankountant Study` note type gained provenance fields (sync-safe) —
   `rslib/src/ankountant/{notetypes.rs,seed.rs,tests.rs}`. `just check` green
@@ -41,16 +41,16 @@ the bounded **live** `gpt-5-mini` proof2 + full 50k run need an `OPENAI_API_KEY`
 
 ## Key files
 
-| Area | Path |
-| --- | --- |
-| Pipeline stages | `tools/cardgen/cardgen/{ingest,chunk,index,taxonomy,worklist,retrieve,generate,selfcheck,judge,gold,leakage,dedup,baseline,emit,reports}.py` |
-| Providers | `tools/cardgen/cardgen/providers/{base,offline,openai_embed,openai_generate,cursor_judge}.py` |
-| Foundation (stable contract) | `tools/cardgen/cardgen/{config,models,util,cli}.py` |
-| Taxonomy / catalogs | `tools/cardgen/taxonomy/{taxonomy,confusion_catalog}.<SECTION>.yaml` |
-| Corpus | `tools/cardgen/corpus/manifest.json` (+ 6 sources: cpa_dummies, far_tbs_60, far_tbs, irs_p17, irs_p334, nist_800_12) |
-| Run artifacts | `tools/cardgen/out/proof/` (baseline_report.md, coverage_report.md, cpa_bank.apkg, emitted_manifest.jsonl, per-stage jsonl) |
-| Secrets | `tools/cardgen/.env` (gitignored; `OPENAI_API_KEY` set) |
-| Design/decisions | `docs_ankountant/adr/0009-*.md`, `docs_ankountant/rag/07-implementation-contract.md`, `CONTEXT.md` |
+| Area                         | Path                                                                                                                                         |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pipeline stages              | `tools/cardgen/cardgen/{ingest,chunk,index,taxonomy,worklist,retrieve,generate,selfcheck,judge,gold,leakage,dedup,baseline,emit,reports}.py` |
+| Providers                    | `tools/cardgen/cardgen/providers/{base,offline,openai_embed,openai_generate,cursor_judge}.py`                                                |
+| Foundation (stable contract) | `tools/cardgen/cardgen/{config,models,util,cli}.py`                                                                                          |
+| Taxonomy / catalogs          | `tools/cardgen/taxonomy/{taxonomy,confusion_catalog}.<SECTION>.yaml`                                                                         |
+| Corpus                       | `tools/cardgen/corpus/manifest.json` (+ 6 sources: cpa_dummies, far_tbs_60, far_tbs, irs_p17, irs_p334, nist_800_12)                         |
+| Run artifacts                | `tools/cardgen/out/proof/` (baseline_report.md, coverage_report.md, cpa_bank.apkg, emitted_manifest.jsonl, per-stage jsonl)                  |
+| Secrets                      | `tools/cardgen/.env` (gitignored; `OPENAI_API_KEY` set)                                                                                      |
+| Design/decisions             | `docs_ankountant/adr/0009-*.md`, `docs_ankountant/rag/07-implementation-contract.md`, `CONTEXT.md`                                           |
 
 ## Decisions (ADR 0009)
 
@@ -63,18 +63,18 @@ the bounded **live** `gpt-5-mini` proof2 + full 50k run need an `OPENAI_API_KEY`
 
 ## Status of the scale-up plan (all code to-dos done)
 
-| Plan item | State |
-| --- | --- |
-| chunk-quality filter (`chunk.py::_is_low_value`) | ✅ done (dropped 1002/2235 low-value chunks on the real corpus) |
-| `gpt-5-mini` model-aware generator + `gpt-4o` fallback | ✅ done (`openai_generate.py`, `config.py`) |
-| v2 decline prompt (`{"skip":true}`, no placeholders, TBS numbers from passage) | ✅ done (+ `finalize_candidate` skip handling) |
-| richer query (confusion treatments) + hybrid-arm reranker | ✅ done (`retrieve.py`; LLM live, deterministic offline fallback) |
-| fan-out: concurrent gen + Batch API + concurrent embeddings | ✅ done (`generate.py`, `providers/openai_batch.py`, `index.py`; offline stays sequential/deterministic; resumable) |
-| scaled judging: wave plan + sampled-audit gate | ✅ done (`cursor_judge.py::plan`, `judge.py::_audit_split`, `judge_mode=audit`) |
-| Tier-A corpus fetch/register | ✅ done (`scripts/fetch_corpus.py`; IRS/NIST/OpenStax registered + indexed) |
-| tests | ✅ 71 offline tests green |
-| **live** proof2 (gpt-5-mini) + parallel judge + compare | ⏳ needs `OPENAI_API_KEY` (validated **offline** end-to-end instead) |
-| **50k** full run (`just cardgen-full`) | ⏳ allocation validated (50000 items across the 6 sections); full run needs key + broader corpus |
+| Plan item                                                                      | State                                                                                                               |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| chunk-quality filter (`chunk.py::_is_low_value`)                               | ✅ done (dropped 1002/2235 low-value chunks on the real corpus)                                                     |
+| `gpt-5-mini` model-aware generator + `gpt-4o` fallback                         | ✅ done (`openai_generate.py`, `config.py`)                                                                         |
+| v2 decline prompt (`{"skip":true}`, no placeholders, TBS numbers from passage) | ✅ done (+ `finalize_candidate` skip handling)                                                                      |
+| richer query (confusion treatments) + hybrid-arm reranker                      | ✅ done (`retrieve.py`; LLM live, deterministic offline fallback)                                                   |
+| fan-out: concurrent gen + Batch API + concurrent embeddings                    | ✅ done (`generate.py`, `providers/openai_batch.py`, `index.py`; offline stays sequential/deterministic; resumable) |
+| scaled judging: wave plan + sampled-audit gate                                 | ✅ done (`cursor_judge.py::plan`, `judge.py::_audit_split`, `judge_mode=audit`)                                     |
+| Tier-A corpus fetch/register                                                   | ✅ done (`scripts/fetch_corpus.py`; IRS/NIST/OpenStax registered + indexed)                                         |
+| tests                                                                          | ✅ 71 offline tests green                                                                                           |
+| **live** proof2 (gpt-5-mini) + parallel judge + compare                        | ⏳ needs `OPENAI_API_KEY` (validated **offline** end-to-end instead)                                                |
+| **50k** full run (`just cardgen-full`)                                         | ⏳ allocation validated (50000 items across the 6 sections); full run needs key + broader corpus                    |
 
 **Corpus MCP note:** `annas-mcp` / `agent-reach` / `paper-search-mcp` were **not
 configured** in the build environment, so Tier-B ingestion is agent/MCP-driven
