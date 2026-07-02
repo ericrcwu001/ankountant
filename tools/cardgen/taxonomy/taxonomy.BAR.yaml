@@ -1,0 +1,71 @@
+# Taxonomy: BAR — Business Analysis & Reporting (Discipline)
+#
+# Source: AICPA Uniform CPA Examination Blueprints (public), CPA Evolution
+#   (effective 2024). Area score weights are the published ranges'
+#   midpoints, normalized to sum to 1.0 across the section. Each topic is a
+#   representative-task row {topic, task_id, skill_level}; skill_level is the
+#   AICPA cognitive skill (R&U | Application | Analysis; Evaluation is AUD-only).
+# This file is a REALISTIC, representative slice of the blueprint (not exhaustive).
+section: BAR
+areas:
+  - code: "I"
+    title: "Business Analysis"
+    weight: 0.45
+    groups:
+      - title: "Financial and performance analysis"
+        topics:
+          - topic: "Ratio and financial statement analysis"
+            task_id: "BAR.I.A.1"
+            skill_level: "Analysis"
+          - topic: "Variance analysis and managerial costing"
+            task_id: "BAR.I.A.2"
+            skill_level: "Analysis"
+          - topic: "Budgeting and forecasting"
+            task_id: "BAR.I.A.3"
+            skill_level: "Application"
+      - title: "Risk and valuation"
+        topics:
+          - topic: "Cost of capital and capital budgeting"
+            task_id: "BAR.I.B.1"
+            skill_level: "Analysis"
+          - topic: "Economic concepts and market influences"
+            task_id: "BAR.I.B.2"
+            skill_level: "R&U"
+  - code: "II"
+    title: "Technical Accounting and Reporting"
+    weight: 0.40
+    groups:
+      - title: "Advanced financial reporting"
+        topics:
+          - topic: "Revenue and leases (advanced applications)"
+            task_id: "BAR.II.A.1"
+            skill_level: "Analysis"
+          - topic: "Business combinations and consolidations"
+            task_id: "BAR.II.A.2"
+            skill_level: "Analysis"
+          - topic: "Derivatives and hedge accounting"
+            task_id: "BAR.II.A.3"
+            skill_level: "Application"
+      - title: "Employee benefits and equity"
+        topics:
+          - topic: "Pension and post-retirement obligations"
+            task_id: "BAR.II.B.1"
+            skill_level: "Application"
+          - topic: "Stock compensation and EPS"
+            task_id: "BAR.II.B.2"
+            skill_level: "R&U"
+  - code: "III"
+    title: "State and Local Governments"
+    weight: 0.15
+    groups:
+      - title: "Governmental reporting"
+        topics:
+          - topic: "Fund accounting and measurement focus"
+            task_id: "BAR.III.A.1"
+            skill_level: "R&U"
+          - topic: "Government-wide vs fund financial statements"
+            task_id: "BAR.III.A.2"
+            skill_level: "Application"
+          - topic: "Reconciliations and the reporting entity"
+            task_id: "BAR.III.A.3"
+            skill_level: "Analysis"

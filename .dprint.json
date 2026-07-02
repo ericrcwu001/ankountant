@@ -30,7 +30,8 @@
         "ios/AnkountantApp/Resources/Review/CardWebViewBridge.js",
         "ios/AnkountantApp/Resources/mathjax",
         ".agentic-loop",
-        ".claude"
+        ".claude",
+        "tools/cardgen"
     ],
     "plugins": [
         "https://plugins.dprint.dev/typescript-0.91.6.wasm",

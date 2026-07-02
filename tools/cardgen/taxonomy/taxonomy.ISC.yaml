@@ -1,0 +1,71 @@
+# Taxonomy: ISC — Information Systems & Controls (Discipline)
+#
+# Source: AICPA Uniform CPA Examination Blueprints (public), CPA Evolution
+#   (effective 2024). Area score weights are the published ranges'
+#   midpoints, normalized to sum to 1.0 across the section. Each topic is a
+#   representative-task row {topic, task_id, skill_level}; skill_level is the
+#   AICPA cognitive skill (R&U | Application | Analysis; Evaluation is AUD-only).
+# This file is a REALISTIC, representative slice of the blueprint (not exhaustive).
+section: ISC
+areas:
+  - code: "I"
+    title: "Information Systems and Data Management"
+    weight: 0.40
+    groups:
+      - title: "IT environment"
+        topics:
+          - topic: "IT general controls (ITGC)"
+            task_id: "ISC.I.A.1"
+            skill_level: "Application"
+          - topic: "Change management and the SDLC"
+            task_id: "ISC.I.A.2"
+            skill_level: "Application"
+          - topic: "System availability and business continuity"
+            task_id: "ISC.I.A.3"
+            skill_level: "R&U"
+      - title: "Data management"
+        topics:
+          - topic: "Data management and governance"
+            task_id: "ISC.I.B.1"
+            skill_level: "R&U"
+          - topic: "Data flows and the accounting information system"
+            task_id: "ISC.I.B.2"
+            skill_level: "Analysis"
+  - code: "II"
+    title: "Security, Confidentiality and Privacy"
+    weight: 0.40
+    groups:
+      - title: "Security"
+        topics:
+          - topic: "Logical and physical access controls"
+            task_id: "ISC.II.A.1"
+            skill_level: "Application"
+          - topic: "Threats, vulnerabilities and attack types"
+            task_id: "ISC.II.A.2"
+            skill_level: "Analysis"
+          - topic: "Encryption and network security"
+            task_id: "ISC.II.A.3"
+            skill_level: "R&U"
+      - title: "Confidentiality and privacy"
+        topics:
+          - topic: "Confidentiality and privacy frameworks"
+            task_id: "ISC.II.B.1"
+            skill_level: "Application"
+          - topic: "Incident response and detection"
+            task_id: "ISC.II.B.2"
+            skill_level: "Analysis"
+  - code: "III"
+    title: "Considerations for SOC Engagements"
+    weight: 0.20
+    groups:
+      - title: "SOC reporting"
+        topics:
+          - topic: "SOC 1 vs SOC 2 vs SOC 3 scope"
+            task_id: "ISC.III.A.1"
+            skill_level: "R&U"
+          - topic: "Trust services criteria"
+            task_id: "ISC.III.A.2"
+            skill_level: "Application"
+          - topic: "Evaluating a service organization and CUECs"
+            task_id: "ISC.III.A.3"
+            skill_level: "Analysis"

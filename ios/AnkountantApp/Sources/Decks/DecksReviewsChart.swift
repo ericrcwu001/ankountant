@@ -5,15 +5,15 @@ import Dependencies
 import SwiftProtobuf
 import SwiftUI
 
-/// Compact reviews heatmap shown above the deck list. Reuses the same
-/// `HeatmapChartOptimized` component the Stats dashboard renders, in
-/// `compactHeight` mode so the cells shrink to fit a header role.
+/// Reviews heatmap shown above the deck list on Home. Reuses the same
+/// `HeatmapChartOptimized` component the Stats dashboard renders.
 ///
-/// Loads `Anki_Stats_GraphsResponse` once on appear; deck-list pull-
-/// to-refresh re-renders the parent (`.id(refreshID)`) which re-runs
-/// the task.
+/// Loads `Anki_Stats_GraphsResponse` once on appear. The window is fetched
+/// wide enough to back the heatmap's largest in-widget "Last …" range so that
+/// selecting a longer range actually reveals more history (the menu filters
+/// this data client-side rather than re-fetching).
 struct DecksReviewsChart: View {
-    var days: Int = 365
+    var days: Int = 730
 
     @Dependency(\.statsClient) private var statsClient
     @State private var reviews: Anki_Stats_GraphsResponse.ReviewCountsAndTimes?

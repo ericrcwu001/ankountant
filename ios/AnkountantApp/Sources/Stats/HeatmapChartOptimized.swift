@@ -2,17 +2,16 @@ import SwiftUI
 import AnkountantTheme
 import AnkiProto
 
-/// Optimized heatmap with incremental loading.
-/// - Initially loads 6 months of data.
-/// - Loads more when scrolling to edges.
-/// - Configurable via the date range menu.
+/// Reviews contribution heatmap.
+/// - Defaults to showing the last 6 months.
+/// - The "Last …" range menu resizes the visible window (grid width follows
+///   `selectedDateRange`); the caller must fetch enough history to back the
+///   largest range it wants selectable.
 struct HeatmapChartOptimized: View {
     let reviews: Anki_Stats_GraphsResponse.ReviewCountsAndTimes
 
     @Environment(\.palette) private var palette
     @State private var loadingManager: HeatmapLoadingManager?
-    @State private var shouldShowLoadingIndicator = false
-    @State private var scrollPosition: CGFloat = 0
     @State private var selectedDateRange: Int = 180
 
     // Snapshotted from actor after each mutation. Other derived values are
@@ -73,10 +72,13 @@ struct HeatmapChartOptimized: View {
     // MARK: - Grid Data
 
     private var weeksToShow: Int {
-        guard let minOffset = visibleData.keys.min() else { return 26 }
-        let totalDays = Swift.abs(minOffset) + 7
-        let weeksNeeded = totalDays / 7 + 1
-        return max(weeksNeeded, 26)
+        // Drive the grid width from the selected range so the "Last …" menu
+        // visibly resizes the calendar. Showing empty leading cells for a
+        // wider range is expected (GitHub-style contribution graph), which is
+        // what makes the range button feel responsive even before older data
+        // exists.
+        let totalDays = selectedDateRange + 7
+        return max(4, totalDays / 7 + 1)
     }
 
     private var weeks: [[Date]] {
@@ -163,24 +165,16 @@ struct HeatmapChartOptimized: View {
                     }
                 }
 
-                // Scroll view with edge detection for loading more
-                ScrollViewReader { scrollProxy in
-                    ScrollView(.horizontal, showsIndicators: !isCompact) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            monthHeaderView()
-                            gridView()
-                        }
-                        .id("heatmapContent")
+                // Horizontal scroll to pan across the selected window. The
+                // "Last …" range menu controls how much history is shown, so
+                // there's no scroll-based auto-expansion.
+                ScrollView(.horizontal, showsIndicators: !isCompact) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        monthHeaderView()
+                        gridView()
                     }
-                    .defaultScrollAnchor(.trailing)
-                    .onScrollGeometryChange(
-                        for: CGFloat.self,
-                        of: { geometry in geometry.contentOffset.x },
-                        action: { _, newValue in
-                            handleScroll(offset: newValue)
-                        }
-                    )
                 }
+                .defaultScrollAnchor(.trailing)
 
                 legendView()
             }
@@ -333,8 +327,9 @@ struct HeatmapChartOptimized: View {
     // MARK: - State Management
 
     private func initializeLoadingManager() async {
-        let manager = HeatmapLoadingManager()
+        let manager = HeatmapLoadingManager(defaultVisibleDays: selectedDateRange)
         await manager.loadAllData(reviews)
+        await manager.setDateRange(days: selectedDateRange)
         self.loadingManager = manager
     }
 
@@ -343,18 +338,5 @@ struct HeatmapChartOptimized: View {
         guard let manager = loadingManager else { return }
         await manager.setDateRange(days: days)
         await refreshFromManager()
-    }
-
-    private func handleScroll(offset: CGFloat) {
-        let scrollThreshold: CGFloat = 100
-        let contentWidth = CGFloat(weeksToShow) * (cellSize + cellSpacing)
-        let isNearEnd = contentWidth - offset < scrollThreshold
-
-        if isNearEnd {
-            Task {
-                await loadingManager?.expandDateRange()
-                await refreshFromManager()
-            }
-        }
     }
 }

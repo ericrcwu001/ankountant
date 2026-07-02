@@ -1,0 +1,20 @@
+# Confusion-set catalog: REG
+#
+# `reg_capitalize_vs_deduct` is reused verbatim from the shipped app seed
+#   (rslib/src/ankountant/seed.rs `REG_SETS`). The remaining sets are plausible
+#   additions in the same shape (set_id / ds:: tags / treatments) that the
+#   CONFUSABLE map already consumes.
+section: REG
+sets:
+  - set_id: "s1231_vs_capital_vs_ordinary"
+    topic: "Character: section 1231 vs capital vs ordinary"
+    tags: ["ds::reg::s1231", "ds::reg::capital", "ds::reg::ordinary"]
+    treatments: ["Section 1231 gain/loss", "Capital gain/loss", "Ordinary income"]
+  - set_id: "deduction_for_vs_from_agi"
+    topic: "Adjustments, deductions and QBI"
+    tags: ["ds::reg::for_agi", "ds::reg::from_agi"]
+    treatments: ["Deduction for AGI", "Deduction from AGI"]
+  - set_id: "reg_capitalize_vs_deduct"
+    topic: "Basis and holding period of assets"
+    tags: ["ds::reg::deduct", "ds::reg::capitalize"]
+    treatments: ["Currently deductible", "Capitalize and recover over time"]

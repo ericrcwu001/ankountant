@@ -84,6 +84,31 @@ pub(crate) mod tbs_fields {
     ];
 }
 
+/// Field order for the Study (recall) note type. Front/Back carry the card; the
+/// three provenance fields mirror `tbs_fields` so Phase-2a RAG-generated recall
+/// cards can record where the card came from. Hand-authored seed recall cards
+/// leave the provenance fields blank (see `seed.rs`); the ordinal constants are
+/// reserved for the Phase-2a population path and asserted by the tests.
+pub(crate) mod study_fields {
+    #[allow(dead_code)]
+    pub(crate) const FRONT: usize = 0;
+    #[allow(dead_code)]
+    pub(crate) const BACK: usize = 1;
+    #[allow(dead_code)]
+    pub(crate) const SOURCE_PASSAGE: usize = 2;
+    #[allow(dead_code)]
+    pub(crate) const GEN_METHOD: usize = 3;
+    #[allow(dead_code)]
+    pub(crate) const CHECKER_STATUS: usize = 4;
+    pub(crate) const NAMES: &[&str] = &[
+        "Front",
+        "Back",
+        "source_passage",
+        "gen_method",
+        "checker_status",
+    ];
+}
+
 fn build_hidden_notetype(name: &str, field_names: &[&str]) -> Notetype {
     let mut nt = Notetype {
         name: name.to_string(),
@@ -118,10 +143,15 @@ impl Collection {
         self.get_or_create_hidden_notetype(TBS_NOTETYPE, tbs_fields::NAMES)
     }
 
-    /// Fetch (creating on first use) the study-recall note type (Front/Back).
-    /// Unlike the others, its cards ARE queued for normal FSRS study.
+    /// Fetch (creating on first use) the study-recall note type. Front/Back
+    /// carry the card; three provenance fields (source_passage / gen_method /
+    /// checker_status) mirror `tbs_fields` so Phase-2a RAG-generated recall
+    /// cards can carry provenance. Hand-authored seed recall cards leave those
+    /// blank. Adding fields to the note type is sync-safe (an ordinary object
+    /// change — no new SQLite table/column). Unlike the others, its cards ARE
+    /// queued for normal FSRS study, so a valid Front→Back template is used.
     pub(crate) fn ankountant_study_notetype(&mut self) -> Result<Arc<Notetype>> {
-        self.get_or_create_hidden_notetype(STUDY_NOTETYPE, &["Front", "Back"])
+        self.get_or_create_hidden_notetype(STUDY_NOTETYPE, study_fields::NAMES)
     }
 
     /// Fetch (creating on first use) the Settings note type (sync-safe per-key

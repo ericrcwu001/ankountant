@@ -1,0 +1,20 @@
+# Confusion-set catalog: BAR
+#
+# `bar_segment_reporting` is reused verbatim from the shipped app seed
+#   (rslib/src/ankountant/seed.rs `BAR_SETS`). The remaining sets are plausible
+#   additions in the same shape (set_id / ds:: tags / treatments) that the
+#   CONFUSABLE map already consumes.
+section: BAR
+sets:
+  - set_id: "acquisition_vs_equity_method"
+    topic: "Business combinations and consolidations"
+    tags: ["ds::bar::consolidate", "ds::bar::equity_method"]
+    treatments: ["Consolidate (control)", "Equity method (significant influence)"]
+  - set_id: "governmental_fund_vs_govtwide"
+    topic: "Government-wide vs fund financial statements"
+    tags: ["ds::bar::modified_accrual", "ds::bar::full_accrual"]
+    treatments: ["Modified accrual (fund)", "Full accrual (government-wide)"]
+  - set_id: "bar_segment_reporting"
+    topic: "Reconciliations and the reporting entity"
+    tags: ["ds::bar::reportable", "ds::bar::not_reportable"]
+    treatments: ["Reportable segment", "Not separately reportable"]

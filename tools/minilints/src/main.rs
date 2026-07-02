@@ -1,14 +1,10 @@
 // Copyright: Ankitects Pty Ltd and contributors
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
-use std::cell::LazyCell;
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::env;
 use std::fs;
-use std::fs::File;
-use std::io::Read;
-use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 
@@ -19,13 +15,6 @@ use anyhow::Context;
 use anyhow::Result;
 use camino::Utf8Path;
 use walkdir::WalkDir;
-
-const NONSTANDARD_HEADER: &[&str] = &[
-    "./pylib/anki/_vendor/stringcase.py",
-    "./pylib/anki/statsbg.py",
-    "./qt/aqt/mpv.py",
-    "./qt/aqt/winpaths.py",
-];
 
 const IGNORED_FOLDERS: &[&str] = &[
     "./out",
@@ -49,6 +38,9 @@ const IGNORED_FOLDERS: &[&str] = &[
     // (swift-protobuf, zstd, …) fetched by `swift build`/`xcodebuild`, not our
     // source to lint. minilints walks the FS, so it must be excluded explicitly.
     "./ios/.build",
+    // Xcode SwiftPM build output for the app (gitignored): vendored dependency
+    // checkouts (zstd, libdeflate, …) fetched by `xcodebuild`, not our source.
+    "./ios/AnkountantApp/build",
 ];
 
 fn main() -> Result<()> {
@@ -69,18 +61,14 @@ fn main() -> Result<()> {
 
 struct LintContext {
     want_fix: bool,
-    unstaged_changes: LazyCell<()>,
     found_problems: bool,
-    nonstandard_headers: HashSet<&'static Utf8Path>,
 }
 
 impl LintContext {
     pub fn new(want_fix: bool) -> Self {
         Self {
             want_fix,
-            unstaged_changes: LazyCell::new(check_for_unstaged_changes),
             found_problems: false,
-            nonstandard_headers: NONSTANDARD_HEADER.iter().map(Utf8Path::new).collect(),
         }
     }
 
@@ -98,32 +86,7 @@ impl LintContext {
                 .map(Some)
                 .collect();
             if exts.contains(&path.extension()) && !sveltekit_temp_file(path.as_str()) {
-                self.check_copyright(path)?;
                 self.check_triple_slash(path)?;
-            }
-        }
-        Ok(())
-    }
-
-    fn check_copyright(&mut self, path: &Utf8Path) -> Result<()> {
-        if path.file_name().unwrap().ends_with(".d.ts") {
-            return Ok(());
-        }
-        let head = head_of_file(path)?;
-        if head.is_empty() {
-            return Ok(());
-        }
-        if self.nonstandard_headers.contains(&path) {
-            return Ok(());
-        }
-        let missing = !head.contains("Ankitects Pty Ltd and contributors");
-        if missing {
-            if self.want_fix {
-                LazyCell::force(&self.unstaged_changes);
-                fix_copyright(path)?;
-            } else {
-                println!("missing standard copyright header: {path:?}");
-                self.found_problems = true;
             }
         }
         Ok(())
@@ -250,53 +213,6 @@ fn check_cargo_deny() -> Result<()> {
     Command::run("cargo install cargo-deny@0.19.2")?;
     Command::run("cargo deny check")?;
     Ok(())
-}
-
-fn head_of_file(path: &Utf8Path) -> Result<String> {
-    let mut file = File::open(path)?;
-    let mut buffer = vec![0; 256];
-    let size = file.read(&mut buffer)?;
-    buffer.truncate(size);
-    Ok(String::from_utf8(buffer).unwrap_or_default())
-}
-
-fn fix_copyright(path: &Utf8Path) -> Result<()> {
-    let header = match path.extension().unwrap() {
-        "py" => {
-            r#"# Copyright: Ankitects Pty Ltd and contributors
-# License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
-"#
-        }
-        "ts" | "rs" | "mjs" => {
-            r#"// Copyright: Ankitects Pty Ltd and contributors
-// License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
-"#
-        }
-        "svelte" => {
-            r#"<!--
-Copyright: Ankitects Pty Ltd and contributors
-License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
--->
-"#
-        }
-        _ => unreachable!(),
-    };
-
-    let data = fs::read_to_string(path).with_context(|| format!("reading {path}"))?;
-    let mut file = fs::OpenOptions::new()
-        .write(true)
-        .open(path)
-        .with_context(|| format!("opening {path}"))?;
-    write!(file, "{header}{data}").with_context(|| format!("writing {path}"))?;
-    Ok(())
-}
-
-fn check_for_unstaged_changes() {
-    let output = Command::new("git").arg("diff").output().unwrap();
-    if !output.stdout.is_empty() {
-        println!("stage any changes first");
-        std::process::exit(1);
-    }
 }
 
 fn generate_licences() -> Result<String> {

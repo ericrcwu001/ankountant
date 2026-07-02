@@ -746,6 +746,28 @@ fn je_note(col: &mut Collection) -> NoteId {
         .unwrap()[0]
 }
 
+#[test]
+fn study_notetype_carries_provenance_fields_blank_for_seed() {
+    // Phase-2a — the recall (Study) note type exposes the same three provenance
+    // fields as TBS, so RAG-generated recall cards can record
+    // source_passage / gen_method / checker_status. Hand-authored seed recall
+    // cards leave them blank (doc 6); the human-readable Source rides in Back.
+    let (mut col, _) = seeded();
+    let nt = col.ankountant_study_notetype().unwrap();
+    let names: Vec<&str> = nt.fields.iter().map(|f| f.name.as_str()).collect();
+    for prov in ["source_passage", "gen_method", "checker_status"] {
+        assert!(names.contains(&prov), "missing provenance field {prov}");
+    }
+    let recall = col
+        .search_notes_unordered("deck:Ankountant::Study::FAR::* note:\"Ankountant Study\"")
+        .unwrap()[0];
+    let note = col.storage.get_note(recall).unwrap().unwrap();
+    let fields = note.fields();
+    assert_eq!(fields[super::notetypes::study_fields::SOURCE_PASSAGE], "");
+    assert_eq!(fields[super::notetypes::study_fields::GEN_METHOD], "");
+    assert_eq!(fields[super::notetypes::study_fields::CHECKER_STATUS], "");
+}
+
 // --- A10 (A35–A39) -----------------------------------------------------------
 
 #[test]

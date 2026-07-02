@@ -1,0 +1,24 @@
+# Confusion-set catalog: AUD
+#
+# `aud_evidence_sufficiency` and `aud_request_relevance` are reused verbatim
+#   from the shipped app seed (rslib/src/ankountant/seed.rs `AUD_SETS`). The
+#   remaining sets are plausible additions in the same shape (set_id / ds:: tags
+#   / treatments) that the CONFUSABLE map already consumes.
+section: AUD
+sets:
+  - set_id: "qualified_vs_adverse_opinion"
+    topic: "Opinion formation: qualified vs adverse vs disclaimer"
+    tags: ["ds::aud::qualified", "ds::aud::adverse"]
+    treatments: ["Qualified opinion", "Adverse opinion"]
+  - set_id: "test_of_controls_vs_substantive"
+    topic: "Internal control and control deficiencies"
+    tags: ["ds::aud::controls", "ds::aud::substantive"]
+    treatments: ["Test of controls", "Substantive procedure"]
+  - set_id: "aud_evidence_sufficiency"
+    topic: "Sufficient appropriate audit evidence"
+    tags: ["ds::aud::sufficient", "ds::aud::insufficient"]
+    treatments: ["Sufficient appropriate evidence", "Insufficient evidence"]
+  - set_id: "aud_request_relevance"
+    topic: "Confirmations and substantive procedures"
+    tags: ["ds::aud::retain", "ds::aud::revise"]
+    treatments: ["Retain as drafted", "Revise the request"]

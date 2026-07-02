@@ -1,0 +1,77 @@
+# Taxonomy: TCP — Tax Compliance & Planning (Discipline)
+#
+# Source: AICPA Uniform CPA Examination Blueprints (public), CPA Evolution
+#   (effective 2024). Area score weights are the published ranges'
+#   midpoints, normalized to sum to 1.0 across the section. Each topic is a
+#   representative-task row {topic, task_id, skill_level}; skill_level is the
+#   AICPA cognitive skill (R&U | Application | Analysis; Evaluation is AUD-only).
+# This file is a REALISTIC, representative slice of the blueprint (not exhaustive).
+section: TCP
+areas:
+  - code: "I"
+    title: "Tax Compliance and Planning for Individuals and Personal Financial Planning"
+    weight: 0.35
+    groups:
+      - title: "Individual planning"
+        topics:
+          - topic: "Advanced individual income and AMT"
+            task_id: "TCP.I.A.1"
+            skill_level: "Analysis"
+          - topic: "Gift and estate tax basics"
+            task_id: "TCP.I.A.2"
+            skill_level: "Application"
+          - topic: "Personal financial and retirement planning"
+            task_id: "TCP.I.A.3"
+            skill_level: "Application"
+      - title: "Individual compliance"
+        topics:
+          - topic: "Individual filing and documentation"
+            task_id: "TCP.I.B.1"
+            skill_level: "R&U"
+  - code: "II"
+    title: "Entity Tax Compliance"
+    weight: 0.35
+    groups:
+      - title: "Corporate and pass-through"
+        topics:
+          - topic: "C corporation compliance and E&P"
+            task_id: "TCP.II.A.1"
+            skill_level: "Analysis"
+          - topic: "S corporation and partnership returns"
+            task_id: "TCP.II.A.2"
+            skill_level: "Analysis"
+          - topic: "Multistate and consolidated basics"
+            task_id: "TCP.II.A.3"
+            skill_level: "R&U"
+      - title: "International"
+        topics:
+          - topic: "International tax considerations"
+            task_id: "TCP.II.B.1"
+            skill_level: "Application"
+  - code: "III"
+    title: "Entity Tax Planning"
+    weight: 0.15
+    groups:
+      - title: "Planning strategies"
+        topics:
+          - topic: "Entity choice and formation planning"
+            task_id: "TCP.III.A.1"
+            skill_level: "Analysis"
+          - topic: "Liquidations, reorganizations and distributions"
+            task_id: "TCP.III.A.2"
+            skill_level: "Application"
+  - code: "IV"
+    title: "Property Transactions (Disposition of Assets)"
+    weight: 0.15
+    groups:
+      - title: "Dispositions"
+        topics:
+          - topic: "Basis and depreciation recapture"
+            task_id: "TCP.IV.A.1"
+            skill_level: "Application"
+          - topic: "Nonrecognition (like-kind, involuntary)"
+            task_id: "TCP.IV.A.2"
+            skill_level: "Analysis"
+          - topic: "Gain/loss character and netting"
+            task_id: "TCP.IV.A.3"
+            skill_level: "R&U"
