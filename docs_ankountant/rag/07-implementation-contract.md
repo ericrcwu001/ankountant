@@ -4,8 +4,9 @@
 
 > The build contract for the Phase-2a pipeline. Design rationale is in docs 1–6
 > and ADRs 0003/0009; **this doc is the interface every module codes against** so
-> the pieces integrate. Stack per **ADR 0009**: OpenAI `gpt-4o-mini` gen +
-> `text-embedding-3-small` + LanceDB + in-session Cursor-subagent judge, with a
+> the pieces integrate. Stack per **ADR 0009**: OpenAI `gpt-5-mini` gen (model-aware
+> chat params; `gpt-4o` fallback) + `text-embedding-3-small` + LanceDB (vector +
+> BM25) + a hybrid-arm reranker + in-session Cursor-subagent judge, with a
 > deterministic **offline** backend for keyless tests.
 
 ## Principles
@@ -58,13 +59,24 @@ tools/cardgen/
 ## Config & CLI
 
 `RunConfig` fields: `run_id`, `sections: list[str]`, `target_total: int`
-(default 900 proof; 50000 full), `offline: bool`, `gen_model="gpt-4o-mini"`,
-`embed_model="text-embedding-3-small"`, `judge_batch=25`, `top_k=6`,
-`relevance_floor`, `leakage_threshold=0.92`, `dedup_threshold=0.95`, `seed=0`.
+(default 900 proof; 50000 full), `offline: bool`, `gen_model="gpt-5-mini"`,
+`gen_fallback_model="gpt-4o"`, `gen_reasoning_effort="low"`,
+`embed_model="text-embedding-3-small"`, `prompt_version="v2"`, `judge_batch=25`,
+`top_k=6`, `relevance_floor`, `leakage_threshold=0.92`, `dedup_threshold=0.95`,
+`seed=0`, plus scale/quality knobs: `rerank=True` + `rerank_model="gpt-4o-mini"`
+(hybrid-arm reranker), `gen_concurrency=24` / `embed_concurrency=8` /
+`use_batch_api=False` (fan-out), `judge_mode="full"|"audit"` +
+`audit_fraction=0.10` / `audit_min=50` / `judge_parallelism=8` (scaled judging).
+All are env-overridable (`CARDGEN_*`, see `.env.example`).
 
 CLI: `python -m cardgen.cli all --sections FAR,REG,AUD,BAR,ISC,TCP --target 900`
 runs the DAG up to the judge, **pauses** for the Cursor-subagent judge (writes a
-judge queue), then `... resume` continues. `just cardgen` wraps it.
+judge queue + a `queue/plan.json` wave plan for N parallel subagents), then
+`... resume` continues. Flags: `--gen-model`, `--prompt-version {v1,v2}`,
+`--no-rerank`, `--concurrency`, `--batch-api`, `--judge-mode {full,audit}`,
+`--judge-parallelism`. `just cardgen` wraps it; `scripts/fetch_corpus.py`
+registers Tier-A corpus (Stage 0). Generation is resumable/idempotent (existing
+candidates are skipped), so `all`/`resume` re-runs cheaply.
 
 ## Provider interfaces (`providers/base.py`)
 

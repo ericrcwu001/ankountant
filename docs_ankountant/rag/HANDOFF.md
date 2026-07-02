@@ -9,10 +9,14 @@
 ## TL;DR
 
 The Phase-2a RAG card generator is **built, live-proven end-to-end, and repo-green**.
-A bounded live run shipped **20 vetted cards / 60 targeted** across all six CPA
-sections with the "beat-a-baseline" gate **PASS**. The next task (this plan) is to
-**raise the ship rate and scale toward 50k** via better corpus (MCP), retrieval +
-generator upgrades, and full fan-out.
+The scale-up plan (`improve_rag_retrieval_and_generator`) is now **implemented**:
+chunk-quality filter, `gpt-5-mini` model-aware generator + v2 decline prompt,
+reranked retrieval with a richer query, full fan-out (concurrent generation +
+Batch-API path + concurrent embeddings + parallel-judge wave plan + sampled-audit
+gate), and a Tier-A corpus fetch helper. Offline suite: **71 passing**. Validated
+end-to-end **offline** on a freshly-fetched real corpus (IRS/NIST/OpenStax);
+the bounded **live** `gpt-5-mini` proof2 + full 50k run need an `OPENAI_API_KEY`
+(and `ANNAS_SECRET_KEY` for Tier-B).
 
 ## What exists (done + verified)
 
@@ -57,34 +61,36 @@ generator upgrades, and full fan-out.
 - Provenance = `source_passage` + `gen_method` + `checker_status`; offline provider
   path is deterministic + keyless.
 
-## Pending work (this plan)
+## Status of the scale-up plan (all code to-dos done)
 
-See the plan `improve_rag_retrieval_and_generator` for the authoritative to-dos.
-Execution order:
+| Plan item | State |
+| --- | --- |
+| chunk-quality filter (`chunk.py::_is_low_value`) | ✅ done (dropped 1002/2235 low-value chunks on the real corpus) |
+| `gpt-5-mini` model-aware generator + `gpt-4o` fallback | ✅ done (`openai_generate.py`, `config.py`) |
+| v2 decline prompt (`{"skip":true}`, no placeholders, TBS numbers from passage) | ✅ done (+ `finalize_candidate` skip handling) |
+| richer query (confusion treatments) + hybrid-arm reranker | ✅ done (`retrieve.py`; LLM live, deterministic offline fallback) |
+| fan-out: concurrent gen + Batch API + concurrent embeddings | ✅ done (`generate.py`, `providers/openai_batch.py`, `index.py`; offline stays sequential/deterministic; resumable) |
+| scaled judging: wave plan + sampled-audit gate | ✅ done (`cursor_judge.py::plan`, `judge.py::_audit_split`, `judge_mode=audit`) |
+| Tier-A corpus fetch/register | ✅ done (`scripts/fetch_corpus.py`; IRS/NIST/OpenStax registered + indexed) |
+| tests | ✅ 71 offline tests green |
+| **live** proof2 (gpt-5-mini) + parallel judge + compare | ⏳ needs `OPENAI_API_KEY` (validated **offline** end-to-end instead) |
+| **50k** full run (`just cardgen-full`) | ⏳ allocation validated (50000 items across the 6 sections); full run needs key + broader corpus |
 
-1. **Corpus via MCP** (biggest lever): `annas-mcp` `book_search`→`book_download`
-   (exam-aligned accounting/audit/tax/IS + CPA-review textbooks, Tier-B) as
-   primary; `agent-reach` `get_status` + built-in web/`curl` for Tier-A
-   (OpenStax/IRS/PCAOB/GAO/SEC/NIST/AICPA); `paper-search-mcp` for open-access
-   papers. Register via `ingest.register_source(...)`; re-ingest + re-index.
-2. **Ship-rate:** `gpt-5-mini` (model-aware API — see gotchas) + **v2 decline
-   prompt** (`{"skip":true}` when unsupported; no schema placeholders; TBS numbers
-   must be in the passage); **chunk-quality filter** (drop heading/stub/stem/short);
-   **reranker + richer query** in `retrieve.py`.
-3. **Fan-out:** concurrent async generation (bounded `AsyncOpenAI`) + optional
-   OpenAI **Batch API**; concurrent embeddings/retrieve/rerank; **N parallel Cursor
-   judge subagents in waves** + a **sampled-audit** gate (`judge_mode=full|audit`).
-4. **Rerun** bounded as `run-id proof2` (gpt-5-mini), fan out judge subagents,
-   `resume`, and **compare vs 20/60**. Then optional `just cardgen-full` (50k).
+**Corpus MCP note:** `annas-mcp` / `agent-reach` / `paper-search-mcp` were **not
+configured** in the build environment, so Tier-B ingestion is agent/MCP-driven
+(use `scripts/fetch_corpus.py --register-local` to fold an MCP download into the
+manifest). Tier-A was fetched over HTTP by the helper.
 
 ## Run / test
 
 ```bash
-just test-cardgen                    # offline, keyless, 53 tests
-just cardgen all --target 60 --run-id proof2   # live (needs OPENAI_API_KEY); writes judge queue, pauses
-# operator fans out parallel Cursor judge subagents to fill out/<run>/07-judge/verdicts/
+just test-cardgen                    # offline, keyless, 71 tests
+uv run python scripts/fetch_corpus.py --reindex        # fetch Tier-A corpus + reindex (from tools/cardgen)
+just cardgen all --target 60 --run-id proof2           # live (needs OPENAI_API_KEY); writes judge queue + queue/plan.json, pauses
+# fan out parallel Cursor judge subagents (see queue/plan.json) to fill out/<run>/07-judge/verdicts/
 just cardgen resume --run-id proof2  # leakage/dedup/baseline/emit
-just cardgen-full                    # full 50k allocation (resumable)
+just cardgen-full                    # full 50k allocation (resumable/idempotent)
+# scale knobs: --judge-mode audit  --concurrency 40  --batch-api  --no-rerank
 just check                           # whole-repo gate (cardgen excluded)
 ```
 
@@ -100,7 +106,10 @@ just check                           # whole-repo gate (cardgen excluded)
   with `request_smart_mode_approval: true` + the exact block reason.
 - **Sandbox:** downloads / OpenAI calls need `full_network`; corpus writes to the
   gitignored `tools/cardgen/corpus/`.
-- **`generate.run` is sequential** today — the fan-out step fixes throughput for 50k.
+- **`generate.run` fan-out:** live runs use a bounded-concurrency asyncio driver
+  (`--concurrency`, default 24) or the OpenAI Batch API (`--batch-api`); **offline
+  stays sequential + deterministic**. Generation is resumable (existing candidates
+  are skipped), so interrupted 50k runs continue cheaply.
 - **Anki tags cannot contain spaces** — `emit.py` sanitizes (`_safe_tag`).
 - **`.env`** must be `OPENAI_API_KEY=sk-...` (a doubled `sk-sk-` prefix 401s — bug
   already fixed; `.env.example` hardened). `ANNAS_SECRET_KEY`/`ANNAS_DOWNLOAD_PATH`

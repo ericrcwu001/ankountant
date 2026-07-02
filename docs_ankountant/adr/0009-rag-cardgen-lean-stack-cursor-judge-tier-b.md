@@ -69,5 +69,34 @@ requirement are all **unchanged** from `docs_ankountant/rag/`.
 - **Runtime stays AI-off:** nothing here runs at study time; cards are static
   data imported as ordinary notes (Option A).
 
+## Addendum — scale-up (ship-rate + 50k throughput)
+
+Implementing the `improve_rag_retrieval_and_generator` plan refined a few stack
+choices (no reversal of the above):
+
+- **Generator → `gpt-5-mini`** (a reasoning model) with a **model-aware** chat
+  API (omit `temperature`/`seed`; use `max_completion_tokens` + `reasoning_effort`)
+  and a **`gpt-4o` fallback** on 404/no-access. A **v2 prompt** adds a *decline
+  rule* (`{"skip": true}` when the passages can't ground a faithful card), bans
+  schema placeholders, and requires TBS numbers to come from the passage — "a
+  wrong card is worse than no card", enforced at generation, not just judging.
+- **Retrieval quality:** a Stage-2 **chunk-quality filter** (drop
+  heading/stub/TOC/table/bare-stem chunks) + a **richer query** (confusion-set
+  treatments) + a **hybrid-arm reranker** (cheap LLM live; deterministic lexical
+  fallback offline).
+- **Throughput:** live generation runs under a **bounded-concurrency asyncio
+  driver** or the **OpenAI Batch API** (~50% cheaper), with concurrent embeddings.
+  The **offline** backend stays sequential + deterministic, and generation is
+  **resumable/idempotent** so a 50k run continues after interruption.
+- **Judging at scale:** the batched Cursor-subagent queue gains a **wave plan**
+  (`queue/plan.json`, N subagents/wave) and an optional **sampled-audit gate**
+  (`judge_mode=audit`): judge a deterministic statistical sample + rely on the
+  deterministic self-check to gate the remainder, keeping the 50k gate tractable
+  while still measuring the wrong-rate.
+
+Cost posture is unchanged in shape; the Batch API path lowers the full-run OpenAI
+spend. Judge independence (provider+model separation) and the personal-use
+licensing posture are unchanged.
+
 Supersedes the stack/licensing specifics of ADR 0003 for the personal-use build;
 ADR 0003 remains the reference for the public-product posture.
