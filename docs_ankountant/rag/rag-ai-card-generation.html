@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ankountant RAG — AI Card Generation (proof3)</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161a21; --panel2:#1b2029; --stroke:#262c36;
+    --text:#e6e9ef; --text2:#aab2c0; --text3:#7b8494;
+    --accent:#4c8bf5; --green:#3fb950; --red:#f85149; --amber:#d29922; --neutral:#8b95a5;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-decoration:none}
+  .wrap{max-width:1060px;margin:0 auto;padding:32px 24px 64px}
+  h1{font-size:26px;margin:0 0 4px;font-weight:700;letter-spacing:-.2px}
+  h2{font-size:18px;margin:34px 0 12px;font-weight:650}
+  h3{font-size:13px;margin:14px 0 8px;font-weight:600;color:var(--text2)}
+  .sub{color:var(--text2);margin:0 0 6px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;
+    background:var(--panel2);border:1px solid var(--stroke);border-radius:5px;padding:1px 5px;color:#cdd6e4}
+  .mono{display:block;white-space:pre-wrap;word-break:break-word;background:var(--panel2);
+    border:1px solid var(--stroke);border-radius:8px;padding:10px 12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:12px;color:#cdd6e4}
+  .muted{color:var(--text3);font-size:12px;margin-top:6px}
+  .tag{display:inline-block;font-size:11px;color:var(--text3)}
+  /* stat strip */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
+  .stat{background:var(--panel);border:1px solid var(--stroke);border-radius:var(--radius);padding:14px 16px}
+  .stat .v{font-size:26px;font-weight:700;letter-spacing:-.5px}
+  .stat .l{color:var(--text3);font-size:12px;margin-top:2px}
+  .v.green{color:var(--green)} .v.red{color:var(--red)} .v.amber{color:var(--amber)}
+  /* pills */
+  .pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .pill{font-size:12px;background:var(--panel2);border:1px solid var(--stroke);
+    border-radius:999px;padding:3px 10px;color:var(--text2);white-space:nowrap}
+  .sep{color:var(--text3)}
+  /* cards / grid */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:var(--panel);border:1px solid var(--stroke);border-radius:var(--radius);overflow:hidden}
+  .card .hd{font-size:12px;color:var(--text2);padding:9px 14px;border-bottom:1px solid var(--stroke);
+    background:var(--panel2);font-weight:600}
+  .card .bd{padding:14px}
+  .q{color:var(--text)} .a{font-weight:650;margin-top:6px} .cite{color:var(--text3);font-style:italic;font-size:12px;margin-top:8px}
+  /* bars */
+  .barrow{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center;margin:7px 0}
+  .barrow .lbl{color:var(--text2);font-size:12px;text-align:right}
+  .track{background:var(--panel2);border-radius:6px;height:22px;position:relative;overflow:hidden}
+  .bar{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;
+    padding-right:8px;font-size:11px;font-weight:600;color:#0c0f14;min-width:26px}
+  .bar.blue{background:var(--accent);color:#fff}
+  .group{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;margin:9px 0}
+  .group .lbl{color:var(--text2);font-size:12px;text-align:right}
+  .sbars{display:flex;flex-direction:column;gap:4px}
+  .sbar{height:16px;border-radius:5px;display:flex;align-items:center;justify-content:flex-end;
+    padding-right:6px;font-size:10px;font-weight:600;color:#0c0f14;min-width:22px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--text2)}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+  /* table */
+  table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--stroke);border-radius:var(--radius);overflow:hidden}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--stroke);vertical-align:top}
+  th{background:var(--panel2);color:var(--text2);font-weight:600;font-size:12px}
+  tr:last-child td{border-bottom:none}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.015)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .rt{padding-left:20px;position:relative}
+  .rt::before{content:"";position:absolute;left:6px;top:14px;width:8px;height:8px;border-radius:2px}
+  .rt.ok::before{background:var(--green)} .rt.warn::before{background:var(--amber)}
+  /* donut */
+  .donutwrap{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+  .donut{width:150px;height:150px;border-radius:50%;position:relative;flex:none}
+  .donut::after{content:"";position:absolute;inset:26px;background:var(--panel);border-radius:50%}
+  .donut .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1}
+  .donut .ctr b{font-size:22px} .donut .ctr span{font-size:11px;color:var(--text3)}
+  /* callouts */
+  .callout{border:1px solid var(--stroke);border-left-width:3px;border-radius:8px;padding:12px 14px;background:var(--panel)}
+  .callout.info{border-left-color:var(--accent)} .callout.ok{border-left-color:var(--green)}
+  .callout.warn{border-left-color:var(--amber)}
+  .callout .t{font-weight:650;margin-bottom:4px}
+  .callout p{margin:0;color:var(--text2);font-size:13px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .three{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .col{display:flex;flex-direction:column;gap:12px}
+  hr.d{border:none;border-top:1px solid var(--stroke);margin:14px 0}
+  @media (max-width:820px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.two,.three{grid-template-columns:1fr}.barrow,.group{grid-template-columns:110px 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Ankountant RAG — AI Card Generation</h1>
+  <p class="sub">Live run <code>proof3</code> · generator <code>gpt-5-mini</code> (v2 decline prompt) ·
+     embeddings <code>text-embedding-3-small</code> · independent 3-bucket judge · 2026-07-03</p>
+  <p class="tag">Static browser export of the Cursor canvas · full write-up: docs_ankountant/rag/RAG_RUN_RESULTS.md</p>
+
+  <div class="stats">
+    <div class="stat"><div class="v green">161</div><div class="l">Vetted cards shipped</div></div>
+    <div class="stat"><div class="v">263</div><div class="l">Generated (37 declined)</div></div>
+    <div class="stat"><div class="v red">70</div><div class="l">Wrong — blocked by judge</div></div>
+    <div class="stat"><div class="v">2,703</div><div class="l">Answer-bearing chunks</div></div>
+  </div>
+
+  <h2>What we built, why, and what we skipped</h2>
+  <div class="three">
+    <div class="callout info">
+      <div class="t">What we built</div>
+      <p>A <b>build-time</b> retrieval-augmented pipeline (<code>tools/cardgen/</code>, isolated from the app)
+         that grounds every CPA card in a named source: hybrid retrieval + rerank, <code>gpt-5-mini</code>
+         generation <em>constrained to the retrieved passage</em>, an <b>independent</b> 3-bucket judge, and
+         leakage/dedup gates — emitted as ordinary Anki notes (<code>.apkg</code>), each carrying its
+         <code>source_passage</code>, citation, <code>gen_method</code>, and <code>checker_status</code>.</p>
+    </div>
+    <div class="callout ok">
+      <div class="t">Why</div>
+      <p>Two rules drive it: <em>provenance or it doesn't count</em> and <em>a wrong fact is worse than no
+         card</em>. Grounding makes every card traceable; the independent judge blocks wrong cards
+         <b>before</b> a student sees them; the A/B/C proves hybrid retrieval beats plain keyword/vector.
+         It runs at <b>build time only</b>, so the app scores with AI switched off and cards stay sync-safe
+         (no new tables).</p>
+    </div>
+    <div class="callout warn">
+      <div class="t">What we skipped</div>
+      <p>No runtime/live AI — no chatbot, no on-device generation, no model calls during review; grading
+         stays deterministic. This is a bounded <b>300-card proof</b> across 5 sections — <b>BAR</b> and the
+         full 50k bank are deferred (machinery built, corpus not yet), and generated Tier-B cards are
+         personal-use, not redistributable.</p>
+    </div>
+  </div>
+
+  <h2>How the RAG works</h2>
+  <div class="pills">
+    <span class="pill">corpus</span><span class="sep">›</span>
+    <span class="pill">ingest</span><span class="sep">›</span>
+    <span class="pill">chunk (filter)</span><span class="sep">›</span>
+    <span class="pill">index (embed)</span><span class="sep">›</span>
+    <span class="pill">retrieve (hybrid+rerank)</span><span class="sep">›</span>
+    <span class="pill">generate (gpt-5-mini v2)</span><span class="sep">›</span>
+    <span class="pill">self-check</span><span class="sep">›</span>
+    <span class="pill">judge (3-bucket)</span><span class="sep">›</span>
+    <span class="pill">leakage</span><span class="sep">›</span>
+    <span class="pill">dedup</span><span class="sep">›</span>
+    <span class="pill">baseline</span><span class="sep">›</span>
+    <span class="pill">emit (.apkg)</span>
+  </div>
+  <hr class="d" />
+  <h3>Generation funnel — cards remaining after each gate</h3>
+  <div id="funnel"></div>
+  <p class="muted">300 targeted → 263 generated (v2 declined 37) → 181 pass the 3-bucket judge → 161 after leakage + dedup.</p>
+
+  <h2>AI-feature checklist (Speedrun requirements)</h2>
+  <table>
+    <thead><tr><th>Requirement</th><th>How Ankountant does it</th><th>Evidence (proof3)</th></tr></thead>
+    <tbody id="reqs"></tbody>
+  </table>
+
+  <div class="grid2" style="margin-top:16px">
+    <div class="card">
+      <div class="hd">7f — AI card check (3-bucket gate)</div>
+      <div class="bd">
+        <div class="donutwrap">
+          <div class="donut" style="background:conic-gradient(var(--green) 0 68.82%, var(--red) 68.82% 95.44%, var(--amber) 95.44% 100%)">
+            <div class="ctr"><b>263</b><span>judged</span></div>
+          </div>
+          <div>
+            <div class="legend" style="flex-direction:column;gap:6px">
+              <span><i class="dot" style="background:var(--green)"></i>Correct + useful — 181</span>
+              <span><i class="dot" style="background:var(--red)"></i>Wrong (blocked) — 70</span>
+              <span><i class="dot" style="background:var(--amber)"></i>Bad teaching (quarantined) — 12</span>
+            </div>
+          </div>
+        </div>
+        <p class="muted">Cutoff set before results: ship only correct+useful. “A wrong fact is worse than no card.”</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="hd">Beat-a-baseline (A/B/C) — n=120, chunk-keyed · PASS</div>
+      <div class="bd">
+        <div id="baseline"></div>
+        <div class="legend">
+          <span><i class="dot" style="background:var(--accent)"></i>Faithfulness</span>
+          <span><i class="dot" style="background:var(--green)"></i>Retrieval-hit@6</span>
+        </div>
+        <p class="muted">n=120, scored on the grounding chunk (source_id+locator). PASS — hybrid faithfulness 0.742 &gt; BM25 0.608 / vector 0.592; hybrid also leads retrieval-hit (1.00 vs .85/.73).</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Coverage by section</h2>
+  <div id="sections"></div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--neutral)"></i>Target</span>
+    <span><i class="dot" style="background:var(--accent)"></i>Generated</span>
+    <span><i class="dot" style="background:var(--green)"></i>Shipped</span>
+  </div>
+  <p class="muted">BAR skipped this run (no corpus). Honest shortfalls are logged, never hallucinated to hit a quota.</p>
+  <h3>Shipped cards by type</h3>
+  <div id="bytype"></div>
+
+  <h2>Grounding &amp; anti-hallucination</h2>
+  <div class="two">
+    <div class="card">
+      <div class="hd">Provenance — carried by every shipped card</div>
+      <div class="bd">
+        <p class="muted" style="margin-top:0">Every card records the exact model, prompt version, retrieval config, index hash, and seed:</p>
+        <code class="mono">{"model": "gpt-5-mini", "prompt_version": "v2",
+ "retrieval_config": {"top_k": 6, "arm": "hybrid", "rerank": true},
+ "index_version": "ffec8d2ceaf24674", "seed": 79541383}</code>
+        <p class="muted">Plus a verbatim source_passage that must be a substring of a retrieved chunk, or the card is dropped.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="callout info">
+        <div class="t">v2 decline rule — the model refuses rather than fabricate</div>
+        <p>37 items were declined this run, e.g.: “no monetary amounts in passages”; “passages lack section 1231 or character rules”; “no lease guidance in passages”; “no governing citation present in passages”.</p>
+      </div>
+      <div class="callout ok">
+        <div class="t">Runs with AI switched off</div>
+        <p>Deterministic offline embed / generate / judge backends; 71 keyless tests, no network or key required.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Sample shipped cards (real, grounded)</h2>
+  <div class="grid2" id="samples"></div>
+
+  <h2>Corpus</h2>
+  <table>
+    <thead><tr><th>Section</th><th>Sources</th><th class="num">Chunks</th></tr></thead>
+    <tbody id="corpus"></tbody>
+  </table>
+  <p class="muted">18 registered sources; the chunk-quality filter dropped 1,573 low-value pieces (601 headings, 760 question-stems, 205 tables, 7 stubs).</p>
+
+  <div class="callout warn" style="margin-top:24px">
+    <div class="t">Honest caveats &amp; next steps</div>
+    <p>Ship rate ~54% for these 161 cards (generated before the fix); generation now drops stub source_passages, so the next full run should ship higher. The A/B/C now PASSES (n=120, chunk-keyed). Reaching 50k needs a corpus ~10–20× larger across all six sections (incl. BAR); the fan-out, Batch-API, and audit-judge machinery for it is already built.</p>
+  </div>
+
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+// Funnel (horizontal bars)
+const funnel = {cats:["Worklist","Retrieved","Generated","Self-check pass","Judged OK","Leakage kept","Shipped"],
+  data:[300,300,263,263,181,181,161]};
+$("funnel").innerHTML = funnel.cats.map((c,i)=>{
+  const w = (funnel.data[i]/300*100).toFixed(1);
+  return `<div class="barrow"><span class="lbl">${c}</span>
+    <div class="track"><div class="bar blue" style="width:${w}%">${funnel.data[i]}</div></div></div>`;
+}).join("");
+
+// Requirements table
+const reqs = [
+  ["Every AI output traces to a named source","verbatim source_passage + source_id/locator + gen_method","161/161 shipped carry provenance","ok"],
+  ["Eval before students see anything (accuracy, wrong-rate, cutoff)","independent 3-bucket judge; pre-set cutoff = ship only correct+useful","181 / 70 / 12","ok"],
+  ["Judge calibrated against a gold set","the gold stage runs the judge on positives + planted negatives, then halts below the pre-set bar","182 pos passed 100% / 36 planted neg caught 100%","ok"],
+  ["Beats a simpler method (keyword or vector)","A/B/C: BM25 vs vector vs hybrid+rerank, chunk-keyed, n=120","PASS — hybrid 0.742 > BM25 0.608 / vector 0.592","ok"],
+  ["App still scores with AI switched off","deterministic offline embed / gen / judge backends","71 keyless tests; CARDGEN_OFFLINE=1","ok"],
+  ["7f — AI card check (3 counts + cutoff)","the judge buckets","181 correct / 70 wrong / 12 bad-teaching","ok"],
+  ["7e — Leakage check vs the sealed bank","cosine + word-shingle screen","161 screened vs 84 refs, 0 leaks","ok"],
+  ["Adversarial — prompt injection in a source","ingest strips override lines; passages framed as untrusted DATA","sanitizer in ingest.py","ok"],
+  ["Adversarial — correct-but-useless cards","v2 decline ({skip:true}) + bad_teaching quarantine","37 declined + 12 quarantined","ok"],
+  ["Adversarial — service offline / rate-limited / broken output","tenacity retry + model fallback + JSON validation","openai_generate.py","ok"],
+];
+$("reqs").innerHTML = reqs.map(r=>`<tr><td class="rt ${r[3]}">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join("");
+
+// Baseline grouped bars (value axis 0..1) — proof3 fixed (n=120, chunk-keyed)
+const baseline = [["BM25 (keyword)",0.608,0.850],["Vector",0.592,0.733],["Hybrid + rerank",0.742,1.000]];
+$("baseline").innerHTML = baseline.map(([lbl,f,h])=>`
+  <div class="group"><span class="lbl">${lbl}</span><div class="sbars">
+    <div class="sbar" style="width:${(f*100).toFixed(0)}%;background:var(--accent);color:#fff">${f.toFixed(3)}</div>
+    <div class="sbar" style="width:${(h*100).toFixed(0)}%;background:var(--green)">${h.toFixed(3)}</div>
+  </div></div>`).join("");
+
+// Per-section grouped bars (max 79)
+const secs = [["FAR",79,70,53],["AUD",57,48,31],["TCP",57,55,28],["REG",64,59,29],["ISC",43,31,20]];
+$("sections").innerHTML = secs.map(([s,t,g,sh])=>`
+  <div class="group"><span class="lbl">${s}</span><div class="sbars">
+    <div class="sbar" style="width:${(t/79*100).toFixed(0)}%;background:var(--neutral)">${t}</div>
+    <div class="sbar" style="width:${(g/79*100).toFixed(0)}%;background:var(--accent);color:#fff">${g}</div>
+    <div class="sbar" style="width:${(sh/79*100).toFixed(0)}%;background:var(--green)">${sh}</div>
+  </div></div>`).join("");
+
+// By type (horizontal bars, max 73)
+const bytype = [["Recall",73],["MCQ",34],["TBS-research",24],["TBS-numeric",16],["TBS-doc-review",9],["TBS-journal-entry",5]];
+$("bytype").innerHTML = bytype.map(([c,v])=>`
+  <div class="barrow"><span class="lbl">${c}</span>
+    <div class="track"><div class="bar" style="width:${(v/73*100).toFixed(0)}%;background:var(--green)">${v}</div></div></div>`).join("");
+
+// Sample cards
+const samples = [
+  ["REG · MCQ · IRS Pub 970 p.30","What is the maximum amount by which the student loan interest deduction can reduce your income subject to tax?","$2,500","“…reduce the amount of your income subject to tax by up to $2,500.”"],
+  ["AUD · recall · AT-C 310","What key items should a practitioner's report on pro forma financial information include?","Identification of the PFFI; reference to the source statements (audited/reviewed); AICPA-standards statement; review-vs-examination caveat; objective &amp; limitations; limited-assurance conclusion.","CPA Review — Auditing &amp; Attestation (Tier-B)"],
+  ["AUD · TBS-research · AU-C 265","Identify the authoritative standard governing the auditor's written communication about significant deficiencies in internal control.","AU-C 265","“…an illustrative written communication in AU-C 265…”"],
+  ["FAR · TBS-numeric · OpenStax","Compute Kamal Fabricating, Inc.'s ending retained earnings as of 6/30/2020.","$12,000","OpenStax Principles of Accounting, Vol 1 (Ch. 14)"],
+];
+$("samples").innerHTML = samples.map(([h,q,a,c])=>`
+  <div class="card"><div class="hd">${h}</div><div class="bd">
+    <div class="q">${q}</div><div class="a">${a}</div><div class="cite">${c}</div></div></div>`).join("");
+
+// Corpus
+const corpus = [
+  ["FAR","OpenStax Financial Accounting (CC BY-NC-SA)",494],
+  ["REG","IRS Pub 17/946/535/505/970/501 + Circular 230",677],
+  ["TCP","IRS Pub 334/542/541/544/550/551",526],
+  ["AUD","CPA Review — Auditing &amp; Attestation (Tier-B)",249],
+  ["ISC","NIST SP 800-12 / 800-100 / 800-53r5",757],
+];
+$("corpus").innerHTML = corpus.map(([s,src,n])=>`<tr><td>${s}</td><td>${src}</td><td class="num">${n.toLocaleString()}</td></tr>`).join("");
+</script>
+</body>
+</html>

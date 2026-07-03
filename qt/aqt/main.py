@@ -1793,10 +1793,9 @@ title="{}" {}>{}</button>""".format(
     ##########################################################################
 
     def setup_auto_update(self, _log: list[DownloadLogEntry]) -> None:
-        from aqt.update import check_for_update
-
-        if aqt.mw.pm.check_for_updates():
-            check_for_update()
+        # Desktop update checks are disabled: this fork must not query upstream
+        # Anki's ankiweb.net servers, which always report it as out of date.
+        return
 
     # Timers
     ##########################################################################

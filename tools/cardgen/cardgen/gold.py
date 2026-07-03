@@ -32,6 +32,13 @@ from .providers.base import get_judge
 # tools/cardgen/ -> tools/ -> <repo>/rslib/src/ankountant/seed_content.json
 _SEED = ROOT.parent.parent / "rslib" / "src" / "ankountant" / "seed_content.json"
 
+# Pre-registered judge-trust bar (doc 05, "cutoff pre-registered"): the judge must
+# pass ~all positives and catch ~all planted negatives, or its verdicts aren't
+# trustworthy — and the *judge* (not the generator) is fixed first. Set BEFORE
+# looking at any run's outputs.
+CALIBRATION_MIN_POS = 0.9
+CALIBRATION_MIN_NEG = 0.9
+
 
 def _section_from_tag(tag: str, default: str = "FAR") -> str:
     head = (tag or "").split("::")[0].upper()
@@ -172,3 +179,26 @@ def calibrate(cfg: RunConfig, seed_path=None) -> dict:
         f"negatives recall {result['negatives_recall']:.2f}"
     )
     return result
+
+
+def run(cfg: RunConfig) -> None:
+    """Stage: calibrate the judge against the gold set before trusting the gate.
+
+    Builds the gold set (positives bootstrapped from the human-verified seed
+    content + planted negatives), runs the *configured* judge over it, writes
+    ``<out>/judge_calibration.json``, and HALTS the run when the judge falls
+    below the pre-registered bar — "fix the judge, not the generator, first".
+
+    Offline (CI / keyless) this exercises the deterministic ``OfflineJudge`` so
+    the gate is reproducible; live, it exercises the Cursor judge's inline
+    grounding/marker check (the batched subagents grade the real ship queue).
+    """
+    res = calibrate(cfg)
+    pos, neg = res["positives_pass_rate"], res["negatives_recall"]
+    if pos < CALIBRATION_MIN_POS or neg < CALIBRATION_MIN_NEG:
+        raise SystemExit(
+            f"[gold] judge below bar: positives pass {pos:.2f} "
+            f"(need >= {CALIBRATION_MIN_POS:.2f}), negatives recall {neg:.2f} "
+            f"(need >= {CALIBRATION_MIN_NEG:.2f}) — fix the judge, not the generator."
+        )
+    print(f"[gold] judge calibration PASS -> {cfg.out_dir / 'judge_calibration.json'}")

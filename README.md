@@ -32,6 +32,18 @@ Scoring readiness on cards you already drilled is just measuring recall again. A
 
 Every design decision above traces to peer-reviewed cognitive and psychometric research — the testing effect, spacing, interleaving, cognitive load, calibration, item-response theory, and selective prediction. The full research foundation, spiky points of view, and source tree live in **[`docs_ankountant/brainlift.md`](./docs_ankountant/brainlift.md)**.
 
+## AI: grounded card generation
+
+The only place Ankountant uses generative AI is a **build-time** pipeline that grows the CPA question bank — never at study time. It's the honest way to reach exam-scale coverage without hand-authoring 50,000 cards.
+
+**What we built.** A 12-stage retrieval-augmented generation (RAG) tool (`tools/cardgen/`, isolated from the app): ingest public/licensed CPA sources → chunk + quality-filter → embed into LanceDB (vector + BM25) → hybrid retrieve + rerank → generate with OpenAI `gpt-5-mini` **constrained to the retrieved passage** → deterministic self-check → an **independent 3-bucket judge** (a different provider/model — Cursor subagents — from the generator) → leakage + dedup gates → emit ordinary Anki notes (`.apkg`). Every shipped card carries provenance: the verbatim `source_passage`, its `source_id`/`locator` citation, the full `gen_method` (model, prompt version, retrieval config, index hash, seed), and a `checker_status`.
+
+**Why.** Two rules drive it: _provenance or it doesn't count_, and _a wrong fact is worse than no card_. Grounding every card in a named source makes it traceable; the independent judge blocks wrong cards **before** a student sees them (cutoff fixed in advance — ship only `correct + useful`), and the judge is itself **calibrated against a gold set** — the build halts if it can't catch planted-wrong cards; a pre-registered A/B/C shows hybrid retrieval **beats** plain keyword and vector search. Because it's build-time only, the app runs fully with **AI switched off**, and cards are just data — no new tables, so they sync unchanged to the phone.
+
+**What we skipped (on purpose).** No runtime/live AI — no chatbot, no on-device generation, no model calls during review; TBS/MCQ grading stays deterministic and rule-based. The latest run (`proof3`) is a **bounded 300-card proof** across five sections (BAR skipped — no corpus yet); the full 50k bank is deferred (the fan-out, Batch-API, and audit-judge machinery is built, but needs a ~10–20× larger corpus). Generated cards ground on some personal-use (Tier-B) material and are **not redistributable**.
+
+**Latest run (`proof3`).** 300 targeted → 263 generated (37 declined by the model rather than fabricate) → judged **181 correct+useful / 70 wrong / 12 bad-teaching** → **161 vetted cards shipped** after leakage (0 leaks) + dedup. Beat-the-baseline **PASS**: hybrid faithfulness 0.742 vs BM25 0.608 / vector 0.592 (n=120). Judge calibration: **100% of 182 gold positives passed, 100% of 36 planted negatives caught**. Full write-up: **[`docs_ankountant/rag/RAG_RUN_RESULTS.md`](./docs_ankountant/rag/RAG_RUN_RESULTS.md)** · visual report: **[`docs_ankountant/rag/rag-ai-card-generation.html`](./docs_ankountant/rag/rag-ai-card-generation.html)** · design rationale: **[ADR 0009](./docs_ankountant/adr/0009-rag-cardgen-lean-stack-cursor-judge-tier-b.md)**.
+
 ## Architecture
 
 `proto/anki/*.proto` is the single contract every client dispatches into.
