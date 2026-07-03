@@ -1,6 +1,9 @@
 .env
 out/
 corpus/
+# Harvested template fill data (reproducible via scripts/harvest_templates.py).
+# Curated template families live in templates/ and ARE committed.
+data/
 *.apkg
 __pycache__/
 .pytest_cache/

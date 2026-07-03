@@ -1,0 +1,13 @@
+# recall (fill-in-the-blank) for dollar thresholds stated verbatim in IRS pubs.
+# Section comes from each row (REG/TCP). Rows harvested into data/irs_cloze.yaml.
+# IRS pubs are public domain -> redistributable.
+template_id: irs_cloze_recall
+template_version: v1
+card_type: recall
+skill_level: R&U
+topic: "{topic}"
+citation: "{display_citation}"
+front: "Fill in the blank(s), as stated in {display_citation}: {cloze}"
+back: "{answer}  (Source: {display_citation})"
+variant_key: "cloze-{row_id}"
+data_file: irs_cloze.yaml

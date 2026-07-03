@@ -130,8 +130,9 @@ def _redact_tokens(text: str, tokens: list[str]) -> str:
 def _payload_research(tpl: dict, row: dict) -> dict:
     citations = [str(c) for c in row["citations"]] if isinstance(row.get("citations"), list) else [str(row.get("citations", ""))]
     exhibits = _render_obj(tpl.get("exhibits", [{"title": "Scenario", "kind": "text", "body": "{source_passage}"}]), row)
-    # Never reveal the answer: strip the citation(s) from any exhibit body.
-    redact = list(citations) + [str(row.get("display_citation", ""))]
+    # Never reveal the answer: strip the citation(s) — and any row-specified extra
+    # tokens (e.g. a control ID/name printed in the requirement) — from exhibits.
+    redact = list(citations) + [str(row.get("display_citation", ""))] + [str(t) for t in (row.get("redact") or [])]
     for ex in exhibits:
         if isinstance(ex, dict) and ex.get("body"):
             ex["body"] = _redact_tokens(str(ex["body"]), redact)
@@ -194,7 +195,13 @@ def load_family(cfg: RunConfig, tpl_path: Path) -> tuple[dict, list[dict]]:
     tpl = _load_yaml(tpl_path)
     rows = tpl.get("rows")
     if rows is None and tpl.get("data_file"):
-        rows = (_load_yaml(cfg.data_dir / tpl["data_file"]) or {}).get("rows", [])
+        data_path = cfg.data_dir / tpl["data_file"]
+        if data_path.exists():
+            rows = (_load_yaml(data_path) or {}).get("rows", [])
+        else:
+            print(f"[templates] {tpl_path.name}: data_file '{tpl['data_file']}' not found "
+                  f"(run scripts/harvest_templates.py); skipping this family")
+            rows = []
     return tpl, list(rows or [])
 
 

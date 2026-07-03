@@ -1,0 +1,14 @@
+# ISC research: given a control requirement (ID + name redacted), name the NIST
+# SP 800-53 control identifier. Rows are harvested by scripts/harvest_templates.py
+# into data/nist_controls.yaml. NIST is public domain -> redistributable.
+template_id: nist_control_research
+template_version: v1
+card_type: tbs_research
+section: ISC
+skill_level: Analysis
+topic: "{topic}"
+citation: "{display_citation}"
+prompt: "Identify the NIST SP 800-53 (Rev. 5) control, by its identifier, that establishes the requirement shown in the exhibit."
+step_label: "Governing control"
+variant_key: "nist-{control_id}"
+data_file: nist_controls.yaml

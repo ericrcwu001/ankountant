@@ -1,0 +1,14 @@
+# AUD research: given a described matter (the AU-C cite redacted), name the
+# governing AU-C section. Rows harvested into data/auc_citations.yaml. Grounded in
+# the Tier-B CPA review PDF -> personal-use only.
+template_id: auc_research
+template_version: v1
+card_type: tbs_research
+section: AUD
+skill_level: Analysis
+topic: "the matter described in the exhibit"
+citation: "{display_citation}"
+prompt: "Identify the AU-C section that governs the matter described in the exhibit."
+step_label: "Governing citation"
+variant_key: "{row_id}"
+data_file: auc_citations.yaml
