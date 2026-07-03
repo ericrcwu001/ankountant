@@ -27,14 +27,16 @@ from .providers.base import get_judge
 from .util import is_substring_normalized
 
 ARMS = ["bm25", "vector", "hybrid"]
-# Held-out slice size for the A/B/C. Each item costs one live reference
-# generation, so this is kept modest for a bounded proof (scale up for a full run).
-HELDOUT_N = 24
-# The reference card is generated ONCE per item from a large-k, arm-neutral
-# hybrid retrieval; each arm is then scored on whether its top-k retrieval
-# surfaces the evidence that card needs. This isolates RETRIEVAL (the variable
-# under test) and removes the per-arm LLM-generation noise that would otherwise
-# dominate the headline.
+# Held-out slice size for the A/B/C. When the run's own judged cards are reused as
+# references (the default, no per-item generation), this can be large; the live
+# generate-once fallback (tests / no graded set) is naturally bounded by it.
+HELDOUT_N = 120
+# Each arm is scored on whether its top-k retrieval surfaces the *grounding chunk*
+# (source_id + locator) of the reference card — an unambiguous retrieval signal
+# that is immune to stub/near-miss source_passage text and to reranker text
+# reordering. The reference card is the run's own judged card when available
+# (reuse path), else generated ONCE per item from a large-k arm-neutral hybrid
+# retrieval (fallback). Either way only RETRIEVAL varies across arms.
 REF_K = 30
 # Passing bar is pre-registered (doc 05): hybrid must not regress vs either
 # baseline on the two headline numbers.
@@ -201,6 +203,32 @@ def _passage_texts(retrieved: Any) -> list[str]:
     return [t for t in texts if t]
 
 
+def _passage_ids(retrieved: Any) -> set[tuple[str, str]]:
+    """The ``(source_id, locator)`` grounding keys present in a retrieval result."""
+    seq = retrieved.get("passages", []) if isinstance(retrieved, dict) else retrieved
+    ids: set[tuple[str, str]] = set()
+    for p in seq or []:
+        if isinstance(p, dict):
+            ids.add((str(p.get("source_id", "")), str(p.get("locator", ""))))
+        else:
+            ids.add((str(getattr(p, "source_id", "")), str(getattr(p, "locator", ""))))
+    return ids
+
+
+def _load_graded(cfg: RunConfig) -> dict[str, dict]:
+    """The run's judged cards keyed by item_id (``07-judge/graded.jsonl``).
+
+    Empty when the stage hasn't run (e.g. unit tests) — callers then fall back to
+    the live generate-once path.
+    """
+    graded: dict[str, dict] = {}
+    for row in read_jsonl(cfg.stage_dir("07-judge") / "graded.jsonl"):
+        iid = row.get("item_id")
+        if iid:
+            graded[str(iid)] = row
+    return graded
+
+
 def _cand_dict(cand: Any) -> dict | None:
     if cand is None:
         return None
@@ -296,15 +324,47 @@ def _blank_record(item_id: str, arm: str, status: str = "ok") -> dict:
     }
 
 
-def _eval_item(cfg: RunConfig, item: dict, judge: Any) -> dict[str, dict]:
-    """Score all arms for one item, generating the reference card ONCE.
+def _score_arms(cfg: RunConfig, item: dict, ref: dict, bucket: str | None) -> dict[str, dict]:
+    """Score every arm for one item against a reference card.
 
-    The reference is generated from a large-k, arm-neutral hybrid retrieval and
-    judged once (so the bucket is constant across arms). Each arm is then scored
-    purely on whether its top-k retrieval surfaces the reference card's evidence
-    (``retrieval_hit`` / grounded ``faithful``) plus context precision/recall —
-    the retrieval signal the A/B/C is meant to measure, with no per-arm
-    generation noise.
+    ``retrieval_hit`` / ``faithful`` are keyed on the reference card's *grounding
+    chunk* ``(source_id, locator)`` — did the arm's top-k surface the exact chunk
+    the card was grounded in? — which is immune to stub source_passage text and to
+    reranker text reordering. Context precision/recall stay text-based (continuous).
+    """
+    item_id = str(item.get("item_id", ""))
+    ref_key = (str(ref.get("source_id", "")), str(ref.get("locator", "")))
+    source_passage = ref.get("source_passage", "") or ""
+    payload = ref.get("payload", {}) or {}
+    question = _reference(item, payload)
+    answer = answer_text(payload)
+    ans_rel = answer_relevancy(answer, question)
+
+    out: dict[str, dict] = {}
+    for arm in ARMS:
+        retrieved = retrieve_for(cfg, item, arm, cfg.top_k)
+        arm_texts = _passage_texts(retrieved)
+        arm_ids = _passage_ids(retrieved)
+        hit = 1.0 if (ref_key != ("", "") and ref_key in arm_ids) else 0.0
+        rec = _blank_record(item_id, arm)
+        rec["bucket"] = bucket
+        rec["retrieval_hit"] = hit
+        rec["faithful"] = 1.0 if (hit and bucket != BUCKET_WRONG) else 0.0
+        rec["answer_relevancy"] = ans_rel
+        rec["context_precision"] = context_precision(arm_texts, source_passage)
+        rec["context_recall"] = context_recall(arm_texts, source_passage)
+        rec["_question"] = question
+        rec["_answer"] = answer
+        rec["_contexts"] = arm_texts
+        out[arm] = rec
+    return out
+
+
+def _eval_item(cfg: RunConfig, item: dict, judge: Any) -> dict[str, dict]:
+    """Live generate-once fallback (used in tests / when no graded set exists).
+
+    Generates the reference card ONCE from a large-k arm-neutral hybrid retrieval,
+    judges it once, then scores each arm via :func:`_score_arms` (chunk-hit).
     """
     item_id = str(item.get("item_id", ""))
 
@@ -317,15 +377,12 @@ def _eval_item(cfg: RunConfig, item: dict, judge: Any) -> dict[str, dict]:
     if cd is None:
         return {arm: _blank_record(item_id, arm, "generate_empty") for arm in ARMS}
 
-    source_passage = cd.get("source_passage", "") or ""
-    payload = cd.get("payload", {}) or {}
-
     if _selfcheck_ok(check_candidate(cfg, cand)):
         card = {
             "item_id": cd.get("item_id"),
             "card_type": cd.get("card_type"),
-            "payload": payload,
-            "source_passage": source_passage,
+            "payload": cd.get("payload", {}) or {},
+            "source_passage": cd.get("source_passage", "") or "",
             "citation": cd.get("citation", ""),
         }
         verdicts = judge.judge([card], RUBRIC)
@@ -333,26 +390,30 @@ def _eval_item(cfg: RunConfig, item: dict, judge: Any) -> dict[str, dict]:
     else:
         bucket = BUCKET_WRONG  # blocked before the judge => never ships
 
-    ans_rel = answer_relevancy(answer_text(payload), _reference(item, payload))
-    question = _reference(item, payload)
-    answer = answer_text(payload)
+    return _score_arms(cfg, item, cd, bucket)
 
-    out: dict[str, dict] = {}
-    for arm in ARMS:
-        arm_passages = _passage_texts(retrieve_for(cfg, item, arm, cfg.top_k))
-        hit = 1.0 if (source_passage and any(is_substring_normalized(source_passage, p) for p in arm_passages)) else 0.0
-        rec = _blank_record(item_id, arm)
-        rec["bucket"] = bucket
-        rec["retrieval_hit"] = hit
-        rec["faithful"] = card_faithfulness(source_passage, arm_passages, bucket)
-        rec["answer_relevancy"] = ans_rel
-        rec["context_precision"] = context_precision(arm_passages, source_passage)
-        rec["context_recall"] = context_recall(arm_passages, source_passage)
-        rec["_question"] = question
-        rec["_answer"] = answer
-        rec["_contexts"] = arm_passages
-        out[arm] = rec
-    return out
+
+def _eval_reuse(cfg: RunConfig, worklist: Sequence[dict], graded: dict[str, dict]) -> dict[str, list[dict]]:
+    """Score arms against the run's OWN judged cards (no regeneration).
+
+    Walks the work-list in order, and for the first ``HELDOUT_N`` items that have
+    a judged card, scores every arm on whether its top-k retrieval surfaces that
+    card's grounding chunk. Fast (retrieval only), large-n, and evaluated against
+    the real cards the run produced.
+    """
+    per_arm: dict[str, list[dict]] = {arm: [] for arm in ARMS}
+    n = 0
+    for item in worklist:
+        row = graded.get(str(item.get("item_id", "")))
+        if row is None:
+            continue
+        by_arm = _score_arms(cfg, item, row, row.get("bucket"))
+        for arm in ARMS:
+            per_arm[arm].append(by_arm[arm])
+        n += 1
+        if n >= HELDOUT_N:
+            break
+    return per_arm
 
 
 # ---------------------------------------------------------------------------
@@ -453,10 +514,12 @@ def _render_report(
     lines.append(f"- arms: {', '.join(f'`{a}`' for a in ARMS)}")
     lines.append(f"- pass rule (pre-registered): {PASS_RULE}")
     lines.append(
-        "- method: the card is generated ONCE per item (arm-neutral, large-k hybrid) "
-        "and judged once; each arm is then scored on whether its top-k retrieval "
-        "surfaces that card's evidence. Only RETRIEVAL varies — no per-arm generation "
-        "noise. `faithfulness` = evidence surfaced AND card not judged wrong."
+        "- method: each item's reference is the run's own judged card (or one "
+        "generated once from a large-k arm-neutral hybrid retrieval); each arm is "
+        "scored on whether its top-k retrieval surfaces that card's GROUNDING CHUNK "
+        "(source_id + locator). Only RETRIEVAL varies. `faithfulness` = grounding "
+        "chunk surfaced AND card not judged wrong (chunk-keyed, so stub source text "
+        "and reranker reordering can't skew it)."
     )
     lines.append("")
 
@@ -533,15 +596,21 @@ def _render_report(
 # ---------------------------------------------------------------------------
 def run(cfg: RunConfig) -> dict:
     worklist = load_worklist(cfg)
-    hold = heldout_slice(worklist)
-    judge = get_judge(cfg)
+    graded = _load_graded(cfg)
 
-    per_arm_records: dict[str, list[dict]] = {arm: [] for arm in ARMS}
-    for item in hold:
-        by_arm = _eval_item(cfg, item, judge)
-        for arm in ARMS:
-            per_arm_records[arm].append(by_arm[arm])
+    if graded:
+        # Reuse the run's own judged cards as references (fast, large-n).
+        per_arm_records = _eval_reuse(cfg, worklist, graded)
+    else:
+        # Fallback: live generate-once on a held-out slice (tests / pre-judge).
+        judge = get_judge(cfg)
+        per_arm_records = {arm: [] for arm in ARMS}
+        for item in heldout_slice(worklist):
+            by_arm = _eval_item(cfg, item, judge)
+            for arm in ARMS:
+                per_arm_records[arm].append(by_arm[arm])
     arms_metrics = {arm: aggregate(per_arm_records[arm]) for arm in ARMS}
+    n_held = len(per_arm_records["hybrid"])
 
     ragas_cols = _maybe_ragas(cfg, per_arm_records)
     passed = decide_pass(arms_metrics)
@@ -558,7 +627,7 @@ def run(cfg: RunConfig) -> dict:
 
     metrics = {
         "run_id": cfg.run_id,
-        "held_out_n": len(hold),
+        "held_out_n": n_held,
         "arms": ARMS,
         "thresholds": {
             "leakage_threshold": cfg.leakage_threshold,
@@ -572,12 +641,12 @@ def run(cfg: RunConfig) -> dict:
     }
     write_json(cfg.stage_dir("10-baseline") / "metrics.json", metrics)
 
-    report = _render_report(cfg, len(hold), arms_metrics, per_arm_records, ragas_cols, passed)
+    report = _render_report(cfg, n_held, arms_metrics, per_arm_records, ragas_cols, passed)
     cfg.out_dir.mkdir(parents=True, exist_ok=True)
     (cfg.out_dir / "baseline_report.md").write_text(report, encoding="utf-8")
 
     print(
-        f"[baseline] {len(hold)} held-out items x {len(ARMS)} arms -> "
+        f"[baseline] {n_held} held-out items x {len(ARMS)} arms -> "
         f"{'PASS' if passed else 'FAIL'} "
         f"(hybrid faithful={_fmt(h.get('faithfulness', 0.0))}, "
         f"bucket1={_fmt(h.get('bucket1_rate', 0.0))})"

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from cardgen import gold, judge, selfcheck
 from cardgen.config import RunConfig
 from cardgen.models import (
@@ -15,6 +17,8 @@ from cardgen.models import (
     TBS_JE,
     TBS_NUMERIC,
     TBS_RESEARCH,
+    Verdict,
+    read_json,
     read_jsonl,
     write_jsonl,
 )
@@ -143,3 +147,31 @@ def test_gold_build_and_calibrate(tmp_path, monkeypatch):
     assert res["positives"] > 0 and res["negatives"] > 0
     assert res["positives_pass_rate"] == 1.0, res
     assert res["negatives_recall"] == 1.0, res
+
+
+def test_gold_run_writes_calibration_and_passes(tmp_path, monkeypatch):
+    """The wired `gold` stage produces judge_calibration.json and passes the bar."""
+    monkeypatch.setattr("cardgen.config.ROOT", tmp_path)
+    cfg = RunConfig(offline=True)
+
+    gold.run(cfg)  # offline judge: passes positives, catches planted negatives
+
+    report = cfg.out_dir / "judge_calibration.json"
+    assert report.exists(), "gold stage must write judge_calibration.json"
+    data = read_json(report)
+    assert data["positives"] > 0 and data["negatives"] > 0
+    assert data["positives_pass_rate"] == 1.0 and data["negatives_recall"] == 1.0
+
+
+def test_gold_run_halts_when_judge_misses_negatives(tmp_path, monkeypatch):
+    """A judge that can't catch planted negatives HALTS the run (gate works)."""
+    monkeypatch.setattr("cardgen.config.ROOT", tmp_path)
+    cfg = RunConfig(offline=True)
+
+    class _AllOkJudge:
+        def judge(self, cards, rubric):
+            return [Verdict(c["item_id"], BUCKET_OK, "ok", 1.0) for c in cards]
+
+    monkeypatch.setattr("cardgen.gold.get_judge", lambda _cfg: _AllOkJudge())
+    with pytest.raises(SystemExit):
+        gold.run(cfg)

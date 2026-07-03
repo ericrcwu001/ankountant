@@ -15,7 +15,10 @@ import importlib
 
 from .config import SECTIONS, RunConfig
 
-PRE = ["ingest", "chunk", "index", "worklist", "retrieve", "generate", "selfcheck", "judge"]
+# `gold` calibrates the judge against the gold set (positives + planted negatives)
+# and HALTS the run if the judge can't be trusted — it runs BEFORE `judge` grades
+# the real ship queue ("fix the judge, not the generator, first").
+PRE = ["ingest", "chunk", "index", "worklist", "retrieve", "generate", "selfcheck", "gold", "judge"]
 POST = ["leakage", "dedup", "baseline", "emit"]
 STAGES = PRE + POST
 

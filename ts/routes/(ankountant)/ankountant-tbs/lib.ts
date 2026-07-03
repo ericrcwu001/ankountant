@@ -25,6 +25,51 @@ export const TBS_FIELD = {
 
 export type TbsShape = "journal_entry" | "numeric" | "research" | "doc_review";
 
+/** UI metadata for the four TBS shapes, in the order shown by the TBS-tab
+ *  chooser. Lets the learner pick which kind of simulation to practise. */
+export interface TbsShapeInfo {
+    shape: TbsShape;
+    label: string;
+    /** Decorative glyph (no icon-font dependency), matching the workspace switcher. */
+    glyph: string;
+    /** One-line description of the task type shown under the chooser. */
+    blurb: string;
+}
+
+export const TBS_SHAPES: readonly TbsShapeInfo[] = [
+    {
+        shape: "journal_entry",
+        label: "Journal Entry",
+        glyph: "▤",
+        blurb: "Record the debits and credits for a transaction.",
+    },
+    {
+        shape: "numeric",
+        label: "Numeric",
+        glyph: "▦",
+        blurb: "Compute the value for each cell.",
+    },
+    {
+        shape: "research",
+        label: "Research",
+        glyph: "⌕",
+        blurb: "Find the governing authoritative citation.",
+    },
+    {
+        shape: "doc_review",
+        label: "Doc Review",
+        glyph: "▥",
+        blurb: "Choose the correct treatment for each blank in the document.",
+    },
+];
+
+/** Build the sealed-bank search that finds TBS notes of a given shape in a
+ *  section (mirrors the research/doc-review page loaders). `shape` is the value
+ *  stored in the `tbs_type` note field. */
+export function tbsSearch(shape: TbsShape, section: string): string {
+    return `"note:Ankountant TBS" "tbs_type:${shape}" deck:Ankountant::Sealed::${section}::*`;
+}
+
 /** The CPA sections the engine covers (ADR 0008). */
 export const SECTIONS = ["AUD", "FAR", "REG", "BAR", "ISC", "TCP"] as const;
 export type Section = (typeof SECTIONS)[number];

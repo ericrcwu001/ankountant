@@ -1,11 +1,17 @@
 # CPA Question-Bank at Scale — RAG Backlog Plan
 
-> **Status:** Plan / not-yet-built. This is **Phase 2a** from
-> [`../brainlift_features.md`](../brainlift_features.md) fully specified.
-> It is an **offline, build-time batch tool** — the study loop never calls a
-> model live (the "decouple build-time from runtime" split). The MVP ships on
-> the hand-authored FAR demo seed (`rslib/src/ankountant/seed.rs`); this plan is
-> how that seed grows into a **50,000-card** CPA question bank.
+> **Status:** Built & live-proven (run `proof3`). This is **Phase 2a** from
+> [`../brainlift_features.md`](../brainlift_features.md). It is an **offline,
+> build-time batch tool** (`tools/cardgen/`) — the study loop never calls a model
+> live (the "decouple build-time from runtime" split). The MVP seeds the
+> hand-authored FAR demo (`rslib/src/ankountant/seed.rs`); this pipeline grows it
+> toward a **50,000-card** CPA question bank.
+>
+> **As-built (read these first):** the shipped stack + licensing deltas are in
+> [`../adr/0009-rag-cardgen-lean-stack-cursor-judge-tier-b.md`](../adr/0009-rag-cardgen-lean-stack-cursor-judge-tier-b.md);
+> the latest run's numbers + evidence are in [`RAG_RUN_RESULTS.md`](RAG_RUN_RESULTS.md);
+> the operational state is in [`HANDOFF.md`](HANDOFF.md). Docs **01–07** below are
+> the design reference — **ADR 0009 supersedes their stack/licensing specifics**.
 
 ## Why this exists
 
@@ -28,19 +34,20 @@ Two hard rules from the assignment carry through every document here:
 
 ## The decision, in one paragraph
 
-Build a **Python, build-time batch pipeline** (`tools/cardgen/`, not shipped in
-either app) that ingests **public-domain + Creative-Commons source corpora**
-(OpenStax accounting texts, the Internal Revenue Code, Treasury regs & IRS
-publications, PCAOB/SEC/GAO public standards, the AICPA Blueprints as taxonomy),
-indexes them in **LanceDB** (embedded vector + full-text store) using **Voyage AI
-embeddings**, and generates cards with **Anthropic Claude** constrained to
-retrieved passages. An **independent LLM judge (different model)** plus a
-human-verified gold set enforces the 3-bucket quality gate; **Ragas** measures
-faithfulness/relevancy and proves the RAG-vs-baseline win. Copyrighted standards
-(FASB ASC, GASB, AICPA questions) are **cited, never ingested/redistributed**.
-Surviving cards are emitted as **ordinary Anki notes** (the existing
-`Ankountant Study` / `Ankountant TBS` note types, provenance fields populated),
-so they sync with zero data-model change.
+A **Python, build-time batch pipeline** (`tools/cardgen/`, not shipped in either
+app) ingests source corpora (OpenStax accounting texts, IRS publications & Treasury
+regs, the NIST SP 800-series, the AICPA Blueprints as taxonomy, plus personal-use
+CPA-review material — see ADR 0009), indexes them in **LanceDB** (embedded vector
+**and** BM25) using OpenAI **`text-embedding-3-small`** embeddings, and generates
+cards with OpenAI **`gpt-5-mini`** (v2 decline prompt) constrained to retrieved
+passages. An **independent judge — batched Cursor subagents**, a different provider
+*and* model from the generator — plus a **human-verified gold set** enforces the
+3-bucket quality gate; a chunk-keyed **A/B/C baseline** proves the hybrid-RAG win
+over plain keyword/vector retrieval. The judge is itself gated: the `gold` stage
+calibrates it against the gold set (positives + planted negatives) and **halts the
+run if it can't be trusted**. Surviving cards are emitted as **ordinary Anki notes**
+(`Ankountant Study` / `Ankountant TBS`, provenance fields populated), so they sync
+with zero data-model change.
 
 ## Document map
 
@@ -50,22 +57,26 @@ Read in order; each links onward.
 | - | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | 1 | [`01-sources-and-licensing.md`](01-sources-and-licensing.md)         | Which corpora we may ingest vs only cite; the copyright firewall                                                     |
 | 2 | [`02-taxonomy-and-blueprint.md`](02-taxonomy-and-blueprint.md)       | The CPA-Evolution section/topic taxonomy and how 50,000 is allocated                                                 |
-| 3 | [`03-architecture-and-stack.md`](03-architecture-and-stack.md)       | The RAG service choice: Claude + Voyage + LanceDB + LlamaIndex + Ragas, and why                                      |
+| 3 | [`03-architecture-and-stack.md`](03-architecture-and-stack.md)       | Original stack choice (Claude + Voyage + LanceDB + Ragas) — **as-built is ADR 0009** (OpenAI + Cursor judge)         |
 | 4 | [`04-generation-pipeline.md`](04-generation-pipeline.md)             | The 12-stage ingest → retrieve → generate → gate → emit pipeline                                                     |
-| 5 | [`05-quality-eval-and-baseline.md`](05-quality-eval-and-baseline.md) | Gold set, 3-bucket gate, Ragas metrics, beat-the-baseline protocol, leakage & dedup                                  |
+| 5 | [`05-quality-eval-and-baseline.md`](05-quality-eval-and-baseline.md) | Gold set, 3-bucket gate + judge calibration, beat-the-baseline protocol, leakage & dedup                            |
 | 6 | [`06-provenance-output-and-ops.md`](06-provenance-output-and-ops.md) | Provenance fields, note-type mapping, delivery (.apkg/RPC), cost model, reproducibility, prompt-injection guardrails |
+| 7 | [`07-implementation-contract.md`](07-implementation-contract.md)     | The build contract the implementation follows (stages, artifacts, interfaces)                                        |
 
-## Decisions still worth a human sign-off
+## Decisions (resolved in ADR 0009)
 
-These are recommended with rationale in the linked docs, but are the ones most
-worth confirming before any build spend:
+The open calls from the original design are now settled for this personal-use build
+(full rationale in [`../adr/0009-rag-cardgen-lean-stack-cursor-judge-tier-b.md`](../adr/0009-rag-cardgen-lean-stack-cursor-judge-tier-b.md)):
 
-- **Generation model tier** — Sonnet for bulk generation + Opus/independent
-  judge on flagged & sampled cards (cost vs accuracy). See doc 3 & 6.
-- **Vector store** — LanceDB (embedded, reproducible, zero-ops) vs Postgres +
-  pgvector (if we want to reuse a shared server later). See doc 3.
-- **Licensing posture** — the "cite-don't-ingest" firewall around FASB ASC is a
-  legal call, not just an engineering one. See doc 1.
+- **Generation + judge** — OpenAI `gpt-5-mini` generates; **batched Cursor
+  subagents** judge (independent provider + model). The offline path uses a
+  deterministic keyless judge so CI/tests reproduce; the `gold` stage calibrates
+  the judge before the gate is trusted.
+- **Embeddings + store** — OpenAI `text-embedding-3-small` in **LanceDB**
+  (embedded, reproducible; vector + BM25 supply two of the three baseline arms).
+- **Licensing posture** — Tier-B CPA material **may be ingested** for this
+  personal-use build; generated cards are **not redistributable**. If this ever
+  ships publicly, revert to the Tier-A-only firewall (ADR 0003).
 
 ## Relationship to the rest of the repo
 

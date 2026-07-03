@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 from cardgen.config import RunConfig
-from cardgen.generate import finalize_candidate, generate_one
+from cardgen.generate import _substantive, finalize_candidate, generate_one
 from cardgen.models import (
     CARD_TYPES,
     MCQ,
@@ -182,6 +182,36 @@ def test_rerank_offline_uses_heuristic() -> None:
     ]
     ranked = _rerank(cfg, query, passages)
     assert ranked[0].chunk_id == "y"
+
+
+def test_generate_one_repairs_stub_source_passage_to_full_sentence() -> None:
+    """A too-short (stub) but real substring is repaired to a substantive sentence."""
+
+    class StubGen:
+        def generate(self, req) -> str:  # type: ignore[no-untyped-def]
+            import json
+
+            return json.dumps(
+                {"source_passage": "Revenue", "citation": "ASC 606", "payload": {"front": "Q?", "back": "A."}}
+            )
+
+    cand = generate_one(_cfg(), _item(RECALL), _passages(), gen=StubGen())
+    assert cand is not None
+    assert _substantive(cand.source_passage)  # no longer a 1-word stub
+    assert is_substring_normalized(cand.source_passage, PASSAGE_TEXT)
+
+
+def test_generate_one_drops_when_no_substantive_sentence() -> None:
+    """If the grounding chunk has no real sentence (heading/stub), the card drops."""
+
+    class HeadingGen:
+        def generate(self, req) -> str:  # type: ignore[no-untyped-def]
+            import json
+
+            return json.dumps({"source_passage": "K-1", "citation": "c", "payload": {"front": "Q?", "back": "A."}})
+
+    stub = [Passage(chunk_id="c", text="K-1", source_id="s", locator="p1", score=1.0)]
+    assert generate_one(_cfg(), _item(RECALL), stub, gen=HeadingGen()) is None
 
 
 def test_generate_one_repairs_ungrounded_source_passage() -> None:

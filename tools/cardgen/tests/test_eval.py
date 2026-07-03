@@ -263,8 +263,11 @@ _WEAK = "Office supplies are expensed as incurred and are unrelated to the promp
 
 
 def _fake_retrieve_for(cfg, item, arm, k=None):
-    text = _STRONG if arm == "hybrid" else _WEAK
-    return [Passage(chunk_id="c1", text=text, source_id="src", locator="ASC 350", score=1.0)]
+    # Hybrid surfaces the reference card's grounding chunk (src, ASC 350); the
+    # plain arms return a different chunk, so only hybrid scores a chunk-hit.
+    if arm == "hybrid":
+        return [Passage(chunk_id="c1", text=_STRONG, source_id="src", locator="ASC 350", score=1.0)]
+    return [Passage(chunk_id="c2", text=_WEAK, source_id="src", locator="OTHER", score=1.0)]
 
 
 def _fake_generate_one(cfg, item, passages):
@@ -333,6 +336,42 @@ def test_baseline_run_three_arms_and_verdict(monkeypatch) -> None:
     report = (cfg.out_dir / "baseline_report.md").read_text(encoding="utf-8")
     assert "Verdict: **PASS**" in report
     assert "`hybrid`" in report
+
+
+def test_baseline_reuse_uses_graded_chunk_hit(monkeypatch) -> None:
+    """When graded cards exist, the baseline reuses them and scores each arm on
+    whether its top-k surfaces the card's grounding chunk (source_id+locator)."""
+    cfg = _cfg("test_baseline_reuse")
+    worklist = [
+        {"item_id": f"it{i}", "section": "FAR", "area": "Intangibles", "topic": "Goodwill",
+         "task_id": "t1", "skill_level": "applying", "card_type": "recall", "seed": i}
+        for i in range(4)
+    ]
+    write_jsonl(cfg.stage_dir("03-worklist") / "worklist.jsonl", worklist)
+    graded = [
+        {"item_id": f"it{i}", "section": "FAR", "card_type": "recall",
+         "payload": {"front": "When is goodwill tested?", "back": "At least annually."},
+         "source_passage": "Goodwill is tested for impairment at least annually.",
+         "source_id": "src", "locator": f"loc{i}", "bucket": BUCKET_OK}
+        for i in range(4)
+    ]
+    write_jsonl(cfg.stage_dir("07-judge") / "graded.jsonl", graded)
+
+    def fake_retrieve(cfg, item, arm, k=None):
+        # Hybrid surfaces the item's own grounding chunk; plain arms miss it.
+        loc = f"loc{item['item_id'][2:]}" if arm == "hybrid" else "MISS"
+        return [Passage(chunk_id="c", text="Goodwill is tested for impairment at least annually.",
+                        source_id="src", locator=loc, score=1.0)]
+
+    monkeypatch.setattr(baseline, "retrieve_for", fake_retrieve)
+
+    metrics = baseline.run(cfg)
+    m = metrics["metrics"]
+    assert metrics["held_out_n"] == 4  # reused all 4 graded cards, no regeneration
+    assert m["hybrid"]["faithfulness"] == 1.0
+    assert m["bm25"]["faithfulness"] == 0.0 and m["vector"]["faithfulness"] == 0.0
+    assert m["hybrid"]["retrieval_hit"] == 1.0
+    assert metrics["pass"] is True
 
 
 def test_render_report_ragas_column_well_formed() -> None:

@@ -15,6 +15,7 @@ Provenance (``source_id`` / ``locator`` / ``gen_method``) and tags
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Optional
@@ -55,6 +56,31 @@ def _leading_sentence(text: str, maxlen: int = 180) -> str:
     t = normalize_text(text)
     lead = t.split(". ")[0][:maxlen]
     return lead or t[:maxlen]
+
+
+# A grounded source_passage must be a real sentence, not a heading/label/stub
+# ("K-1", "Example 1", "(B) Ethics"). We require a minimum of substantive words.
+MIN_SP_WORDS = 6
+_SP_WORDS = re.compile(r"[A-Za-z][A-Za-z'-]+")
+_SENT_SPLIT = re.compile(r"(?<=[.!?])\s+")
+
+
+def _substantive(text: str) -> bool:
+    """True if ``text`` has enough real words to teach/ground a card."""
+    return len(_SP_WORDS.findall(text or "")) >= MIN_SP_WORDS
+
+
+def _first_substantive_sentence(text: str, maxlen: int = 240) -> str:
+    """First sentence of ``text`` with >= ``MIN_SP_WORDS`` words (else "").
+
+    Verbatim (whitespace-normalized) substring of ``text`` so grounding still
+    proves out in self-check.
+    """
+    t = normalize_text(text)
+    for part in _SENT_SPLIT.split(t):
+        if _substantive(part):
+            return part[:maxlen]
+    return ""
 
 
 # ---- gen_method / tags -----------------------------------------------------
@@ -143,13 +169,18 @@ def finalize_candidate(
     citation = str(data.get("citation", "") or "")
     payload = data.get("payload") if isinstance(data.get("payload"), dict) else {}
 
-    # Grounding proof (or repair, or drop).
+    # Grounding proof (or repair, or drop). The source_passage must be a real,
+    # substantive sentence — never a heading/label/stub. If the model's passage
+    # isn't a genuine substring, or is too thin, repair to the first substantive
+    # sentence of the grounding chunk; drop the card if none exists.
     matched = _match_passage(source_passage, passages)
     if matched is None:
         matched = _best_passage(passages)
-        repaired = _leading_sentence(matched.text)
+        source_passage = ""
+    if not _substantive(source_passage):
+        repaired = _first_substantive_sentence(matched.text)
         if not repaired:
-            print(f"[cardgen] generate: {item_id}: ungrounded source_passage and no repair; dropping")
+            print(f"[cardgen] generate: {item_id}: no substantive grounded sentence; dropping")
             return None
         source_passage = repaired
 

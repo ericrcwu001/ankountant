@@ -161,9 +161,11 @@ GROUNDING RULES:
 - Derive the card ONLY from the provided passages. Do not use outside knowledge; \
 do not invent facts, numbers, accounts, or citations.
 - "source_passage" MUST be a verbatim substring copied EXACTLY from ONE passage \
-(character-for-character, including punctuation and capitalization). Do NOT \
-paraphrase, summarize, translate, or join fragments. If you cannot copy such a \
-substring that supports the card, SKIP.
+(character-for-character, including punctuation and capitalization) and MUST be a \
+COMPLETE sentence that states the fact — never a heading, label, table cell, or \
+short fragment (e.g. not "K-1" or "Example 1"). Do NOT paraphrase, summarize, \
+translate, or join fragments. If you cannot copy such a sentence that supports the \
+card, SKIP.
 - "citation" is the authoritative standard reference supported by the passages \
 (e.g. ASC 606-10-25, IRC §168(k), PCAOB AS 2301). If no standard is stated, use \
 the passage's locator.
