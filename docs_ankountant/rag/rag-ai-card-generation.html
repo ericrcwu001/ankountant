@@ -234,6 +234,15 @@
   </table>
   <p class="muted">18 registered sources; the chunk-quality filter dropped 1,573 low-value pieces (601 headings, 760 question-stems, 205 tables, 7 stubs).</p>
 
+  <h2>Template (AIG) deck — no per-card LLM, fully grounded</h2>
+  <div class="stats">
+    <div class="stat"><div class="v green">14</div><div class="l">Template cards shipped</div></div>
+    <div class="stat"><div class="v">14/14</div><div class="l">Judged correct+useful</div></div>
+    <div class="stat"><div class="v">3</div><div class="l">Template families</div></div>
+    <div class="stat"><div class="v">~$0</div><div class="l">Generation LLM cost</div></div>
+  </div>
+  <p class="muted"><code>--mode template</code> expands curated templates &times; source-pinned data (citation registry: AU-C / NIST / OMB / Circular 230; tax thresholds: $2,500 / $400 / $6,000; MAGI phase-outs) into the same Candidate schema, reusing self-check &rarr; judge &rarr; leakage &rarr; dedup &rarr; emit. Every value must trace to a verbatim source sentence (grounding verified against the ingest), so volume tracks curated data, not free generation. The independent judge first caught a mis-scoped IRA phase-out range and 4 self-answering research exhibits; both were fixed, then it passed 14/14.</p>
+
   <div class="callout warn" style="margin-top:24px">
     <div class="t">Honest caveats &amp; next steps</div>
     <p>Ship rate ~54% for these 161 cards (generated before the fix); generation now drops stub source_passages, so the next full run should ship higher. The A/B/C now PASSES (n=120, chunk-keyed). Reaching 50k needs a corpus ~10–20× larger across all six sections (incl. BAR); the fan-out, Batch-API, and audit-judge machinery for it is already built.</p>
