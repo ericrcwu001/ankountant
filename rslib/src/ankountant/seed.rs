@@ -460,8 +460,12 @@ impl Collection {
             };
             let mut note = study_nt.new_note();
             note.set_field(0, &card.front)?;
-            // Provenance rides in the answer for recall cards (the Study note
-            // type has no dedicated fields).
+            // Hand-authored recall keeps the human-readable Source in the
+            // answer and leaves the dedicated provenance fields
+            // (study_fields::SOURCE_PASSAGE / GEN_METHOD / CHECKER_STATUS)
+            // blank — those are reserved for Phase-2a RAG-generated recall
+            // cards (doc 6). new_note() zero-fills them, so setting only
+            // Front/Back here is enough.
             note.set_field(1, format!("{}\n\nSource: {}", card.back, card.source))?;
             let mut tags = vec![cog.to_string(), card.topic_tag.clone()];
             if !card.ds_tag.is_empty() {

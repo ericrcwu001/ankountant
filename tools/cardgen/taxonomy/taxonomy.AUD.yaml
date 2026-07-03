@@ -1,0 +1,81 @@
+# Taxonomy: AUD — Auditing & Attestation (Core)
+#
+# Source: AICPA Uniform CPA Examination Blueprints (public), CPA Evolution
+#   (effective 2024). Area score weights are the published ranges'
+#   midpoints, normalized to sum to 1.0 across the section. Each topic is a
+#   representative-task row {topic, task_id, skill_level}.
+# AUD is the ONLY section whose blueprint reaches the top "Evaluation" skill
+#   level (reporting/opinion judgments), so it is the only file using it.
+# This file is a REALISTIC, representative slice of the blueprint (not exhaustive).
+section: AUD
+areas:
+  - code: "I"
+    title: "Ethics, Professional Responsibilities and General Principles"
+    weight: 0.20
+    groups:
+      - title: "Ethics and engagement acceptance"
+        topics:
+          - topic: "AICPA Code of Professional Conduct and independence"
+            task_id: "AUD.I.A.1"
+            skill_level: "R&U"
+          - topic: "Engagement acceptance and terms"
+            task_id: "AUD.I.A.2"
+            skill_level: "Application"
+  - code: "II"
+    title: "Assessing Risk and Developing a Planned Response"
+    weight: 0.30
+    groups:
+      - title: "Planning and materiality"
+        topics:
+          - topic: "Materiality determination"
+            task_id: "AUD.II.A.1"
+            skill_level: "Application"
+          - topic: "Understanding the entity and its environment"
+            task_id: "AUD.II.A.2"
+            skill_level: "R&U"
+      - title: "Risk assessment"
+        topics:
+          - topic: "Risk of material misstatement and fraud risk"
+            task_id: "AUD.II.B.1"
+            skill_level: "Analysis"
+          - topic: "Internal control and control deficiencies"
+            task_id: "AUD.II.B.2"
+            skill_level: "Analysis"
+  - code: "III"
+    title: "Performing Further Procedures and Obtaining Evidence"
+    weight: 0.35
+    groups:
+      - title: "Audit evidence"
+        topics:
+          - topic: "Sufficient appropriate audit evidence"
+            task_id: "AUD.III.A.1"
+            skill_level: "Analysis"
+          - topic: "Audit sampling"
+            task_id: "AUD.III.A.2"
+            skill_level: "Application"
+          - topic: "Confirmations and substantive procedures"
+            task_id: "AUD.III.A.3"
+            skill_level: "Application"
+      - title: "Specific evidence areas"
+        topics:
+          - topic: "Auditing accounting estimates"
+            task_id: "AUD.III.B.1"
+            skill_level: "Analysis"
+          - topic: "Subsequent events and going concern"
+            task_id: "AUD.III.B.2"
+            skill_level: "R&U"
+  - code: "IV"
+    title: "Forming Conclusions and Reporting"
+    weight: 0.15
+    groups:
+      - title: "Audit reports"
+        topics:
+          - topic: "Opinion formation: qualified vs adverse vs disclaimer"
+            task_id: "AUD.IV.A.1"
+            skill_level: "Evaluation"
+          - topic: "Report modifications, EOM and OM paragraphs"
+            task_id: "AUD.IV.A.2"
+            skill_level: "Analysis"
+          - topic: "Reports on special-purpose frameworks"
+            task_id: "AUD.IV.A.3"
+            skill_level: "R&U"

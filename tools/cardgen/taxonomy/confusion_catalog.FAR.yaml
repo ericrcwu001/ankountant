@@ -1,0 +1,25 @@
+# Confusion-set catalog: FAR
+#
+# The four FAR sets below are REUSED VERBATIM from the shipped app seed
+#   (rslib/src/ankountant/seed.rs `SETS` + seed_content.json): identical
+#   set_id / ds:: tags / treatments, so generated confusion (MCQ) items drop
+#   straight into the existing CONFUSABLE map (config.rs `ankountant.confusable.FAR`).
+# Do NOT edit these — they are the frozen contract with the runtime app.
+section: FAR
+sets:
+  - set_id: "capitalize_vs_expense"
+    topic: "PP&E and capitalization vs expense"
+    tags: ["ds::cost::capitalize", "ds::cost::expense"]
+    treatments: ["Capitalize", "Expense"]
+  - set_id: "operating_vs_finance_lease"
+    topic: "Leases (lessee: operating vs finance)"
+    tags: ["ds::lease::operating", "ds::lease::finance"]
+    treatments: ["Operating lease", "Finance lease"]
+  - set_id: "revrec_step_selection"
+    topic: "Revenue recognition (5-step model)"
+    tags: ["ds::revrec::step4", "ds::revrec::step5"]
+    treatments: ["Allocate price (Step 4)", "Recognize revenue (Step 5)"]
+  - set_id: "trading_afs_htm"
+    topic: "Investments: trading/AFS/HTM classification"
+    tags: ["ds::securities::trading", "ds::securities::htm"]
+    treatments: ["Trading (FV through NI)", "Held-to-maturity (amortized cost)"]

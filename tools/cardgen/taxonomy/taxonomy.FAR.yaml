@@ -1,0 +1,82 @@
+# Taxonomy: FAR — Financial Accounting & Reporting (Core)
+#
+# Source: AICPA Uniform CPA Examination Blueprints (public), CPA Evolution
+#   (effective 2024). Area score weights are the published ranges'
+#   midpoints, normalized to sum to 1.0 across the section. Each topic is a
+#   representative-task row {topic, task_id, skill_level}; skill_level is the
+#   AICPA cognitive skill (R&U | Application | Analysis; Evaluation is AUD-only).
+# This file is a REALISTIC, representative slice of the blueprint (not exhaustive).
+section: FAR
+areas:
+  - code: "I"
+    title: "Financial Reporting"
+    weight: 0.35
+    groups:
+      - title: "General-purpose financial statements"
+        topics:
+          - topic: "Balance sheet / statement of financial position"
+            task_id: "FAR.I.A.1"
+            skill_level: "R&U"
+          - topic: "Income statement and comprehensive income"
+            task_id: "FAR.I.A.2"
+            skill_level: "Application"
+          - topic: "Statement of cash flows (operating/investing/financing)"
+            task_id: "FAR.I.A.3"
+            skill_level: "Analysis"
+      - title: "Disclosures and special reporting"
+        topics:
+          - topic: "Notes and significant accounting policies"
+            task_id: "FAR.I.B.1"
+            skill_level: "R&U"
+          - topic: "Segment and interim reporting"
+            task_id: "FAR.I.B.2"
+            skill_level: "Application"
+  - code: "II"
+    title: "Select Balance Sheet Accounts"
+    weight: 0.35
+    groups:
+      - title: "Assets"
+        topics:
+          - topic: "Cash and receivables (allowance methods)"
+            task_id: "FAR.II.A.1"
+            skill_level: "Application"
+          - topic: "Inventory (costing and LCM/NRV)"
+            task_id: "FAR.II.A.2"
+            skill_level: "Analysis"
+          - topic: "PP&E and capitalization vs expense"
+            task_id: "FAR.II.A.3"
+            skill_level: "Analysis"
+          - topic: "Intangibles and goodwill impairment"
+            task_id: "FAR.II.A.4"
+            skill_level: "R&U"
+      - title: "Liabilities and equity"
+        topics:
+          - topic: "Leases (lessee: operating vs finance)"
+            task_id: "FAR.II.B.1"
+            skill_level: "Analysis"
+          - topic: "Bonds payable and effective interest"
+            task_id: "FAR.II.B.2"
+            skill_level: "Application"
+          - topic: "Stockholders' equity"
+            task_id: "FAR.II.B.3"
+            skill_level: "R&U"
+  - code: "III"
+    title: "Select Transactions"
+    weight: 0.30
+    groups:
+      - title: "Revenue and investments"
+        topics:
+          - topic: "Revenue recognition (5-step model)"
+            task_id: "FAR.III.A.1"
+            skill_level: "Analysis"
+          - topic: "Investments: trading/AFS/HTM classification"
+            task_id: "FAR.III.A.2"
+            skill_level: "Analysis"
+      - title: "Other transactions and entities"
+        topics:
+          - topic: "Accounting changes and error corrections"
+            task_id: "FAR.III.B.1"
+            skill_level: "Application"
+          - topic: "Governmental and not-for-profit reporting"
+            task_id: "FAR.III.B.2"
+            skill_level: "R&U"

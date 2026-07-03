@@ -1,0 +1,20 @@
+# Confusion-set catalog: ISC
+#
+# `isc_control_type` is reused verbatim from the shipped app seed
+#   (rslib/src/ankountant/seed.rs `ISC_SETS`). The remaining sets are plausible
+#   additions in the same shape (set_id / ds:: tags / treatments) that the
+#   CONFUSABLE map already consumes.
+section: ISC
+sets:
+  - set_id: "soc1_vs_soc2"
+    topic: "SOC 1 vs SOC 2 vs SOC 3 scope"
+    tags: ["ds::isc::soc1", "ds::isc::soc2"]
+    treatments: ["SOC 1 (ICFR)", "SOC 2 (trust services)"]
+  - set_id: "soc_report_type1_vs_type2"
+    topic: "Evaluating a service organization and CUECs"
+    tags: ["ds::isc::type1", "ds::isc::type2"]
+    treatments: ["Type 1 (design at a point in time)", "Type 2 (operating effectiveness over a period)"]
+  - set_id: "isc_control_type"
+    topic: "Logical and physical access controls"
+    tags: ["ds::isc::preventive", "ds::isc::detective"]
+    treatments: ["Preventive control", "Detective control"]

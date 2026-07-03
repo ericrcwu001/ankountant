@@ -9,7 +9,12 @@ lint.select = [
   # "SIM", # flake8-simplify
 ]
 
-extend-exclude = ["*_pb2.py", "*_pb2.pyi"]
+# tools/cardgen is a standalone build-time tool with its own uv env + deps
+# (lancedb/openai/genanki/…) and its own gate (`just test-cardgen`); keep it out
+# of the repo's main ruff/format scope. force-exclude so it's skipped even when
+# passed explicitly by the ninja format glob.
+force-exclude = true
+extend-exclude = ["*_pb2.py", "*_pb2.pyi", "tools/cardgen"]
 
 lint.ignore = [
   # Docstring rules (missing-*-docstring in pylint)

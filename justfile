@@ -87,6 +87,22 @@ ankountant-evidence:
     CARGO_TARGET_DIR=out/rust cargo test -p anki _evidence -- --ignored --nocapture
     @echo "Evidence written to docs_ankountant/evidence/{determinism,ablation}.html"
 
+# --- Ankountant Phase-2a RAG card generator (tools/cardgen) -----------------
+# Standalone offline batch tool; not shipped in wheels/xcframework. Uses its own
+# uv env (tools/cardgen/.venv), independent of the main out/pyenv.
+
+# Run the card generator DAG, e.g. `just cardgen all` (offline unless OPENAI_API_KEY set).
+cardgen *args:
+    cd tools/cardgen && UV_PROJECT_ENVIRONMENT=.venv uv run python -m cardgen.cli {{ args }}
+
+# Run the full 50k allocation across all six sections (resumable; judge needs a Cursor session).
+cardgen-full *args:
+    cd tools/cardgen && UV_PROJECT_ENVIRONMENT=.venv uv run python -m cardgen.cli all --target 50000 {{ args }}
+
+# Run cardgen tests (offline, keyless).
+test-cardgen:
+    cd tools/cardgen && UV_PROJECT_ENVIRONMENT=.venv CARDGEN_OFFLINE=1 uv run pytest
+
 [private]
 _test:
     {{ ninja }} check:rust_test check:pytest check:vitest

@@ -96,10 +96,27 @@ All three scores are shown as **ranges**, never bare points.
   verdict. A card with no traceable source is invalid.
 - **Tier-A source** — public-domain / openly-licensed material we may ingest and
   paraphrase (OpenStax, IRC, IRS pubs, PCAOB/SEC/GAO). The generation corpus.
-- **Tier-B source** — copyrighted standards (FASB ASC, GASB, AICPA questions) we
-  may **cite but never ingest/redistribute**.
+- **Tier-B source** — copyrighted material (FASB ASC, GASB, AICPA questions,
+  commercial review courses). Publicly this is **cite-only**; in the
+  **personal-use** build it **may be ingested to ground generation** (ADR 0009)
+  but is **never redistributed**.
 - **Leakage** — a generated study card being a near-copy of a **sealed bank** or
   held-out item; forbidden, because it would corrupt the firewall.
+- **Gold set** — a small, human-verified set of items per section used to
+  _calibrate the judge_: **positive gold** (correct, well-taught Q&A the judge
+  must pass) and **negative gold** (deliberately wrong/subtly-off cards the judge
+  must catch). If the judge can't pass positives and fail negatives, the judge is
+  fixed before the generator.
+- **3-bucket quality gate** — every generated card is sorted by an **independent
+  judge** into **correct+useful** (ship), **wrong** (auto-block), or
+  **correct-but-bad-teaching** (quarantine). The passing cutoff is fixed
+  **before** looking at outputs. "A wrong fact is worse than no card."
+- **Baseline A/B/C** — the beat-a-baseline proof: the same items generated three
+  ways — **BM25-only**, **vector-only**, and **hybrid RAG** — and scored
+  identically; RAG must beat both plain baselines.
+- **Coverage / shortfall** — per topic, `target vs generated vs shipped` with the
+  reason for every drop. A topic whose corpus can't support its target emits
+  **fewer** cards and **logs the shortfall** — never hallucinated to hit a quota.
 
 ## Apps
 

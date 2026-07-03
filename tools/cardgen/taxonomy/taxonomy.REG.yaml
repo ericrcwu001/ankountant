@@ -1,0 +1,94 @@
+# Taxonomy: REG — Taxation & Regulation (Core)
+#
+# Source: AICPA Uniform CPA Examination Blueprints (public), CPA Evolution
+#   (effective 2024). Area score weights are the published ranges'
+#   midpoints, normalized to sum to 1.0 across the section. Each topic is a
+#   representative-task row {topic, task_id, skill_level}; skill_level is the
+#   AICPA cognitive skill (R&U | Application | Analysis; Evaluation is AUD-only).
+# This file is a REALISTIC, representative slice of the blueprint (not exhaustive).
+section: REG
+areas:
+  - code: "I"
+    title: "Ethics, Professional Responsibilities and Federal Tax Procedures"
+    weight: 0.15
+    groups:
+      - title: "Ethics and tax procedures"
+        topics:
+          - topic: "Treasury Circular 230 and preparer responsibilities"
+            task_id: "REG.I.A.1"
+            skill_level: "R&U"
+          - topic: "Federal tax procedures (penalties, assessments)"
+            task_id: "REG.I.A.2"
+            skill_level: "Application"
+  - code: "II"
+    title: "Business Law"
+    weight: 0.20
+    groups:
+      - title: "Contracts and agency"
+        topics:
+          - topic: "Contract formation and performance"
+            task_id: "REG.II.A.1"
+            skill_level: "R&U"
+          - topic: "Agency relationships"
+            task_id: "REG.II.A.2"
+            skill_level: "R&U"
+      - title: "Debtor-creditor and business structures"
+        topics:
+          - topic: "Secured transactions and suretyship"
+            task_id: "REG.II.B.1"
+            skill_level: "Application"
+          - topic: "Entity selection and formation (legal)"
+            task_id: "REG.II.B.2"
+            skill_level: "Analysis"
+  - code: "III"
+    title: "Federal Taxation of Property Transactions"
+    weight: 0.12
+    groups:
+      - title: "Basis and character"
+        topics:
+          - topic: "Basis and holding period of assets"
+            task_id: "REG.III.A.1"
+            skill_level: "Application"
+          - topic: "Character: section 1231 vs capital vs ordinary"
+            task_id: "REG.III.A.2"
+            skill_level: "Analysis"
+  - code: "IV"
+    title: "Federal Taxation of Individuals"
+    weight: 0.27
+    groups:
+      - title: "Income and adjustments"
+        topics:
+          - topic: "Gross income inclusions and exclusions"
+            task_id: "REG.IV.A.1"
+            skill_level: "Application"
+          - topic: "Adjustments, deductions and QBI"
+            task_id: "REG.IV.A.2"
+            skill_level: "Analysis"
+      - title: "Credits and computations"
+        topics:
+          - topic: "Filing status and dependents"
+            task_id: "REG.IV.B.1"
+            skill_level: "R&U"
+          - topic: "Tax credits (child, education)"
+            task_id: "REG.IV.B.2"
+            skill_level: "Application"
+  - code: "V"
+    title: "Federal Taxation of Entities"
+    weight: 0.26
+    groups:
+      - title: "Corporations"
+        topics:
+          - topic: "C corporation taxable income and Schedule M-1"
+            task_id: "REG.V.A.1"
+            skill_level: "Analysis"
+          - topic: "S corporation eligibility and basis"
+            task_id: "REG.V.A.2"
+            skill_level: "Application"
+      - title: "Pass-through and exempt entities"
+        topics:
+          - topic: "Partnership formation and basis"
+            task_id: "REG.V.B.1"
+            skill_level: "Analysis"
+          - topic: "Tax-exempt and other entities"
+            task_id: "REG.V.B.2"
+            skill_level: "R&U"

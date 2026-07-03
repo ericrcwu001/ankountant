@@ -1,0 +1,20 @@
+# Confusion-set catalog: TCP
+#
+# `tcp_cost_recovery` is reused verbatim from the shipped app seed
+#   (rslib/src/ankountant/seed.rs `TCP_SETS`). The remaining sets are plausible
+#   additions in the same shape (set_id / ds:: tags / treatments) that the
+#   CONFUSABLE map already consumes.
+section: TCP
+sets:
+  - set_id: "like_kind_vs_taxable_exchange"
+    topic: "Nonrecognition (like-kind, involuntary)"
+    tags: ["ds::tcp::nonrecognition", "ds::tcp::taxable"]
+    treatments: ["Nonrecognition (deferral)", "Currently taxable exchange"]
+  - set_id: "distribution_vs_liquidation"
+    topic: "Liquidations, reorganizations and distributions"
+    tags: ["ds::tcp::distribution", "ds::tcp::liquidation"]
+    treatments: ["Nonliquidating distribution", "Complete liquidation"]
+  - set_id: "tcp_cost_recovery"
+    topic: "Basis and depreciation recapture"
+    tags: ["ds::tcp::expense", "ds::tcp::capitalize"]
+    treatments: ["Expense currently", "Capitalize and recover"]
