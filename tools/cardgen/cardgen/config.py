@@ -98,6 +98,11 @@ class RunConfig:
     # async/overnight). Off by default; the concurrent driver is the default.
     use_batch_api: bool = field(default_factory=lambda: _env_flag("CARDGEN_BATCH_API", False))
 
+    # ---- template (Automatic Item Generation) mode -------------------------
+    # "rag" = LLM generation grounded in retrieval; "template" = expand curated
+    # templates x source-pinned data rows (no per-card LLM). Set via --mode.
+    gen_source: str = "rag"
+
     # ---- judging at scale (Stage 8) ----------------------------------------
     judge_mode: str = field(default_factory=lambda: os.environ.get("CARDGEN_JUDGE_MODE", JUDGE_FULL))
     # audit mode: judge max(audit_min, audit_fraction*N) cards; the rest are
@@ -132,6 +137,16 @@ class RunConfig:
     @property
     def taxonomy_dir(self) -> Path:
         return ROOT / "taxonomy"
+
+    @property
+    def templates_dir(self) -> Path:
+        """Template family definitions (`templates/*.yaml`)."""
+        return ROOT / "templates"
+
+    @property
+    def data_dir(self) -> Path:
+        """Source-pinned fill data for template expansion (`data/*.yaml`)."""
+        return ROOT / "data"
 
     @property
     def gold_dir(self) -> Path:

@@ -20,7 +20,14 @@ from .config import SECTIONS, RunConfig
 # the real ship queue ("fix the judge, not the generator, first").
 PRE = ["ingest", "chunk", "index", "worklist", "retrieve", "generate", "selfcheck", "gold", "judge"]
 POST = ["leakage", "dedup", "baseline", "emit"]
-STAGES = PRE + POST
+
+# Template (Automatic Item Generation) mode: expand curated templates x
+# source-pinned data into candidates directly — no corpus retrieval, no per-card
+# LLM. `ingest` runs only to provide 00-ingest text for grounding verification.
+TEMPLATE_PRE = ["ingest", "templates", "selfcheck", "gold", "judge"]
+TEMPLATE_POST = ["leakage", "dedup", "emit"]
+
+STAGES = PRE + POST + ["templates"]
 
 
 def _run_stage(name: str, cfg: RunConfig) -> None:
@@ -47,6 +54,8 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--batch-api", action="store_true", help="use the OpenAI Batch API for generation")
     ap.add_argument("--judge-mode", default=None, choices=["full", "audit"])
     ap.add_argument("--judge-parallelism", type=int, default=None, help="parallel judge subagents/wave")
+    ap.add_argument("--mode", default="rag", choices=["rag", "template"],
+                    help="rag = LLM generation; template = expand curated templates (no per-card LLM)")
     args = ap.parse_args(argv)
 
     cfg = RunConfig(
@@ -69,26 +78,28 @@ def main(argv: list[str] | None = None) -> None:
         cfg.judge_mode = args.judge_mode
     if args.judge_parallelism is not None:
         cfg.judge_parallelism = args.judge_parallelism
+    cfg.gen_source = args.mode
+    pre, post = (TEMPLATE_PRE, TEMPLATE_POST) if cfg.gen_source == "template" else (PRE, POST)
     print(
-        f"[cardgen] run_id={cfg.run_id} sections={cfg.sections} target={cfg.target_total} "
-        f"offline={cfg.offline} gen_model={cfg.gen_model} prompt={cfg.prompt_version} "
-        f"rerank={cfg.rerank} judge_mode={cfg.judge_mode}"
+        f"[cardgen] run_id={cfg.run_id} mode={cfg.gen_source} sections={cfg.sections} "
+        f"target={cfg.target_total} offline={cfg.offline} gen_model={cfg.gen_model} "
+        f"prompt={cfg.prompt_version} rerank={cfg.rerank} judge_mode={cfg.judge_mode}"
     )
 
     if args.stage == "all":
-        for s in PRE:
+        for s in pre:
             _run_stage(s, cfg)
         if cfg.offline:
-            for s in POST:
+            for s in post:
                 _run_stage(s, cfg)
         else:
             print(
                 f"[cardgen] judge queue written under {cfg.out_dir}/07-judge/queue.\n"
                 f"[cardgen] Drive the Cursor-subagent judge to fill 07-judge/verdicts, then:\n"
-                f"[cardgen]   python -m cardgen.cli resume --run-id {cfg.run_id}"
+                f"[cardgen]   python -m cardgen.cli resume --run-id {cfg.run_id} --mode {cfg.gen_source}"
             )
     elif args.stage == "resume":
-        for s in POST:
+        for s in post:
             _run_stage(s, cfg)
     else:
         _run_stage(args.stage, cfg)
