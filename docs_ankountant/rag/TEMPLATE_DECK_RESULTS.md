@@ -9,6 +9,15 @@
 > 1 wrong blocked, 0 leakage** (see "Scaling via corpus harvest" below). The
 > section immediately below documents the original hand-curated `tmpl2` proof (14
 > cards) that established the pipeline.
+>
+> **Online-sourced supplement:** `tools/cardgen/out/tmpl4/online_bank.apkg` — **191
+> cards curated from AnkiWeb community CPA decks** (parsed from third-party `.apkg`s,
+> cleaned, categorized into a CPA section — FAR 138 / AUD 33 / REG 20 — deduped
+> against the 325, then passed through an independent-subagent usefulness triage:
+> **223 harvested → 191 kept**). Provenance stays on every card (`src::ankiweb`,
+> deck `Ankountant::Community::<section>`). The desktop **"CPA Bank"** button imports
+> both packs (**516 total**) in one click. Pipeline: `scripts/fetch_ankiweb.mjs` →
+> `harvest_online.py` → `triage_online.py` → `emit_online.py`.
 
 ## What it is
 

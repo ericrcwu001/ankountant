@@ -1,0 +1,13 @@
+{
+  "name": "cardgen-ankiweb-fetcher",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Best-effort Playwright fetcher for third-party CPA decks on AnkiWeb (feeds harvest_online.py). Node-only; unrelated to the Python cardgen package.",
+  "scripts": {
+    "fetch": "node fetch_ankiweb.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.60.0"
+  }
+}
