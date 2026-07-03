@@ -66,6 +66,32 @@ domain, redistributable) or **personal_use** (grounded in the Tier-B AUD review
 PDF — not redistributable). A redistributable pack must exclude the
 personal-use-licensed cards.
 
+## Scaling via corpus harvest (`tmpl3`)
+
+`scripts/harvest_templates.py` extracts grounded fill rows straight from the
+ingested corpus (each `source_passage` is a verbatim single-page substring), which
+grew the deck from 14 to a **271-card pool**:
+
+- NIST SP 800-53 controls (18) + AU-C references (26) -> `tbs_research` (identify
+  the control/section from a redacted requirement).
+- IRS dollar-threshold sentences (220) -> `recall` **cloze** (blank the amount).
+- plus the 14 hand-curated inline cards.
+
+Full independent judging (11 batches, Cursor subagents) returned **113
+correct_useful, 158 bad_teaching, 0 wrong** -> **113 shipped**
+(`out/tmpl3/cpa_bank.apkg`; AUD 28, ISC 18, REG 36, TCP 31), 0 leakage, 0 dedup.
+
+Two honest takeaways:
+
+- **0 wrong across 271 cards.** Grounding + verbatim/numeric extraction never
+  produced a factual error — exactly the safety property templates buy.
+- **The gate filtered auto-cloze chaff.** ~58% landed in `bad_teaching`: the naive
+  harvester blanks *any* `$` sentence, including worked-example figures ("Joan paid
+  $3,000") and subject-less fragments ("the deduction is _____"). The judge caught
+  them; they did not ship. Raising the cloze ship-rate is a harvester-precision
+  problem (only keep sentences with a named provision + a threshold keyword like
+  "maximum/limit/exceed"), not a safety problem.
+
 ## Honest scope / next steps
 
 - Only the tax-threshold and citation families are true "plug-and-play": each new
