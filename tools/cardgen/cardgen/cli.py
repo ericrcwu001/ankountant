@@ -54,6 +54,7 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--batch-api", action="store_true", help="use the OpenAI Batch API for generation")
     ap.add_argument("--judge-mode", default=None, choices=["full", "audit"])
     ap.add_argument("--judge-parallelism", type=int, default=None, help="parallel judge subagents/wave")
+    ap.add_argument("--judge-batch", type=int, default=None, help="cards per judge batch file")
     ap.add_argument("--mode", default="rag", choices=["rag", "template"],
                     help="rag = LLM generation; template = expand curated templates (no per-card LLM)")
     args = ap.parse_args(argv)
@@ -78,6 +79,8 @@ def main(argv: list[str] | None = None) -> None:
         cfg.judge_mode = args.judge_mode
     if args.judge_parallelism is not None:
         cfg.judge_parallelism = args.judge_parallelism
+    if args.judge_batch is not None:
+        cfg.judge_batch = args.judge_batch
     cfg.gen_source = args.mode
     pre, post = (TEMPLATE_PRE, TEMPLATE_POST) if cfg.gen_source == "template" else (PRE, POST)
     print(
