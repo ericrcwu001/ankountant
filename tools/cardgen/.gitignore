@@ -5,6 +5,12 @@ corpus/
 # Curated template families live in templates/ and ARE committed.
 data/
 *.apkg
+# Third-party decks downloaded from AnkiWeb (fetch_ankiweb.mjs) + the Node deps
+# for that fetcher. The .apkg files are ingested by harvest_online.py, never
+# committed (see scripts/fetch_ankiweb.mjs).
+inbox/
+scripts/node_modules/
+scripts/package-lock.json
 __pycache__/
 .pytest_cache/
 *.lance

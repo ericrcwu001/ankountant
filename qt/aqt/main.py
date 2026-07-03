@@ -14,6 +14,7 @@ import weakref
 from argparse import Namespace
 from collections.abc import Callable, Sequence
 from concurrent.futures import Future
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
 
 import anki
@@ -1648,6 +1649,15 @@ title="{}" {}>{}</button>""".format(
             lambda: self.load_ankountant_phase("consolidation"),
         )
 
+        menu.addSeparator()
+        # One-click loader for the full generated CPA bank: the AI/template deck
+        # plus the online-sourced (AnkiWeb) community deck. Also exposed as a top
+        # toolbar link ("CPA Bank") via setupHooks.
+        cpa_bank = menu.addAction("Load All CPA Cards (AI + Online)")
+        qconnect(cpa_bank.triggered, self.load_cpa_bank)
+        cpa_stress = menu.addAction("Load 50k Stress Test (duplicates)")
+        qconnect(cpa_stress.triggered, self.load_cpa_stress_bank)
+
     def load_ankountant_phase(self, phase: str) -> None:
         """Seed the FAR demo profile tuned so the Home phase-aware CTA lands in a
         specific phase, for demoing/QA of the dynamic study recommendation:
@@ -1701,6 +1711,272 @@ title="{}" {}>{}</button>""".format(
             f"{resp.sealed_items} sealed items ({history})."
             " Open the Ankountant Home to see the recommended action.",
             parent=self,
+        )
+
+    # --- Ankountant: one-click CPA bank loader ------------------------------
+    def _cpa_bank_dir(self) -> Path | None:
+        """Resolve the directory holding the generated packs.
+
+        Order: ``ANKOUNTANT_CPA_BANK_DIR`` env override, then the dev cardgen
+        output (``<repo>/tools/cardgen/out/tmpl4``). Returns the first that holds
+        at least one pack, else ``None``."""
+        candidates: list[Path] = []
+        env = os.environ.get("ANKOUNTANT_CPA_BANK_DIR")
+        if env:
+            candidates.append(Path(env))
+        # qt/aqt/main.py -> qt/aqt -> qt -> <repo root>
+        candidates.append(Path(__file__).resolve().parents[2] / "tools" / "cardgen" / "out" / "tmpl4")
+        for d in candidates:
+            if any((d / n).exists() for n in ("cpa_bank.apkg", "online_bank.apkg", "stress_bank.apkg")):
+                return d
+        return None
+
+    def load_cpa_bank(self) -> None:
+        """Import the full generated CPA bank in one click: the AI/template deck
+        (``cpa_bank.apkg``) and the online-sourced community deck
+        (``online_bank.apkg``), then apply the two follow-ups an ``.apkg`` can't
+        carry — suspend the sealed TBS cards and merge the confusable-set patch."""
+        if self.col is None:
+            return
+        import json
+
+        from anki.collection import ImportAnkiPackageOptions, ImportAnkiPackageRequest
+        from aqt.operations import CollectionOp
+
+        pack_dir = self._cpa_bank_dir()
+        if pack_dir is None:
+            showInfo(
+                "Couldn't find the generated CPA bank. Expected cpa_bank.apkg /"
+                " online_bank.apkg under tools/cardgen/out/tmpl4/ (or set"
+                " ANKOUNTANT_CPA_BANK_DIR).",
+                parent=self,
+            )
+            return
+        packs = [p for p in (pack_dir / "cpa_bank.apkg", pack_dir / "online_bank.apkg") if p.exists()]
+        if not packs:
+            showInfo("No .apkg packs found to import.", parent=self)
+            return
+        if not askUser(
+            f"Load {len(packs)} generated CPA pack(s) into this collection?\n\n"
+            f"From: {pack_dir}\n\n"
+            "This imports the AI/template cards and the online-sourced community"
+            " cards, then suspends the sealed practice cards. Best on a"
+            " fresh/throwaway profile.",
+            parent=self,
+        ):
+            return
+
+        def op(col: Collection) -> Any:
+            changes: Any = None
+            for pack in packs:
+                req = ImportAnkiPackageRequest(
+                    package_path=str(pack),
+                    options=ImportAnkiPackageOptions(
+                        merge_notetypes=True,
+                        with_scheduling=False,
+                        with_deck_configs=False,
+                    ),
+                )
+                changes = col.import_anki_package(req)
+            # (a) Sealed cards must be suspended (the .apkg can't carry it).
+            sealed = col.find_cards("deck:Ankountant::Sealed::*")
+            if sealed:
+                col.sched.suspend_cards(sealed)
+            # (b) Merge the confusable-set patch into per-section col config.
+            patch_path = pack_dir / "confusable_patch.json"
+            if patch_path.exists():
+                try:
+                    patch = json.loads(patch_path.read_text(encoding="utf-8"))
+                    updates: dict[str, dict] = {}
+                    for set_id, entry in patch.items():
+                        section = entry.get("section")
+                        if not section:
+                            continue
+                        key = f"ankountant.confusable.{section}"
+                        current = updates.get(key) or col.get_config(key, default={}) or {}
+                        current[set_id] = {
+                            "tags": entry.get("tags", []),
+                            "treatments": entry.get("treatments", []),
+                        }
+                        updates[key] = current
+                    for key, value in updates.items():
+                        col.set_config(key, value)
+                except Exception:
+                    pass  # best-effort; the deck still imports without it
+            return changes
+
+        def on_success(_out: Any) -> None:
+            tooltip(
+                f"Loaded the CPA bank: imported {len(packs)} pack(s);"
+                " sealed practice cards suspended.",
+                parent=self,
+            )
+
+        CollectionOp(parent=self, op=op).success(on_success).run_in_background()
+
+    def load_cpa_stress_bank(self) -> None:
+        """Scale test: import the duplicated >50k-card stress pack (``stress_bank.apkg``).
+
+        These are identical copies of the finalized bank with unique GUIDs, filed
+        under ``Ankountant::Stress::`` and tagged ``stress`` — purely to check the
+        app can handle tens of thousands of cards. Use a fresh/throwaway profile."""
+        if self.col is None:
+            return
+        from anki.collection import ImportAnkiPackageOptions, ImportAnkiPackageRequest
+        from aqt.operations import CollectionOp
+
+        pack_dir = self._cpa_bank_dir()
+        pack = (pack_dir / "stress_bank.apkg") if pack_dir else None
+        if pack is None or not pack.exists():
+            showInfo(
+                "Couldn't find stress_bank.apkg. Generate it with"
+                " tools/cardgen/scripts/stress_bank.py (or set ANKOUNTANT_CPA_BANK_DIR).",
+                parent=self,
+            )
+            return
+        if not askUser(
+            "Import the ~50k-card STRESS TEST deck and seed a synthetic review"
+            " history across ALL of them (review state + FSRS memory + revlog), so"
+            " review-driven features work at scale? This adds tens of thousands of"
+            " duplicate cards under Ankountant::Stress:: (tagged 'stress') and may"
+            " take a little while. Strongly recommend a fresh/throwaway profile.",
+            parent=self,
+        ):
+            return
+
+        seeded = {"n": 0}
+
+        def op(col: Collection) -> Any:
+            req = ImportAnkiPackageRequest(
+                package_path=str(pack),
+                options=ImportAnkiPackageOptions(
+                    merge_notetypes=True, with_scheduling=False, with_deck_configs=False
+                ),
+            )
+            changes = col.import_anki_package(req)
+            # Give every imported card a synthetic review history (card review
+            # state + FSRS memory + revlog) so review-driven features (stats,
+            # retention, maturity, FSRS readiness) have data at scale.
+            seeded["n"] = self._seed_stress_history(col)
+            return changes
+
+        def on_success(_out: Any) -> None:
+            tooltip(
+                f"Loaded the stress-test deck and seeded review history for {seeded['n']:,} cards.",
+                parent=self,
+            )
+
+        CollectionOp(parent=self, op=op).success(on_success).run_in_background()
+
+    def _seed_stress_history(self, col: Collection) -> int:
+        """Synthesize a plausible review history for every stress-test card so
+        review-driven features work at scale: each card is set to a matured review
+        state with an FSRS memory state, and several revlog rows are spread over
+        the trailing ~180 days (for stats / heatmap / true-retention). Written in
+        bulk (batched backend card updates + one revlog ``executemany``) so it
+        stays fast at 50k+. Returns the number of cards seeded."""
+        import time
+
+        from anki import cards_pb2
+
+        cids = list(col.find_cards("deck:Ankountant::Stress::*")) or list(col.find_cards("tag:stress"))
+        if not cids:
+            return 0
+        cid_set = set(cids)
+        today = col.sched.today
+        now_ms = int(time.time() * 1000)
+        now_s = now_ms // 1000
+
+        # nid/did/ord for the stress cards, read in one pass (avoids 50k round-trips).
+        meta: dict[int, tuple[int, int, int]] = {}
+        for cid, nid, did, ordv in col.db.all("SELECT id, nid, did, ord FROM cards"):
+            if cid in cid_set:
+                meta[cid] = (nid, did, ordv)
+
+        # 1) Matured review state + FSRS memory, batched.
+        seeded = 0
+        batch: list = []
+        for i, cid in enumerate(cids):
+            m = meta.get(cid)
+            if m is None:
+                continue
+            nid, did, ordv = m
+            interval = 1 + (i * 7) % 90
+            offset = (i % 60) - 20  # spread overdue..future so the review queue populates
+            batch.append(
+                cards_pb2.Card(
+                    id=cid,
+                    note_id=nid,
+                    deck_id=did,
+                    template_idx=ordv,
+                    ctype=2,  # review
+                    queue=2,  # review
+                    due=today + offset,
+                    interval=interval,
+                    ease_factor=2500,
+                    reps=3 + i % 18,
+                    lapses=1 if i % 6 == 0 else 0,
+                    remaining_steps=0,
+                    memory_state=cards_pb2.FsrsMemoryState(
+                        stability=float(interval) * 1.5 + 5.0,
+                        difficulty=3.0 + float(i % 7),
+                    ),
+                    desired_retention=0.9,
+                    last_review_time_secs=now_s - max(0, interval - offset) * 86_400,
+                )
+            )
+            seeded += 1
+            if len(batch) >= 2000:
+                col._backend.update_cards(cards=batch, skip_undo_entry=True)
+                batch = []
+        if batch:
+            col._backend.update_cards(cards=batch, skip_undo_entry=True)
+
+        # 2) Revlog rows spread across the trailing window. ``seq`` keeps ids unique
+        # while staying within the intended day (seq << ms/day), and OR IGNORE
+        # tolerates the astronomically-rare clash with a real row.
+        rows: list[tuple] = []
+        seq = 0
+        for i, cid in enumerate(cids):
+            interval = 1 + (i * 7) % 90
+            last_ivl = 0
+            for j in range(1 + (i % 4)):
+                days_ago = 1 + ((i * 3 + j * 29) % 179)
+                rid = (now_ms - days_ago * 86_400_000) + seq
+                seq += 1
+                ease = 1 if (i + j) % 9 == 0 else 3
+                ivl = interval if j == (i % 4) else max(1, interval // 2)
+                rows.append((rid, cid, -1, ease, ivl, last_ivl, 2500, 2000 + (seq % 8000), 1))
+                last_ivl = ivl
+        col.db.executemany(
+            "INSERT OR IGNORE INTO revlog (id, cid, usn, ease, ivl, lastIvl, factor, time, type)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            rows,
+        )
+
+        # Seed the rote-latency EMA so that latency-based feature isn't empty.
+        col.set_config("ankountant.latency.rote", 4200)
+        return seeded
+
+    def _on_top_toolbar_did_init_links(self, links: list[str], toolbar: Any) -> None:
+        """Add visible one-click loader links ('CPA Bank' + '50k Test') to the top toolbar."""
+        links.append(
+            toolbar.create_link(
+                "cpa_bank",
+                "CPA Bank",
+                self.load_cpa_bank,
+                tip="Import the generated CPA bank (AI + online)",
+                id="cpa_bank",
+            )
+        )
+        links.append(
+            toolbar.create_link(
+                "cpa_stress",
+                "50k Test",
+                self.load_cpa_stress_bank,
+                tip="Import the ~50k-card stress-test deck (duplicates)",
+                id="cpa_stress",
+            )
         )
 
     def updateTitleBar(self) -> None:
@@ -1909,6 +2185,7 @@ title="{}" {}>{}</button>""".format(
         gui_hooks.av_player_did_end_playing.append(self.on_av_player_did_end_playing)
         gui_hooks.operation_did_execute.append(self.on_operation_did_execute)
         gui_hooks.focus_did_change.append(self.on_focus_did_change)
+        gui_hooks.top_toolbar_did_init_links.append(self._on_top_toolbar_did_init_links)
 
         self._activeWindowOnPlay: QWidget | None = None
 
