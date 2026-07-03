@@ -1,9 +1,14 @@
-# Template (Automatic Item Generation) deck — results (`tmpl2`)
+# Template (Automatic Item Generation) deck — results (`tmpl4`, 325 cards)
 
 > A second, complementary generation mode: expand curated templates x
 > source-pinned data rows into cards with **no per-card LLM call**, then reuse the
 > same quality pipeline (self-check -> gold -> judge -> leakage -> dedup -> emit).
 > See the plan `template_card_generation` and `templates.py`.
+>
+> **Current best deck:** `tools/cardgen/out/tmpl4/cpa_bank.apkg` — **325 shipped,
+> 1 wrong blocked, 0 leakage** (see "Scaling via corpus harvest" below). The
+> section immediately below documents the original hand-curated `tmpl2` proof (14
+> cards) that established the pipeline.
 
 ## What it is
 
@@ -66,31 +71,65 @@ domain, redistributable) or **personal_use** (grounded in the Tier-B AUD review
 PDF — not redistributable). A redistributable pack must exclude the
 personal-use-licensed cards.
 
-## Scaling via corpus harvest (`tmpl3`)
+## Scaling via corpus harvest — precision-tuned (`tmpl4`)
 
 `scripts/harvest_templates.py` extracts grounded fill rows straight from the
-ingested corpus (each `source_passage` is a verbatim single-page substring), which
-grew the deck from 14 to a **271-card pool**:
+ingested corpus (each `source_passage` is a verbatim single-page substring). The
+`tmpl3` pass proved the seams but exposed a precision problem in the auto-cloze
+family (only 29% shipped); `tmpl4` fixes the harvester and grows the sources,
+lifting the deck from 113 to **325 shipped cards** (2.9x).
 
-- NIST SP 800-53 controls (18) + AU-C references (26) -> `tbs_research` (identify
-  the control/section from a redacted requirement).
-- IRS dollar-threshold sentences (220) -> `recall` **cloze** (blank the amount).
-- plus the 14 hand-curated inline cards.
+What changed in the harvester:
 
-Full independent judging (11 batches, Cursor subagents) returned **113
-correct_useful, 158 bad_teaching, 0 wrong** -> **113 shipped**
-(`out/tmpl3/cpa_bank.apkg`; AUD 28, ISC 18, REG 36, TCP 31), 0 leakage, 0 dedup.
+- **Cloze precision filter, tuned against the judge's own `tmpl3` labels.** Keep a
+  fill-in-the-blank only when the sentence is a *rule/threshold tied to a named
+  provision* (e.g. "section 179", "adoption credit", "self-employment tax") and
+  reject worked-example figures (proper-name / narrative transactions, calendar
+  dates, worksheet line refs, `$a ± $b` formulas, anaphoric "This limit …"). On the
+  213 `tmpl3`-graded cloze cards this filter keeps **87% of the judge's "good" and
+  drops 89% of its "bad"** (76% pool precision) — the judge remains the final gate.
+- **De-hyphenation** of the displayed cloze (OCR column breaks like "sepa- rately"),
+  with `source_passage` kept verbatim so grounding still matches.
+- **NIST controls: block-aware regex.** The catalog wraps each control across line
+  breaks (`AC-2\nACCOUNT MANAGEMENT\nControl:\na. …`); the old single-line regex
+  caught only 18. The block regex captures **77 base controls** (skipping the
+  near-duplicate "-1 Policy and Procedures" boilerplate).
+- **AU-C references** broadened (parenthesized *or* bare cite) -> 37, cap 4/section.
+- **All 13 ingested IRS pubs** iterated (Pub 17/334/501/505/535/541/542/544/550/551/
+  946/970 + Circular 230) -> **379 grounded cloze rows** after filtering + dedup.
+
+Funnel: **501 expanded** (0 grounding failures) -> 501 self-check -> gold
+calibration **PASS** -> **13 batches** fully judged by independent Cursor subagents
+(2 waves) -> **325 correct_useful, 175 bad_teaching, 1 wrong** -> leakage 0 (vs 84
+sealed refs) -> dedup 0 -> **325 shipped** (`out/tmpl4/cpa_bank.apkg`, 120 decks).
+
+| Cut               | tmpl3 |     tmpl4 |
+| ----------------- | ----: | --------: |
+| Candidate pool    |   271 |       501 |
+| Shipped           |   113 |   **325** |
+| Cloze ship-rate   |   29% | **~54%**  |
+| Wrong (blocked)   |     0 |         1 |
+
+- **Shipped by section:** REG 151, ISC 82, TCP 56, AUD 36.
+- **By template:** `irs_cloze_recall` 201, `nist_control_research` 77,
+  `auc_research` 34, `citation_research` 8, `tax_threshold_recall` 3,
+  `tax_phaseout_mcq` 2.
+- **By license:** public 289 (redistributable), personal_use 36 (AU-C, Tier-B PDF).
 
 Two honest takeaways:
 
-- **0 wrong across 271 cards.** Grounding + verbatim/numeric extraction never
-  produced a factual error — exactly the safety property templates buy.
-- **The gate filtered auto-cloze chaff.** ~58% landed in `bad_teaching`: the naive
-  harvester blanks *any* `$` sentence, including worked-example figures ("Joan paid
-  $3,000") and subject-less fragments ("the deduction is _____"). The judge caught
-  them; they did not ship. Raising the cloze ship-rate is a harvester-precision
-  problem (only keep sentences with a named provision + a threshold keyword like
-  "maximum/limit/exceed"), not a safety problem.
+- **1 wrong across 501 cards, caught by the gate.** An AU-C exhibit inverted "the
+  auditor is *not* obligated to search for significant deficiencies"; the
+  independent judge flagged it and it did not ship. Grounding + verbatim extraction
+  otherwise produced no factual errors — the safety property templates buy.
+- **The corpus, not the filter, is now the binding constraint.** Raising the
+  per-source cap does *not* add cloze cards (the precision filter is the limit), and
+  the ~231 genuinely-good threshold sentences in these IRS pubs are ~87% shipped.
+  The remaining `bad_teaching` are semantic worked-examples ("Dean's partnership
+  figures", "$178 SL 2nd-year depreciation") that no regex can separate — which is
+  exactly what an independent judge is for. Materially more cards means *more
+  corpus/seams* (e.g. FAR via OpenStax, NIST control enhancements), not more cloze
+  squeezing.
 
 ## Honest scope / next steps
 

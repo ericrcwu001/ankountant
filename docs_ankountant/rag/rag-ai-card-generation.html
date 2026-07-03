@@ -236,16 +236,16 @@
 
   <h2>Template (AIG) deck — no per-card LLM, fully grounded</h2>
   <div class="stats">
-    <div class="stat"><div class="v green">14</div><div class="l">Template cards shipped</div></div>
-    <div class="stat"><div class="v">14/14</div><div class="l">Judged correct+useful</div></div>
-    <div class="stat"><div class="v">3</div><div class="l">Template families</div></div>
+    <div class="stat"><div class="v green">325</div><div class="l">Template cards shipped (<code>tmpl4</code>)</div></div>
+    <div class="stat"><div class="v">325/501</div><div class="l">Judged correct+useful</div></div>
+    <div class="stat"><div class="v">1</div><div class="l">Wrong — caught &amp; blocked</div></div>
     <div class="stat"><div class="v">~$0</div><div class="l">Generation LLM cost</div></div>
   </div>
-  <p class="muted"><code>--mode template</code> expands curated templates &times; source-pinned data (citation registry: AU-C / NIST / OMB / Circular 230; tax thresholds: $2,500 / $400 / $6,000; MAGI phase-outs) into the same Candidate schema, reusing self-check &rarr; judge &rarr; leakage &rarr; dedup &rarr; emit. Every value must trace to a verbatim source sentence (grounding verified against the ingest), so volume tracks curated data, not free generation. The independent judge first caught a mis-scoped IRA phase-out range and 4 self-answering research exhibits; both were fixed, then it passed 14/14.</p>
+  <p class="muted"><code>--mode template</code> expands curated templates &times; source-pinned data into the same Candidate schema, reusing self-check &rarr; judge &rarr; leakage &rarr; dedup &rarr; emit. <b>Harvested straight from the ingested corpus:</b> 77 NIST SP 800-53 controls + 34 AU-C references (identify the citation from a redacted requirement), and 201 IRS dollar-threshold <b>cloze</b> cards across 13 pubs. Every value traces to a verbatim source sentence (grounding verified against the ingest). A precision filter — tuned against the judge's own <code>tmpl3</code> labels — keeps a cloze only when it's a rule tied to a named provision (e.g. "section 179", "adoption credit") and rejects worked-examples/dates/worksheet-refs/formulas (<b>87% recall, 89% of bad dropped</b>); the independent judge stays the final gate and caught 1 inverted AU-C exhibit ("<i>not</i> obligated to search…") that did not ship.</p>
 
   <div class="callout warn" style="margin-top:24px">
     <div class="t">Honest caveats &amp; next steps</div>
-    <p>Ship rate ~54% for these 161 cards (generated before the fix); generation now drops stub source_passages, so the next full run should ship higher. The A/B/C now PASSES (n=120, chunk-keyed). Reaching 50k needs a corpus ~10–20× larger across all six sections (incl. BAR); the fan-out, Batch-API, and audit-judge machinery for it is already built.</p>
+    <p>325 shipped from a 501 pool (cloze ship-rate 29% &rarr; ~54% after the filter). Across 501 grounded cards only <b>1 was wrong</b>, and the gate blocked it — the safety property templates buy. The corpus, not the filter, is now the constraint: raising per-source caps adds no cloze cards, and the ~231 genuinely-good threshold sentences in these pubs are ~87% shipped. Materially more cards means <b>more corpus/seams</b> (FAR via OpenStax, NIST control enhancements), not more cloze squeezing.</p>
   </div>
 
 </div>
