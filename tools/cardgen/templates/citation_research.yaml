@@ -1,0 +1,106 @@
+# tbs_research "cite the governing standard" family.
+# One skeleton x many source-pinned rows -> many grounded research cards.
+# Each row carries a verbatim source_passage (must be substring of its 00-ingest)
+# and its license (NIST/IRS/OMB = public domain, redistributable; cpa_aud_review
+# = Tier-B, personal-use only).
+template_id: citation_research
+template_version: v1
+card_type: tbs_research
+skill_level: Analysis
+topic: "{topic}"
+citation: "{display_citation}"
+prompt: "Research task: identify the authoritative governing citation for {topic}."
+step_label: "Governing citation"
+exhibits:
+  - title: "Research scenario"
+    kind: text
+    body: "During an engagement, a practitioner must determine the authoritative citation that governs {topic}. State the governing standard."
+variant_key: "{row_id}"
+
+rows:
+  # --- AUD (grounded in the Tier-B CPA review PDF -> personal-use) ---
+  - row_id: auc265_significant_deficiencies
+    section: AUD
+    topic: "the auditor's obligation to search for significant deficiencies and material weaknesses"
+    citations: ["AU-C 265"]
+    display_citation: "AU-C 265"
+    source_id: cpa_aud_review
+    locator: p177
+    source_passage: "However, in an audit, the auditor is not obligated to search for significant deficiencies or material weaknesses (AU-C 265)."
+    license: personal_use
+  - row_id: auc320_materiality
+    section: AUD
+    topic: "how an item is determined to be material to the financial statements"
+    citations: ["AU-C 320"]
+    display_citation: "AU-C 320"
+    source_id: cpa_aud_review
+    locator: p124
+    source_passage: "An item is material if its misstatement or omission might affect the judgment of a reasonable person who relies on the financial statements (AU-C 320)."
+    license: personal_use
+  - row_id: auc705_qualified_adverse
+    section: AUD
+    topic: "modifications to the opinion when management imposes a scope limitation"
+    citations: ["AU-C 705"]
+    display_citation: "AU-C 705"
+    source_id: cpa_aud_review
+    locator: p442
+    source_passage: "limitations imposed by management, such as preventing the auditor from observing inventory or confirming receivables (AU-C 705)."
+    license: personal_use
+
+  # --- ISC (grounded in NIST -> public domain, redistributable) ---
+  - row_id: nist80053_ca3_info_exchange
+    section: ISC
+    topic: "approving and managing the exchange of information between systems"
+    citations: ["NIST SP 800-53 CA-3"]
+    display_citation: "NIST SP 800-53, Rev. 5, CA-3"
+    source_id: nist_800_53
+    locator: p113
+    source_passage: "Approve and manage the exchange of information between the system and other systems"
+    license: public
+  - row_id: nist80053_ir6_incident_reporting
+    section: ISC
+    topic: "requiring personnel to report suspected security incidents"
+    citations: ["NIST SP 800-53 IR-6"]
+    display_citation: "NIST SP 800-53, Rev. 5, IR-6"
+    source_id: nist_800_53
+    locator: p184
+    source_passage: "Require personnel to report suspected incidents to the organizational incident response capability"
+    license: public
+  - row_id: nist80053_sa9_external_services
+    section: ISC
+    topic: "requiring providers of external system services to meet organizational requirements"
+    citations: ["NIST SP 800-53 SA-9"]
+    display_citation: "NIST SP 800-53, Rev. 5, SA-9"
+    source_id: nist_800_53
+    locator: p298
+    source_passage: "Require that providers of external system services comply with organizational security and privacy requirements"
+    license: public
+  - row_id: nist80012_configuration_management
+    section: ISC
+    topic: "the definition of configuration management"
+    citations: ["NIST SP 800-12"]
+    display_citation: "NIST SP 800-12, Rev. 1"
+    source_id: nist_800_12
+    locator: p71
+    source_passage: "Configuration management is a collection of activities focused on establishing and maintaining the integrity of information technology products and systems"
+    license: public
+  - row_id: omb_a130_cert_accreditation
+    section: ISC
+    topic: "the requirement for security certification and accreditation of federal information systems"
+    citations: ["OMB Circular A-130, Appendix III"]
+    display_citation: "OMB Circular A-130, Appendix III"
+    source_id: nist_800_100
+    locator: p105
+    source_passage: "Required by Office of Management and Budget (OMB) Circular A-130, Appendix III, Security of Federal Automated Information Resources"
+    license: public
+
+  # --- REG (grounded in Treasury Circular 230 -> public domain) ---
+  - row_id: circ230_1071_discovery
+    section: REG
+    topic: "when discovery is permitted in a proceeding before an Administrative Law Judge"
+    citations: ["Treasury Circular 230 Sec. 10.71"]
+    display_citation: "Treasury Department Circular No. 230, Sec. 10.71"
+    source_id: irs_pcir230
+    locator: p35
+    source_passage: "Discovery may be permitted, at the discretion of the Administrative Law Judge, only upon written motion"
+    license: public

@@ -1,0 +1,55 @@
+# mcq family for MAGI phase-out ranges. Discriminators (item + status + year) go
+# in the prompt so template-aware dedup keeps distinct variants. IRS public-domain.
+template_id: tax_phaseout_mcq
+template_version: v1
+card_type: mcq
+skill_level: Application
+topic: "{topic}"
+citation: "{display_citation}"
+prompt: "For {tax_year}, over what modified AGI (MAGI) range does the {item} phase out for {status} filers?"
+treatments:
+  - "MAGI ${low:money} to ${high:money}"
+  - "MAGI ${d1_low:money} to ${d1_high:money}"
+  - "MAGI ${d2_low:money} to ${d2_high:money}"
+  - "There is no MAGI phase-out"
+answer_index: 0
+ds_tag: "ds::{ds}-phaseout"
+variant_key: "{row_id}-{tax_year}"
+
+rows:
+  - row_id: student_loan_single
+    section: REG
+    tax_year: 2025
+    item: "student loan interest deduction"
+    status: "single"
+    ds: "student-loan-interest"
+    topic: "Adjustments, deductions and QBI"
+    low: 85000
+    high: 100000
+    d1_low: 70000
+    d1_high: 90000
+    d2_low: 100000
+    d2_high: 130000
+    display_citation: "IRS Pub 970 (2025), p.30"
+    source_id: irs_p970
+    locator: p30
+    source_passage: "the amount of your student loan interest deduction is gradually reduced (phased out) if your MAGI is between $85,000 and $100,000"
+    license: public
+  - row_id: ira_deduction_mfj_spouse_covered
+    section: REG
+    tax_year: 2025
+    item: "traditional IRA deduction for a taxpayer who is NOT covered by a workplace plan but whose spouse IS covered"
+    status: "married filing jointly"
+    ds: "ira-deduction-spouse-covered"
+    topic: "Adjustments, deductions and QBI"
+    low: 236000
+    high: 246000
+    d1_low: 200000
+    d1_high: 220000
+    d2_low: 246000
+    d2_high: 266000
+    display_citation: "IRS Pub 17 (2025), Ch. 9, Table 9-1"
+    source_id: irs_p17
+    locator: p83
+    source_passage: "more than $236,000 but less than $246,000 a partial deduction."
+    license: public

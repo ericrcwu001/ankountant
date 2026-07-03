@@ -1,0 +1,46 @@
+# recall family for dollar thresholds/limits stated verbatim in IRS pubs.
+# All rows are IRS public-domain -> redistributable.
+template_id: tax_threshold_recall
+template_version: v1
+card_type: recall
+skill_level: R&U
+topic: "{topic}"
+citation: "{display_citation}"
+front: "For {tax_year}, {question}"
+back: "{answer} (Source: {display_citation})"
+variant_key: "{row_id}-{tax_year}"
+
+rows:
+  - row_id: student_loan_interest_max
+    section: REG
+    tax_year: 2025
+    topic: "Adjustments, deductions and QBI"
+    question: "what is the maximum amount by which the student loan interest deduction can reduce your income subject to tax?"
+    answer: "Up to $2,500"
+    display_citation: "IRS Pub 970 (2025), p.30"
+    source_id: irs_p970
+    locator: p30
+    source_passage: "This deduction can reduce the amount of your income subject to tax by up to $2,500."
+    license: public
+  - row_id: self_employment_filing_threshold
+    section: TCP
+    tax_year: 2025
+    topic: "Individual filing and documentation"
+    question: "under what condition must you file an income tax return based on net earnings from self-employment?"
+    answer: "You must file if your net earnings from self-employment were $400 or more"
+    display_citation: "IRS Pub 334 (2025), p.7"
+    source_id: irs_p334
+    locator: p7
+    source_passage: "You have to file an income tax return for 2025 if your net earnings from self-employment were $400 or more."
+    license: public
+  - row_id: senior_enhanced_deduction_max
+    section: REG
+    tax_year: 2025
+    topic: "Adjustments, deductions and QBI"
+    question: "what is the maximum enhanced deduction for seniors (age 65 or older), per person?"
+    answer: "$6,000 per person"
+    display_citation: "IRS Pub 17 (2025), p.94"
+    source_id: irs_p17
+    locator: p94
+    source_passage: "The maximum amount of the deduction is $6,000 per person."
+    license: public
