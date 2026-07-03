@@ -20,15 +20,15 @@ vertical-ascent variant**.
 
 **Locked decisions (do not relitigate during implementation):**
 
-| # | Decision | Rationale |
-|---|----------|-----------|
-| D1 | **Peaks = 5 sections: FAR, AUD, REG, TCP, ISC** (FAR first). BAR excluded. | Explicit user choice. 3 Core (AUD/FAR/REG) + 2 Disciplines (TCP/ISC); BAR is the discipline dropped. |
-| D2 | **Peak height = section `ReadinessBand.pointEstimate` on the CPA 0–99 scale.** Pass line at **75**. Above iff `pointEstimate >= 75`. | The only section-level scalar the backend exposes; it is Performance-derived and lands 75 on the *real* CPA pass line, making Constraint 1 literally true. |
-| D3 | **Label the height axis "Projected CPA score (0–99)", NEVER "Performance."** | "Performance" is a *different* per-topic metric in this app; the ADR-0005 transform + abstain gate mean the height is a *projection*, not raw performance. (Honesty review.) |
-| D4 | **Unproven is gated on `band.abstain`, NEVER on height.** | On abstain the backend returns `pointEstimate = 0.0` (`..Default::default()`); plotting it as height would masquerade as a real score of 0. |
-| D5 | **The mountain is navy-only.** Above/below is signaled by **position vs the labeled dashed pass line + a neutral hollow-triangle glyph + a neutral tabular number**. The only semantic hue is a `warning` chip **off** the mountain. | Ledger firewall: navy is the sanctioned readiness-band color; scores are never painted in pass/fail hues; color-never-alone. |
-| D6 | **Rendering = Swift Charts**, with the ≥75 guarantee living in a **pure, unit-tested** `TopoScale`/`passStanding` in `AnkiKit`. | Repo already uses Swift Charts with pinned axes + `RuleMark` precedent (`Stats/*`); Canvas text is invisible to VoiceOver and a `GeometryReader`-in-List row risks sizing loops. The invariant is a scalar comparison, so it's engine-independent as long as classification happens in the model and the y-domain is pinned. (Do **not** copy the semantic-colored gradients some Stats charts use, e.g. `ForecastChart`'s `.blue.gradient`.) |
-| D7 | **The iOS range is a Home *overview/roadmap* layer, not the canonical Readiness dashboard.** Canonical Readiness stays **per-confusion-set** (mirroring the desktop `ankountant-dashboard`); the iOS `SectionDetailView` mirrors that desktop drill-in. | Prevents cross-client mental-model drift: desktop = FAR diagnostic rows; iOS Home = a section-level overview that *links into* the same per-topic diagnosis. A desktop "range" mirror is possible future work, out of scope here. |
+| #  | Decision                                                                                                                                                                                                                                                | Rationale                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1 | **Peaks = 5 sections: FAR, AUD, REG, TCP, ISC** (FAR first). BAR excluded.                                                                                                                                                                              | Explicit user choice. 3 Core (AUD/FAR/REG) + 2 Disciplines (TCP/ISC); BAR is the discipline dropped.                                                                                                                                                                                                                                                                                                                                          |
+| D2 | **Peak height = section `ReadinessBand.pointEstimate` on the CPA 0–99 scale.** Pass line at **75**. Above iff `pointEstimate >= 75`.                                                                                                                    | The only section-level scalar the backend exposes; it is Performance-derived and lands 75 on the _real_ CPA pass line, making Constraint 1 literally true.                                                                                                                                                                                                                                                                                    |
+| D3 | **Label the height axis "Projected CPA score (0–99)", NEVER "Performance."**                                                                                                                                                                            | "Performance" is a _different_ per-topic metric in this app; the ADR-0005 transform + abstain gate mean the height is a _projection_, not raw performance. (Honesty review.)                                                                                                                                                                                                                                                                  |
+| D4 | **Unproven is gated on `band.abstain`, NEVER on height.**                                                                                                                                                                                               | On abstain the backend returns `pointEstimate = 0.0` (`..Default::default()`); plotting it as height would masquerade as a real score of 0.                                                                                                                                                                                                                                                                                                   |
+| D5 | **The mountain is navy-only.** Above/below is signaled by **position vs the labeled dashed pass line + a neutral hollow-triangle glyph + a neutral tabular number**. The only semantic hue is a `warning` chip **off** the mountain.                    | Ledger firewall: navy is the sanctioned readiness-band color; scores are never painted in pass/fail hues; color-never-alone.                                                                                                                                                                                                                                                                                                                  |
+| D6 | **Rendering = Swift Charts**, with the ≥75 guarantee living in a **pure, unit-tested** `TopoScale`/`passStanding` in `AnkiKit`.                                                                                                                         | Repo already uses Swift Charts with pinned axes + `RuleMark` precedent (`Stats/*`); Canvas text is invisible to VoiceOver and a `GeometryReader`-in-List row risks sizing loops. The invariant is a scalar comparison, so it's engine-independent as long as classification happens in the model and the y-domain is pinned. (Do **not** copy the semantic-colored gradients some Stats charts use, e.g. `ForecastChart`'s `.blue.gradient`.) |
+| D7 | **The iOS range is a Home _overview/roadmap_ layer, not the canonical Readiness dashboard.** Canonical Readiness stays **per-confusion-set** (mirroring the desktop `ankountant-dashboard`); the iOS `SectionDetailView` mirrors that desktop drill-in. | Prevents cross-client mental-model drift: desktop = FAR diagnostic rows; iOS Home = a section-level overview that _links into_ the same per-topic diagnosis. A desktop "range" mirror is possible future work, out of scope here.                                                                                                                                                                                                             |
 
 **The three hard constraints and where they're satisfied:**
 
@@ -46,31 +46,32 @@ Backed by `rslib/src/ankountant/readiness.rs`.
 
 - **Never errors on missing data** — an empty/absent confusable map returns `Ok` with
   `topics: []`, `abstain: true`, `reason: "insufficient volume"`, `coverage: 0`,
-  `pointEstimate: 0`. (It *can* still throw on real SQLite/FFI failure; Swift's `try?`
+  `pointEstimate: 0`. (It _can_ still throw on real SQLite/FFI failure; Swift's `try?`
   degrades that to the abstain UI.)
 - **Abstain thresholds** (`constants.rs`): `ABSTAIN_MIN_ATTEMPTS = 20` sealed attempts,
   `ABSTAIN_MIN_COVERAGE = 0.60`, `MEMORY_MIN_REPS = 5`.
 - **CPA transform** (`logic::cpa_scale_from_accuracy`, ADR-0005): monotonic, **caps at 99**
   (not 100) → the y-domain must be **`0...99`**. Below the line the CPA point equals
-  `accuracy × 100` exactly (so a below-pass "60" peak and a "60%" topic meter *look*
+  `accuracy × 100` exactly (so a below-pass "60" peak and a "60%" topic meter _look_
   identical but mean different things — see the "two 75s" trap, §8).
 - **Section point is pooled, attempt-weighted** (`sealed_correct / sealed_total`) — it is
   **not** the mean of the drill-in bars and **not** FR-1's 50/50 MCQ/TBS blend (that
   weighting applies only to the per-topic bars). Never present the peak as "the average
   of these topics."
 
-**What each section shows today** (dev device after Debug → *Load FAR demo content*,
+**What each section shows today** (dev device after Debug → _Load FAR demo content_,
 `loadFarSeed(withHistory: true)`):
 
-| Section | Confusable map | Sealed attempts | `getReadiness` result | Peak |
-|---------|----------------|-----------------|-----------------------|------|
-| **FAR** | 4 sets | ~36 | `!abstain`; point ≈ **60**; band ≈ 44–75; Med confidence; coverage 0.75 | **below pass** |
-| AUD | 2 sets | 0 | abstain "insufficient volume"; 2 topic rows (all insufficient) | **unproven** |
-| REG | 1 set | 0 | abstain; 1 topic row | **unproven** |
-| TCP | 1 set | 0 | abstain; 1 topic row | **unproven** |
-| ISC | 1 set | 0 | abstain; 1 topic row | **unproven** |
+| Section | Confusable map | Sealed attempts | `getReadiness` result                                                   | Peak           |
+| ------- | -------------- | --------------- | ----------------------------------------------------------------------- | -------------- |
+| **FAR** | 4 sets         | ~36             | `!abstain`; point ≈ **60**; band ≈ 44–75; Med confidence; coverage 0.75 | **below pass** |
+| AUD     | 2 sets         | 0               | abstain "insufficient volume"; 2 topic rows (all insufficient)          | **unproven**   |
+| REG     | 1 set          | 0               | abstain; 1 topic row                                                    | **unproven**   |
+| TCP     | 1 set          | 0               | abstain; 1 topic row                                                    | **unproven**   |
+| ISC     | 1 set          | 0               | abstain; 1 topic row                                                    | **unproven**   |
 
 Corrections the cross-check forced into this plan:
+
 - **Non-FAR sections are seeded with maps + sealed content**; they abstain purely because
   they have **0 attempts**, so their drill-in still lists topic rows (all "insufficient") —
   the detail screen is not empty.
@@ -90,7 +91,7 @@ Corrections the cross-check forced into this plan:
 - **Nuance (don't over-promise the peaks):** those community cards are **study-pile (Memory)
   content**, not the sealed **Performance** bank or confusion-set (`ds::*`) items, and
   confusable maps still come from `rslib` seed (FAR-only today). So importing the bank gives
-  all 5 sections real *study content* (peaks are legitimate, not vaporware), but does **not**
+  all 5 sections real _study content_ (peaks are legitimate, not vaporware), but does **not**
   by itself lift a non-FAR section's readiness band out of abstain — each peak stays "Not
   enough data yet" until that section has its confusion-set sealed bank + ≥20 sealed attempts +
   ≥60% coverage. Net: **show all 5 peaks; non-FAR peaks light up as their readiness pipeline
@@ -170,7 +171,7 @@ shared and testable: `scoreWithRange`, `pct`, `bandLabel`, `gapsToClose`,
 `performanceInsufficient` (+ `TopicScoreModel.gapWarning = gap >= 0.25`, `displayName`).
 
 > **Dropped duplicate names** from Wave 1 (collisions resolved): `SummitReadinessSnapshot`,
-> `SectionPeak`, the `CpaSection` *struct* → all replaced by the single `CPASection` enum +
+> `SectionPeak`, the `CpaSection` _struct_ → all replaced by the single `CPASection` enum +
 > `SectionReadiness` value type above.
 
 ### 3.2 Presentation & navigation
@@ -252,28 +253,28 @@ private func load() async {
 
 **NEW — `AnkiKit` (SPM auto-includes):**
 
-| Path | Purpose |
-|------|---------|
-| `ios/Sources/AnkiKit/CPASection.swift` | 6-case enum + `code`/`displayName`/`homeOrder`/`init?(code:)` |
-| `ios/Sources/AnkiKit/ReadinessTopo.swift` | `SectionReadiness`, `PassStanding`, `TopoScale`, `passStanding`, moved pure formatters |
-| `ios/Tests/AnkiKitTests/ReadinessTopoTests.swift` | Unit tests for the scale/classifier/formatters + `CPASection` |
+| Path                                              | Purpose                                                                                |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `ios/Sources/AnkiKit/CPASection.swift`            | 6-case enum + `code`/`displayName`/`homeOrder`/`init?(code:)`                          |
+| `ios/Sources/AnkiKit/ReadinessTopo.swift`         | `SectionReadiness`, `PassStanding`, `TopoScale`, `passStanding`, moved pure formatters |
+| `ios/Tests/AnkiKitTests/ReadinessTopoTests.swift` | Unit tests for the scale/classifier/formatters + `CPASection`                          |
 
 **NEW — app target `AnkountantApp/Sources/Home/`:**
 
-| Path | Purpose |
-|------|---------|
-| `RangeHeroChart.swift` | Swift Charts topographic range (5 peaks, pass-75 rule, Wilson bands, abstain ghosts); decorative for a11y |
-| `SectionReadinessRow.swift` | One section list row + `NavigationLink(value: CPASection)` |
+| Path                        | Purpose                                                                                                             |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `RangeHeroChart.swift`      | Swift Charts topographic range (5 peaks, pass-75 rule, Wilson bands, abstain ghosts); decorative for a11y           |
+| `SectionReadinessRow.swift` | One section list row + `NavigationLink(value: CPASection)`                                                          |
 | `ReadinessComponents.swift` | Shared `ReadinessBandView` + `TopicBreakdownList` + `TopicScoreRow` + `PositionMeter` (used by Home **and** detail) |
-| `SectionDetailView.swift` | Per-section detail; reuses the shared components; loads `getReadiness(section.code)` |
+| `SectionDetailView.swift`   | Per-section detail; reuses the shared components; loads `getReadiness(section.code)`                                |
 
 **MODIFY:**
 
-| Path | Change |
-|------|--------|
-| `ios/AnkountantApp/Sources/Home/HomeView.swift` | Load `[CPASection: SectionReadiness]` (5, FAR-first, off-main); render `RangeHeroChart`; section rows as `middle`; add `.navigationDestination(for: CPASection.self)`; FAR-tag the readiness card; degrade to abstain when FAR abstains; swap internals to shared components; delete moved helpers |
-| `ios/AnkountantApp/Sources/Decks/DeckListView.swift` | Generic `@ViewBuilder` `header`/`middle` slots (migrate off `AnyView`); `onAdditionalRefresh`; reseed-aware deck reload |
-| `ios/Sources/AnkiServices/SchedulerService.swift` | Map `!resp.hasReadiness` → abstain band (defensive) |
+| Path                                                 | Change                                                                                                                                                                                                                                                                                             |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ios/AnkountantApp/Sources/Home/HomeView.swift`      | Load `[CPASection: SectionReadiness]` (5, FAR-first, off-main); render `RangeHeroChart`; section rows as `middle`; add `.navigationDestination(for: CPASection.self)`; FAR-tag the readiness card; degrade to abstain when FAR abstains; swap internals to shared components; delete moved helpers |
+| `ios/AnkountantApp/Sources/Decks/DeckListView.swift` | Generic `@ViewBuilder` `header`/`middle` slots (migrate off `AnyView`); `onAdditionalRefresh`; reseed-aware deck reload                                                                                                                                                                            |
+| `ios/Sources/AnkiServices/SchedulerService.swift`    | Map `!resp.hasReadiness` → abstain band (defensive)                                                                                                                                                                                                                                                |
 
 **Build note:** `project.yml` uses `type: group` for `Sources/`, so new files are picked up
 on **`xcodegen generate`** (already part of the documented build). No `project.yml` edit; no
@@ -312,6 +313,7 @@ Charts autoscale to the data and the 75 line falls off — the one real footgun)
 `.frame(height: ~200pt)` (self-sizing List rows need a definite chart height).
 
 **Marks (all share the pinned scale):**
+
 - **Pass line:** `RuleMark(y: .value("Pass", 75))`, dashed, `palette.textSecondary`
   (neutral, high-contrast over navy), with a visible **"Pass 75"** label (not aria-only).
 - **Per-section peak:** navy `AreaMark`/`LineMark` at `pointEstimate`, graded opacity;
@@ -321,7 +323,7 @@ Charts autoscale to the data and the 75 line falls off — the one real footgun)
 - **Above/below:** encoded by the marker's **position relative to the labeled line** +
   a neutral **hollow triangle** glyph (`arrowtriangle.up`/`down`) + neutral tabular number.
 - **Abstain ghost:** a **hatched, dashed, neutral** block in a base gutter with `square.dashed`
-  + "Not enough data yet" — **no height, no band, no number.** Gated on `band.abstain` (D4).
+  - "Not enough data yet" — **no height, no band, no number.** Gated on `band.abstain` (D4).
 
 **Correctness / testability (the actual Constraint-1 deliverable):** classification is the
 scalar `passStanding(band)`, computed in `AnkiKit`, never read from pixels. `TopoScale.y` is a
@@ -373,20 +375,20 @@ the single semantic outlet is a `warning` chip off the mountain ("Below pass · 
 above/abstain chips are neutral; **green is never used** (a green "PASS ✓" dresses a
 projection up as a measurement).
 
-| Element | Token | Font | Light → Dark note |
-|---------|-------|------|-------------------|
-| Hero card | `surfaceElevated` + `border`, `.e2` (via `ankountantCard(elevated:)`) | — | dual-scheme |
-| Countdown numeral | `textPrimary` (**not** accent) + mono | `.displayHero` | — |
-| FAR readiness band value (the one navy number) | `accent` + mono | `.sectionHeading` | L `#1F3A5F` / D `#7FA6D4` |
-| Contour lines (decoration) | L `border` / **D `borderStrong`**, ~0.6 | — | D must step up to stay ≥3:1 |
-| Dashed pass line | `textSecondary`, dash `[5,4]` | — | neutral, reads over navy in both schemes |
-| "Pass 75" label | `textSecondary` on chip | `.micro` uppercase | the only "flag" allowed |
-| Peak silhouette + marker | `accent` graded (body ~.14/.20, ridge ~.5/.6) | — | identical for all 5 |
-| Wilson-band summit | `accent` vertical fade `bandLow…bandHigh` | — | soft, **no crisp apex** |
-| Peak point number | `textPrimary` (**neutral**) + mono | `.captionBold` | navy reserved for the aggregate band |
-| Above/below glyph | `textSecondary` `arrowtriangle.up/down` | `.caption` | position + glyph + number |
-| Abstain ghost | dashed `borderStrong` + 45° hatch (`border`/**`borderStrong`** dark) + `square.dashed` | `.caption`/`.micro` | hatch must survive dark |
-| Section chip (only semantic outlet) | below = `.ankountantStatusBadge(.warning)`; above/abstain = `.neutral` | `.captionBold` | warning L `#8A5A12` / D `#F5B44E` |
+| Element                                        | Token                                                                                  | Font                | Light → Dark note                        |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------- |
+| Hero card                                      | `surfaceElevated` + `border`, `.e2` (via `ankountantCard(elevated:)`)                  | —                   | dual-scheme                              |
+| Countdown numeral                              | `textPrimary` (**not** accent) + mono                                                  | `.displayHero`      | —                                        |
+| FAR readiness band value (the one navy number) | `accent` + mono                                                                        | `.sectionHeading`   | L `#1F3A5F` / D `#7FA6D4`                |
+| Contour lines (decoration)                     | L `border` / **D `borderStrong`**, ~0.6                                                | —                   | D must step up to stay ≥3:1              |
+| Dashed pass line                               | `textSecondary`, dash `[5,4]`                                                          | —                   | neutral, reads over navy in both schemes |
+| "Pass 75" label                                | `textSecondary` on chip                                                                | `.micro` uppercase  | the only "flag" allowed                  |
+| Peak silhouette + marker                       | `accent` graded (body ~.14/.20, ridge ~.5/.6)                                          | —                   | identical for all 5                      |
+| Wilson-band summit                             | `accent` vertical fade `bandLow…bandHigh`                                              | —                   | soft, **no crisp apex**                  |
+| Peak point number                              | `textPrimary` (**neutral**) + mono                                                     | `.captionBold`      | navy reserved for the aggregate band     |
+| Above/below glyph                              | `textSecondary` `arrowtriangle.up/down`                                                | `.caption`          | position + glyph + number                |
+| Abstain ghost                                  | dashed `borderStrong` + 45° hatch (`border`/**`borderStrong`** dark) + `square.dashed` | `.caption`/`.micro` | hatch must survive dark                  |
+| Section chip (only semantic outlet)            | below = `.ankountantStatusBadge(.warning)`; above/abstain = `.neutral`                 | `.captionBold`      | warning L `#8A5A12` / D `#F5B44E`        |
 
 **Motion (feedback-only):** pass line fades in first, then peaks grow from baseline
 (`AnkountantMotion.spring`/`.base`, staggered ~40ms). **No** confetti/sparkle/overshoot/
@@ -395,8 +397,8 @@ single ~100ms opacity fade (gate via `AnkountantMotion.animation(_:reduceMotion:
 
 **Accessibility:** every peak = position + glyph + neutral tabular number (color-never-alone);
 the **section list is the accessible/interactive fallback** at large Dynamic Type (it carries
-100% of the info); VoiceOver per row, e.g. *"FAR, projected 61, below pass line 75, medium
-confidence"* / *"AUD, not enough data yet."*; ≥44pt targets; 2px navy focus ring (never glow).
+100% of the info); VoiceOver per row, e.g. _"FAR, projected 61, below pass line 75, medium
+confidence"_ / _"AUD, not enough data yet."_; ≥44pt targets; 2px navy focus ring (never glow).
 
 **Drop from the AI mock:** rainbow/per-peak colors (→ all navy), crisp apexes (→ faded band),
 planted victory flags (→ dropped), any green PASS, `.blue.gradient`, gauge-style solid fills,
@@ -416,27 +418,28 @@ alone on pass line / above-below / unproven; **the displayed score never reads a
 "75" unless the section is actually ≥75** (near-pass display rule below).
 
 **Final microcopy:**
+
 - Axis title: `Projected CPA score (0–99)` · pass marker: `Pass 75` · caption: `Height = projected CPA score (0–99). Pass line at 75.`
 - Hero disclaimer — **align to the desktop's existing string** (don't invent a new one; true cross-client unification would require editing `Dashboard.svelte`, out of scope here): `Rough projection on the CPA 0–99 scale (pass 75); the band is the confidence range, not an official AICPA score.`
 - Above: `+{n} above the 75 pass line` · Below: `{n} below the 75 pass line` · Straddle: `range crosses the 75 pass line`
 - **Empty state (uniform across all 5 sections):** an active-but-thin section (any of FAR/AUD/REG/TCP/ISC before enough evidence) → `Not enough data yet` + tooltip `Withheld until there's enough evidence — need ≥ 20 sealed attempts and ≥ 60% topic coverage.` (drivers from `band.reasons`). Renders as a neutral hatch/dashed ghost, never a height. All five are real sections (content lives across branches), so there is **no** "not in this version" state.
 - Drill-in (accuracy %, **never** a "75"): `Memory 62% (54–70%)` · `Performance 48% (40–56%)` · `Gap 14 pts` · insufficient → `insufficient`.
-- **Near-pass display rule:** classify on the raw `pointEstimate`, but clamp the *displayed* integer so it never crosses the line versus the true standing — below-pass shows `min(round(point), 74)`, above-pass shows `max(round(point), 75)`. Stops a below-pass score from rendering as an unqualified "75" beside the `Pass 75` line.
+- **Near-pass display rule:** classify on the raw `pointEstimate`, but clamp the _displayed_ integer so it never crosses the line versus the true standing — below-pass shows `min(round(point), 74)`, above-pass shows `max(round(point), 75)`. Stops a below-pass score from rendering as an unqualified "75" beside the `Pass 75` line.
 
 ---
 
 ## 9. Edge cases → required behavior
 
-| Case | Behavior |
-|------|----------|
-| FAR abstains (fresh / content-only / foundation) | FAR peak = ghost; hero = abstain state. Never special-case FAR as proven. |
-| All 5 abstain (fresh install) | Five hatched ghosts in the gutter; **never** five zero-height peaks; quick stats "no projection yet," not "0/5 passing." |
-| Genuinely low-but-proven (e.g. point 20) | Real filled peak at 20 **with** band — visually distinct from a ghost (filled+band+on-scale vs hatched+gutter). |
-| `pointEstimate` exactly 75 | `.above` (inclusive); marker on the line. |
-| Zero-width band (`bandLow == bandHigh`, non-abstain) | Marker only, no ribbon; guard against divide-by-zero/NaN. |
-| Clamp | Domain `0...99`; `TopoScale.y` clamps. |
-| `getReadiness` throws (real error) | `try?` → `nil` summary → row/peak = unproven (acceptable; note it won't show the true error reason). |
-| `!resp.hasReadiness` | Treated as abstain (defensive map in the service). |
+| Case                                                 | Behavior                                                                                                                 |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| FAR abstains (fresh / content-only / foundation)     | FAR peak = ghost; hero = abstain state. Never special-case FAR as proven.                                                |
+| All 5 abstain (fresh install)                        | Five hatched ghosts in the gutter; **never** five zero-height peaks; quick stats "no projection yet," not "0/5 passing." |
+| Genuinely low-but-proven (e.g. point 20)             | Real filled peak at 20 **with** band — visually distinct from a ghost (filled+band+on-scale vs hatched+gutter).          |
+| `pointEstimate` exactly 75                           | `.above` (inclusive); marker on the line.                                                                                |
+| Zero-width band (`bandLow == bandHigh`, non-abstain) | Marker only, no ribbon; guard against divide-by-zero/NaN.                                                                |
+| Clamp                                                | Domain `0...99`; `TopoScale.y` clamps.                                                                                   |
+| `getReadiness` throws (real error)                   | `try?` → `nil` summary → row/peak = unproven (acceptable; note it won't show the true error reason).                     |
+| `!resp.hasReadiness`                                 | Treated as abstain (defensive map in the service).                                                                       |
 
 ---
 
@@ -505,7 +508,7 @@ attempt-weighted section point). Changes it prompted, now folded in above:
 
 - **Non-FAR framing → "Not in this version"** (§11 #1): "Not enough data yet" is
   product-dishonest in a FAR-only MVP with no path to prove AUD/REG/TCP/ISC.
-- **Cross-client framing (D7):** the iOS range is an *overview/roadmap* layer; canonical
+- **Cross-client framing (D7):** the iOS range is an _overview/roadmap_ layer; canonical
   Readiness stays per-confusion-set (the desktop model), which the iOS detail mirrors.
 - **Near-pass display rule (§8):** a below-pass score must never render as an unqualified "75"
   beside the pass line.
