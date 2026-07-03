@@ -85,7 +85,7 @@ test-ios:
 # reuses the ninja build's Cargo target dir so it needs no from-scratch rebuild.
 ankountant-evidence:
     CARGO_TARGET_DIR=out/rust cargo test -p anki _evidence -- --ignored --nocapture
-    @echo "Evidence written to docs_ankountant/evidence/{determinism,ablation}.html"
+    @echo "Evidence written to docs_ankountant/evidence/{determinism,ablation,paraphrase}.html"
 
 # --- Ankountant Phase-2a RAG card generator (tools/cardgen) -----------------
 # Standalone offline batch tool; not shipped in wheels/xcframework. Uses its own

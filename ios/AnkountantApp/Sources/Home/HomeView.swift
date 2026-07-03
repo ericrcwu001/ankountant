@@ -136,14 +136,22 @@ struct HomeView: View {
     }
 
     /// Per-topic Memory vs Performance, each with its confidence range (#3).
+    /// Shown even when the aggregate Readiness abstains, so the candidate can
+    /// still see which topics carry signal — Memory and Performance abstain
+    /// independently, per topic, when their own evidence is too thin.
     @ViewBuilder
     private var topicsCard: some View {
-        if let readiness, !readiness.band.abstain, !readiness.topics.isEmpty {
+        if let readiness, !readiness.topics.isEmpty {
             VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
                 Text("Topic breakdown")
                     .ankountantFont(.micro)
                     .foregroundStyle(palette.textSecondary)
                     .textCase(.uppercase)
+                if readiness.band.abstain {
+                    Text("Per-topic signal — the overall projection stays withheld until there's enough data.")
+                        .ankountantFont(.caption)
+                        .foregroundStyle(palette.textSecondary)
+                }
                 ForEach(readiness.topics) { topic in
                     HStack(alignment: .firstTextBaseline) {
                         Text(topic.setId.replacingOccurrences(of: "_", with: " "))
@@ -152,7 +160,7 @@ struct HomeView: View {
                         Spacer()
                         VStack(alignment: .trailing, spacing: 1) {
                             Text("M \(scoreWithRange(topic.memoryInsufficient ? nil : topic.memory, topic.memoryLow, topic.memoryHigh))")
-                            Text("P \(scoreWithRange(topic.performance, topic.performanceLow, topic.performanceHigh))")
+                            Text("P \(scoreWithRange(performanceInsufficient(topic) ? nil : topic.performance, topic.performanceLow, topic.performanceHigh))")
                         }
                         .ankountantFont(.micro)
                         .foregroundStyle(palette.textSecondary)
@@ -262,6 +270,13 @@ struct HomeView: View {
     /// A 0..1 fraction as an integer percent string ("62%").
     private func pct(_ fraction: Double) -> String {
         "\(Int((fraction * 100).rounded()))%"
+    }
+
+    /// Performance has no reliable value until the sealed bank has been sampled;
+    /// the backend signals that with a zero-width band (both endpoints 0) — the
+    /// same convention Memory exposes explicitly via `memoryInsufficient`.
+    private func performanceInsufficient(_ topic: TopicScoreModel) -> Bool {
+        topic.performanceLow == 0 && topic.performanceHigh == 0
     }
 
     /// A point score plus its confidence range ("62% (54–70%)"), or

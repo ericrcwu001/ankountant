@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import SwiftUI
 import UIKit
 import AnkiClients
@@ -41,8 +42,19 @@ final class SyncCoordinator {
 
     private static let logCap = 100
 
+    // MARK: - Auto-sync on reconnect / foreground
+
+    /// Debounce window so a flapping connection or rapid foregrounding can't spam
+    /// the server. An explicit user tap bypasses this by calling `startSync()`.
+    private static let autoSyncMinInterval: TimeInterval = 30
+
+    @ObservationIgnored private var pathMonitor: NWPathMonitor?
+    @ObservationIgnored private var wasOffline = false
+    @ObservationIgnored private var lastAutoSyncAt: Date = .distantPast
+
     init() {
         registerLifecycleObservers()
+        startReachabilityMonitoring()
     }
 
     private func registerLifecycleObservers() {
@@ -63,6 +75,7 @@ final class SyncCoordinator {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.endBackgroundExecutionIfNeeded()
+                self?.autoSyncIfAppropriate(trigger: "foreground")
             }
         }
 
@@ -115,8 +128,25 @@ final class SyncCoordinator {
             let client = await self.syncClient
             do {
                 let summary = try await client.sync()
+                // Collection is synced; now sync media too so the primary
+                // (toolbar) path is a COMPLETE sync, matching the sync sheet.
+                // Media is best-effort — a media failure must not fail the sync.
                 await MainActor.run {
-                    self.appendLog("Sync complete: \(summary.cardsPushed) pushed, \(summary.cardsPulled) pulled")
+                    guard self.activeTask != nil else { return }
+                    self.appendLog("Collection synced — syncing media")
+                    self.state = .syncing(message: "Syncing media…")
+                }
+                do {
+                    _ = try await client.syncMedia()
+                    await MainActor.run { self.appendLog("Media synced") }
+                } catch {
+                    await MainActor.run {
+                        self.appendLog("Media sync skipped: \(error.localizedDescription)", level: .warning)
+                    }
+                }
+                await MainActor.run {
+                    guard self.activeTask != nil else { return }
+                    self.appendLog("Sync complete")
                     self.state = .success(summary)
                     self.$lastSyncedAtUnix.withLock { $0 = Date().timeIntervalSince1970 }
                     self.$needsFullSyncFlag.withLock { $0 = false }
@@ -206,6 +236,48 @@ final class SyncCoordinator {
             appendLog("Media sync cancelled", level: .warning)
             state = .idle
         }
+    }
+
+    // MARK: - Auto-sync on reconnect / foreground
+
+    /// Watches network reachability; when the connection is restored after being
+    /// offline, kicks off a sync so offline review reconciles automatically.
+    private func startReachabilityMonitoring() {
+        guard pathMonitor == nil else { return }
+        let monitor = NWPathMonitor()
+        monitor.pathUpdateHandler = { [weak self] path in
+            let online = path.status == .satisfied
+            Task { @MainActor in self?.handlePathUpdate(online: online) }
+        }
+        monitor.start(queue: DispatchQueue(label: "com.ankountant.sync.reachability"))
+        pathMonitor = monitor
+    }
+
+    private func handlePathUpdate(online: Bool) {
+        let cameBackOnline = online && wasOffline
+        wasOffline = !online
+        if cameBackOnline {
+            appendLog("Network reconnected")
+            autoSyncIfAppropriate(trigger: "reconnect")
+        }
+    }
+
+    /// Starts a sync automatically, but only when it's safe and useful: a server
+    /// is configured, nothing is already in flight, no full-sync decision is
+    /// pending, and we haven't just auto-synced. User-initiated syncs bypass all
+    /// of this by calling `startSync()` directly.
+    func autoSyncIfAppropriate(trigger: String) {
+        guard let hostKey = KeychainHelper.loadHostKey(), !hostKey.isEmpty else { return }
+        switch state {
+        case .syncing, .syncingMedia, .needsFullSync: return
+        default: break
+        }
+        guard activeTask == nil else { return }
+        let now = Date()
+        guard now.timeIntervalSince(lastAutoSyncAt) >= Self.autoSyncMinInterval else { return }
+        lastAutoSyncAt = now
+        appendLog("Auto-sync (\(trigger))")
+        Task { await startSync() }
     }
 
     // MARK: - Log helpers (used by all behaviors)

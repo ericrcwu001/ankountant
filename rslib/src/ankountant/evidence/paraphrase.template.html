@@ -1,0 +1,154 @@
+<!doctype html>
+<!--
+  Copyright: Ankitects Pty Ltd and contributors
+  License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
+
+  GENERATED — do not edit by hand. Regenerate with `just ankountant-evidence`
+  (emitter: rslib/src/ankountant/paraphrase.rs::emit_paraphrase_evidence).
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ankountant — Paraphrase Test (Performance ≠ Memory)</title>
+    <style>
+      :root {
+        --bg: #0f1420;
+        --panel: #172033;
+        --panel-2: #1e2a42;
+        --ink: #e8edf6;
+        --muted: #9fb0cc;
+        --accent: #6ea8ff;
+        --mem: #6ea8ff;
+        --perf: #4bd991;
+        --bad: #ff6b6b;
+        --border: #2a3a58;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+      .wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+      h1 { font-size: 26px; margin: 0 0 4px; }
+      h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 32px 0 12px; }
+      code { background: var(--panel-2); padding: 2px 6px; border-radius: 5px; font-size: 13px; }
+      .hyp { background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px; padding: 14px 18px; color: var(--ink); max-width: 82ch; }
+      .foot { color: var(--muted); font-size: 13px; }
+      .cohorts { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+      .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+      .card h3 { margin: 0 0 14px; font-size: 17px; }
+      .bars { display: flex; flex-direction: column; gap: 12px; }
+      .barrow { display: grid; grid-template-columns: 92px 1fr 52px; align-items: center; gap: 10px; }
+      .barlabel { color: var(--muted); font-size: 13px; }
+      .bartrack { position: relative; height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+      .bar { position: absolute; top: 0; height: 100%; border-radius: 4px; }
+      .bar.mem { background: var(--mem); }
+      .bar.perf { background: var(--perf); }
+      .barnum { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; }
+      .gap { margin-top: 14px; font-size: 14px; color: var(--muted); }
+      .gap strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+      .verdict { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel); font-weight: 600; margin: 6px 0 0; }
+      .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--perf); }
+      .checks { list-style: none; padding: 0; margin: 12px 0 0; color: var(--muted); font-size: 14px; }
+      .checks li { margin: 4px 0; }
+      .checks .ok { color: var(--perf); }
+      .checks .no { color: var(--bad); }
+      table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+      th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+      th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+      td.num, th.num { text-align: right; }
+      .legend { display: flex; gap: 16px; color: var(--muted); font-size: 13px; margin: 12px 0; }
+      .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+      .note { color: var(--muted); font-size: 13px; margin-top: 16px; max-width: 82ch; }
+      details { margin-top: 16px; }
+      summary { cursor: pointer; color: var(--accent); }
+      pre { background: #0b0f18; border: 1px solid var(--border); border-radius: 10px; padding: 16px; overflow: auto; font-size: 12px; color: #c7d3e8; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1 id="title"></h1>
+      <p class="foot">Reproduce: <code id="reproduce"></code> · generated <span id="ts"></span></p>
+
+      <h2>Method</h2>
+      <p class="hyp" id="method"></p>
+
+      <h2>Verdict</h2>
+      <div class="verdict" id="verdict"><span class="dot"></span><span id="verdict-text"></span></div>
+      <ul class="checks" id="checks"></ul>
+
+      <h2>Memory vs Performance, per cohort</h2>
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--mem)"></span>Memory (study-pile recall)</span>
+        <span><span class="swatch" style="background:var(--perf)"></span>Performance (reworded sealed items)</span>
+      </div>
+      <div class="cohorts" id="cohorts"></div>
+
+      <h2>Per-topic — memorizer cohort</h2>
+      <div class="card"><table id="table"></table></div>
+
+      <p class="note" id="note"></p>
+
+      <details>
+        <summary>Raw JSON record</summary>
+        <pre id="raw"></pre>
+      </details>
+    </div>
+
+    <script>
+      const DATA = /*__DATA__*/;
+      const $ = (id) => document.getElementById(id);
+      const pct = (x) => `${(Number(x) * 100).toFixed(0)}%`;
+      const pts = (x) => `${(Number(x) * 100).toFixed(0)} pts`;
+
+      $("title").textContent = DATA.title;
+      $("reproduce").textContent = DATA.reproduce;
+      $("ts").textContent = new Date((DATA.generated_at || 0) * 1000).toISOString();
+      $("method").textContent = DATA.method;
+      $("note").textContent = DATA.note;
+      $("raw").textContent = JSON.stringify(DATA, null, 2);
+
+      const v = DATA.verdict || {};
+      $("verdict-text").textContent = v.passed
+        ? "Performance is NOT a copy of Memory — the reworded-item signal is genuinely distinct."
+        : "Inconclusive on this run.";
+      if (!v.passed) {
+        $("verdict").style.borderColor = "var(--bad)";
+        document.querySelector("#verdict .dot").style.background = "var(--bad)";
+      }
+      const check = (ok, label) =>
+        `<li><span class="${ok ? "ok" : "no"}">${ok ? "✓" : "✗"}</span> ${label}</li>`;
+      $("checks").innerHTML =
+        check(v.memory_held_constant, "Memory held constant across both cohorts") +
+        check(v.performance_tracks_reworded_items, "Performance tracks the reworded-item accuracy, not Memory") +
+        check(v.gap_reflects_divergence, "Memory − Performance gap opens only for the memorizer");
+
+      const cohorts = DATA.cohorts || [];
+      $("cohorts").innerHTML = cohorts
+        .map(
+          (c) => `
+        <div class="card">
+          <h3>${c.name}</h3>
+          <div class="bars">
+            <div class="barrow"><span class="barlabel">Memory</span>
+              <div class="bartrack"><div class="bar mem" style="width:${c.mean_memory * 100}%"></div></div>
+              <span class="barnum">${pct(c.mean_memory)}</span></div>
+            <div class="barrow"><span class="barlabel">Performance</span>
+              <div class="bartrack"><div class="bar perf" style="width:${c.mean_performance * 100}%"></div></div>
+              <span class="barnum">${pct(c.mean_performance)}</span></div>
+          </div>
+          <div class="gap">Memory − Performance gap: <strong>${pts(c.mean_gap)}</strong></div>
+        </div>`
+        )
+        .join("");
+
+      const memo = cohorts[0] || { topics: [] };
+      $("table").innerHTML =
+        `<tr><th>Topic</th><th class="num">Memory</th><th class="num">Performance</th><th class="num">Gap</th></tr>` +
+        (memo.topics || [])
+          .map(
+            (t) =>
+              `<tr><td>${t.topic}</td><td class="num">${pct(t.memory)}</td><td class="num">${pct(t.performance)}</td><td class="num">${pts(t.gap)}</td></tr>`
+          )
+          .join("");
+    </script>
+  </body>
+</html>

@@ -45,3 +45,4 @@ pub(super) fn write_artifact(name: &str, template: &str, data: &Value) {
 
 pub(super) const DETERMINISM_TEMPLATE: &str = include_str!("evidence/determinism.template.html");
 pub(super) const ABLATION_TEMPLATE: &str = include_str!("evidence/ablation.template.html");
+pub(super) const PARAPHRASE_TEMPLATE: &str = include_str!("evidence/paraphrase.template.html");

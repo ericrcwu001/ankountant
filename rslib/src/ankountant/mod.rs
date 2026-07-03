@@ -23,6 +23,8 @@ pub(crate) mod grading;
 pub(crate) mod literature;
 pub(crate) mod logic;
 pub(crate) mod notetypes;
+#[cfg(test)]
+mod paraphrase;
 pub(crate) mod readiness;
 pub(crate) mod schedule;
 pub(crate) mod seed;
