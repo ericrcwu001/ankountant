@@ -1,3 +1,6 @@
+// Copyright: Ankitects Pty Ltd and contributors
+// License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
+
 import SwiftUI
 import AnkountantTheme
 import AnkiKit
@@ -6,12 +9,14 @@ import AnkiServices
 import Dependencies
 import Sharing
 
-/// The Ankountant Home hub — the Decks tab root. Its hero widget is a
-/// days-until-exam countdown fed by a user-entered exam date; saving that date
-/// (via `ExamConfigClient` → the shared `ankountant.<section>.exam.date` config)
-/// is what makes the live scheduler deadline-anchored (A1-live). The hero also
-/// surfaces Readiness and a "Start review" entry, then the existing deck list
-/// scrolls beneath it.
+/// The Ankountant Home hub — the Decks tab root. The hero stacks a days-until-exam
+/// countdown, the FAR readiness Wilson band (the headline), a topographic "range"
+/// across the CPA sections, and a per-section list; the deck list scrolls beneath.
+/// Tapping a section peak/row drills into its per-topic Memory/Performance
+/// breakdown. Saving the exam date (via `ExamConfigClient`) is what makes the live
+/// scheduler deadline-anchored (A1-live). Styled with the Ledger tokens: navy is
+/// chrome-only + the readiness band; numerals are neutral ink + tabular figures;
+/// abstain ("Not enough data yet") is first-class.
 struct HomeView: View {
     @Binding var pendingReviewDeckId: Int64?
 
@@ -23,24 +28,35 @@ struct HomeView: View {
 
     @State private var examDate = Date()
     @State private var hasExamDate = false
-    @State private var readiness: ReadinessSummary?
+    // One entry per summit section (FAR first); nil summary until loaded / on error.
+    @State private var sections: [SectionReadiness] = CPASection.homeOrder.map {
+        SectionReadiness(section: $0, summary: nil)
+    }
     @State private var readinessLoaded = false
     @State private var farDeckId: Int64?
     @State private var showConfusion = false
 
     // Bumped by the Debug "demo phases" actions after they reseed. Observed via
-    // .task(id:) below so Home reloads when the demo profile changes, even
-    // though Home lives in a different tab and stays alive in the background.
+    // .task(id:) below so Home reloads when the demo profile changes.
     @Shared(.appStorage(DemoSeed.versionKey)) private var demoSeedVersion = 0
 
+    // The focus section: FAR drives the countdown, headline readiness, and CTA.
     private let section = "FAR"
 
     var body: some View {
-        DeckListView(header: AnyView(hero), navigationTitle: "Home")
-            .task(id: demoSeedVersion) { await load() }
-            .navigationDestination(isPresented: $showConfusion) {
-                ConfusionDrillView()
-            }
+        DeckListView(
+            header: AnyView(hero),
+            onAdditionalRefresh: { await load() },
+            reloadID: demoSeedVersion,
+            navigationTitle: "Home"
+        )
+        .task(id: demoSeedVersion) { await load() }
+        .navigationDestination(isPresented: $showConfusion) {
+            ConfusionDrillView()
+        }
+        .navigationDestination(for: CPASection.self) { tapped in
+            SectionDetailView(section: tapped)
+        }
     }
 
     // MARK: Hero
@@ -49,7 +65,8 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
             countdownCard
             readinessCard
-            topicsCard
+            RangeHeroChart(sections: sections)
+            sectionList
             actions
         }
     }
@@ -80,53 +97,25 @@ struct HomeView: View {
         .ankountantCard(elevated: true)
     }
 
+    // Headline: the FAR exam-day projection (Constraint 3). Abstain-aware.
     private var readinessCard: some View {
         VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
-            Text("Exam-day projection")
+            Text("FAR · Exam-day projection")
                 .ankountantFont(.micro)
                 .foregroundStyle(palette.textSecondary)
                 .textCase(.uppercase)
 
-            if let readiness {
-                if readiness.band.abstain {
-                    abstain(reason: readiness.band.reason)
-                    Text("\(pct(readiness.band.coverage)) of exam topics covered")
-                        .ankountantFont(.caption)
-                        .foregroundStyle(palette.textSecondary)
-                } else {
-                    HStack(alignment: .firstTextBaseline, spacing: AnkountantSpacing.sm) {
-                        Text(bandLabel(readiness.band))
-                            .ankountantFont(.sectionHeading)
-                            .foregroundStyle(palette.accent)
-                            .monospacedDigit()
-                        Text("point \(Int(readiness.band.pointEstimate.rounded()))")
-                            .ankountantFont(.caption)
-                            .foregroundStyle(palette.textSecondary)
-                            .monospacedDigit()
-                    }
-                    Text("\(readiness.band.confidence) confidence · \(pct(readiness.band.coverage)) of exam covered")
-                        .ankountantFont(.caption)
-                        .foregroundStyle(palette.textSecondary)
-                    // Factual drivers (restated numbers, never a claimed cause).
-                    ForEach(readiness.band.reasons.prefix(3), id: \.self) { reason in
-                        Text("• \(reason)")
-                            .ankountantFont(.caption)
-                            .foregroundStyle(palette.textSecondary)
-                    }
-                    Text("Rough CPA 0–99 projection (pass 75) — not an official score.\(updatedSuffix(readiness.band.generatedAt))")
-                        .ankountantFont(.micro)
-                        .foregroundStyle(palette.textSecondary)
+            if let far = farReadiness {
+                ReadinessBandView(band: far.band)
+                if !far.band.abstain {
                     HStack(spacing: AnkountantSpacing.xl) {
-                        quickStat("\(readiness.topics.count)", "Topics")
-                        quickStat("\(gapsToClose(readiness))", "Gaps to close")
+                        quickStat("\(far.topics.count)", "FAR topics")
+                        quickStat("\(far.gapsToCloseCount)", "Gaps to close")
                     }
                     .padding(.top, AnkountantSpacing.xs)
                 }
             } else if readinessLoaded {
-                // Loaded, but no projection is available (no data yet, or the
-                // readiness call failed) — show the abstain state rather than
-                // spinning forever.
-                abstain(reason: "complete a few reviews to project a score")
+                AbstainView(reason: "complete a few reviews to project a score")
             } else {
                 ProgressView()
             }
@@ -135,50 +124,25 @@ struct HomeView: View {
         .ankountantCard(elevated: true)
     }
 
-    /// Per-topic Memory vs Performance, each with its confidence range (#3).
-    /// Shown even when the aggregate Readiness abstains, so the candidate can
-    /// still see which topics carry signal — Memory and Performance abstain
-    /// independently, per topic, when their own evidence is too thin.
-    @ViewBuilder
-    private var topicsCard: some View {
-        if let readiness, !readiness.topics.isEmpty {
-            VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
-                Text("Topic breakdown")
-                    .ankountantFont(.micro)
-                    .foregroundStyle(palette.textSecondary)
-                    .textCase(.uppercase)
-                if readiness.band.abstain {
-                    Text("Per-topic signal — the overall projection stays withheld until there's enough data.")
-                        .ankountantFont(.caption)
-                        .foregroundStyle(palette.textSecondary)
+    // One tappable row per section, sharing the CPASection navigation destination
+    // with the range peaks above.
+    private var sectionList: some View {
+        VStack(spacing: AnkountantSpacing.sm) {
+            ForEach(sections) { readiness in
+                NavigationLink(value: readiness.section) {
+                    SectionReadinessRow(section: readiness)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .ankountantCard(elevated: true)
                 }
-                ForEach(readiness.topics) { topic in
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(topic.setId.replacingOccurrences(of: "_", with: " "))
-                            .ankountantFont(.caption)
-                            .foregroundStyle(palette.textPrimary)
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 1) {
-                            Text("M \(scoreWithRange(topic.memoryInsufficient ? nil : topic.memory, topic.memoryLow, topic.memoryHigh))")
-                            Text("P \(scoreWithRange(performanceInsufficient(topic) ? nil : topic.performance, topic.performanceLow, topic.performanceHigh))")
-                        }
-                        .ankountantFont(.micro)
-                        .foregroundStyle(palette.textSecondary)
-                        .monospacedDigit()
-                    }
-                }
+                .buttonStyle(.plain)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .ankountantCard(elevated: true)
         }
     }
 
     private var actions: some View {
         VStack(spacing: AnkountantSpacing.sm) {
-            // The primary action is phase-aware: its label, subtitle, and target
-            // follow the days-to-exam + memory-base recommendation (see
-            // `choosePhase`). Recall opens the FAR study deck; discrimination
-            // opens the confusion drill.
+            // Phase-aware primary CTA: recall opens the FAR study deck; the
+            // discrimination phase opens the confusion drill.
             Button(action: runCta) {
                 VStack(spacing: AnkountantSpacing.xxs) {
                     Text(cta.label)
@@ -208,22 +172,6 @@ struct HomeView: View {
         }
     }
 
-    @ViewBuilder
-    private func abstain(reason: String) -> some View {
-        HStack(alignment: .top, spacing: AnkountantSpacing.sm) {
-            Image(systemName: "square.dashed")
-                .foregroundStyle(palette.textSecondary)
-            VStack(alignment: .leading, spacing: AnkountantSpacing.xxs) {
-                Text("Not enough data yet")
-                    .ankountantFont(.bodyEmphasis)
-                    .foregroundStyle(palette.textPrimary)
-                Text("\(reason).")
-                    .ankountantFont(.caption)
-                    .foregroundStyle(palette.textSecondary)
-            }
-        }
-    }
-
     private func quickStat(_ value: String, _ label: String) -> some View {
         VStack(alignment: .leading, spacing: AnkountantSpacing.xxs) {
             Text(value)
@@ -237,6 +185,10 @@ struct HomeView: View {
     }
 
     // MARK: Derived
+
+    private var farReadiness: ReadinessSummary? {
+        sections.first(where: { $0.section == .far })?.summary
+    }
 
     private var daysUntilExam: Int? {
         guard hasExamDate else { return nil }
@@ -258,56 +210,12 @@ struct HomeView: View {
         return abs(days) == 1 ? "day since exam" : "days since exam"
     }
 
-    // CPA scaled-score band (0-99), not a percentage (ADR 0005).
-    private func bandLabel(_ band: ReadinessBand) -> String {
-        "\(Int(band.bandLow.rounded()))–\(Int(band.bandHigh.rounded()))"
-    }
-
-    private func gapsToClose(_ summary: ReadinessSummary) -> Int {
-        summary.topics.filter { $0.gap >= 0.25 }.count
-    }
-
-    /// A 0..1 fraction as an integer percent string ("62%").
-    private func pct(_ fraction: Double) -> String {
-        "\(Int((fraction * 100).rounded()))%"
-    }
-
-    /// Performance has no reliable value until the sealed bank has been sampled;
-    /// the backend signals that with a zero-width band (both endpoints 0) — the
-    /// same convention Memory exposes explicitly via `memoryInsufficient`.
-    private func performanceInsufficient(_ topic: TopicScoreModel) -> Bool {
-        topic.performanceLow == 0 && topic.performanceHigh == 0
-    }
-
-    /// A point score plus its confidence range ("62% (54–70%)"), or
-    /// "insufficient" when the metric has no reliable value.
-    private func scoreWithRange(_ value: Double?, _ low: Double, _ high: Double) -> String {
-        guard let value else { return "insufficient" }
-        let lo = Int((low * 100).rounded())
-        let hi = Int((high * 100).rounded())
-        if hi > lo {
-            return "\(Int((value * 100).rounded()))% (\(lo)–\(hi)%)"
-        }
-        return "\(Int((value * 100).rounded()))%"
-    }
-
-    /// " · updated 3:04 PM" suffix from unix seconds, empty when unknown.
-    private func updatedSuffix(_ generatedAt: Int64) -> String {
-        guard generatedAt > 0 else { return "" }
-        let date = Date(timeIntervalSince1970: TimeInterval(generatedAt))
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        formatter.dateStyle = .none
-        return " · updated \(formatter.string(from: date))"
-    }
-
     // MARK: Phase-aware CTA
 
-    /// A memory base exists once at least one topic has enough in-window recall
-    /// reps (i.e. is not memory-insufficient). No base => beginner => foundation.
+    /// A memory base exists once at least one FAR topic has enough in-window
+    /// recall reps (i.e. is not memory-insufficient).
     private var memoryReady: Bool {
-        guard let readiness else { return false }
-        return readiness.topics.contains { !$0.memoryInsufficient }
+        farReadiness?.topics.contains { !$0.memoryInsufficient } ?? false
     }
 
     private var phase: StudyPhase {
@@ -351,10 +259,8 @@ struct HomeView: View {
     }
 
     private func load() async {
-        // Reset exam state first: switching demo phases (e.g. consolidation's
-        // 7-day date back to foundation's no-date) must clear the old countdown
-        // rather than keep the previous phase's value. An empty stored string
-        // (foundation) counts as "no date".
+        // Exam date (FAR) — cheap config read. An empty stored string counts as
+        // "no date" (foundation phase).
         if let iso = try? examConfigClient.loadExamDate(section),
            !iso.isEmpty,
            let parsed = Self.isoFormatter.date(from: iso) {
@@ -364,10 +270,35 @@ struct HomeView: View {
             examDate = Date()
             hasExamDate = false
         }
-        readiness = try? schedulerService.getReadiness(section)
+
+        // Readiness for all summit sections, off the main actor. The backend
+        // serializes FFI under a lock, so a sequential loop is correct and
+        // simplest (a task group buys no real parallelism). FAR is first in
+        // homeOrder, so the headline paints before the rest fill in.
+        let getReadiness = schedulerService.getReadiness
+        for cpaSection in CPASection.homeOrder {
+            let code = cpaSection.code
+            let summary = await Task.detached(priority: .userInitiated) {
+                try? getReadiness(code)
+            }.value
+            guard !Task.isCancelled else { return }
+            update(cpaSection, summary: summary)
+            if cpaSection == .far { readinessLoaded = true }
+        }
         readinessLoaded = true
-        farDeckId = (try? deckClient.fetchTree()).flatMap {
-            Self.findDeckId(in: $0, fullName: "Ankountant::Study::FAR")
+
+        // FAR study deck id for the recall CTA — also off the main actor.
+        let fetchTree = deckClient.fetchTree
+        farDeckId = await Task.detached(priority: .userInitiated) {
+            (try? fetchTree()).flatMap {
+                Self.findDeckId(in: $0, fullName: "Ankountant::Study::FAR")
+            }
+        }.value
+    }
+
+    private func update(_ cpaSection: CPASection, summary: ReadinessSummary?) {
+        if let index = sections.firstIndex(where: { $0.section == cpaSection }) {
+            sections[index] = SectionReadiness(section: cpaSection, summary: summary)
         }
     }
 

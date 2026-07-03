@@ -153,16 +153,21 @@ extension SchedulerService: DependencyKey {
                     method: AnkiBackend.SchedulerMethod.getReadiness,
                     request: req
                 )
+                // Defensive: a proto response with `readiness` unset returns a
+                // default message (abstain=false, pointEstimate=0), which would
+                // render as a fake real "0" peak. Treat "no readiness" as abstain.
+                let r = resp.readiness
+                let hasReadiness = resp.hasReadiness
                 let band = ReadinessBand(
-                    abstain: resp.readiness.abstain,
-                    reason: resp.readiness.reason,
-                    bandLow: resp.readiness.bandLow,
-                    bandHigh: resp.readiness.bandHigh,
-                    pointEstimate: resp.readiness.pointEstimate,
-                    confidence: resp.readiness.confidence,
-                    coverage: resp.readiness.coverage,
-                    generatedAt: resp.readiness.generatedAt,
-                    reasons: resp.readiness.reasons
+                    abstain: hasReadiness ? r.abstain : true,
+                    reason: hasReadiness ? r.reason : "no readiness data",
+                    bandLow: r.bandLow,
+                    bandHigh: r.bandHigh,
+                    pointEstimate: r.pointEstimate,
+                    confidence: r.confidence,
+                    coverage: r.coverage,
+                    generatedAt: r.generatedAt,
+                    reasons: r.reasons
                 )
                 let topics = resp.topics.map {
                     TopicScoreModel(

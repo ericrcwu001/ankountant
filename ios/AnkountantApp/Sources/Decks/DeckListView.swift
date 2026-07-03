@@ -9,6 +9,12 @@ struct DeckListView: View {
     /// hub injects its countdown/readiness widgets here so they scroll with the
     /// deck list). `nil` renders the plain deck list.
     var header: AnyView? = nil
+    /// Extra work run before the deck reload on pull-to-refresh (the Home hub
+    /// chains its readiness reload here so both refresh together).
+    var onAdditionalRefresh: (() async -> Void)? = nil
+    /// Reload identity: bump to force a deck-tree reload (e.g. after a demo
+    /// reseed, so the deck list doesn't go stale while the hero updates).
+    var reloadID: Int = 0
     var navigationTitle: String = "Decks"
 
     @Dependency(\.deckClient) var deckClient
@@ -89,10 +95,11 @@ struct DeckListView: View {
                 Task { await loadDecks() }
             }
         }
-        .task {
+        .task(id: reloadID) {
             await loadDecks()
         }
         .refreshable {
+            await onAdditionalRefresh?()
             await loadDecks()
         }
     }
