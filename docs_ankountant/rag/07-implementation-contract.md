@@ -183,9 +183,32 @@ answer-relevancy / context-precision/recall (Ragas or our own metric fn using
 the offline/live judge). `baseline_report.md` = per-arm metrics + deltas + example
 wins; **success = hybrid beats both baselines** on faithfulness + bucket-1 rate.
 
+## Template (Automatic Item Generation) mode
+
+`--mode template` (`cfg.gen_source="template"`) generates cards by expanding
+curated templates x source-pinned data rows — **no per-card LLM**. Stage
+`templates` (`cardgen/templates.py`) reads `templates/*.yaml` (skeletons with
+`{slot}` / `{slot:money}` placeholders; rows inline or via `data_file` in
+`data/*.yaml`) and writes `05-candidates/*.json` directly. DAG:
+`ingest -> templates -> selfcheck -> gold -> judge -> leakage -> dedup -> emit`
+(skips chunk/index/worklist/retrieve/generate/baseline).
+
+Each row carries its own provenance: `source_id`, `locator`, a verbatim
+`source_passage` (must be a whitespace-normalized substring of that source's
+`00-ingest` text — verified in `templates.verify_grounding`), and `citation`.
+Numeric answers are computed from `FORMULAS` (straight_line, re_rollforward,
+subtract, multiply, lookup, …); MCQ distractors are curated `treatments`.
+`gen_method` is `{"method":"template","template_id","template_version",
+"variant_key","license"}` (+ `tax_year` when set) — distinct from the RAG
+`gen_method`. Dedup is **template-aware**: cards with different
+`(template_id, variant_key)` are never merged, so distinct parametric variants
+survive. `license` is `public` (IRS/NIST/OMB/Treasury — redistributable) or
+`personal_use` (Tier-B grounded).
+
 ## Testing & `just`
 
 - `just cardgen` → run DAG (proof defaults). `just cardgen-full` → `--target 50000`.
+- `just cardgen all --mode template` → the no-LLM template deck (then `resume`).
 - `just test-cardgen` → `uv run pytest tools/cardgen/tests` (offline, keyless).
 - Wire `test-cardgen` into `just check` (or `just test-py`) so the pipeline is
   gated. All tests use the offline backends; **no test needs a key or network.**

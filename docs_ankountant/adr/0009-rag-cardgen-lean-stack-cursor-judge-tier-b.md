@@ -98,5 +98,26 @@ Cost posture is unchanged in shape; the Batch API path lowers the full-run OpenA
 spend. Judge independence (provider+model separation) and the personal-use
 licensing posture are unchanged.
 
+## Addendum — template (Automatic Item Generation) mode
+
+A second generation mode complements RAG: `--mode template` expands curated
+templates x source-pinned data rows into cards with **no per-card LLM call**
+(`cardgen/templates.py`), then reuses the same gate
+(`selfcheck -> gold -> judge -> leakage -> dedup -> emit`).
+
+- **Grounding without retrieval.** Each data row pins a verbatim `source_passage`
+  that must be a substring of its source's `00-ingest` text; numeric answers are
+  computed from a deterministic formula registry. So cards are traceable to a
+  named source (rubric requirement) even though no model wrote them.
+- **Same quality bar.** Template cards still pass the independent 3-bucket judge;
+  in practice the judge caught real curation bugs (a mis-scoped tax range; research
+  exhibits that revealed their own citation), which were fixed before shipping.
+- **Licensing per row.** `gen_method.license` is `public` (IRS/NIST/OMB/Treasury —
+  redistributable) or `personal_use` (Tier-B grounded); a public pack excludes the
+  latter.
+- **Scope.** Value tracks curated data, not free generation — best for tax
+  thresholds/phase-outs and citation registries. It does not change the RAG stack
+  or the licensing posture above.
+
 Supersedes the stack/licensing specifics of ADR 0003 for the personal-use build;
 ADR 0003 remains the reference for the public-product posture.
