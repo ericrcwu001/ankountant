@@ -41,7 +41,7 @@ CPA-review material — see ADR 0009), indexes them in **LanceDB** (embedded vec
 **and** BM25) using OpenAI **`text-embedding-3-small`** embeddings, and generates
 cards with OpenAI **`gpt-5-mini`** (v2 decline prompt) constrained to retrieved
 passages. An **independent judge — batched Cursor subagents**, a different provider
-*and* model from the generator — plus a **human-verified gold set** enforces the
+_and_ model from the generator — plus a **human-verified gold set** enforces the
 3-bucket quality gate; a chunk-keyed **A/B/C baseline** proves the hybrid-RAG win
 over plain keyword/vector retrieval. The judge is itself gated: the `gold` stage
 calibrates it against the gold set (positives + planted negatives) and **halts the
@@ -59,7 +59,7 @@ Read in order; each links onward.
 | 2 | [`02-taxonomy-and-blueprint.md`](02-taxonomy-and-blueprint.md)       | The CPA-Evolution section/topic taxonomy and how 50,000 is allocated                                                 |
 | 3 | [`03-architecture-and-stack.md`](03-architecture-and-stack.md)       | Original stack choice (Claude + Voyage + LanceDB + Ragas) — **as-built is ADR 0009** (OpenAI + Cursor judge)         |
 | 4 | [`04-generation-pipeline.md`](04-generation-pipeline.md)             | The 12-stage ingest → retrieve → generate → gate → emit pipeline                                                     |
-| 5 | [`05-quality-eval-and-baseline.md`](05-quality-eval-and-baseline.md) | Gold set, 3-bucket gate + judge calibration, beat-the-baseline protocol, leakage & dedup                            |
+| 5 | [`05-quality-eval-and-baseline.md`](05-quality-eval-and-baseline.md) | Gold set, 3-bucket gate + judge calibration, beat-the-baseline protocol, leakage & dedup                             |
 | 6 | [`06-provenance-output-and-ops.md`](06-provenance-output-and-ops.md) | Provenance fields, note-type mapping, delivery (.apkg/RPC), cost model, reproducibility, prompt-injection guardrails |
 | 7 | [`07-implementation-contract.md`](07-implementation-contract.md)     | The build contract the implementation follows (stages, artifacts, interfaces)                                        |
 

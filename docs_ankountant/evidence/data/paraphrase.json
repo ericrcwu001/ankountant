@@ -1,43 +1,43 @@
 {
-  "cohorts": [
-    {
-      "mean_gap": 0.4,
-      "mean_memory": 0.9,
-      "mean_performance": 0.5,
-      "name": "Rote memorizer",
-      "topics": [
+    "cohorts": [
         {
-          "gap": 0.4,
-          "memory": 0.9,
-          "performance": 0.5,
-          "topic": "capitalize vs expense"
-        }
-      ]
-    },
-    {
-      "mean_gap": 0.050000000000000044,
-      "mean_memory": 0.9,
-      "mean_performance": 0.85,
-      "name": "Genuine mastery",
-      "topics": [
+            "mean_gap": 0.4,
+            "mean_memory": 0.9,
+            "mean_performance": 0.5,
+            "name": "Rote memorizer",
+            "topics": [
+                {
+                    "gap": 0.4,
+                    "memory": 0.9,
+                    "performance": 0.5,
+                    "topic": "capitalize vs expense"
+                }
+            ]
+        },
         {
-          "gap": 0.050000000000000044,
-          "memory": 0.9,
-          "performance": 0.85,
-          "topic": "capitalize vs expense"
+            "mean_gap": 0.050000000000000044,
+            "mean_memory": 0.9,
+            "mean_performance": 0.85,
+            "name": "Genuine mastery",
+            "topics": [
+                {
+                    "gap": 0.050000000000000044,
+                    "memory": 0.9,
+                    "performance": 0.85,
+                    "topic": "capitalize vs expense"
+                }
+            ]
         }
-      ]
+    ],
+    "generated_at": 1783108273,
+    "method": "Two cohorts share the SAME study-pile recall (Memory); only the sealed reworded-item accuracy (Performance) differs. Memory reads trailing-30d recall on the study cards; Performance reads the label-stripped sealed 'which treatment applies?' items — the same idea in new words. If Performance merely echoed Memory the two would move together; instead Performance follows the reworded items and the gap opens.",
+    "note": "A fair test that could fail: had Performance copied Memory, both cohorts would read ~90% Performance and ~0 gap regardless of the reworded-item accuracy. It does not — Performance tracks the sealed items, so the two signals are genuinely distinct.",
+    "reproduce": "just ankountant-evidence",
+    "title": "Paraphrase test — Performance is not a copy of Memory (rubric 7d)",
+    "verdict": {
+        "gap_reflects_divergence": true,
+        "memory_held_constant": true,
+        "passed": true,
+        "performance_tracks_reworded_items": true
     }
-  ],
-  "generated_at": 1783108273,
-  "method": "Two cohorts share the SAME study-pile recall (Memory); only the sealed reworded-item accuracy (Performance) differs. Memory reads trailing-30d recall on the study cards; Performance reads the label-stripped sealed 'which treatment applies?' items — the same idea in new words. If Performance merely echoed Memory the two would move together; instead Performance follows the reworded items and the gap opens.",
-  "note": "A fair test that could fail: had Performance copied Memory, both cohorts would read ~90% Performance and ~0 gap regardless of the reworded-item accuracy. It does not — Performance tracks the sealed items, so the two signals are genuinely distinct.",
-  "reproduce": "just ankountant-evidence",
-  "title": "Paraphrase test — Performance is not a copy of Memory (rubric 7d)",
-  "verdict": {
-    "gap_reflects_divergence": true,
-    "memory_held_constant": true,
-    "passed": true,
-    "performance_tracks_reworded_items": true
-  }
 }
