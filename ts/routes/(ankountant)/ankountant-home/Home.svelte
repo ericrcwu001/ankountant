@@ -21,24 +21,30 @@ numerals are neutral ink + tabular figures; abstain is first-class.
         GAP_WARNING_THRESHOLD,
     } from "../ankountant-dashboard/lib";
     import { buildCountdown, buildPhaseCta, choosePhase } from "./lib";
+    import SummitRange from "./SummitRange.svelte";
+    import { buildSummit, type SectionPeak } from "./summit";
 
-    export let readiness: GetReadinessResponse;
+    // FAR headline readiness may be undefined if that section's RPC failed; the
+    // hero then degrades to the abstain state rather than blanking the page.
+    export let readiness: GetReadinessResponse | undefined = undefined;
     export let section = "FAR";
     export let examDate = "";
+    export let sections: Record<string, GetReadinessResponse | undefined> = {};
 
     let date = examDate;
     let saveState: "idle" | "saving" | "saved" = "idle";
 
     $: countdown = buildCountdown(date);
-    $: view = buildReadinessView(readiness.readiness);
-    $: topicCount = readiness.topics.length;
-    $: gapsToClose = readiness.topics.filter(
+    $: view = buildReadinessView(readiness?.readiness);
+    $: topicCount = readiness?.topics.length ?? 0;
+    $: gapsToClose = (readiness?.topics ?? []).filter(
         (t) => t.gap >= GAP_WARNING_THRESHOLD,
     ).length;
+    $: peaks = buildSummit(sections);
 
     // A topic with enough in-window recall reps counts as a memory base; with
     // none the student is a beginner, so the CTA routes to blocked recall.
-    $: memoryReady = readiness.topics.some((t) => !t.memoryInsufficient);
+    $: memoryReady = (readiness?.topics ?? []).some((t) => !t.memoryInsufficient);
     $: phase = choosePhase({ days: countdown.days, memoryReady });
     $: cta = buildPhaseCta(phase);
 
@@ -62,6 +68,19 @@ numerals are neutral ink + tabular figures; abstain is first-class.
     function nav(href: string): void {
         goto(href); // client-side SPA nav within the shell
     }
+
+    // One composed label per section row (mirrors the iOS VoiceOver string) so
+    // the split code/name/standing/score announce as a single phrase.
+    function rowLabel(peak: SectionPeak): string {
+        if (peak.standing === "unproven") {
+            return `${peak.code}, ${peak.name}, not enough data yet`;
+        }
+        const where = peak.standing === "above" ? "above" : "below";
+        return `${peak.code}, ${peak.name}, projected ${peak.displayScore}, ${where} the pass line of 75`;
+    }
+
+    const UNPROVEN_TOOLTIP =
+        "Withheld until there's enough evidence — need ≥ 20 sealed attempts and ≥ 60% topic coverage.";
 
     // The phase-aware CTA opens whichever surface the current phase recommends:
     // recall leaves the shell via the Qt bridge, confusion is an in-shell route.
@@ -162,6 +181,47 @@ numerals are neutral ink + tabular figures; abstain is first-class.
             <span class="stat-label">Gaps to close</span>
         </div>
     </section>
+
+    <!-- Topographic range across the CPA sections. Each peak's height is that
+         section's projected CPA score on a shared 0–99 axis, pass line at 75;
+         abstaining sections show as "unproven" ghosts (never a faked height). -->
+    <section class="card summit-card" data-testid="summit">
+        <SummitRange {peaks} />
+    </section>
+
+    <!-- Section list: the range's rows, each drilling into the per-topic
+         Readiness breakdown for that section. -->
+    <nav class="section-list" aria-label="Sections" data-testid="section-list">
+        {#each peaks as peak (peak.code)}
+            <button
+                type="button"
+                class="section-row"
+                data-testid="section-row"
+                data-section={peak.code}
+                aria-label={rowLabel(peak)}
+                title={peak.standing === "unproven" ? UNPROVEN_TOOLTIP : undefined}
+                on:click={() => nav(`/ankountant-dashboard?section=${peak.code}`)}
+            >
+                <span class="sec-code tabular">{peak.code}</span>
+                <span class="sec-body">
+                    <span class="sec-name">{peak.name}</span>
+                    <span class="sec-standing">
+                        {#if peak.standing === "unproven"}
+                            Not enough data yet
+                        {:else if peak.standing === "above"}
+                            ▲ Above pass line
+                        {:else}
+                            ▼ Below pass line
+                        {/if}
+                    </span>
+                </span>
+                <span class="sec-score tabular">
+                    {peak.displayScore === null ? "—" : peak.displayScore}
+                </span>
+                <span class="sec-chevron" aria-hidden="true">›</span>
+            </button>
+        {/each}
+    </nav>
 
     <!-- Hub navigation. Row 1 (double-width): the phase-aware CTA (recall via
          the Qt bridge, or confusion in-shell) + an explicit Confusion review.
@@ -471,6 +531,82 @@ numerals are neutral ink + tabular figures; abstain is first-class.
 
     .tabular {
         font-variant-numeric: tabular-nums lining-nums;
+    }
+
+    .summit-card {
+        padding: var(--space-xl);
+        margin-bottom: var(--space-xl);
+    }
+
+    .section-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-xl);
+    }
+
+    // Section rows: flat hub tiles that drill into the per-section Readiness.
+    .section-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        width: 100%;
+        font: inherit;
+        text-align: left;
+        color: var(--fg);
+        background: var(--canvas-elevated);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--border-radius-medium);
+        box-shadow: var(--elevation-e1);
+        padding: var(--space-md) var(--space-lg);
+
+        &:hover {
+            border-color: var(--border);
+            background: var(--canvas);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent) !important;
+            outline-offset: 2px;
+        }
+    }
+
+    .sec-code {
+        flex: none;
+        width: 3rem;
+        font-weight: 600;
+        color: var(--fg-subtle);
+    }
+
+    .sec-body {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        gap: var(--space-xxs);
+        min-width: 0;
+    }
+
+    .sec-name {
+        font-weight: 500;
+    }
+
+    // Above/below carried by position + glyph + text (never colour alone);
+    // numerals stay neutral ink (navy is chrome/band only).
+    .sec-standing {
+        font-size: 12px;
+        color: var(--fg-subtle);
+    }
+
+    .sec-score {
+        flex: none;
+        font-size: var(--type-section-heading-size);
+        font-weight: 600;
+        color: var(--fg);
+    }
+
+    .sec-chevron {
+        flex: none;
+        color: var(--fg-faint);
     }
 
     .actions {

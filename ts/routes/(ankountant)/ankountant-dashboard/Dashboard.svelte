@@ -5,10 +5,12 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 <script lang="ts">
     import type { GetReadinessResponse } from "@generated/anki/scheduler_pb";
 
+    import { sectionName } from "../ankountant-home/summit";
     import { buildReadinessView, buildTopicRows, formatUpdated } from "./lib";
 
     export let readiness: GetReadinessResponse;
     export let examDate = "";
+    export let section = "FAR";
 
     $: rows = buildTopicRows(readiness.topics);
     $: view = buildReadinessView(readiness.readiness);
@@ -25,7 +27,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 <div class="ankountant-dashboard" data-testid="dashboard">
     <header class="page-head">
-        <p class="eyebrow">FAR section</p>
+        <p class="eyebrow">{sectionName(section)}</p>
         <h1>Readiness</h1>
     </header>
 

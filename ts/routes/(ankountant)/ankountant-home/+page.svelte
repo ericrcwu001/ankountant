@@ -9,4 +9,9 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     export let data: PageData;
 </script>
 
-<Home readiness={data.readiness} section={data.section} examDate={data.examDate} />
+<Home
+    readiness={data.readiness}
+    section={data.section}
+    examDate={data.examDate}
+    sections={data.sections}
+/>

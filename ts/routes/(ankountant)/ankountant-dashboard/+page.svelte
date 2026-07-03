@@ -9,4 +9,4 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     export let data: PageData;
 </script>
 
-<Dashboard readiness={data.readiness} examDate={data.examDate} />
+<Dashboard readiness={data.readiness} examDate={data.examDate} section={data.section} />
