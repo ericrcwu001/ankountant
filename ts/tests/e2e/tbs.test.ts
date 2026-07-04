@@ -101,4 +101,5 @@ test("exhibits are visible alongside the task (A53/B4-D4)", async ({ page, seed 
     await page.goto(`/ankountant-tbs?note=${seed.sealedTbsNoteIds[0]}`);
     await expect(page.getByTestId("exhibits")).toBeVisible();
     await expect(page.getByTestId("exhibit").first()).toBeVisible();
+    await expect(page.getByTestId("exhibit").first()).toHaveAttribute("data-kind", "text");
 });

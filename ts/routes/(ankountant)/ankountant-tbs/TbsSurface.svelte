@@ -15,8 +15,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         buildJeSubmission,
         buildNumericSubmission,
         JE_ACCOUNTS,
+        paneExhibits,
         renderableTbsShape,
     } from "./lib";
+    import ExhibitsPane from "./ExhibitsPane.svelte";
     import ResultsLayer from "./ResultsLayer.svelte";
 
     export let noteId: bigint;
@@ -26,6 +28,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     $: shape = renderableTbsShape(model.shape);
     $: reveal = results ? buildRevealModel(fields, tags) : null;
+    $: exhibits = paneExhibits(model);
 
     const startedAt = Date.now();
 
@@ -328,14 +331,8 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             {/if}
         </div>
 
-        <aside class="exhibits" data-testid="exhibits">
-            <h2>Exhibits</h2>
-            {#each model.exhibits as exhibit, i (i)}
-                <div class="exhibit card" data-testid="exhibit">
-                    <h3>{exhibit.title}</h3>
-                    <pre>{exhibit.body}</pre>
-                </div>
-            {/each}
+        <aside class="exhibit-panel">
+            <ExhibitsPane {exhibits} />
         </aside>
     </div>
 </div>
@@ -407,44 +404,11 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         padding: var(--space-lg);
     }
 
-    .exhibits {
+    .exhibit-panel {
         flex: 1;
         min-width: 0;
-        // Keep exhibits co-visible with the active cell (kill split-attention).
         position: sticky;
         top: var(--space-lg);
-
-        h2 {
-            margin: 0 0 var(--space-sm);
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            color: var(--fg-subtle);
-        }
-    }
-
-    .exhibit {
-        padding: var(--space-md);
-
-        & + & {
-            margin-top: var(--space-md);
-        }
-
-        h3 {
-            margin: 0 0 var(--space-xs);
-            font-size: 15px;
-            font-weight: 600;
-        }
-
-        pre {
-            margin: 0;
-            white-space: pre-wrap;
-            font-family: var(--font-mono);
-            font-size: 13px;
-            line-height: 1.5;
-            color: var(--fg-subtle);
-        }
     }
 
     // Ledger grid: hairline row dividers only (no full grid), tabular figures.
