@@ -64,6 +64,9 @@ struct SimulationsHubView: View {
                 ConfusionDrillView(section: section)
             }
         }
+        .navigationDestination(for: CPASection.self) { section in
+            SectionDetailView(section: section)
+        }
     }
 
     // MARK: - Loaded content

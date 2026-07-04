@@ -46,6 +46,16 @@ struct SimulationsHubSelectionTests {
         #expect(confusionCountLabel(2) == "2 items")
     }
 
+    @Test func confusionCompletionReadinessLinkTargetsKnownSection() {
+        #expect(confusionReadinessSection(after: .aud) == .aud)
+        #expect(confusionReadinessButtonLabel(for: .aud) == "View AUD readiness")
+    }
+
+    @Test func allSectionConfusionCompletionUsesFarReadinessAnchor() {
+        #expect(confusionReadinessSection(after: nil) == .far)
+        #expect(confusionReadinessButtonLabel(for: nil) == "View FAR readiness")
+    }
+
     @Test func hubHasContentWhenEitherTbsOrConfusionExists() {
         let task = TbsTaskSummary(noteId: 1, shape: .journalEntry, prompt: "Journal")
 

@@ -31,6 +31,8 @@ struct ConfusionDrillView: View {
     private var done: Bool { index >= items.count }
     private var queueSection: String { section?.code ?? "ALL" }
     private var title: String { section.map { "\($0.code) Confusion" } ?? "Confusion" }
+    private var readinessSection: CPASection { confusionReadinessSection(after: section) }
+    private var readinessButtonLabel: String { confusionReadinessButtonLabel(for: section) }
     private var emptyDescription: String {
         if let section {
             return "No \(section.code) confusion items are available yet. Load or import section practice to build the drill queue."
@@ -82,6 +84,11 @@ struct ConfusionDrillView: View {
                 .ankountantFont(.bodyEmphasis)
                 .foregroundStyle(palette.textPrimary)
                 .multilineTextAlignment(.center)
+            NavigationLink(value: readinessSection) {
+                Label(readinessButtonLabel, systemImage: "chart.line.uptrend.xyaxis")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(AnkountantPrimaryButtonStyle())
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(AnkountantSpacing.xl)
@@ -265,4 +272,15 @@ struct ConfusionDrillView: View {
         revealError = nil
         itemStartedAt = Date.now
     }
+}
+
+func confusionReadinessSection(after section: CPASection?) -> CPASection {
+    section ?? .far
+}
+
+func confusionReadinessButtonLabel(for section: CPASection?) -> String {
+    guard let section else {
+        return "View FAR readiness"
+    }
+    return "View \(section.code) readiness"
 }
