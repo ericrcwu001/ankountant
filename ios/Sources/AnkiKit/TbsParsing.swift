@@ -157,12 +157,17 @@ public func parseSteps(_ raw: String?) throws -> [RenderStep] {
         let fieldName = "steps_json[\(index)]"
         let object = try jsonObject(element, fieldName: fieldName)
         let id = (object["id"] as? String) ?? "s\(index + 1)"
+        let kind = object["kind"] as? String
+        let options = try parseOptions(object["options"], fieldName: "\(fieldName).options")
+        if kind == "blank", options == nil {
+            throw TbsParseError.invalidValue(field: "\(fieldName).options", message: "must be an array")
+        }
         return RenderStep(
             id: id,
             label: (object["label"] as? String) ?? id,
             weight: (object["weight"] as? Double) ?? defaultWeight,
-            kind: object["kind"] as? String,
-            options: try parseOptions(object["options"], fieldName: "\(fieldName).options"),
+            kind: kind,
+            options: options ?? [],
             originalText: object["original_text"] as? String,
             corpusRefs: try optionalStringArray(object["corpus_refs"], fieldName: "\(fieldName).corpus_refs") ?? [],
             placeholder: (object["placeholder"] as? String) ?? (object["format"] as? String)
@@ -174,17 +179,26 @@ public func parseSteps(_ raw: String?) throws -> [RenderStep] {
 
 /// Parse a step's `options` array into label-stripped render options. Mirrors
 /// the desktop `parseOptions`.
-private func parseOptions(_ raw: Any?, fieldName: String) throws -> [RenderOption] {
-    guard let raw, !(raw is NSNull) else { return [] }
+private func parseOptions(_ raw: Any?, fieldName: String) throws -> [RenderOption]? {
+    guard let raw, !(raw is NSNull) else { return nil }
     guard let array = raw as? [Any] else {
         throw TbsParseError.invalidValue(field: fieldName, message: "must be an array")
+    }
+    guard !array.isEmpty else {
+        throw TbsParseError.invalidValue(field: fieldName, message: "must contain at least one option")
     }
     return try array.enumerated().map { index, element in
         let optionFieldName = "\(fieldName)[\(index)]"
         let object = try jsonObject(element, fieldName: optionFieldName)
+        guard let id = object["id"] as? String, !id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw TbsParseError.invalidValue(field: "\(optionFieldName).id", message: "missing option id")
+        }
+        guard let text = object["text"] as? String, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw TbsParseError.invalidValue(field: "\(optionFieldName).text", message: "missing option text")
+        }
         return RenderOption(
-            id: (object["id"] as? String) ?? "o\(index + 1)",
-            text: (object["text"] as? String) ?? "",
+            id: id,
+            text: text,
             kind: try optionKind(object["kind"], fieldName: "\(optionFieldName).kind")
         )
     }

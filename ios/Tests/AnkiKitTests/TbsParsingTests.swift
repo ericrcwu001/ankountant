@@ -101,8 +101,20 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
     expectTbsParseError("Invalid steps_json[0].options: must be an array") {
         try parseSteps(#"[{"id":"s1","options":"bad"}]"#)
     }
+    expectTbsParseError("Invalid steps_json[0].options: must be an array") {
+        try parseSteps(#"[{"id":"s1","kind":"blank"}]"#)
+    }
+    expectTbsParseError("Invalid steps_json[0].options: must contain at least one option") {
+        try parseSteps(#"[{"id":"s1","kind":"blank","options":[]}]"#)
+    }
     expectTbsParseError("Invalid steps_json[0].options[0]: must be an object") {
         try parseSteps(#"[{"id":"s1","options":[1]}]"#)
+    }
+    expectTbsParseError("Invalid steps_json[0].options[0].id: missing option id") {
+        try parseSteps(#"[{"id":"s1","options":[{"text":"x"}]}]"#)
+    }
+    expectTbsParseError("Invalid steps_json[0].options[0].text: missing option text") {
+        try parseSteps(#"[{"id":"s1","options":[{"id":"o1","text":""}]}]"#)
     }
     expectTbsParseError("Invalid steps_json[0].options[0].kind: unknown option kind: maybe") {
         try parseSteps(#"[{"id":"s1","options":[{"id":"o1","text":"x","kind":"maybe"}]}]"#)
