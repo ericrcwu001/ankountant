@@ -336,9 +336,17 @@ export function parseSteps(raw: string | undefined): RenderStep[] {
         throw new Error("steps_json must contain at least one step.");
     }
     const defaultWeight = 1 / parsed.length;
+    const seenIds = new Set<string>();
     return parsed.map((s, i) => {
         const obj = jsonObject(s, `steps_json[${i}]`) as RawStep;
-        const id = typeof obj.id === "string" ? obj.id : `s${i + 1}`;
+        if (typeof obj.id !== "string" || obj.id.trim() === "") {
+            throw new Error(`steps_json[${i}].id is missing.`);
+        }
+        const id = obj.id;
+        if (seenIds.has(id)) {
+            throw new Error(`steps_json has duplicate step id: ${id}.`);
+        }
+        seenIds.add(id);
         const label = typeof obj.label === "string" ? obj.label : id;
         const weight = typeof obj.weight === "number" ? obj.weight : defaultWeight;
         const step: RenderStep = { id, label, weight };

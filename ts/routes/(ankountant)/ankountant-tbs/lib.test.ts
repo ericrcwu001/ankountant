@@ -139,6 +139,15 @@ test("parseSteps fails loudly on missing, malformed, or empty step json", () => 
     expect(() => parseSteps("{}")).toThrow(/steps_json must be an array/);
     expect(() => parseSteps("[]")).toThrow(/steps_json must contain at least one step/);
     expect(() => parseSteps("[1]")).toThrow(/steps_json\[0\] must be an object/);
+    expect(() => parseSteps(JSON.stringify([{ answer_key: 1 }]))).toThrow(
+        /steps_json\[0\]\.id is missing/,
+    );
+    expect(() => parseSteps(JSON.stringify([{ id: " ", answer_key: 1 }]))).toThrow(
+        /steps_json\[0\]\.id is missing/,
+    );
+    expect(() => parseSteps(JSON.stringify([{ id: "a" }, { id: "a" }]))).toThrow(
+        /steps_json has duplicate step id: a/,
+    );
     expect(() => parseSteps(JSON.stringify([{ id: "s1", options: [{ id: "o1", text: "x", kind: "maybe" }] }]))).toThrow(
         /Option o1 for s1 has unknown option kind: maybe/,
     );
