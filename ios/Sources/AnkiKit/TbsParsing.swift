@@ -204,6 +204,27 @@ private func exhibitKind(_ raw: Any?, fieldName: String) throws -> String {
     return kind
 }
 
+public func defaultStepLabel(_ id: String) -> String {
+    let trimmed = id.trimmingCharacters(in: .whitespacesAndNewlines)
+    let ordinal = trimmed.dropFirst()
+    guard let prefix = trimmed.first,
+          !ordinal.isEmpty,
+          ordinal.allSatisfy(\.isNumber)
+    else {
+        return id
+    }
+    switch prefix.lowercased() {
+    case "l":
+        return "Line \(ordinal)"
+    case "c":
+        return "Cell \(ordinal)"
+    case "b":
+        return "Blank \(ordinal)"
+    default:
+        return id
+    }
+}
+
 /// Parse steps_json into render steps, stripping the answer_key (retrieval
 /// integrity: the render model NEVER carries the key or `correct_option`;
 /// `options[]` are the label-stripped candidates only). Weights default to 1/N
@@ -231,9 +252,12 @@ public func parseSteps(_ raw: String?) throws -> [RenderStep] {
         if kind == "blank", options == nil {
             throw TbsParseError.invalidValue(field: "\(fieldName).options", message: "must be an array")
         }
+        let label = (object["label"] as? String).flatMap {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0
+        } ?? defaultStepLabel(id)
         return RenderStep(
             id: id,
-            label: (object["label"] as? String) ?? id,
+            label: label,
             weight: try stepWeight(object["weight"], defaultWeight: defaultWeight, fieldName: fieldName),
             kind: kind,
             options: options ?? [],

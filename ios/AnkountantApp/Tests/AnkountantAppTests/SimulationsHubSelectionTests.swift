@@ -115,6 +115,25 @@ struct SimulationsHubSelectionTests {
         #expect(paneExhibits(model).first?.rows == [["Revenue", "100"]])
     }
 
+    @Test func defaultStepLabelMakesSeededIdsLearnerReadable() {
+        #expect(defaultStepLabel("l1") == "Line 1")
+        #expect(defaultStepLabel("c2") == "Cell 2")
+        #expect(defaultStepLabel("b3") == "Blank 3")
+        #expect(defaultStepLabel("citation") == "citation")
+    }
+
+    @Test func parseStepsFallsBackToFriendlyLabelsForSeededIds() throws {
+        let steps = try parseSteps("""
+        [
+          {"id":"l1","answer_key":1},
+          {"id":"c2","answer_key":2},
+          {"id":"named","label":"Explicit","answer_key":3}
+        ]
+        """)
+
+        #expect(steps.map(\.label) == ["Line 1", "Cell 2", "Explicit"])
+    }
+
     @Test func jeNumericSimulationTitlesMatchExamSurfaces() {
         #expect(jeNumericSimulationTitle(for: .journalEntry) == "Journal entry simulation")
         #expect(jeNumericSimulationTitle(for: .numeric) == "Numeric simulation")

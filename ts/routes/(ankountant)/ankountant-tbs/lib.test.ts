@@ -11,6 +11,7 @@ import {
     buildResearchSubmission,
     buildRevealModel,
     buildTbsModel,
+    defaultStepLabel,
     paneExhibits,
     parseExhibits,
     parseSteps,
@@ -108,9 +109,25 @@ test("renderableTbsShape rejects specialized research and doc-review shapes", ()
     expect(() => renderableTbsShape("doc_review")).toThrow(/specialized doc_review surface/);
 });
 
+test("defaultStepLabel makes seeded ids learner-readable", () => {
+    expect(defaultStepLabel("l1")).toBe("Line 1");
+    expect(defaultStepLabel("c2")).toBe("Cell 2");
+    expect(defaultStepLabel("b3")).toBe("Blank 3");
+    expect(defaultStepLabel("citation")).toBe("citation");
+});
+
 test("tbsSurfaceTitle names standalone gradable TBS shapes", () => {
     expect(tbsSurfaceTitle("journal_entry")).toBe("Journal entry simulation");
     expect(tbsSurfaceTitle("numeric")).toBe("Numeric simulation");
+});
+
+test("parseSteps falls back to friendly labels for unlabeled seeded ids", () => {
+    const steps = parseSteps(JSON.stringify([
+        { id: "l1", answer_key: 1 },
+        { id: "c2", answer_key: 2 },
+        { id: "named", label: "Explicit", answer_key: 3 },
+    ]));
+    expect(steps.map((step) => step.label)).toEqual(["Line 1", "Cell 2", "Explicit"]);
 });
 
 test("parseSteps defaults weights to 1/N so totals reconcile with A10", () => {

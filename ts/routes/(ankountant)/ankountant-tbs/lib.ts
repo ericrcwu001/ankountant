@@ -77,6 +77,24 @@ export function renderableTbsShape(shape: TbsShape): RenderableTbsShape {
     throw new Error(`TbsSurface cannot render ${shape}; use the specialized ${shape} surface.`);
 }
 
+export function defaultStepLabel(id: string): string {
+    const match = id.trim().match(/^([a-z])(\d+)$/i);
+    if (!match) {
+        return id;
+    }
+    const [, prefix, ordinal] = match;
+    switch (prefix.toLowerCase()) {
+        case "l":
+            return `Line ${ordinal}`;
+        case "c":
+            return `Cell ${ordinal}`;
+        case "b":
+            return `Blank ${ordinal}`;
+        default:
+            return id;
+    }
+}
+
 export function tbsSurfaceTitle(shape: RenderableTbsShape): string {
     switch (shape) {
         case "journal_entry":
@@ -366,7 +384,9 @@ export function parseSteps(raw: string | undefined): RenderStep[] {
             throw new Error(`steps_json has duplicate step id: ${id}.`);
         }
         seenIds.add(id);
-        const label = typeof obj.label === "string" ? obj.label : id;
+        const label = typeof obj.label === "string" && obj.label.trim() !== ""
+            ? obj.label
+            : defaultStepLabel(id);
         const weight = parseStepWeight(obj.weight, defaultWeight, `steps_json[${i}]`);
         const step: RenderStep = { id, label, weight };
         if (typeof obj.kind === "string") {

@@ -19,6 +19,11 @@ test("a JE TBS renders an editable grid and shows per-line + partial-credit tota
     await expect(grid).toBeVisible();
     const rows = page.getByTestId("je-row");
     await expect(rows).toHaveCount(4);
+    await expect(page.getByRole("combobox", { name: "Account for Line 1" })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Debit or credit for Line 1" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Amount for Line 1" })).toBeVisible();
+    await expect(page.getByRole("checkbox", { name: "No entry for Line 1" })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Spare account 1" })).toBeVisible();
     await expect(page.getByTestId("tbs-submit")).toBeDisabled();
     await page.getByTestId("confidence-unsure").click();
     await expect(page.getByTestId("tbs-submit")).toBeEnabled();

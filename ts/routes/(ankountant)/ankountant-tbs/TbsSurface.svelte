@@ -155,6 +155,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                     <input
                                         type="text"
                                         inputmode="decimal"
+                                        aria-label={`Value for ${step.label}`}
                                         data-testid="cell-input"
                                         data-step-id={step.id}
                                         bind:value={numericCells[i].value}
@@ -203,6 +204,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                 <td>
                                     <!-- Controlled account picker (not free text), agent 07. -->
                                     <select
+                                        aria-label={`Account for ${step.label}`}
                                         data-testid="je-account"
                                         data-step-id={step.id}
                                         bind:value={jeLines[i].account}
@@ -217,6 +219,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                 </td>
                                 <td>
                                     <select
+                                        aria-label={`Debit or credit for ${step.label}`}
                                         data-testid="je-side"
                                         data-step-id={step.id}
                                         bind:value={jeLines[i].side}
@@ -232,6 +235,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                     <input
                                         type="text"
                                         inputmode="decimal"
+                                        aria-label={`Amount for ${step.label}`}
                                         data-testid="je-amount"
                                         data-step-id={step.id}
                                         bind:value={jeLines[i].amount}
@@ -244,7 +248,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                         type="checkbox"
                                         data-testid="je-no-entry"
                                         data-step-id={step.id}
-                                        aria-label="No entry required for this line"
+                                        aria-label={`No entry for ${step.label}`}
                                         checked={jeLines[i].noEntry}
                                         disabled={answerInputsLocked}
                                         on:change={() => toggleNoEntry(i)}
@@ -273,7 +277,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                 <td>
                                     <select
                                         bind:value={spare.account}
-                                        aria-label="Spare account"
+                                        aria-label={`Spare account ${i + 1}`}
                                         disabled={answerInputsLocked}
                                     >
                                         <option value="">Spare (not graded)…</option>
@@ -285,7 +289,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                 <td>
                                     <select
                                         bind:value={spare.side}
-                                        aria-label="Spare debit/credit"
+                                        aria-label={`Spare debit or credit ${i + 1}`}
                                         disabled={answerInputsLocked}
                                     >
                                         <option value="">Select</option>
@@ -298,7 +302,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                         type="text"
                                         inputmode="decimal"
                                         bind:value={spare.amount}
-                                        aria-label="Spare amount"
+                                        aria-label={`Spare amount ${i + 1}`}
                                         disabled={answerInputsLocked}
                                     />
                                 </td>
