@@ -93,7 +93,7 @@ struct ReaderLibraryView: View {
             ToolbarItem(placement: .topBarLeading) {
                 HStack(spacing: 4) {
                     Button {
-                        bookshelfColumns = max(clampedColumns - 1, 1)
+                        $bookshelfColumns.withLock { $0 = max(clampedColumns - 1, 1) }
                     } label: {
                         Image(systemName: "minus")
                     }
@@ -104,7 +104,7 @@ struct ReaderLibraryView: View {
                         .frame(minWidth: 16)
 
                     Button {
-                        bookshelfColumns = min(clampedColumns + 1, 4)
+                        $bookshelfColumns.withLock { $0 = min(clampedColumns + 1, 4) }
                     } label: {
                         Image(systemName: "plus")
                     }
@@ -115,7 +115,7 @@ struct ReaderLibraryView: View {
                 Menu {
                     ForEach(BookshelfSortMode.allCases) { mode in
                         Button {
-                            sortModeRaw = mode.rawValue
+                            $sortModeRaw.withLock { $0 = mode.rawValue }
                         } label: {
                             if sortMode == mode {
                                 Label(mode.label, systemImage: "checkmark")

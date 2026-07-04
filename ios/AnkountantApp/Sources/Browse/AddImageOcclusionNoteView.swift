@@ -60,6 +60,7 @@ struct AddImageOcclusionNoteView: View {
                 }
 
                 Section {
+                    let pickImageSystemName = selectedImage == nil ? "photo.on.rectangle.angled" : "photo.badge.plus"
                     PhotosPicker(
                         selection: $selectedItem,
                         matching: .images,
@@ -67,12 +68,12 @@ struct AddImageOcclusionNoteView: View {
                     ) {
                         Label(
                             "Pick image",
-                            systemImage: selectedImage == nil ? "photo.on.rectangle.angled" : "photo.badge.plus"
+                            systemImage: pickImageSystemName
                         )
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .onChange(of: selectedItem) {
-                        Task { await loadImage(from: selectedItem) }
+                    .onChange(of: selectedItem) { _, newItem in
+                        Task { await loadImage(from: newItem) }
                     }
                 } header: {
                     Text("Image")

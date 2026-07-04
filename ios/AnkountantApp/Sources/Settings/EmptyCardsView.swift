@@ -5,8 +5,6 @@ import AnkiClients
 import AnkiServices
 import Dependencies
 
-extension NoteRecord: Identifiable {}
-
 struct EmptyCardsView: View {
     @Dependency(\.cardRenderingService) var cardRenderingService
     @Dependency(\.cardClient) var cardClient

@@ -1011,7 +1011,7 @@ final class OcclusionCanvasUIView: UIView {
                 return normalizedPoint(for: resizedAbsolute, imgRect: imgRect)
             }
             return .polygon(points: updatedPoints, extras: extras)
-        case .text(let left, let top, let text, let scale, let fontSize, let extras):
+        case .text(_, _, let text, let scale, let fontSize, let extras):
             guard let box = boxTransform(for: mask, imgRect: imgRect),
                   let resizedFrame = resizedFrame(
                     CGRect(origin: rotate(box.origin, by: -box.angle), size: box.size),
@@ -1539,16 +1539,6 @@ private enum IOOcclusionMode: CaseIterable {
     }
 }
 
-// MARK: - imageOcclusionPreviewHeight
-
-func imageOcclusionPreviewHeight(for image: UIImage) -> CGFloat {
-    let screenBounds = UIScreen.main.bounds
-    let screenWidth = screenBounds.width - 32
-    let ratio = image.size.height / max(image.size.width, 1)
-    let idealHeight = screenWidth * ratio
-    return min(max(idealHeight, 180), 260)
-}
-
 // MARK: - ImageOcclusionMaskSummaryCard
 
 struct ImageOcclusionMaskSummaryCard: View {
@@ -1565,7 +1555,9 @@ struct ImageOcclusionMaskSummaryCard: View {
                 selectedMaskIndex: .constant(nil),
                 shapeType: .select
             )
-            .frame(height: imageOcclusionPreviewHeight(for: image))
+            .aspectRatio(image.size.width / max(image.size.height, 1), contentMode: .fit)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 180, maxHeight: 260)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .allowsHitTesting(false)
 

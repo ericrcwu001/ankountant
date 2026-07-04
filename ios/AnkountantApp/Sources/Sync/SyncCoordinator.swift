@@ -125,7 +125,7 @@ final class SyncCoordinator {
 
         let task = Task { [weak self] in
             guard let self else { return }
-            let client = await self.syncClient
+            let client = self.syncClient
             do {
                 let summary = try await client.sync()
                 // Collection is synced; now sync media too so the primary
@@ -194,7 +194,7 @@ final class SyncCoordinator {
 
         let task = Task { [weak self] in
             guard let self else { return }
-            let client = await self.syncClient
+            let client = self.syncClient
             do {
                 try await client.fullSync(direction)
                 await MainActor.run {
@@ -296,8 +296,8 @@ final class SyncCoordinator {
 }
 
 private enum SyncCoordinatorKey: DependencyKey {
-    nonisolated(unsafe) static let liveValue: SyncCoordinator = MainActor.assumeIsolated { SyncCoordinator() }
-    nonisolated(unsafe) static let testValue: SyncCoordinator = MainActor.assumeIsolated { SyncCoordinator() }
+    static let liveValue: SyncCoordinator = MainActor.assumeIsolated { SyncCoordinator() }
+    static let testValue: SyncCoordinator = MainActor.assumeIsolated { SyncCoordinator() }
 }
 
 extension DependencyValues {
