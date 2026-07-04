@@ -20,6 +20,7 @@ struct DeckListView: View {
     @Dependency(\.deckClient) var deckClient
     @State private var tree: [DeckTreeNode] = []
     @State private var isLoading = true
+    @State private var loadErrorMessage: String?
     @State private var showCreateSheet = false
 
     var body: some View {
@@ -39,6 +40,20 @@ struct DeckListView: View {
                         Spacer()
                         ProgressView()
                         Spacer()
+                    }
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            } else if let loadErrorMessage {
+                Section {
+                    ContentUnavailableView {
+                        Label("Could Not Load Decks", systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text(loadErrorMessage)
+                    } actions: {
+                        Button("Retry") {
+                            Task { await loadDecks() }
+                        }
                     }
                 }
                 .listRowBackground(Color.clear)
@@ -106,13 +121,16 @@ struct DeckListView: View {
     }
 
     private func loadDecks() async {
+        isLoading = true
+        loadErrorMessage = nil
+        defer { isLoading = false }
+
         do {
             tree = try deckClient.fetchTree()
         } catch {
-            print("[DeckListView] Error loading decks: \(error)")
             tree = []
+            loadErrorMessage = "Failed to load decks: \(error.localizedDescription)"
         }
-        isLoading = false
     }
 }
 
@@ -126,6 +144,7 @@ private struct DeckRowView: View {
     @Dependency(\.deckClient) var deckClient
     @State private var showRenameSheet = false
     @State private var showDeleteAlert = false
+    @State private var actionError: String?
 
     var body: some View {
         rowContent
@@ -149,15 +168,27 @@ private struct DeckRowView: View {
                     Task {
                         do {
                             try deckClient.delete(node.id)
+                            await onMutated()
                         } catch {
-                            print("[DeckRowView] Delete failed: \(error)")
+                            actionError = "Failed to delete deck: \(error.localizedDescription)"
                         }
-                        await onMutated()
                     }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("This will permanently delete the deck and all its cards.")
+            }
+            .alert(
+                "Deck action failed",
+                isPresented: Binding(
+                    get: { actionError != nil },
+                    set: { if !$0 { actionError = nil } }
+                ),
+                presenting: actionError
+            ) { _ in
+                Button("OK", role: .cancel) {}
+            } message: { message in
+                Text(message)
             }
             .sheet(isPresented: $showRenameSheet) {
                 RenameDeckSheet(deckId: node.id, currentName: node.fullName) {
@@ -220,6 +251,7 @@ private struct CreateDeckSheet: View {
     @Dependency(\.deckClient) var deckClient
     @State private var name = ""
     @State private var isSaving = false
+    @State private var errorMessage: String?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -228,6 +260,13 @@ private struct CreateDeckSheet: View {
                 Section {
                     TextField("Deck name, use :: for subdecks", text: $name)
                         .autocorrectionDisabled()
+                }
+
+                if let errorMessage {
+                    Section {
+                        Text(errorMessage)
+                            .ankountantStatusText(.danger, font: .caption)
+                    }
                 }
             }
             .navigationTitle("New Deck")
@@ -240,21 +279,32 @@ private struct CreateDeckSheet: View {
                     Button("Create") {
                         Task { await create() }
                     }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || isSaving)
+                    .disabled(trimmedName.isEmpty || isSaving)
                 }
             }
         }
     }
 
+    private var trimmedName: String {
+        name.trimmingCharacters(in: .whitespaces)
+    }
+
     private func create() async {
+        guard !trimmedName.isEmpty else {
+            errorMessage = "Enter a deck name."
+            return
+        }
+
         isSaving = true
+        errorMessage = nil
+        defer { isSaving = false }
+
         do {
-            _ = try deckClient.create(name.trimmingCharacters(in: .whitespaces))
+            _ = try deckClient.create(trimmedName)
             onDone()
         } catch {
-            print("[CreateDeckSheet] Create failed: \(error)")
+            errorMessage = "Failed to create deck: \(error.localizedDescription)"
         }
-        isSaving = false
     }
 }
 
@@ -268,6 +318,7 @@ private struct RenameDeckSheet: View {
     @Dependency(\.deckClient) var deckClient
     @State private var name = ""
     @State private var isSaving = false
+    @State private var errorMessage: String?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -276,6 +327,13 @@ private struct RenameDeckSheet: View {
                 Section {
                     TextField("Deck name", text: $name)
                         .autocorrectionDisabled()
+                }
+
+                if let errorMessage {
+                    Section {
+                        Text(errorMessage)
+                            .ankountantStatusText(.danger, font: .caption)
+                    }
                 }
             }
             .navigationTitle("Rename Deck")
@@ -288,21 +346,32 @@ private struct RenameDeckSheet: View {
                     Button("Save") {
                         Task { await rename() }
                     }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || isSaving)
+                    .disabled(trimmedName.isEmpty || isSaving)
                 }
             }
             .onAppear { name = currentName }
         }
     }
 
+    private var trimmedName: String {
+        name.trimmingCharacters(in: .whitespaces)
+    }
+
     private func rename() async {
+        guard !trimmedName.isEmpty else {
+            errorMessage = "Enter a deck name."
+            return
+        }
+
         isSaving = true
+        errorMessage = nil
+        defer { isSaving = false }
+
         do {
-            try deckClient.rename(deckId, name.trimmingCharacters(in: .whitespaces))
+            try deckClient.rename(deckId, trimmedName)
             onDone()
         } catch {
-            print("[RenameDeckSheet] Rename failed: \(error)")
+            errorMessage = "Failed to rename deck: \(error.localizedDescription)"
         }
-        isSaving = false
     }
 }
