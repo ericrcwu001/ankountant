@@ -126,6 +126,9 @@ struct DeckTemplateListView: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(entry.name), ID \(entry.id)")
+            .accessibilityHint("Opens card template editor")
             .padding(.vertical, 2)
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 Button(role: .destructive) {
