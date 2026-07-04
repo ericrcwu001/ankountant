@@ -72,6 +72,11 @@ sections, so it never collides with a JE/numeric item.
         {phase}
         {message}
         onRetry={load}
-        emptyText="No research task was found in this profile."
+        emptyTitle="No research task found"
+        emptyText="This profile has no sealed research simulation for the workspace queue yet."
+        emptyActionHref="/ankountant-tbs"
+        emptyActionLabel="Browse simulations"
+        emptySecondaryHref="/ankountant-dashboard"
+        emptySecondaryLabel="Readiness evidence"
     />
 {/if}

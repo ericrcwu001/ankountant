@@ -79,6 +79,36 @@ test("workspace panes do not leak backend html on load failure", async ({ page }
     await expect(paneState).not.toContainText("don&#39;t");
 });
 
+for (const surface of [
+    { initial: "tbs", title: "No simulation task found" },
+    { initial: "research", title: "No research task found" },
+    { initial: "doc_review", title: "No document-review task found" },
+]) {
+    test(`workspace ${surface.initial} empty state links to next steps`, async ({ page }) => {
+        await page.route("**/_anki/searchNotes", async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: "application/binary",
+                body: Buffer.alloc(0),
+            });
+        });
+
+        await page.goto(`/ankountant-workspace?initial=${surface.initial}`);
+
+        const paneState = page.getByTestId("pane-state");
+        await expect(paneState).toHaveAttribute("data-phase", "empty");
+        await expect(paneState).toContainText(surface.title);
+        await expect(paneState.getByRole("link", { name: "Browse simulations" })).toHaveAttribute(
+            "href",
+            "/ankountant-tbs",
+        );
+        await expect(paneState.getByRole("link", { name: "Readiness evidence" })).toHaveAttribute(
+            "href",
+            "/ankountant-dashboard",
+        );
+    });
+}
+
 test("workspace TBS pane reveals the answer key after submit", async ({ page, seed }) => {
     expect(seed.sealedTbsNoteIds.length).toBeGreaterThan(0);
     await page.goto("/ankountant-workspace?initial=tbs");

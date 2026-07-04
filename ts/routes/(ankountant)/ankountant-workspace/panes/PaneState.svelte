@@ -9,8 +9,17 @@ pane never renders blank.
 <script lang="ts">
     export let phase: "loading" | "empty" | "error";
     export let message = "";
+    export let emptyTitle = "";
     export let emptyText = "Nothing to show yet.";
+    export let emptyActionHref = "";
+    export let emptyActionLabel = "";
+    export let emptySecondaryHref = "";
+    export let emptySecondaryLabel = "";
     export let onRetry: (() => void) | undefined = undefined;
+
+    $: hasEmptyActions =
+        (emptyActionHref !== "" && emptyActionLabel !== "")
+        || (emptySecondaryHref !== "" && emptySecondaryLabel !== "");
 </script>
 
 <div class="pane-state" data-phase={phase} data-testid="pane-state">
@@ -18,7 +27,21 @@ pane never renders blank.
         <span class="spinner" role="progressbar" aria-label="Loading"></span>
         <p class="muted">Loading…</p>
     {:else if phase === "empty"}
+        <div class="state-mark" aria-hidden="true">0</div>
+        {#if emptyTitle}
+            <h2 class="empty-title">{emptyTitle}</h2>
+        {/if}
         <p class="muted">{emptyText}</p>
+        {#if hasEmptyActions}
+            <div class="empty-actions">
+                {#if emptyActionHref && emptyActionLabel}
+                    <a class="primary" href={emptyActionHref}>{emptyActionLabel}</a>
+                {/if}
+                {#if emptySecondaryHref && emptySecondaryLabel}
+                    <a href={emptySecondaryHref}>{emptySecondaryLabel}</a>
+                {/if}
+            </div>
+        {/if}
     {:else}
         <p class="err">Couldn’t load this surface.</p>
         {#if message}
@@ -44,6 +67,30 @@ pane never renders blank.
         color: var(--fg);
     }
 
+    .state-mark {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 50%;
+        background: var(--canvas-elevated);
+        color: var(--fg-faint);
+        font-size: 19px;
+        font-weight: 750;
+        line-height: 1;
+    }
+
+    .empty-title {
+        margin: 0;
+        max-width: 32ch;
+        font-size: var(--type-callout-size);
+        font-weight: 750;
+        line-height: var(--type-callout-line);
+        letter-spacing: 0;
+        color: var(--fg);
+    }
+
     .muted {
         margin: 0;
         max-width: 40ch;
@@ -65,6 +112,46 @@ pane never renders blank.
         color: var(--fg-subtle);
         overflow-wrap: anywhere;
     }
+
+    .empty-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--space-xs);
+        margin-top: var(--space-xs);
+
+        a {
+            min-height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 var(--space-md);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--border-radius);
+            background: var(--canvas-elevated);
+            color: var(--fg);
+            font-size: var(--type-caption-size);
+            font-weight: 700;
+            line-height: 1.1;
+            text-decoration: none;
+
+            &:hover {
+                background: var(--canvas-inset);
+            }
+
+            &:focus-visible {
+                outline: 2px solid var(--accent) !important;
+                outline-offset: 2px;
+            }
+
+            &.primary {
+                border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+                background: var(--accent-tint);
+                color: var(--accent);
+            }
+        }
+    }
+
     .spinner {
         width: 22px;
         height: 22px;

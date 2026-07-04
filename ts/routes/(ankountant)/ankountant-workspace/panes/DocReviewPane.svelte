@@ -73,6 +73,11 @@ supported sections, so it loads a doc-review item, not the first TBS note.
         {phase}
         {message}
         onRetry={load}
-        emptyText="No document-review task was found in this profile."
+        emptyTitle="No document-review task found"
+        emptyText="This profile has no sealed document-review simulation for the workspace queue yet."
+        emptyActionHref="/ankountant-tbs"
+        emptyActionLabel="Browse simulations"
+        emptySecondaryHref="/ankountant-dashboard"
+        emptySecondaryLabel="Readiness evidence"
     />
 {/if}

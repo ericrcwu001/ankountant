@@ -45,6 +45,7 @@ ankountant-confusion/+page.ts.
         {phase}
         {message}
         onRetry={load}
-        emptyText="No confusion items yet. Load or import CPA practice to build the drill queue."
+        emptyTitle="No confusion drills yet"
+        emptyText="Load or import CPA practice to build the drill queue."
     />
 {/if}
