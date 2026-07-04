@@ -842,6 +842,7 @@ private struct TemplatePreviewSheet: View {
     @State private var isLoading = false
     @State private var isEmptyCard = false
     @State private var errorMessage: String?
+    @State private var renderGeneration = 0
 
     init(
         title: String,
@@ -957,6 +958,9 @@ private struct TemplatePreviewSheet: View {
 
     @MainActor
     private func renderPreview() async {
+        renderGeneration += 1
+        let generation = renderGeneration
+
         guard notetype.templates.indices.contains(selectedTemplateIndex) else {
             isLoading = false
             isEmptyCard = false
@@ -972,7 +976,11 @@ private struct TemplatePreviewSheet: View {
         }
 
         isLoading = true
-        defer { isLoading = false }
+        defer {
+            if generation == renderGeneration {
+                isLoading = false
+            }
+        }
 
         let cardRenderingService = self.cardRenderingService
         let notetype = self.notetype
@@ -988,12 +996,14 @@ private struct TemplatePreviewSheet: View {
                 )
             }.value
 
+            guard generation == renderGeneration else { return }
             renderedFrontHTML = rendered.frontHTML
             renderedBackHTML = rendered.backHTML
             isEmptyCard = rendered.frontHTML.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 && rendered.backHTML.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             errorMessage = nil
         } catch {
+            guard generation == renderGeneration else { return }
             isEmptyCard = false
             renderedFrontHTML = ""
             renderedBackHTML = ""
