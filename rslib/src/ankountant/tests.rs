@@ -608,6 +608,36 @@ fn a8_tbs_attempt_stores_per_step_credit() {
 }
 
 #[test]
+fn a8_malformed_attempt_outcome_fails_fast() {
+    let (mut col, _) = seeded();
+    let nid = first_sealed_mcq(&mut col);
+    let resp = submit(
+        &mut col,
+        nid,
+        "confusion",
+        json!({"choice":"Expense"}),
+        "guess",
+    );
+
+    let mut note = col
+        .storage
+        .get_note(NoteId(resp.attempt_note_id))
+        .unwrap()
+        .unwrap();
+    note.set_field(super::notetypes::attempt_fields::OUTCOME_JSON, "{not json")
+        .unwrap();
+    col.update_note(&mut note).unwrap();
+
+    let err = col.ankountant_attempts("FAR").unwrap_err();
+    match err {
+        AnkiError::InvalidInput { source } => {
+            assert_eq!(source.message(), "invalid Attempt Log outcome_json");
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
+}
+
+#[test]
 fn a8_attempt_notes_never_in_study_queue() {
     // A29.
     let (mut col, _) = seeded();

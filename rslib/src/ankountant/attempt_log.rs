@@ -113,21 +113,42 @@ impl Collection {
             if section_val != section {
                 continue;
             }
-            let outcome: Outcome = fields
+            let outcome_json = fields
                 .get(f::OUTCOME_JSON)
-                .and_then(|s| serde_json::from_str(s).ok())
-                .unwrap_or_default();
+                .or_invalid("Attempt Log note missing outcome_json")?;
+            let outcome: Outcome = serde_json::from_str(outcome_json)
+                .or_invalid("invalid Attempt Log outcome_json")?;
+            let sealed = match fields
+                .get(f::SEALED)
+                .map(String::as_str)
+                .or_invalid("Attempt Log note missing sealed")?
+            {
+                "0" => false,
+                "1" => true,
+                other => invalid_input!("invalid Attempt Log sealed flag: {other}"),
+            };
+            let ts = fields
+                .get(f::TS)
+                .or_invalid("Attempt Log note missing ts")?
+                .parse::<i64>()
+                .or_invalid("invalid Attempt Log ts")?;
             out.push(AttemptRecord {
-                confusion_set_id: fields.get(f::CONFUSION_SET_ID).cloned().unwrap_or_default(),
-                mode: fields.get(f::MODE).cloned().unwrap_or_default(),
-                confidence: fields.get(f::CONFIDENCE).cloned().unwrap_or_default(),
+                confusion_set_id: fields
+                    .get(f::CONFUSION_SET_ID)
+                    .cloned()
+                    .or_invalid("Attempt Log note missing confusion_set_id")?,
+                mode: fields
+                    .get(f::MODE)
+                    .cloned()
+                    .or_invalid("Attempt Log note missing mode")?,
+                confidence: fields
+                    .get(f::CONFIDENCE)
+                    .cloned()
+                    .or_invalid("Attempt Log note missing confidence")?,
                 outcome,
-                sealed: fields.get(f::SEALED).map(|s| s == "1").unwrap_or(false),
+                sealed,
                 section: section_val,
-                ts: fields
-                    .get(f::TS)
-                    .and_then(|s| s.parse::<i64>().ok())
-                    .unwrap_or(0),
+                ts,
             });
         }
         Ok(out)
