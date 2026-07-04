@@ -129,4 +129,35 @@ test("deserialize rejects malformed persisted layouts", () => {
             "{\"type\":\"split\",\"id\":\"s\",\"dir\":\"row\",\"ratio\":0.01,\"a\":{\"type\":\"leaf\",\"id\":\"a\",\"surface\":\"tbs\"},\"b\":{\"type\":\"leaf\",\"id\":\"b\",\"surface\":\"dashboard\"}}",
         )
     ).toThrow(/outside the allowed range/);
+    expect(() =>
+        deserialize(JSON.stringify({
+            type: "split",
+            id: "s1",
+            dir: "row",
+            ratio: 0.5,
+            a: {
+                type: "split",
+                id: "s2",
+                dir: "col",
+                ratio: 0.5,
+                a: { type: "leaf", id: "a", surface: "dashboard" },
+                b: { type: "leaf", id: "b", surface: "confusion" },
+            },
+            b: {
+                type: "split",
+                id: "s3",
+                dir: "col",
+                ratio: 0.5,
+                a: {
+                    type: "split",
+                    id: "s4",
+                    dir: "row",
+                    ratio: 0.5,
+                    a: { type: "leaf", id: "c", surface: "tbs" },
+                    b: { type: "leaf", id: "d", surface: "research" },
+                },
+                b: { type: "leaf", id: "e", surface: "stats" },
+            },
+        }))
+    ).toThrow(/pane limit/);
 });

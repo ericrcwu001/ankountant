@@ -221,7 +221,11 @@ export function deserialize(raw: string | null | undefined): TileNode | null {
         const message = error instanceof Error ? error.message : String(error);
         throw new Error(`Saved workspace layout contains invalid JSON: ${message}`);
     }
-    return sanitize(parsed);
+    const tree = sanitize(parsed);
+    if (countLeaves(tree) > MAX_PANES) {
+        throw new Error(`Saved workspace layout exceeds the ${MAX_PANES} pane limit.`);
+    }
+    return tree;
 }
 
 function sanitize(node: unknown): TileNode {
