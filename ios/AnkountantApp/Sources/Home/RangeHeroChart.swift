@@ -26,7 +26,6 @@ struct RangeHeroChart: View {
         let high: Double
         let point: Double
         let standing: PassStanding
-        let display: Int
     }
 
     private var peaks: [Peak] {
@@ -38,8 +37,7 @@ struct RangeHeroChart: View {
                 low: band.bandLow,
                 high: band.bandHigh,
                 point: band.pointEstimate,
-                standing: s.standing,
-                display: passDisplayScore(band.pointEstimate, standing: s.standing)
+                standing: s.standing
             )
         }
     }
@@ -58,7 +56,7 @@ struct RangeHeroChart: View {
                     .foregroundStyle(palette.textSecondary)
             }
             chart
-            Text("Height = projected CPA score (0–99). Pass line at 75 — rough projection, not an official AICPA score.")
+            Text("Bars show projected CPA ranges. Arrows mark whether the midpoint is above or below pass 75.")
                 .ankountantFont(.micro)
                 .foregroundStyle(palette.textTertiary)
         }
@@ -96,9 +94,6 @@ struct RangeHeroChart: View {
                     VStack(spacing: 1) {
                         Image(systemName: peak.standing == .above ? "arrowtriangle.up" : "arrowtriangle.down")
                             .font(.system(size: 9))
-                        Text("\(peak.display)")
-                            .ankountantFont(.micro)
-                            .monospacedDigit()
                     }
                     .foregroundStyle(palette.textPrimary)
                 }

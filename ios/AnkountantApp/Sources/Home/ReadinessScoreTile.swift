@@ -46,10 +46,23 @@ struct ReadinessScoreTile: View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule().fill(palette.borderSubtle)
-                if let fraction = score.fraction {
+                if let range = score.rangeFraction {
+                    let lower = clamped(range.lowerBound)
+                    let upper = max(lower, clamped(range.upperBound))
+                    Capsule()
+                        .fill(palette.accent.opacity(0.28))
+                        .frame(width: max(2, (upper - lower) * geo.size.width))
+                        .offset(x: lower * geo.size.width)
+                    if let fraction = score.fraction {
+                        Rectangle()
+                            .fill(palette.accent.opacity(0.8))
+                            .frame(width: 2)
+                            .offset(x: clamped(fraction) * geo.size.width - 1)
+                    }
+                } else if let fraction = score.fraction {
                     Capsule()
                         .fill(palette.accent.opacity(0.7))
-                        .frame(width: max(2, min(max(fraction, 0), 1) * geo.size.width))
+                        .frame(width: max(2, clamped(fraction) * geo.size.width))
                 }
             }
         }
@@ -59,8 +72,15 @@ struct ReadinessScoreTile: View {
 
     private var accessibilityLabel: String {
         if score.available {
+            if score.kind == .readiness {
+                return "\(score.label), projected range \(score.valueText), \(score.detailText)"
+            }
             return "\(score.label), \(score.valueText), range \(score.rangeText), \(score.detailText)"
         }
         return "\(score.label), not available, \(score.rangeText), \(score.detailText)"
+    }
+
+    private func clamped(_ value: Double) -> Double {
+        min(max(value, 0), 1)
     }
 }

@@ -18,7 +18,7 @@ struct ReadinessScoreStrip: View {
                     .textCase(.uppercase)
                     .foregroundStyle(palette.textSecondary)
                 Spacer(minLength: AnkountantSpacing.sm)
-                Text("Point + range")
+                Text("Confidence ranges")
                     .ankountantFont(.micro)
                     .foregroundStyle(palette.textTertiary)
             }

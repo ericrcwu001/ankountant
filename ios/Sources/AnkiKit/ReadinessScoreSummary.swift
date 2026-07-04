@@ -13,6 +13,7 @@ public struct ReadinessScoreSummary: Sendable, Equatable, Identifiable {
     public let rangeText: String
     public let detailText: String
     public let fraction: Double?
+    public let rangeFraction: ClosedRange<Double>?
     public let available: Bool
 
     public var id: Kind { kind }
@@ -24,6 +25,7 @@ public struct ReadinessScoreSummary: Sendable, Equatable, Identifiable {
         rangeText: String,
         detailText: String,
         fraction: Double?,
+        rangeFraction: ClosedRange<Double>? = nil,
         available: Bool
     ) {
         self.kind = kind
@@ -31,6 +33,7 @@ public struct ReadinessScoreSummary: Sendable, Equatable, Identifiable {
         self.rangeText = rangeText
         self.detailText = detailText
         self.fraction = fraction
+        self.rangeFraction = rangeFraction
         self.available = available
     }
 }
@@ -44,6 +47,7 @@ public extension ReadinessScoreSummary {
                 rangeText: loaded ? "insufficient" : "loading",
                 detailText: loaded ? "Need more evidence" : "Loading",
                 fraction: nil,
+                rangeFraction: nil,
                 available: false
             )
         }
@@ -84,16 +88,20 @@ public extension ReadinessSummary {
                 rangeText: "withheld",
                 detailText: validatedBand.reason,
                 fraction: nil,
+                rangeFraction: nil,
                 available: false
             )
         }
 
+        let low = Int(validatedBand.bandLow.rounded())
+        let high = Int(validatedBand.bandHigh.rounded())
         return ReadinessScoreSummary(
             kind: .readiness,
-            valueText: "\(Int(validatedBand.pointEstimate.rounded()))",
-            rangeText: "\(Int(validatedBand.bandLow.rounded()))–\(Int(validatedBand.bandHigh.rounded()))",
+            valueText: "\(low)–\(high)",
+            rangeText: "CPA range",
             detailText: "\(validatedBand.confidence) confidence",
-            fraction: TopoScale.height(forScore: validatedBand.pointEstimate),
+            fraction: nil,
+            rangeFraction: TopoScale.height(forScore: validatedBand.bandLow)...TopoScale.height(forScore: validatedBand.bandHigh),
             available: true
         )
     }
@@ -116,6 +124,7 @@ public extension ReadinessSummary {
                 rangeText: "insufficient",
                 detailText: missingDetail,
                 fraction: nil,
+                rangeFraction: nil,
                 available: false
             )
         }
@@ -126,6 +135,7 @@ public extension ReadinessSummary {
             rangeText: "\(Int((bandLow * 100).rounded()))–\(Int((bandHigh * 100).rounded()))%",
             detailText: availableDetail,
             fraction: point,
+            rangeFraction: bandLow...bandHigh,
             available: true
         )
     }

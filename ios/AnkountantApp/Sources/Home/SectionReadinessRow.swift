@@ -65,11 +65,11 @@ struct SectionReadinessRow: View {
     private var readout: some View {
         if let band = section.band, !band.abstain {
             VStack(alignment: .trailing, spacing: 0) {
-                Text("\(passDisplayScore(band.pointEstimate, standing: section.standing))")
+                Text(readinessBandLabel(band))
                     .ankountantFont(.cardTitle)
                     .monospacedDigit()
                     .foregroundStyle(palette.textPrimary)
-                Text("proj")
+                Text("range")
                     .ankountantFont(.micro)
                     .foregroundStyle(palette.textTertiary)
             }
@@ -83,9 +83,8 @@ struct SectionReadinessRow: View {
     private var accessibilityText: String {
         let name = section.section.displayName
         if let band = section.band, !band.abstain {
-            let score = passDisplayScore(band.pointEstimate, standing: section.standing)
             let where_ = section.standing == .above ? "above" : "below"
-            return "\(name), projected \(score), \(where_) the pass line of 75. \(band.confidence) confidence."
+            return "\(name), projected range \(readinessBandLabel(band)), midpoint \(where_) the pass line of 75. \(band.confidence) confidence."
         }
         return "\(name), not enough data yet."
     }
