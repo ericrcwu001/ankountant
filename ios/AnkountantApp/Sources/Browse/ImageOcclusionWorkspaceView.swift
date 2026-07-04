@@ -1921,37 +1921,37 @@ struct ImageOcclusionWorkspaceView: View {
         VStack(spacing: 8) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    toolbarIconButton(systemImage: "arrow.uturn.backward") {
+                    toolbarIconButton("Undo", systemImage: "arrow.uturn.backward") {
                         undoManager?.undo()
                     }
                     .disabled(!(undoManager?.canUndo ?? false))
 
-                    toolbarIconButton(systemImage: "arrow.uturn.forward") {
+                    toolbarIconButton("Redo", systemImage: "arrow.uturn.forward") {
                         undoManager?.redo()
                     }
                     .disabled(!(undoManager?.canRedo ?? false))
 
-                    toolbarIconButton(systemImage: "trash") {
+                    toolbarIconButton("Delete selection", systemImage: "trash") {
                         deleteSelection()
                     }
                     .disabled(activeSelectionIndices.isEmpty)
 
-                    toolbarIconButton(systemImage: "plus.square.on.square") {
+                    toolbarIconButton("Duplicate selection", systemImage: "plus.square.on.square") {
                         duplicateSelection()
                     }
                     .disabled(activeSelectionIndices.isEmpty)
 
-                    toolbarIconButton(systemImage: allMasksSelected ? "checkmark.circle.fill" : "checkmark.circle") {
+                    toolbarIconButton("Select all masks", systemImage: allMasksSelected ? "checkmark.circle.fill" : "checkmark.circle") {
                         toggleSelectAll()
                     }
                     .disabled(masks.isEmpty)
 
-                    toolbarIconButton(systemImage: "arrow.left.arrow.right") {
+                    toolbarIconButton("Invert selection", systemImage: "arrow.left.arrow.right") {
                         invertSelection()
                     }
                     .disabled(masks.isEmpty)
 
-                    toolbarIconButton(systemImage: showsTranslucentMasks ? "circle.lefthalf.filled" : "circle") {
+                    toolbarIconButton("Toggle mask translucency", systemImage: showsTranslucentMasks ? "circle.lefthalf.filled" : "circle") {
                         showsTranslucentMasks.toggle()
                     }
                     .disabled(masks.isEmpty)
@@ -1961,12 +1961,12 @@ struct ImageOcclusionWorkspaceView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    toolbarIconButton(systemImage: "link") {
+                    toolbarIconButton("Group selection", systemImage: "link") {
                         groupSelection()
                     }
                     .disabled(activeSelectionIndices.count < 2)
 
-                    toolbarIconButton(systemImage: "link.slash", fallbackSystemImage: "scissors") {
+                    toolbarIconButton("Ungroup selection", systemImage: "link.slash", fallbackSystemImage: "scissors") {
                         ungroupSelection()
                     }
                     .disabled(activeSelectionIndices.isEmpty || !activeSelectionIndices.contains(where: { masks[$0].serializationOrdinal != nil }))
@@ -1978,19 +1978,19 @@ struct ImageOcclusionWorkspaceView: View {
                             }
                         }
                     } label: {
-                        toolbarIcon(systemImage: "align.horizontal.left")
+                        toolbarIcon("Align selection", systemImage: "align.horizontal.left")
                     }
                     .disabled(activeSelectionIndices.isEmpty)
 
-                    toolbarIconButton(systemImage: "plus.magnifyingglass") {
+                    toolbarIconButton("Zoom in", systemImage: "plus.magnifyingglass") {
                         sendZoomCommand(.zoomIn)
                     }
 
-                    toolbarIconButton(systemImage: "minus.magnifyingglass") {
+                    toolbarIconButton("Zoom out", systemImage: "minus.magnifyingglass") {
                         sendZoomCommand(.zoomOut)
                     }
 
-                    toolbarIconButton(systemImage: "arrow.up.left.and.down.right.magnifyingglass") {
+                    toolbarIconButton("Fit to screen", systemImage: "arrow.up.left.and.down.right.magnifyingglass") {
                         sendZoomCommand(.fit)
                     }
                 }
@@ -2109,24 +2109,25 @@ struct ImageOcclusionWorkspaceView: View {
     }
 
     @ViewBuilder
-    private func toolbarIconButton(systemImage: String, fallbackSystemImage: String? = nil, action: @escaping () -> Void) -> some View {
+    private func toolbarIconButton(_ title: String, systemImage: String, fallbackSystemImage: String? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            toolbarIcon(systemImage: systemImage, fallbackSystemImage: fallbackSystemImage)
+            toolbarIcon(title, systemImage: systemImage, fallbackSystemImage: fallbackSystemImage)
         }
         .buttonStyle(.plain)
     }
 
     @ViewBuilder
-    private func toolbarIcon(systemImage: String, fallbackSystemImage: String? = nil) -> some View {
+    private func toolbarIcon(_ title: String, systemImage: String, fallbackSystemImage: String? = nil) -> some View {
         let resolvedSymbol = if UIImage(systemName: systemImage) != nil {
             systemImage
         } else {
             fallbackSystemImage ?? "questionmark"
         }
 
-        Image(systemName: resolvedSymbol)
+        Label(title, systemImage: resolvedSymbol)
+            .labelStyle(.iconOnly)
             .font(.system(size: 13, weight: .semibold))
-            .ankountantToolbarIconButton(size: 30)
+            .ankountantToolbarIconButton(size: 44)
     }
 
     private func handleCanvasSelectionChange(_ selection: OcclusionCanvasView.IOCanvasSelectionChange) {
