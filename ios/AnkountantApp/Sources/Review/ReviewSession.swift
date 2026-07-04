@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import AnkiClients
 import AnkiKit
 import AnkiServices
 import Dependencies
@@ -15,6 +16,7 @@ final class ReviewSession {
     @ObservationIgnored @Dependency(\.collectionService) var collection
     @ObservationIgnored @Dependency(\.notesService) var notes
     @ObservationIgnored @Dependency(\.notetypesService) var notetypes
+    @ObservationIgnored @Dependency(\.cardClient) var cardClient
 
     private(set) var frontHTML: String = ""
     private(set) var backHTML: String = ""
@@ -34,6 +36,7 @@ final class ReviewSession {
     private(set) var cardChromeColor: Color = .clear
     private(set) var cardChromeIsDark: Bool = false
     private(set) var errorMessage: String?
+    private(set) var currentFlag: UInt32 = 0
 
     private var reviewStartTime: Date = .now
     private var cardQueue: [QueuedReviewCard] = []
@@ -73,13 +76,6 @@ final class ReviewSession {
 
     var currentCardId: Int64? {
         currentQueuedCard?.card.id
-    }
-
-    /// Bottom 3 bits of the current card's flags field — the flag color
-    /// index (0 = none, 1–7 = red/orange/green/blue/pink/cyan/purple).
-    /// Mirrors the masking convention used by `cardClient.getCardFlags`.
-    var currentFlag: UInt32 {
-        UInt32(currentQueuedCard?.card.flags ?? 0) & 0b111
     }
 
     // MARK: - Init
@@ -202,6 +198,14 @@ final class ReviewSession {
         }
     }
 
+    func handleCardActionSuccess(shouldAdvance: Bool) {
+        if shouldAdvance {
+            refreshQueueAfterCardAction()
+        } else {
+            refreshCurrentCardMetadata()
+        }
+    }
+
     func updateAudioPlaying(_ playing: Bool) {
         isAudioPlaying = playing
     }
@@ -256,10 +260,12 @@ final class ReviewSession {
             isFinished = true
             currentQueuedCard = nil
             currentNote = nil
+            currentFlag = 0
             return
         }
 
         currentQueuedCard = next
+        currentFlag = UInt32(next.card.flags) & 0b111
         showAnswer = false
         reviewStartTime = .now
         nextIntervals = next.nextIntervals
@@ -290,6 +296,31 @@ final class ReviewSession {
             frontHTML = renderedFrontHTML
             backHTML = renderedBackHTML
             typedAnswerState = nil
+        }
+    }
+
+    private func refreshQueueAfterCardAction() {
+        do {
+            let result = try scheduler.getQueuedCards(200)
+            cardQueue = result.cards
+            remainingCounts = DeckCounts(
+                newCount: result.newCount,
+                learnCount: result.learningCount,
+                reviewCount: result.reviewCount
+            )
+            advanceToNextCard()
+        } catch {
+            errorMessage = "Failed to refresh review after card action: \(error.localizedDescription)"
+        }
+    }
+
+    private func refreshCurrentCardMetadata() {
+        guard let cardId = currentCardId else { return }
+
+        do {
+            currentFlag = try cardClient.getCardFlags(cardId)
+        } catch {
+            errorMessage = "Failed to refresh card action state: \(error.localizedDescription)"
         }
     }
 

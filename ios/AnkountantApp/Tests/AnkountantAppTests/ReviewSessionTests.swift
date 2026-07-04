@@ -201,6 +201,70 @@ final class ReviewSessionTests: XCTestCase {
         }
     }
 
+    func testCardActionSuccessAdvancesWithoutCountingReview() {
+        final class QueueState: @unchecked Sendable { var calls = 0 }
+        let state = QueueState()
+        let firstCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
+        let secondCard = QueuedReviewCard.preview(cardId: 2, noteId: 200, ord: 0)
+
+        withDependencies {
+            $0.decksService.setCurrentDeck = { _ in }
+            $0.schedulerService.getQueuedCards = { _ in
+                state.calls += 1
+                if state.calls == 1 {
+                    return QueuedCardsResult(cards: [firstCard], newCount: 1, learningCount: 0, reviewCount: 0)
+                }
+                return QueuedCardsResult(cards: [secondCard], newCount: 0, learningCount: 0, reviewCount: 1)
+            }
+            $0.notesService.getNote = { noteId in
+                NoteRecord(id: noteId, guid: "g", mid: 200, mod: 0, flds: "", sfld: "", csum: 0)
+            }
+            $0.cardRenderingService.renderCard = { cardId in
+                RenderedCard(frontHTML: "front-\(cardId)", backHTML: "back-\(cardId)", cardCSS: "")
+            }
+        } operation: {
+            let session = ReviewSession(deckId: 1)
+            session.start()
+            XCTAssertEqual(session.currentCardId, 1)
+
+            session.handleCardActionSuccess(shouldAdvance: true)
+
+            XCTAssertEqual(session.currentCardId, 2)
+            XCTAssertEqual(session.sessionStats.reviewed, 0)
+            XCTAssertFalse(session.showAnswer)
+            XCTAssertEqual(session.remainingCounts.reviewCount, 1)
+        }
+    }
+
+    func testCardActionSuccessRefreshesFlagWithoutHidingAnswer() async {
+        let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
+        let stubResult = QueuedCardsResult(
+            cards: [stubCard], newCount: 1, learningCount: 0, reviewCount: 0
+        )
+        let stubNote = NoteRecord(id: 100, guid: "g", mid: 200, mod: 0, flds: "", sfld: "", csum: 0)
+
+        await withDependencies {
+            $0.decksService.setCurrentDeck = { _ in }
+            $0.schedulerService.getQueuedCards = { _ in stubResult }
+            $0.notesService.getNote = { _ in stubNote }
+            $0.cardRenderingService.renderCard = { _ in
+                RenderedCard(frontHTML: "front", backHTML: "back", cardCSS: "")
+            }
+            $0.cardClient.getCardFlags = { _ in 4 }
+        } operation: {
+            let session = ReviewSession(deckId: 1)
+            session.start()
+            await session.revealAnswer()
+            XCTAssertTrue(session.showAnswer)
+
+            session.handleCardActionSuccess(shouldAdvance: false)
+
+            XCTAssertEqual(session.currentCardId, 1)
+            XCTAssertEqual(session.currentFlag, 4)
+            XCTAssertTrue(session.showAnswer)
+        }
+    }
+
     func testTypedAnswerMissingNotetypeFieldReportsError() {
         let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
         let stubResult = QueuedCardsResult(
