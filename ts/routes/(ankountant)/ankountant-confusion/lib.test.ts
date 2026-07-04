@@ -3,7 +3,7 @@
 
 import { expect, test } from "vitest";
 
-import { buildChoiceSubmission, confusionQueuePhase, noThreeConsecutiveSameSet } from "./lib";
+import { buildChoiceSubmission, confusionQueuePhase, noThreeConsecutiveSameSet, selectedConfusionSection } from "./lib";
 
 test("buildChoiceSubmission wraps the treatment in {choice}", () => {
     expect(JSON.parse(buildChoiceSubmission("Finance lease"))).toEqual({
@@ -31,4 +31,12 @@ test("confusionQueuePhase fails fast on malformed queue state", () => {
     expect(() => confusionQueuePhase(0.5, 3)).toThrow(/non-negative integer/);
     expect(() => confusionQueuePhase(0, -1)).toThrow(/non-negative integer/);
     expect(() => confusionQueuePhase(0, 1.5)).toThrow(/non-negative integer/);
+});
+
+test("selectedConfusionSection accepts all practice sections and rejects unknown values", () => {
+    expect(selectedConfusionSection(null)).toBe("ALL");
+    expect(selectedConfusionSection(" all ")).toBe("ALL");
+    expect(selectedConfusionSection("bar")).toBe("BAR");
+    expect(selectedConfusionSection(" tcp ")).toBe("TCP");
+    expect(() => selectedConfusionSection("NOPE")).toThrow(/Unknown CPA section: NOPE/);
 });

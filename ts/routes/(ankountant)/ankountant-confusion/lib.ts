@@ -27,6 +27,21 @@ export function noThreeConsecutiveSameSet(setIds: string[]): boolean {
 
 export type ConfusionQueuePhase = "empty" | "active" | "finished";
 
+export const CONFUSION_SECTION_CHOICES = ["ALL", "FAR", "AUD", "REG", "BAR", "ISC", "TCP"] as const;
+
+export type ConfusionSectionChoice = (typeof CONFUSION_SECTION_CHOICES)[number];
+
+export function selectedConfusionSection(raw: string | null): ConfusionSectionChoice {
+    if (raw === null) {
+        return "ALL";
+    }
+    const section = raw.trim().toUpperCase();
+    if ((CONFUSION_SECTION_CHOICES as readonly string[]).includes(section)) {
+        return section as ConfusionSectionChoice;
+    }
+    throw new Error(`Unknown CPA section: ${section}`);
+}
+
 export function confusionQueuePhase(index: number, itemCount: number): ConfusionQueuePhase {
     if (!Number.isInteger(index) || index < 0) {
         throw new Error("Confusion queue index must be a non-negative integer.");

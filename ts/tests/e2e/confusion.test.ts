@@ -35,6 +35,12 @@ test("items are label-stripped: no category-label element (A44/B2-D1)", async ({
     await expect(page.locator("[data-testid=\"category-label\"]")).toHaveCount(0);
 });
 
+test("BAR deep link loads a section-specific confusion queue", async ({ page, seed }) => {
+    expect(seed.confusionSets).toBeGreaterThanOrEqual(4);
+    await page.goto("/ankountant-confusion?section=BAR");
+    await expect(page.getByTestId("confusion-item")).toBeVisible();
+});
+
 test("selecting a treatment scores it and shows a verdict (A45/B2-D2)", async ({ page }) => {
     await page.goto("/ankountant-confusion");
     await page.getByTestId("confidence-confident").click();

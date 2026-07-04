@@ -3,12 +3,11 @@
 
 import { buildConfusionQueue } from "@generated/backend";
 
-import { selectedSummitSection } from "../ankountant-home/summit";
 import type { PageLoad } from "./$types";
+import { selectedConfusionSection } from "./lib";
 
 export const load = (async ({ url }) => {
-    const rawSection = url.searchParams.get("section");
-    const section = rawSection === null ? "ALL" : selectedSummitSection(rawSection);
+    const section = selectedConfusionSection(url.searchParams.get("section"));
     // A3 returns an already label-stripped, interleaved queue (B3-D1). We never
     // fetch topic/deck labels for these items (B2-D1 / A44).
     const resp = await buildConfusionQueue({ section, maxItems: 60 });
