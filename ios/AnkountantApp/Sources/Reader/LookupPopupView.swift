@@ -25,6 +25,7 @@ struct LookupPopupView: View {
     @State private var result: DictionaryLookupResult?
     @State private var isLoading = false
     @State private var lookupError: String?
+    @State private var actionError: String?
     @State private var pendingNoteDraft: NoteDraft?
 
     /// JSON-encoded `ReaderLookupNoteTemplate` stored in user prefs.
@@ -131,7 +132,7 @@ struct LookupPopupView: View {
                             setCollapsed(dict, collapsed: collapsed)
                         },
                         onMakeNote: { entry in
-                            pendingNoteDraft = NoteDraft(draft: makeNoteDraft(for: entry))
+                            prepareNoteDraft(for: entry)
                         },
                         onPushLookup: { phrase in
                             lookupPath.append(LookupPathEntry(query: phrase))
@@ -141,6 +142,18 @@ struct LookupPopupView: View {
         }
         .presentationDetents(detents)
         .presentationDragIndicator(popupSwipeToDismiss ? .visible : .hidden)
+        .alert(
+            "Reader lookup",
+            isPresented: Binding(
+                get: { actionError != nil },
+                set: { if !$0 { actionError = nil } }
+            ),
+            presenting: actionError
+        ) { _ in
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text($0)
+        }
     }
 
     /// Reused styling block for child panes — derived from the same
@@ -198,7 +211,7 @@ struct LookupPopupView: View {
                         },
                         languageHint: languageHint,
                         onMakeNote: {
-                            pendingNoteDraft = NoteDraft(draft: makeNoteDraft(for: entry))
+                            prepareNoteDraft(for: entry)
                         },
                         onLookupRequested: { tappedText in
                             lookupPath.append(LookupPathEntry(query: tappedText))
@@ -308,10 +321,18 @@ struct LookupPopupView: View {
     /// the template hasn't been configured the projection falls back to
     /// common Basic-notetype field names so the user still gets a
     /// usable draft.
-    private func makeNoteDraft(for entry: DictionaryLookupEntry) -> AddNoteDraft {
+    private func prepareNoteDraft(for entry: DictionaryLookupEntry) {
+        do {
+            pendingNoteDraft = NoteDraft(draft: try makeNoteDraft(for: entry))
+        } catch {
+            actionError = "Failed to prepare note: \(error.localizedDescription)"
+        }
+    }
+
+    private func makeNoteDraft(for entry: DictionaryLookupEntry) throws -> AddNoteDraft {
         let template: ReaderLookupNoteTemplate = serializedTemplate.isEmpty
             ? .empty
-            : ReaderLookupNoteTemplate.decode(from: serializedTemplate)
+            : try ReaderLookupNoteTemplate.decode(from: serializedTemplate)
 
         let payload = ReaderLookupNotePayload(
             term: entry.term,

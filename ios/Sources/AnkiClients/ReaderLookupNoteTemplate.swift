@@ -1,6 +1,6 @@
 public import AnkountantReader
 public import AnkiKit
-import Foundation
+public import Foundation
 
 /// Lookup-derived data the user wants to fold into a new Anki note.
 /// Pure value type — the popup builds one of these from a
@@ -154,7 +154,7 @@ public struct ReaderLookupNoteTemplate: Codable, Hashable, Sendable {
         case deinflectionField, matchedField, sourceField, rulesField
     }
 
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         deckID = try c.decodeIfPresent(Int64.self, forKey: .deckID)
         notetypeID = try c.decodeIfPresent(Int64.self, forKey: .notetypeID)
@@ -173,16 +173,19 @@ public struct ReaderLookupNoteTemplate: Codable, Hashable, Sendable {
         rulesField = try c.decodeIfPresent(String.self, forKey: .rulesField) ?? ""
     }
 
-    public func encodedString() -> String {
-        guard let data = try? JSONEncoder().encode(self),
-              let s = String(data: data, encoding: .utf8) else { return "" }
+    public func encodedString() throws -> String {
+        let data = try JSONEncoder().encode(self)
+        guard let s = String(data: data, encoding: .utf8) else {
+            throw ReaderLookupNoteTemplateError.invalidUTF8
+        }
         return s
     }
 
-    public static func decode(from string: String) -> Self {
-        guard let data = string.data(using: .utf8),
-              let value = try? JSONDecoder().decode(Self.self, from: data) else { return .empty }
-        return value
+    public static func decode(from string: String) throws -> Self {
+        guard let data = string.data(using: .utf8) else {
+            throw ReaderLookupNoteTemplateError.invalidUTF8
+        }
+        return try JSONDecoder().decode(Self.self, from: data)
     }
 
     /// Drop any field name that no longer matches one of the notetype's
@@ -258,6 +261,16 @@ public struct ReaderLookupNoteTemplate: Codable, Hashable, Sendable {
             notetypeID: notetypeID,
             fieldValues: fieldValues
         )
+    }
+}
+
+public enum ReaderLookupNoteTemplateError: LocalizedError, Sendable {
+    case invalidUTF8
+
+    public var errorDescription: String? {
+        switch self {
+        case .invalidUTF8: return "Lookup note template is not valid UTF-8."
+        }
     }
 }
 

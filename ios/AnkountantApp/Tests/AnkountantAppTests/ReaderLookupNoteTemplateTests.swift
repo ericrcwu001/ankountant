@@ -74,14 +74,14 @@ struct ReaderLookupNoteTemplateTests {
     }
 
     @Test("encode/decode round-trips field mappings")
-    func encodeDecodeRoundTrip() {
+    func encodeDecodeRoundTrip() throws {
         let original = ReaderLookupNoteTemplate(
             deckID: 1,
             notetypeID: 2,
             termField: "Front",
             definition1Field: "Back"
         )
-        let restored = ReaderLookupNoteTemplate.decode(from: original.encodedString())
+        let restored = try ReaderLookupNoteTemplate.decode(from: original.encodedString())
         #expect(restored == original)
     }
 }
