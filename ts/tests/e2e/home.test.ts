@@ -17,6 +17,21 @@ test("home shows the countdown placeholder until an exam date is set", async ({ 
     await expect(page.getByTestId("countdown")).toContainText("Set your exam date");
 });
 
+test("home readiness rail explains the score and links to full evidence", async ({ page, seed }) => {
+    expect(seed.confusionSets).toBeGreaterThan(0);
+    await page.goto("/ankountant-home");
+
+    const brief = page.getByTestId("readiness-brief");
+    await expect(brief).toBeVisible();
+    await expect(brief).toContainText("Next");
+    await expect(brief).toContainText("Missing");
+    await expect(brief).not.toContainText("memory is 0%");
+
+    await page.getByRole("button", { name: "See readiness evidence" }).click();
+    await expect(page).toHaveURL(/ankountant-dashboard/);
+    await expect(page.getByTestId("readiness-evidence")).toBeVisible();
+});
+
 test("entering an exam date drives the countdown and persists across reloads", async ({ page }) => {
     await page.goto("/ankountant-home");
 

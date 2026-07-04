@@ -10,7 +10,9 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     import { bridgeCommand } from "@tslib/bridgecommand";
 
     import {
+        buildReadinessEvidence,
         buildReadinessView,
+        buildTopicRows,
         GAP_WARNING_THRESHOLD,
     } from "../ankountant-dashboard/lib";
     import {
@@ -44,6 +46,8 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     $: sectionCount = Object.keys(sections).length;
     $: days = countdown.numeral.split("");
     $: view = buildReadinessView(readiness?.readiness);
+    $: topicRows = buildTopicRows(readiness?.topics ?? []);
+    $: evidence = buildReadinessEvidence(view, topicRows);
     $: farTopics = buildFarTopics(readiness);
     $: strongTopics = topStrongTopics(farTopics);
     $: attentionTopics = needsAttention(farTopics);
@@ -230,6 +234,23 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     {:else}
                         {view.bandLabel} range · {view.coveragePct}% covered
                     {/if}
+                </div>
+                <div class="readiness-brief" data-testid="readiness-brief">
+                    <div class="brief-row next">
+                        <span>Next</span>
+                        <p>{evidence.nextAction}</p>
+                    </div>
+                    <div class="brief-row">
+                        <span>Missing</span>
+                        <p>{evidence.missingData[0]}</p>
+                    </div>
+                    <button
+                        type="button"
+                        class="brief-link"
+                        on:click={() => nav(`/ankountant-dashboard?section=${section}`)}
+                    >
+                        See readiness evidence
+                    </button>
                 </div>
             </div>
 
@@ -616,6 +637,61 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     .gauge-note {
         font-size: 13px;
         color: var(--fg-subtle);
+    }
+
+    .readiness-brief {
+        display: grid;
+        gap: var(--space-sm);
+        width: 100%;
+        margin-top: var(--space-md);
+        padding-top: var(--space-md);
+        border-top: 1px solid var(--border-subtle);
+        text-align: left;
+    }
+
+    .brief-row {
+        display: grid;
+        gap: 2px;
+
+        span {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--fg-faint);
+        }
+
+        p {
+            margin: 0;
+            font-size: 12.5px;
+            line-height: 1.4;
+            color: var(--fg-subtle);
+        }
+
+        &.next p {
+            font-weight: 600;
+            color: var(--fg);
+        }
+    }
+
+    .brief-link {
+        justify-self: start;
+        padding: 0;
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--accent);
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+
+        &:hover {
+            text-decoration: underline;
+        }
+
+        &:focus-visible {
+            outline: 2px solid #7ea6d6;
+            outline-offset: 3px;
+        }
     }
 
     .stat-list {
