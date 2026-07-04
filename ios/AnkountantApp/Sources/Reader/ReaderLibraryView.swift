@@ -58,6 +58,10 @@ struct ReaderLibraryView: View {
         )
     }
 
+    private var showsBookshelfControls: Bool {
+        ReaderConfigurationLoader.loadConfiguration() != nil && !books.isEmpty && loadError == nil
+    }
+
     private var filteredBooks: [ReaderBook] {
         let trimmed = searchText.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return books }
@@ -94,23 +98,25 @@ struct ReaderLibraryView: View {
         }
         .navigationTitle("Reader")
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                HStack(spacing: 4) {
-                    Button("Decrease columns", systemImage: "minus") {
-                        $bookshelfColumns.withLock { $0 = max(clampedColumns - 1, 1) }
-                    }
-                    .labelStyle(.iconOnly)
-                    .disabled(clampedColumns <= 1)
+            if showsBookshelfControls {
+                ToolbarItem(placement: .topBarLeading) {
+                    HStack(spacing: 4) {
+                        Button("Decrease columns", systemImage: "minus") {
+                            $bookshelfColumns.withLock { $0 = max(clampedColumns - 1, 1) }
+                        }
+                        .labelStyle(.iconOnly)
+                        .disabled(clampedColumns <= 1)
 
-                    Text("\(clampedColumns)")
-                        .monospacedDigit()
-                        .frame(minWidth: 16)
+                        Text("\(clampedColumns)")
+                            .monospacedDigit()
+                            .frame(minWidth: 16)
 
-                    Button("Increase columns", systemImage: "plus") {
-                        $bookshelfColumns.withLock { $0 = min(clampedColumns + 1, 4) }
+                        Button("Increase columns", systemImage: "plus") {
+                            $bookshelfColumns.withLock { $0 = min(clampedColumns + 1, 4) }
+                        }
+                        .labelStyle(.iconOnly)
+                        .disabled(clampedColumns >= 4)
                     }
-                    .labelStyle(.iconOnly)
-                    .disabled(clampedColumns >= 4)
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -180,15 +186,21 @@ struct ReaderLibraryView: View {
             )
         } else {
             ScrollView {
-                LazyVGrid(columns: gridColumns, spacing: 12) {
-                    ForEach(sortedBooks) { book in
-                        NavigationLink(value: ReaderRoute.chapters(book)) {
-                            BookGridCell(book: book, savedProgress: progress.resolved(bookID: book.id))
+                if sortedBooks.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
+                        .frame(maxWidth: .infinity, minHeight: 360)
+                        .padding(.horizontal, 24)
+                } else {
+                    LazyVGrid(columns: gridColumns, spacing: 12) {
+                        ForEach(sortedBooks) { book in
+                            NavigationLink(value: ReaderRoute.chapters(book)) {
+                                BookGridCell(book: book, savedProgress: progress.resolved(bookID: book.id))
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
+                    .padding(12)
                 }
-                .padding(12)
             }
             .searchable(text: $searchText, prompt: "Search books")
             .refreshable { await reload() }
