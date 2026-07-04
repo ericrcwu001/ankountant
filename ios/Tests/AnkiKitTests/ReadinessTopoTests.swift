@@ -207,6 +207,26 @@ struct ReadinessTopoTests {
         #expect(evidence.missingData.first?.contains("No hard blockers") == true)
     }
 
+    @Test func readinessEvidencePrioritizesInsufficientVolumeBeforeGapDrills() {
+        let band = ReadinessBand(
+            abstain: true,
+            reason: "insufficient volume",
+            bandLow: 0,
+            bandHigh: 0,
+            confidence: "",
+            coverage: 1
+        )
+        let evidence = readinessEvidence(
+            band: band,
+            topics: [
+                TopicScoreModel(setId: "leases", memory: 0.9, performance: 0.52, gap: 0.38, memoryInsufficient: false, performanceLow: 0.42, performanceHigh: 0.62),
+            ]
+        )
+        #expect(evidence.nextAction.contains("20"))
+        #expect(evidence.nextAction.contains("sealed exam-style attempts"))
+        #expect(!evidence.nextAction.contains("confusion-set drill"))
+    }
+
     @Test func readinessEvidenceDoesNotInventMemoryValueForThinMemoryGaps() {
         let band = ReadinessBand(
             abstain: false,

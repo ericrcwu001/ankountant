@@ -275,6 +275,9 @@ private func bestNextReadinessAction(band: ReadinessBand, topics: [TopicScoreMod
     guard !topics.isEmpty else {
         return "Load a CPA bank or demo profile, then start sealed practice."
     }
+    if band.abstain && band.reason.localizedCaseInsensitiveContains("volume") {
+        return "Complete sealed exam-style attempts until at least \(readinessMinimumSealedAttempts) are logged; readiness is withheld for insufficient volume."
+    }
     if band.coverage < readinessMinimumCoverage {
         return "Add sealed exam-style attempts in uncovered topics before trusting the readiness range."
     }

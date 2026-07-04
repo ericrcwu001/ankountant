@@ -272,6 +272,27 @@ test("evidence view chooses the largest memory-performance gap as next action", 
     expect(evidence.updatedAtLine).not.toContain("unavailable");
 });
 
+test("evidence view prioritizes insufficient volume before gap drills", () => {
+    const view = buildReadinessView(
+        new Readiness({ abstain: true, reason: "insufficient volume", coverage: 1 }),
+    );
+    const rows = buildTopicRows([
+        new TopicScore({
+            setId: "leases",
+            memory: 0.9,
+            performance: 0.52,
+            gap: 0.38,
+            memoryInsufficient: false,
+            performanceLow: 0.42,
+            performanceHigh: 0.62,
+        }),
+    ]);
+    const evidence = buildReadinessEvidence(view, rows);
+    expect(evidence.nextAction).toContain("20");
+    expect(evidence.nextAction).toContain("sealed exam-style attempts");
+    expect(evidence.nextAction).not.toContain("confusion-set drill");
+});
+
 test("evidence view does not invent a memory value for thin-memory gaps", () => {
     const view = buildReadinessView(
         new Readiness({
