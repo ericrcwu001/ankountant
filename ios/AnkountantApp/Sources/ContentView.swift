@@ -40,11 +40,10 @@ struct ContentView: View {
                                 }
                             }
                             ToolbarItem(placement: .topBarTrailing) {
-                                Button {
+                                Button("Import package", systemImage: "square.and.arrow.down") {
                                     showImport = true
-                                } label: {
-                                    Image(systemName: "square.and.arrow.down")
                                 }
+                                .labelStyle(.iconOnly)
                             }
                         }
                 }

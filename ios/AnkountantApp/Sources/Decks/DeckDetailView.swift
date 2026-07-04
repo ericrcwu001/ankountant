@@ -195,7 +195,8 @@ struct DeckDetailView: View {
                     }
                     .disabled(exportInProgress)
                 } label: {
-                    Image(systemName: "plus")
+                    Label("Deck actions", systemImage: "plus")
+                        .labelStyle(.iconOnly)
                 }
             }
         }

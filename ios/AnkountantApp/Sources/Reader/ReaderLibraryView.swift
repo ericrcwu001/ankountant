@@ -92,22 +92,20 @@ struct ReaderLibraryView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 HStack(spacing: 4) {
-                    Button {
+                    Button("Decrease columns", systemImage: "minus") {
                         $bookshelfColumns.withLock { $0 = max(clampedColumns - 1, 1) }
-                    } label: {
-                        Image(systemName: "minus")
                     }
+                    .labelStyle(.iconOnly)
                     .disabled(clampedColumns <= 1)
 
                     Text("\(clampedColumns)")
                         .monospacedDigit()
                         .frame(minWidth: 16)
 
-                    Button {
+                    Button("Increase columns", systemImage: "plus") {
                         $bookshelfColumns.withLock { $0 = min(clampedColumns + 1, 4) }
-                    } label: {
-                        Image(systemName: "plus")
                     }
+                    .labelStyle(.iconOnly)
                     .disabled(clampedColumns >= 4)
                 }
             }
@@ -131,7 +129,8 @@ struct ReaderLibraryView: View {
                         Label("Settings", systemImage: "slider.horizontal.3")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Label("Reader options", systemImage: "ellipsis.circle")
+                        .labelStyle(.iconOnly)
                 }
             }
         }
