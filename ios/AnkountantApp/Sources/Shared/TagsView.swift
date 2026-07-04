@@ -32,6 +32,7 @@ struct TagsView: View {
     @State private var showDeleteConfirm = false
     @State private var isDeleting = false
     @State private var tagActionTag: String?
+    @State private var applyingTag: String?
     @State private var isApplying = false
     @State private var showRenameTag = false
     @State private var tagToRename: String?
@@ -67,9 +68,10 @@ struct TagsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button(action: { showAddTag = true }) {
-                    Image(systemName: "plus")
+                Button("New Tag", systemImage: "plus") {
+                    showAddTag = true
                 }
+                .labelStyle(.iconOnly)
             }
         }
         .sheet(isPresented: $showAddTag) {
@@ -99,7 +101,7 @@ struct TagsView: View {
             }
         } message: {
             if let tag = tagToRename {
-                Text("Delete \"\(tag)\"? This will remove it from all notes.")
+                Text("Choose a new name for \"\(tag)\".")
             }
         }
         .alert("Error", isPresented: $showError) {
@@ -117,10 +119,10 @@ struct TagsView: View {
         ) {
             if let tag = tagActionTag {
                 Button("Apply to \(targetNoteIDs.count) note\(targetNoteIDs.count == 1 ? "" : "s")") {
-                    Task { await applyTag(tag) }
+                    startApplyTag(tag)
                 }
                 Button("Remove from \(targetNoteIDs.count) note\(targetNoteIDs.count == 1 ? "" : "s")", role: .destructive) {
-                    Task { await removeTagFromSelectedNotes(tag) }
+                    startRemoveTagFromSelectedNotes(tag)
                 }
                 Button("Cancel", role: .cancel) { tagActionTag = nil }
             }
@@ -198,47 +200,40 @@ struct TagsView: View {
 
     // MARK: - Row
 
-    @ViewBuilder
     private func tagRow(_ tag: String) -> some View {
-        HStack {
-            Label(tag, systemImage: "tag.fill")
-                .foregroundStyle(palette.accent)
-            Spacer()
-            if isApplying && tagActionTag == tag {
-                ProgressView()
-                    .scaleEffect(0.8)
-            } else {
-                Image(systemName: "chevron.right")
-                    .ankountantFont(.caption)
-                    .foregroundStyle(palette.textTertiary)
-            }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if isNoteMode {
-                switch noteMode {
-                case .addToNotes:
-                    Task { await applyTag(tag) }
-                case .removeFromNotes:
-                    Task { await removeTagFromSelectedNotes(tag) }
-                case .manage:
-                    tagActionTag = tag
+        Button {
+            activateTag(tag)
+        } label: {
+            HStack {
+                Label(tag, systemImage: "tag.fill")
+                    .foregroundStyle(palette.accent)
+                Spacer()
+                if isApplying && applyingTag == tag {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .accessibilityLabel("Applying")
+                } else {
+                    Image(systemName: "chevron.right")
+                        .ankountantFont(.caption)
+                        .foregroundStyle(palette.textTertiary)
+                        .accessibilityHidden(true)
                 }
-            } else {
-                selectedTag = tag
             }
         }
+        .buttonStyle(.plain)
+        .disabled(isApplying)
+        .accessibilityLabel(accessibilityLabel(for: tag))
         .swipeActions(edge: .trailing) {
             if isNoteMode {
                 Button {
-                    Task { await removeTagFromSelectedNotes(tag) }
+                    startRemoveTagFromSelectedNotes(tag)
                 } label: {
                     Label("Remove", systemImage: "tag.slash")
                 }
                 .tint(palette.warning)
 
                 Button {
-                    Task { await applyTag(tag) }
+                    startApplyTag(tag)
                 } label: {
                     Label("Apply", systemImage: "tag")
                 }
@@ -264,6 +259,57 @@ struct TagsView: View {
     }
 
     // MARK: - Actions
+
+    private func activateTag(_ tag: String) {
+        guard !isApplying else { return }
+        if isNoteMode {
+            switch noteMode {
+            case .addToNotes:
+                startApplyTag(tag)
+            case .removeFromNotes:
+                startRemoveTagFromSelectedNotes(tag)
+            case .manage:
+                tagActionTag = tag
+            }
+        } else {
+            selectedTag = tag
+        }
+    }
+
+    private func accessibilityLabel(for tag: String) -> String {
+        switch noteMode {
+        case .addToNotes:
+            return "Apply \(tag) tag"
+        case .removeFromNotes:
+            return "Remove \(tag) tag"
+        case .manage:
+            return isNoteMode ? "Choose action for \(tag) tag" : "\(tag) tag"
+        }
+    }
+
+    private func startApplyTag(_ tag: String) {
+        guard beginApplying(tag) else { return }
+        tagActionTag = nil
+        Task { await applyTag(tag) }
+    }
+
+    private func startRemoveTagFromSelectedNotes(_ tag: String) {
+        guard beginApplying(tag) else { return }
+        tagActionTag = nil
+        Task { await removeTagFromSelectedNotes(tag) }
+    }
+
+    private func beginApplying(_ tag: String) -> Bool {
+        guard !isApplying else { return false }
+        isApplying = true
+        applyingTag = tag
+        return true
+    }
+
+    private func finishApplying() {
+        isApplying = false
+        applyingTag = nil
+    }
 
     private func loadTags() async {
         do {
@@ -296,8 +342,7 @@ struct TagsView: View {
     }
 
     private func applyTag(_ tag: String) async {
-        isApplying = true
-        defer { isApplying = false; tagActionTag = nil }
+        defer { finishApplying() }
         do {
             try tagClient.addTagToNotes(tag, targetNoteIDs)
         } catch {
@@ -307,8 +352,7 @@ struct TagsView: View {
     }
 
     private func removeTagFromSelectedNotes(_ tag: String) async {
-        isApplying = true
-        defer { isApplying = false; tagActionTag = nil }
+        defer { finishApplying() }
         do {
             try tagClient.removeTagFromNotes(tag, targetNoteIDs)
         } catch {
