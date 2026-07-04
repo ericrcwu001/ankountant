@@ -54,6 +54,8 @@ test("a JE TBS renders an editable grid and shows per-line + partial-credit tota
     await expect(page.getByTestId("results-layer")).toBeVisible();
     await expect(page.getByTestId("reveal-correct")).toHaveCount(4);
     await expect(page.getByTestId("reveal-correct").first()).not.toHaveText("");
+    await expect(page.getByTestId("reveal-blueprint")).not.toContainText("ds::");
+    await expect(page.getByTestId("reveal-blueprint")).not.toContainText("_");
     await expect(rows.nth(0).getByTestId("je-account")).toBeDisabled();
     await expect(rows.nth(0).getByTestId("je-side")).toBeDisabled();
     await expect(rows.nth(0).getByTestId("je-amount")).toBeDisabled();

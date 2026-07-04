@@ -184,8 +184,8 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
                                 class="blueprint"
                                 data-testid="confusion-reveal-blueprint"
                             >
-                                {reveal.setId}{reveal.schemaTag
-                                    ? ` · ${reveal.schemaTag}`
+                                {reveal.topicLabel}{reveal.schemaLabel
+                                    ? ` · ${reveal.schemaLabel}`
                                     : ""}
                             </span>
                             {#if reveal.source}

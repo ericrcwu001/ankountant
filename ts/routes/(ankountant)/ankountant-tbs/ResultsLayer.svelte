@@ -11,10 +11,13 @@ once results are in, so nothing is revealed before the learner commits.
 <script lang="ts">
     import type { StepResult } from "@generated/anki/scheduler_pb";
 
+    import { schemaTagLabel } from "../topic-labels";
     import { revealResultPresentation, type RevealModel } from "./lib";
 
     export let reveal: RevealModel;
     export let results: StepResult[];
+
+    $: schemaLabel = schemaTagLabel(reveal.schemaTag);
 </script>
 
 <section class="results-layer" data-testid="results-layer">
@@ -43,7 +46,7 @@ once results are in, so nothing is revealed before the learner commits.
 
     <div class="basis">
         <span class="blueprint" data-testid="reveal-blueprint">
-            {reveal.section}{reveal.schemaTag ? ` · ${reveal.schemaTag}` : ""}
+            {reveal.section}{schemaLabel ? ` · ${schemaLabel}` : ""}
         </span>
         {#if reveal.source}
             <p class="source" data-testid="reveal-source">{reveal.source}</p>

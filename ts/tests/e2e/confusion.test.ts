@@ -52,6 +52,8 @@ test("selecting a treatment scores it and reveals the correct treatment (A45/B2-
     await expect(page.getByTestId("verdict")).toBeVisible();
     await expect(page.getByTestId("confusion-reveal")).toBeVisible();
     await expect(page.getByTestId("confusion-correct-treatment")).not.toHaveText("");
+    await expect(page.getByTestId("confusion-reveal-blueprint")).not.toContainText("ds::");
+    await expect(page.getByTestId("confusion-reveal-blueprint")).not.toContainText("_");
 });
 
 test("a confusion attempt feeds the topic Performance shown on the dashboard (A46/A49)", async ({ page, seed }) => {

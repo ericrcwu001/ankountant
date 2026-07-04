@@ -163,6 +163,9 @@ struct ReadinessTopoTests {
         #expect(topicDisplayName("aud_request_relevance") == "Request relevance")
         #expect(topicSentenceName("tax_timing") == "tax timing")
         #expect(topicSentenceName("trading_afs_htm") == "trading, AFS & HTM securities")
+        #expect(schemaTagDisplayName("ds::tax::permanent") == "Permanent items")
+        #expect(schemaTagDisplayName("ds::securities::htm") == "HTM securities")
+        #expect(schemaTagDisplayName("ds::custom::odd_case") == "Odd case")
     }
 
     @Test func gapsToCloseCount() {

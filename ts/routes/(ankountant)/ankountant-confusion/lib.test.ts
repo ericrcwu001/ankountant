@@ -35,7 +35,9 @@ test("buildConfusionRevealModel exposes the post-submit correct treatment", () =
         correctText: "Capitalize",
         source: "ASC 360-10-30",
         schemaTag: "ds::fixed_assets::capitalize",
+        schemaLabel: "Capitalize",
         setId: "capitalize_vs_expense",
+        topicLabel: "Capitalization vs expense",
     });
 });
 

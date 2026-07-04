@@ -212,7 +212,7 @@ struct SimulationResultsRevealView: View {
             }
 
             VStack(alignment: .leading, spacing: AnkountantSpacing.xs) {
-                Text(reveal.schemaTag.isEmpty ? reveal.section : "\(reveal.section) · \(reveal.schemaTag)")
+                Text(revealBlueprint(reveal))
                     .ankountantFont(.micro)
                     .foregroundStyle(palette.accent)
                     .padding(.horizontal, AnkountantSpacing.sm)
@@ -235,6 +235,11 @@ struct SimulationResultsRevealView: View {
             RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
                 .stroke(palette.borderSubtle, lineWidth: 1)
         )
+    }
+
+    private func revealBlueprint(_ reveal: TbsRevealModel) -> String {
+        let schema = schemaTagDisplayName(reveal.schemaTag)
+        return schema.isEmpty ? reveal.section : "\(reveal.section) · \(schema)"
     }
 
     private func revealRow(_ step: StepReveal) -> some View {

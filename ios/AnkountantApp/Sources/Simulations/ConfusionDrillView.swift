@@ -201,7 +201,7 @@ struct ConfusionDrillView: View {
                 .foregroundStyle(palette.accent)
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
-            Text(reveal.schemaTag.isEmpty ? reveal.setId : "\(reveal.setId) · \(reveal.schemaTag)")
+            Text(revealBlueprint(reveal))
                 .ankountantFont(.micro)
                 .foregroundStyle(palette.accent)
                 .padding(.horizontal, AnkountantSpacing.sm)
@@ -222,6 +222,12 @@ struct ConfusionDrillView: View {
             RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
                 .stroke(palette.borderSubtle, lineWidth: 1)
         )
+    }
+
+    private func revealBlueprint(_ reveal: ConfusionRevealModel) -> String {
+        let topic = topicDisplayName(reveal.setId)
+        let schema = schemaTagDisplayName(reveal.schemaTag)
+        return schema.isEmpty ? topic : "\(topic) · \(schema)"
     }
 
     private func load() async {

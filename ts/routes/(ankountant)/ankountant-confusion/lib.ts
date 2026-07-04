@@ -7,6 +7,7 @@
 // ! verify the interleave invariant for tests. DOM-free for `just test-ts`.
 
 import { TBS_FIELD } from "../ankountant-tbs/lib";
+import { schemaTagLabel, topicLabel } from "../topic-labels";
 
 /** Shape submission_json for a which-treatment (discrimination) choice (B2). */
 export function buildChoiceSubmission(choice: string): string {
@@ -21,7 +22,9 @@ export interface ConfusionRevealModel {
     correctText: string;
     source: string;
     schemaTag: string;
+    schemaLabel: string;
     setId: string;
+    topicLabel: string;
 }
 
 interface ConfusionRevealStep {
@@ -65,11 +68,14 @@ export function buildConfusionRevealModel(
     if (typeof choice.answer_key !== "string" || choice.answer_key.trim() === "") {
         throw new Error("choice answer_key must be a non-empty string.");
     }
+    const schemaTag = fields[TBS_FIELD.schemaTag] ?? "";
     return {
         correctText: choice.answer_key,
         source: fields[TBS_FIELD.sourcePassage] ?? "",
-        schemaTag: fields[TBS_FIELD.schemaTag] ?? "",
+        schemaTag,
+        schemaLabel: schemaTagLabel(schemaTag),
         setId,
+        topicLabel: topicLabel(setId),
     };
 }
 
