@@ -11,11 +11,14 @@ ankountant-tbs/TbsTab.svelte for the JE/numeric task types this pane can render.
     import { getNote, searchNotes } from "@generated/backend";
 
     import type { TbsModel, TbsShape } from "../../ankountant-tbs/lib";
-    import { buildTbsModel, tbsSearch } from "../../ankountant-tbs/lib";
+    import {
+        buildTbsModel,
+        SECTION_SEARCH_ORDER,
+        tbsSearch,
+    } from "../../ankountant-tbs/lib";
     import TbsSurface from "../../ankountant-tbs/TbsSurface.svelte";
     import PaneState from "./PaneState.svelte";
 
-    const SECTION = "FAR";
     const WORKSPACE_TBS_SHAPES: readonly TbsShape[] = ["journal_entry", "numeric"];
 
     let phase: "loading" | "ready" | "empty" | "error" = "loading";
@@ -46,9 +49,11 @@ ankountant-tbs/TbsTab.svelte for the JE/numeric task types this pane can render.
 
     async function firstWorkspaceTbsNote(): Promise<bigint> {
         for (const shape of WORKSPACE_TBS_SHAPES) {
-            const found = await searchNotes({ search: tbsSearch(shape, SECTION) });
-            if (found.ids.length > 0) {
-                return found.ids[0];
+            for (const section of SECTION_SEARCH_ORDER) {
+                const found = await searchNotes({ search: tbsSearch(shape, section) });
+                if (found.ids.length > 0) {
+                    return found.ids[0];
+                }
             }
         }
         return 0n;
@@ -64,6 +69,6 @@ ankountant-tbs/TbsTab.svelte for the JE/numeric task types this pane can render.
         {phase}
         {message}
         onRetry={load}
-        emptyText="No TBS task available yet. Load the FAR demo content from the Ankountant menu."
+        emptyText="No TBS task was found in this profile."
     />
 {/if}

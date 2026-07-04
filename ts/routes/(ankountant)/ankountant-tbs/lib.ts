@@ -87,6 +87,11 @@ export function tbsSearch(shape: TbsShape, section: string): string {
 /** The CPA sections the engine covers (ADR 0008). */
 export const SECTIONS = ["AUD", "FAR", "REG", "BAR", "ISC", "TCP"] as const;
 export type Section = (typeof SECTIONS)[number];
+export const DEFAULT_SECTION: Section = "FAR";
+export const SECTION_SEARCH_ORDER: readonly Section[] = [
+    DEFAULT_SECTION,
+    ...SECTIONS.filter((section) => section !== DEFAULT_SECTION),
+];
 
 const SEC_TAG_PREFIX = "sec::";
 

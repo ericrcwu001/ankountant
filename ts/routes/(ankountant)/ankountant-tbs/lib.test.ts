@@ -14,7 +14,9 @@ import {
     parseExhibits,
     parseSteps,
     renderableTbsShape,
+    SECTION_SEARCH_ORDER,
     sectionFromTags,
+    SECTIONS,
     segmentDocument,
     tbsSearch,
     tbsShapeSearchOrder,
@@ -56,6 +58,11 @@ test("tbsShapeSearchOrder starts with the requested shape", () => {
         "research",
         "doc_review",
     ]);
+});
+
+test("SECTION_SEARCH_ORDER prefers FAR while covering every section", () => {
+    expect(SECTION_SEARCH_ORDER[0]).toBe("FAR");
+    expect([...SECTION_SEARCH_ORDER].sort()).toEqual([...SECTIONS].sort());
 });
 
 test("renderableTbsShape rejects specialized research and doc-review shapes", () => {

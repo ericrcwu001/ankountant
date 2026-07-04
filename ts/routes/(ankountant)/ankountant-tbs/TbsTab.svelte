@@ -18,7 +18,7 @@ which case the chooser opens on that note's shape.
     import type { TbsModel, TbsShape } from "./lib";
     import {
         buildTbsModel,
-        SECTIONS,
+        SECTION_SEARCH_ORDER,
         TBS_SHAPES,
         tbsSearch,
         tbsShapeSearchOrder,
@@ -30,10 +30,6 @@ which case the chooser opens on that note's shape.
     export let initialFields: string[] = [];
     export let initialTags: string[] = [];
 
-    const SECTION_SEARCH_ORDER = [
-        "FAR",
-        ...SECTIONS.filter((section) => section !== "FAR"),
-    ];
     const deepLinked = initialNoteId !== 0n && initialModel !== null;
 
     type Phase = "loading" | "ready" | "empty" | "error";

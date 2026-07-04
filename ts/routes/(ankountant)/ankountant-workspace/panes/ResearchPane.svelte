@@ -4,8 +4,8 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 Workspace-pane wrapper around the research surface. Unlike TbsPane (which grabs
 the first TBS note regardless of shape), this filters by BOTH tbs_type=research
-and section (ADR 0008), defaulting to FAR, so it never collides with a JE/numeric
-or a different section's item.
+and section (ADR 0008), preferring FAR and then falling back across supported
+sections, so it never collides with a JE/numeric item.
 -->
 <script lang="ts">
     import { onMount } from "svelte";
@@ -14,11 +14,12 @@ or a different section's item.
 
     import ResearchSurface from "../../ankountant-research/ResearchSurface.svelte";
     import type { TbsModel } from "../../ankountant-tbs/lib";
-    import { buildTbsModel } from "../../ankountant-tbs/lib";
+    import {
+        buildTbsModel,
+        SECTION_SEARCH_ORDER,
+        tbsSearch,
+    } from "../../ankountant-tbs/lib";
     import PaneState from "./PaneState.svelte";
-
-    const SECTION = "FAR";
-    const SEARCH = `"note:Ankountant TBS" "tbs_type:research" deck:Ankountant::Sealed::${SECTION}::*`;
 
     let phase: "loading" | "ready" | "empty" | "error" = "loading";
     let noteId = 0n;
@@ -30,8 +31,7 @@ or a different section's item.
     async function load(): Promise<void> {
         phase = "loading";
         try {
-            const found = await searchNotes({ search: SEARCH });
-            noteId = found.ids.length > 0 ? found.ids[0] : 0n;
+            noteId = await firstResearchNote();
             if (noteId === 0n) {
                 phase = "empty";
                 return;
@@ -50,6 +50,16 @@ or a different section's item.
     onMount(() => {
         void load();
     });
+
+    async function firstResearchNote(): Promise<bigint> {
+        for (const section of SECTION_SEARCH_ORDER) {
+            const found = await searchNotes({ search: tbsSearch("research", section) });
+            if (found.ids.length > 0) {
+                return found.ids[0];
+            }
+        }
+        return 0n;
+    }
 </script>
 
 {#if phase === "ready" && model}
@@ -61,6 +71,6 @@ or a different section's item.
         {phase}
         {message}
         onRetry={load}
-        emptyText="No research task available yet. Load the FAR demo content from the Ankountant menu."
+        emptyText="No research task was found in this profile."
     />
 {/if}
