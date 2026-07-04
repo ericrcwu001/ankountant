@@ -17,8 +17,9 @@ struct ConfusionDrillView: View {
     @State private var items: [ConfusionItemModel] = []
     @State private var index: Int = 0
     @State private var confidence: ConfidenceLevel? = nil
-    @State private var itemStartedAt = Date()
+    @State private var itemStartedAt = Date.now
     @State private var lastCorrect: Bool? = nil
+    @State private var submitError: String?
     @State private var submitting = false
     @State private var isLoading = true
     @State private var loadError: String?
@@ -88,6 +89,18 @@ struct ConfusionDrillView: View {
                             treatmentButton(current, treatment)
                         }
                     }
+                }
+
+                if let submitError {
+                    AnkountantStatusMessageView(
+                        title: "Answer not recorded",
+                        message: submitError,
+                        systemImage: "exclamationmark.triangle",
+                        tone: .danger
+                    )
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, AnkountantSpacing.sm)
+                    .ankountantStatusPanel(.danger)
                 }
 
                 if let lastCorrect {
@@ -165,15 +178,16 @@ struct ConfusionDrillView: View {
     }
 
     private func choose(_ current: ConfusionItemModel, _ treatment: String) {
-        guard confidence != nil, !submitting else { return }
+        guard let confidence, !submitting, lastCorrect == nil else { return }
+        submitError = nil
         submitting = true
         defer { submitting = false }
-        let latencyMs = UInt32(clamping: Int((Date().timeIntervalSince(itemStartedAt) * 1000).rounded()))
+        let latencyMs = UInt32(clamping: Int((Date.now.timeIntervalSince(itemStartedAt) * 1000).rounded()))
         do {
-            let resp = try performanceClient.submitConfusion(current.noteId, treatment, confidence!.rawValue, latencyMs)
+            let resp = try performanceClient.submitConfusion(current.noteId, treatment, confidence.rawValue, latencyMs)
             lastCorrect = resp.totalCredit >= 1
         } catch {
-            print("[ConfusionDrillView] submit failed: \(error)")
+            submitError = "Could not record this attempt: \(error.localizedDescription)"
         }
     }
 
@@ -181,6 +195,7 @@ struct ConfusionDrillView: View {
         index += 1
         confidence = nil
         lastCorrect = nil
-        itemStartedAt = Date()
+        submitError = nil
+        itemStartedAt = Date.now
     }
 }
