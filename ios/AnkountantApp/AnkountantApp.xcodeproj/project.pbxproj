@@ -931,6 +931,7 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -cxx-interoperability-mode=default";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ankountant.ios;
+				PRODUCT_MODULE_NAME = AnkountantApp;
 				PRODUCT_NAME = Ankountant;
 				SDKROOT = iphoneos;
 				SWIFT_CXX_INTEROPERABILITY_MODE = default;
@@ -973,7 +974,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_CXX_INTEROPERABILITY_MODE = default;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AnkountantApp.app/AnkountantApp";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Ankountant.app/Ankountant";
 			};
 			name = Debug;
 		};
@@ -1114,6 +1115,7 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -cxx-interoperability-mode=default";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ankountant.ios;
+				PRODUCT_MODULE_NAME = AnkountantApp;
 				PRODUCT_NAME = Ankountant;
 				SDKROOT = iphoneos;
 				SWIFT_CXX_INTEROPERABILITY_MODE = default;
@@ -1139,7 +1141,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_CXX_INTEROPERABILITY_MODE = default;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AnkountantApp.app/AnkountantApp";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Ankountant.app/Ankountant";
 			};
 			name = Release;
 		};

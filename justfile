@@ -71,11 +71,9 @@ test-e2e ui='': _install-playwright-browsers
     {{ ninja }} pyenv ts:generated pylib qt
     {{ playwright_env }} {{ yarn }} test:e2e {{ ui }}
 
-# Run iOS tests. Placeholder so the command resolves; the iOS app is a
-# NON-GATED demo track (its ACs are a manual checklist, not a CI gate) and has
-# no XCTest harness wired into `just` yet. See docs_ankountant/prd/rubrics-frontend.md.
+# Run iOS app tests on the default simulator.
 test-ios:
-    @echo "iOS is a non-gated demo track; no automated tests wired up. (no-op)"
+    xcodebuild test -quiet -project ios/AnkountantApp/AnkountantApp.xcodeproj -scheme AnkountantApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'
 
 # Runs the `#[ignore]`d correctness emitters. Run `just check` once first so
 # protobuf descriptors exist; this reuses the ninja build's Cargo target dir.

@@ -76,5 +76,5 @@ Standard Anki sync transports only notes, cards, notetypes, decks, deck configs,
 - **buildCmd:** `just check` (format + build + clippy/mypy/ruff/tsc/svelte checks).
 - **testCmd (fast inner loop):** `just test-rust && just test-py && just test-ts`. Keep `just test-e2e` **out** of the blanket testCmd (Playwright is slow/flaky every iteration); instead each desktop-UI assertion carries its **own** `howToVerify` = a specific Playwright spec the evaluator runs per-assertion.
 - **lintCmd:** `just lint`.
-- **iOS:** not in `just test`. Add a `just test-ios` stub (no-op placeholder is fine) so the command can be named without erroring; iOS is a non-gated demo track (see `rubrics-frontend.md`).
+- **iOS:** app XCTest runs through `just test-ios`; Swift package logic can still use `swift test` in `ios/`.
 - Run `just check` (not `cargo check`) after any `.proto` edit.

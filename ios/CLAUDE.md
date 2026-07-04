@@ -10,9 +10,8 @@ C FFI + protobuf serialization. Deeper data-flow and build detail live in
 `ios/ARCHITECTURE.md`.
 
 > Build note: iOS has its own toolchain — Swift Package Manager + `xcodebuild` +
-> the scripts in `ios/scripts/`. The repo exposes only a `just test-ios` stub
-> today; add/use a `just` wrapper before making any iOS command a required repo
-> gate.
+> the scripts in `ios/scripts/`. Use `just test-ios` for the app XCTest wrapper
+> when validating iOS app changes.
 
 ## Architecture
 
@@ -71,6 +70,7 @@ xcodebuild build -project AnkountantApp/AnkountantApp.xcodeproj -scheme Ankounta
 
 # Run tests
 swift test
+just test-ios
 ```
 
 ## Key Patterns

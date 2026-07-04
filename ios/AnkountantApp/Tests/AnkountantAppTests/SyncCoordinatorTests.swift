@@ -15,6 +15,7 @@ struct SyncCoordinatorTests {
         try await withDependencies {
             $0.appStorageKeyFormatWarningEnabled = false
             $0.syncClient.sync = { summary }
+            $0.syncClient.syncMedia = { MediaSyncSummary() }
         } operation: {
             let coordinator = SyncCoordinator()
             await coordinator.startSync()
@@ -69,7 +70,7 @@ struct SyncCoordinatorTests {
         try await withDependencies {
             $0.appStorageKeyFormatWarningEnabled = false
             $0.syncClient.sync = { throw SyncError.fullSyncRequired }
-            $0.syncClient.fullSync = { _ in /* success */ }
+            $0.syncClient.fullSync = { _ in }
         } operation: {
             let coordinator = SyncCoordinator()
             await coordinator.startSync()
@@ -85,7 +86,7 @@ struct SyncCoordinatorTests {
 
     @Test @MainActor
     func logEntriesCappedAt100() async throws {
-        try await withDependencies {
+        withDependencies {
             $0.appStorageKeyFormatWarningEnabled = false
         } operation: {
             let coordinator = SyncCoordinator()
@@ -137,7 +138,7 @@ struct SyncCoordinatorTests {
 
     @Test @MainActor
     func appendLogIncrementsAndOrders() async throws {
-        try await withDependencies {
+        withDependencies {
             $0.appStorageKeyFormatWarningEnabled = false
         } operation: {
             let coordinator = SyncCoordinator()
