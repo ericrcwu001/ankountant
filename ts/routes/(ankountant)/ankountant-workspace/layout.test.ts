@@ -13,6 +13,7 @@ import {
     deserialize,
     ensureSurface,
     hasSurface,
+    isSurfaceKind,
     MAX_PANES,
     MIN_RATIO,
     nodeAt,
@@ -26,6 +27,12 @@ test("defaultLayout is a single leaf", () => {
     const tree = defaultLayout("dashboard");
     expect(tree.type).toBe("leaf");
     expect(countLeaves(tree)).toBe(1);
+});
+
+test("isSurfaceKind validates runtime surface names", () => {
+    expect(isSurfaceKind("tbs")).toBe(true);
+    expect(isSurfaceKind("sync")).toBe(false);
+    expect(isSurfaceKind(undefined)).toBe(false);
 });
 
 test("splitAt wraps the target in a split and adds a pane", () => {

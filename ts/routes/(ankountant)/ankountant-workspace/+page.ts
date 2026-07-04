@@ -2,15 +2,12 @@
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 import type { PageLoad } from "./$types";
-import type { SurfaceKind } from "./workspace-layout";
-import { SURFACE_KINDS } from "./workspace-layout";
+import { isSurfaceKind } from "./workspace-layout";
 
 // The tiling workspace loads no data itself — each pane self-loads. `?initial`
 // lets the Ankountant menu seed a fresh layout with a chosen surface.
 export const load = (({ url }) => {
     const raw = url.searchParams.get("initial") ?? "";
-    const initial = (SURFACE_KINDS as readonly string[]).includes(raw)
-        ? (raw as SurfaceKind)
-        : undefined;
+    const initial = isSurfaceKind(raw) ? raw : undefined;
     return { initial };
 }) satisfies PageLoad;

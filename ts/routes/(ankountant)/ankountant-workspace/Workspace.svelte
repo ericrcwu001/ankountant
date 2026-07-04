@@ -23,6 +23,7 @@ client-side shortcut back to the shell home (mirrors the sidebar's Dashboard).
         defaultLayout,
         deserialize,
         ensureSurface,
+        isSurfaceKind,
         MAX_PANES,
         serialize,
         setRatioAt,
@@ -111,10 +112,13 @@ client-side shortcut back to the shell home (mirrors the sidebar's Dashboard).
 
         // Lets Qt add/focus a surface in the already-open workspace, mirroring
         // the shell's __ankGoto hook (see qt/aqt/workspace.py).
-        type Api = { open: (kind: SurfaceKind) => void; reset: () => void };
+        type Api = { open: (kind: unknown) => void; reset: () => void };
         const w = window as unknown as { __ankWorkspace?: Api };
         w.__ankWorkspace = {
             open: (kind) => {
+                if (!isSurfaceKind(kind)) {
+                    throw new Error(`Unknown workspace surface: ${String(kind ?? "")}`);
+                }
                 tree = ensureSurface(tree, kind);
             },
             reset: resetLayout,

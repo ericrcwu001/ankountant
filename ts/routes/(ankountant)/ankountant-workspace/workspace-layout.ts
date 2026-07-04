@@ -74,6 +74,10 @@ const KNOWN_SURFACES = new Set<string>(SURFACE_KINDS);
 
 let _idSeq = 0;
 
+export function isSurfaceKind(value: unknown): value is SurfaceKind {
+    return typeof value === "string" && KNOWN_SURFACES.has(value);
+}
+
 /** A process-unique node id. Prefers crypto.randomUUID; falls back to a counter
  *  (jsdom/older runtimes) so the model stays usable under vitest. */
 export function nextId(): string {
@@ -237,10 +241,10 @@ function sanitize(node: unknown): TileNode {
         if (typeof n.id !== "string" || n.id === "") {
             throw new Error("Saved workspace layout leaf is missing an id.");
         }
-        if (typeof n.surface !== "string" || !KNOWN_SURFACES.has(n.surface)) {
+        if (!isSurfaceKind(n.surface)) {
             throw new Error(`Unknown workspace surface: ${String(n.surface ?? "")}`);
         }
-        return { type: "leaf", id: n.id, surface: n.surface as SurfaceKind };
+        return { type: "leaf", id: n.id, surface: n.surface };
     }
     if (n.type === "split") {
         if (typeof n.id !== "string" || n.id === "") {
