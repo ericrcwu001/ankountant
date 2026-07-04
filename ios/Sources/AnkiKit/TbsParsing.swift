@@ -36,6 +36,7 @@ public enum TbsParseError: Error, Equatable, LocalizedError, Sendable {
     case nonArrayJson(field: String)
     case emptySteps
     case unsupportedTbsType(String)
+    case unknownSectionTag(String)
 
     public var errorDescription: String? {
         switch self {
@@ -51,6 +52,8 @@ public enum TbsParseError: Error, Equatable, LocalizedError, Sendable {
             "steps_json must contain at least one step."
         case let .unsupportedTbsType(shape):
             "Unsupported tbs_type: \(shape)"
+        case let .unknownSectionTag(tag):
+            "Unknown CPA section tag: \(tag)"
         }
     }
 }
@@ -83,20 +86,21 @@ public func buildTbsModel(fields: [String], tags: [String] = []) throws -> TbsMo
         prompt: field(fields, TbsField.prompt) ?? "",
         exhibits: exhibits,
         steps: try parseSteps(field(fields, TbsField.stepsJson)),
-        section: sectionFromTags(tags),
+        section: try sectionFromTags(tags),
         document: document
     )
 }
 
-/// Resolve a note's section from its `sec::<SECTION>` tag, falling back to FAR
-/// (mirrors Rust `note_section` and desktop `sectionFromTags`).
-public func sectionFromTags(_ tags: [String]) -> String {
+public func sectionFromTags(_ tags: [String]) throws -> String {
     let prefix = "sec::"
-    if let tag = tags.first(where: { $0.hasPrefix(prefix) }) {
-        let sec = String(tag.dropFirst(prefix.count))
-        if TBS_SECTIONS.contains(sec) { return sec }
+    guard let tag = tags.first(where: { $0.hasPrefix(prefix) }) else {
+        return TBS_DEFAULT_SECTION
     }
-    return TBS_DEFAULT_SECTION
+    let code = String(tag.dropFirst(prefix.count)).trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+    guard TBS_SECTIONS.contains(code) else {
+        throw TbsParseError.unknownSectionTag(tag)
+    }
+    return code
 }
 
 /// The exhibits shown in the exhibits pane: everything except the doc-review

@@ -372,11 +372,13 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
 }
 
 @Test func sectionFromTagsResolvesKnownAndFallsBackToFAR() throws {
-    #expect(sectionFromTags(["sec::AUD"]) == "AUD")
-    #expect(sectionFromTags(["ds::x", "sec::BAR"]) == "BAR")
-    #expect(sectionFromTags(["sec::ZZZ"]) == "FAR")   // unknown section → FAR
-    #expect(sectionFromTags([]) == "FAR")             // no tag → FAR
-    // Default when tags are omitted entirely.
+    #expect(try sectionFromTags(["sec::AUD"]) == "AUD")
+    #expect(try sectionFromTags(["ds::x", "sec::BAR"]) == "BAR")
+    #expect(try sectionFromTags(["sec:: reg "]) == "REG")
+    #expect(try sectionFromTags([]) == "FAR")
+    expectTbsParseError("Unknown CPA section tag: sec::ZZZ") {
+        try sectionFromTags(["sec::ZZZ"])
+    }
     #expect(try buildTbsModel(fields: ["numeric", "p", "[]", anchorSteps]).section == "FAR")
 }
 
