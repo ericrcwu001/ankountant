@@ -30,6 +30,9 @@ struct BrowseView: View {
     @State private var hasMorePages = true
     @State private var showAddNote = false
     @State private var showAddImageOcclusion = false
+    @State private var showImport = false
+    @State private var importMessage: String?
+    @State private var showImportAlert = false
     @State private var selectionState = BrowseSelectionState()
     @State private var showTagSheet = false
     @State private var showDeleteConfirm = false
@@ -50,51 +53,7 @@ struct BrowseView: View {
     }
 
     var body: some View {
-        Group {
-            if notes.isEmpty && !isLoading && searchText.isEmpty && activeDeck == nil {
-                ContentUnavailableView(
-                    "Browse Notes",
-                    systemImage: "magnifyingglass",
-                    description: Text("Search by content, tags, or filter by deck.")
-                )
-            } else if notes.isEmpty && !isLoading {
-                ContentUnavailableView.search(text: searchText)
-            } else {
-                List {
-                    ForEach(sortedNotes(notes), id: \.id) { note in
-                        BrowseNoteListRow(
-                            note: note,
-                            notetypeName: notetypeNames[note.mid],
-                            selectionState: $selectionState,
-                            onRowAppear: noteAppeared,
-                            onRefresh: {
-                                Task { await performSearch() }
-                            }
-                        )
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                pendingSwipeDelete = note
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
-                    }
-
-                    if isLoading {
-                        HStack {
-                            Spacer()
-                            ProgressView()
-                            Spacer()
-                        }
-                    }
-                }
-                .navigationDestination(for: NoteRecord.self) { note in
-                    BrowseNoteDestinationView(note: note) {
-                        Task { await performSearch() }
-                    }
-                }
-            }
-        }
+        content
         .navigationTitle("Browse")
         .navigationBarTitleDisplayMode(.inline)
         .ankountantTabBarClearance()
@@ -198,6 +157,14 @@ struct BrowseView: View {
         .sheet(isPresented: $showAddImageOcclusion) {
             AddImageOcclusionNoteView { Task { await performSearch() } }
         }
+        .fileImporter(isPresented: $showImport, allowedContentTypes: [.data]) { result in
+            handleImport(result)
+        }
+        .alert("Import", isPresented: $showImportAlert) {
+            Button("OK") {}
+        } message: {
+            Text(importMessage ?? "")
+        }
         .sheet(isPresented: $showTagSheet) {
             BatchTagSheet(noteIDs: selectionState.selectedNoteIDs) {
                 Task {
@@ -275,18 +242,75 @@ struct BrowseView: View {
         .task {
             await loadDecks()
             await performSearch()
-            do {
-                allTags = try tagClient.getAllTags().sorted()
-            } catch {
-                allTags = []
-                actionErrorMessage = "Failed to load tags: \(error.localizedDescription)"
+            loadTags()
+            loadNotetypeNames()
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if notes.isEmpty && !isLoading && searchText.isEmpty && activeDeck == nil {
+            emptyCollectionState
+        } else if notes.isEmpty && !isLoading {
+            ContentUnavailableView.search(text: searchText)
+        } else {
+            notesList
+        }
+    }
+
+    private var emptyCollectionState: some View {
+        ContentUnavailableView {
+            Label("No notes yet", systemImage: "doc.text.magnifyingglass")
+        } description: {
+            Text("Add a note or import an Anki package to start browsing your collection.")
+        } actions: {
+            Button("Add Note", systemImage: "plus") {
+                showAddNote = true
             }
-            do {
-                let pairs = try notetypesService.getNotetypeNames()
-                notetypeNames = Dictionary(uniqueKeysWithValues: pairs.map { ($0.id, $0.name) })
-            } catch {
-                notetypeNames = [:]
-                actionErrorMessage = "Failed to load note type names: \(error.localizedDescription)"
+            .buttonStyle(.borderedProminent)
+
+            Button("Import package", systemImage: "square.and.arrow.down") {
+                showImport = true
+            }
+        }
+    }
+
+    private var notesList: some View {
+        List {
+            ForEach(sortedNotes(notes), id: \.id) { note in
+                noteRow(note)
+            }
+
+            if isLoading {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                    Spacer()
+                }
+            }
+        }
+        .navigationDestination(for: NoteRecord.self) { note in
+            BrowseNoteDestinationView(note: note) {
+                Task { await performSearch() }
+            }
+        }
+    }
+
+    private func noteRow(_ note: NoteRecord) -> some View {
+        BrowseNoteListRow(
+            note: note,
+            notetypeName: notetypeNames[note.mid],
+            selectionState: $selectionState,
+            onRowAppear: noteAppeared,
+            onRefresh: {
+                Task { await performSearch() }
+            }
+        )
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button(role: .destructive) {
+                pendingSwipeDelete = note
+            } label: {
+                Label("Delete", systemImage: "trash")
             }
         }
     }
@@ -434,6 +458,52 @@ struct BrowseView: View {
         } catch {
             allDecks = []
             actionErrorMessage = "Failed to load deck filters: \(error.localizedDescription)"
+        }
+    }
+
+    private func loadTags() {
+        do {
+            allTags = try tagClient.getAllTags().sorted()
+        } catch {
+            allTags = []
+            actionErrorMessage = "Failed to load tags: \(error.localizedDescription)"
+        }
+    }
+
+    private func loadNotetypeNames() {
+        do {
+            let pairs = try notetypesService.getNotetypeNames()
+            notetypeNames = Dictionary(uniqueKeysWithValues: pairs.map { ($0.id, $0.name) })
+        } catch {
+            notetypeNames = [:]
+            actionErrorMessage = "Failed to load note type names: \(error.localizedDescription)"
+        }
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            let ext = url.pathExtension.lowercased()
+            guard ext == "apkg" || ext == "colpkg" else {
+                importMessage = "Unsupported file type. Please select an .apkg or .colpkg file."
+                showImportAlert = true
+                return
+            }
+            do {
+                importMessage = try ImportHelper.importPackage(from: url)
+                Task {
+                    await loadDecks()
+                    await performSearch()
+                    loadTags()
+                    loadNotetypeNames()
+                }
+            } catch {
+                importMessage = "Import failed: \(error.localizedDescription)"
+            }
+            showImportAlert = true
+        case .failure(let error):
+            importMessage = "Could not select file: \(error.localizedDescription)"
+            showImportAlert = true
         }
     }
 
