@@ -79,10 +79,7 @@ struct TbsTaskView: View {
     private func jeNumericContent(_ model: TbsModel) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text(model.prompt)
-                    .ankountantFont(.cardTitle)
-                    .foregroundStyle(palette.textPrimary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                SimulationHeaderView(title: jeNumericSimulationTitle(for: model.shape), section: model.section, prompt: model.prompt)
 
                 ConfidenceGateView(committed: $confidence)
 
@@ -93,8 +90,8 @@ struct TbsTaskView: View {
                 case .journalEntry:
                     journalEntryGrid(model)
                     submitSection(model)
-                default:
-                    EmptyView()
+                case .research, .docReview:
+                    preconditionFailure("JE/numeric TBS view received \(model.shape.rawValue)")
                 }
 
                 let exhibits = paneExhibits(model)
@@ -353,5 +350,16 @@ struct TbsTaskView: View {
         } catch {
             submitError = "Could not record this attempt: \(error.localizedDescription)"
         }
+    }
+}
+
+func jeNumericSimulationTitle(for shape: TbsShape) -> String {
+    switch shape {
+    case .journalEntry:
+        "Journal entry simulation"
+    case .numeric:
+        "Numeric simulation"
+    case .research, .docReview:
+        preconditionFailure("JE/numeric title requested for \(shape.rawValue)")
     }
 }

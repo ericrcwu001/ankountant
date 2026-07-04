@@ -105,6 +105,11 @@ struct SimulationsHubSelectionTests {
         #expect(paneExhibits(model).first?.rows == [["Revenue", "100"]])
     }
 
+    @Test func jeNumericSimulationTitlesMatchExamSurfaces() {
+        #expect(jeNumericSimulationTitle(for: .journalEntry) == "Journal entry simulation")
+        #expect(jeNumericSimulationTitle(for: .numeric) == "Numeric simulation")
+    }
+
     @Test func journalEntryNoEntrySubmitsBlankValuesWithoutParsingAmount() throws {
         let json = try buildJeSubmission([
             JeLineInput(id: "l1", account: "Cash", side: "dr", amount: "not-a-number", noEntry: true),
