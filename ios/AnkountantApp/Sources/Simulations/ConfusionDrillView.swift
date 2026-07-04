@@ -27,6 +27,9 @@ struct ConfusionDrillView: View {
     @State private var submitting = false
     @State private var isLoading = true
     @State private var loadError: String?
+    @State private var showImport = false
+    @State private var importMessage: String?
+    @State private var showImportAlert = false
 
     private var done: Bool { index >= items.count }
     private var queueSection: String { section?.code ?? "ALL" }
@@ -49,6 +52,14 @@ struct ConfusionDrillView: View {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .task { await load() }
+            .fileImporter(isPresented: $showImport, allowedContentTypes: [.data]) { result in
+                handleImport(result)
+            }
+            .alert("Import", isPresented: $showImportAlert) {
+                Button("OK") {}
+            } message: {
+                Text(importMessage ?? "")
+            }
     }
 
     @ViewBuilder
@@ -67,11 +78,18 @@ struct ConfusionDrillView: View {
                 }
             }
         } else if items.isEmpty {
-            ContentUnavailableView(
-                "No confusion items",
-                systemImage: "questionmark.circle",
-                description: Text(emptyDescription)
-            )
+            ContentUnavailableView {
+                Label("No confusion items", systemImage: "questionmark.circle")
+            } description: {
+                Text(emptyDescription)
+            } actions: {
+                Button("Import package", systemImage: "square.and.arrow.down") {
+                    showImport = true
+                }
+                Button("Retry") {
+                    Task { await load() }
+                }
+            }
         } else if done {
             finishedCard
         } else {
@@ -283,6 +301,28 @@ struct ConfusionDrillView: View {
         submitError = nil
         revealError = nil
         itemStartedAt = Date.now
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            let ext = url.pathExtension.lowercased()
+            guard ext == "apkg" || ext == "colpkg" else {
+                importMessage = "Unsupported file type. Please select an .apkg or .colpkg file."
+                showImportAlert = true
+                return
+            }
+            do {
+                importMessage = try ImportHelper.importPackage(from: url)
+                Task { await load() }
+            } catch {
+                importMessage = "Import failed: \(error.localizedDescription)"
+            }
+            showImportAlert = true
+        case .failure(let error):
+            importMessage = "Could not select file: \(error.localizedDescription)"
+            showImportAlert = true
+        }
     }
 }
 
