@@ -132,7 +132,7 @@ struct HomeView: View {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Ankountant")
-                        .font(.system(size: 24, weight: .semibold, design: .serif))
+                        .ankountantFont(.sectionHeading)
                         .foregroundStyle(.white)
                     Text("CPA EXAM PREP")
                         .ankountantFont(.micro)
@@ -141,7 +141,7 @@ struct HomeView: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Label(heroFreshnessTitle, systemImage: heroFreshnessIcon)
-                        .font(.system(size: 11, weight: .semibold))
+                        .ankountantFont(.micro)
                         .foregroundStyle(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.78)
