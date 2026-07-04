@@ -24,7 +24,7 @@ struct DocReviewTaskView: View {
     @State private var total: Double?
     @State private var submitting = false
     @State private var submitError: String?
-    @State private var startedAt = Date()
+    @State private var startedAt = Date.now
 
     init(noteId: Int64, model: TbsModel) {
         self.noteId = noteId
@@ -213,27 +213,25 @@ struct DocReviewTaskView: View {
             }
 
             if let submitError {
-                Text(submitError)
-                    .ankountantFont(.caption)
-                    .foregroundStyle(palette.danger)
+                SimulationSubmitErrorView(message: submitError)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func submit() async {
-        guard confidence != nil, !submitting, results == nil else { return }
+        guard let confidence, !submitting, results == nil else { return }
         submitting = true
         submitError = nil
         defer { submitting = false }
         let submissionJson = buildStepsSubmission(blanks.map { (id: $0.id, value: $0.selection) })
-        let latency = UInt32(clamping: Int((Date().timeIntervalSince(startedAt) * 1000).rounded()))
+        let latency = UInt32(clamping: Int((Date.now.timeIntervalSince(startedAt) * 1000).rounded()))
         do {
-            let resp = try performanceClient.submitDocReview(noteId, submissionJson, confidence!.rawValue, latency)
+            let resp = try performanceClient.submitDocReview(noteId, submissionJson, confidence.rawValue, latency)
             results = resp.steps
             total = resp.totalCredit
         } catch {
-            submitError = error.localizedDescription
+            submitError = "Could not record this attempt: \(error.localizedDescription)"
         }
     }
 }

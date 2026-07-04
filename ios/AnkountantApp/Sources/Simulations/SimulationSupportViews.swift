@@ -125,6 +125,22 @@ struct SimulationExhibitsView: View {
     }
 }
 
+struct SimulationSubmitErrorView: View {
+    let message: String
+
+    var body: some View {
+        AnkountantStatusMessageView(
+            title: "Attempt not recorded",
+            message: message,
+            systemImage: "exclamationmark.triangle",
+            tone: .danger
+        )
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, AnkountantSpacing.sm)
+        .ankountantStatusPanel(.danger)
+    }
+}
+
 /// Read-only authoritative-literature browser (T2 / OQ-3): client-side search
 /// over the bundled, per-section corpus. Handles BOTH bodies (D10): ASC
 /// (FAR/BAR) shows OUR paraphrase + a deep link; IRC/PCAOB/NIST show real

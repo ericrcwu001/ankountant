@@ -24,7 +24,7 @@ struct ResearchTaskView: View {
     @State private var correct: Bool?
     @State private var elapsedMs: UInt32 = 0
     @State private var submitError: String?
-    @State private var startedAt = Date()
+    @State private var startedAt = Date.now
 
     private var placeholder: String {
         model.steps.first?.placeholder ?? "e.g. ASC 842-20-25-1"
@@ -98,9 +98,7 @@ struct ResearchTaskView: View {
             }
 
             if let submitError {
-                Text(submitError)
-                    .ankountantFont(.caption)
-                    .foregroundStyle(palette.danger)
+                SimulationSubmitErrorView(message: submitError)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -130,21 +128,21 @@ struct ResearchTaskView: View {
     }
 
     private var secondsText: String {
-        String(format: "%.1f", Double(elapsedMs) / 1000)
+        (Double(elapsedMs) / 1000).formatted(.number.precision(.fractionLength(1)))
     }
 
     private func submit() async {
-        guard confidence != nil, !submitting, correct == nil, !trimmedCitation.isEmpty else { return }
+        guard let confidence, !submitting, correct == nil, !trimmedCitation.isEmpty else { return }
         submitting = true
         submitError = nil
         defer { submitting = false }
-        let latency = UInt32(clamping: Int((Date().timeIntervalSince(startedAt) * 1000).rounded()))
+        let latency = UInt32(clamping: Int((Date.now.timeIntervalSince(startedAt) * 1000).rounded()))
         do {
-            let resp = try performanceClient.submitResearch(noteId, trimmedCitation, confidence!.rawValue, latency)
+            let resp = try performanceClient.submitResearch(noteId, trimmedCitation, confidence.rawValue, latency)
             elapsedMs = latency
             correct = resp.totalCredit >= 1
         } catch {
-            submitError = error.localizedDescription
+            submitError = "Could not record this attempt: \(error.localizedDescription)"
         }
     }
 }

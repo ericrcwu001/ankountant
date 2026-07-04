@@ -13,12 +13,13 @@ struct TbsTaskView: View {
     @State private var model: TbsModel?
     @State private var jeLines: [JeLineInput] = []
     @State private var numericCells: [NumericCellInput] = []
+    @State private var confidence: ConfidenceLevel?
     @State private var results: [PerformanceStepResult]?
     @State private var total: Double?
     @State private var submitting = false
     @State private var loadError: String?
     @State private var submitError: String?
-    @State private var startedAt = Date()
+    @State private var startedAt = Date.now
 
     init(noteId: Int64) {
         self.noteId = noteId
@@ -69,6 +70,8 @@ struct TbsTaskView: View {
                     .ankountantFont(.cardTitle)
                     .foregroundStyle(palette.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
+
+                ConfidenceGateView(committed: $confidence)
 
                 switch model.shape {
                 case .numeric:
@@ -179,7 +182,13 @@ struct TbsTaskView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(AnkountantPrimaryButtonStyle())
-            .disabled(submitting)
+            .disabled(submitting || confidence == nil || results != nil)
+
+            if confidence == nil {
+                Text("Commit a confidence level first.")
+                    .ankountantFont(.caption)
+                    .foregroundStyle(palette.textSecondary)
+            }
 
             if let total {
                 HStack(spacing: 6) {
@@ -193,9 +202,7 @@ struct TbsTaskView: View {
             }
 
             if let submitError {
-                Text(submitError)
-                    .ankountantFont(.caption)
-                    .foregroundStyle(palette.danger)
+                SimulationSubmitErrorView(message: submitError)
             }
         }
         .padding(.top, 4)
@@ -261,6 +268,11 @@ struct TbsTaskView: View {
             model = m
             jeLines = m.steps.map { JeLineInput(id: $0.id) }
             numericCells = m.steps.map { NumericCellInput(id: $0.id) }
+            confidence = nil
+            results = nil
+            total = nil
+            submitError = nil
+            startedAt = Date.now
             loadError = nil
         } catch {
             loadError = error.localizedDescription
@@ -268,19 +280,20 @@ struct TbsTaskView: View {
     }
 
     private func submit(_ model: TbsModel) async {
+        guard let confidence, !submitting, results == nil else { return }
         submitting = true
         submitError = nil
         defer { submitting = false }
         let submissionJson = model.shape == .numeric
             ? buildNumericSubmission(numericCells)
             : buildJeSubmission(jeLines)
-        let latencyMs = UInt32(clamping: Int((Date().timeIntervalSince(startedAt) * 1000).rounded()))
+        let latencyMs = UInt32(clamping: Int((Date.now.timeIntervalSince(startedAt) * 1000).rounded()))
         do {
-            let resp = try performanceClient.submitTbs(noteId, submissionJson, "Unsure", latencyMs)
+            let resp = try performanceClient.submitTbs(noteId, submissionJson, confidence.rawValue, latencyMs)
             results = resp.steps
             total = resp.totalCredit
         } catch {
-            submitError = error.localizedDescription
+            submitError = "Could not record this attempt: \(error.localizedDescription)"
         }
     }
 }

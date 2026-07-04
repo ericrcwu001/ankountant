@@ -92,15 +92,7 @@ struct ConfusionDrillView: View {
                 }
 
                 if let submitError {
-                    AnkountantStatusMessageView(
-                        title: "Answer not recorded",
-                        message: submitError,
-                        systemImage: "exclamationmark.triangle",
-                        tone: .danger
-                    )
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AnkountantSpacing.sm)
-                    .ankountantStatusPanel(.danger)
+                    SimulationSubmitErrorView(message: submitError)
                 }
 
                 if let lastCorrect {
