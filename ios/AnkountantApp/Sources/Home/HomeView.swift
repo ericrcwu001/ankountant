@@ -249,6 +249,13 @@ struct HomeView: View {
     private var actions: some View {
         VStack(spacing: AnkountantSpacing.sm) {
             primaryCta
+            if cta.target == .recall, let recallUnavailableMessage {
+                Text(recallUnavailableMessage)
+                    .ankountantFont(.caption)
+                    .foregroundStyle(palette.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+            }
 
             Button {
                 path.append(HomeRoute.confusion)
@@ -287,6 +294,7 @@ struct HomeView: View {
             Button(action: startReview) { label }
                 .buttonStyle(AnkountantPrimaryButtonStyle())
                 .disabled(farDeckId == nil)
+                .accessibilityHint(recallUnavailableMessage ?? "")
         case .confusion:
             Button { path.append(HomeRoute.confusion) } label: { label }
                 .buttonStyle(AnkountantPrimaryButtonStyle())
@@ -369,6 +377,10 @@ struct HomeView: View {
     }
 
     private var cta: PhaseCta { buildPhaseCta(phase) }
+
+    private var recallUnavailableMessage: String? {
+        farDeckId == nil ? "Load or import the Ankountant FAR study deck to start recall review." : nil
+    }
 
     private var examDateBinding: Binding<Date> {
         Binding(
@@ -556,6 +568,14 @@ private struct FarTopicDetailView: View {
                 }
                 .buttonStyle(AnkountantPrimaryButtonStyle())
                 .disabled(!canStudy)
+                .accessibilityHint(canStudy ? "" : "Load or import the Ankountant FAR study deck to study this topic.")
+                if !canStudy {
+                    Text("Load or import the Ankountant FAR study deck to study this topic.")
+                        .ankountantFont(.caption)
+                        .foregroundStyle(palette.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                }
                 NavigationLink(value: CPASection.far) {
                     Label("View FAR readiness", systemImage: "chart.line.uptrend.xyaxis")
                         .ankountantFont(.bodyEmphasis)
