@@ -168,7 +168,12 @@ function buildTopic(input: {
 }): FarTopic {
     const topic = input.topic;
     const hasMemory = topic !== undefined && !topic.memoryInsufficient;
-    const hasPerformance = topic !== undefined && hasPerformanceData(topic);
+    const hasPerformance = topic !== undefined && hasPerformanceEvidence(topic);
+    if (topic !== undefined && topic.performance !== 0 && !hasPerformance) {
+        throw new Error(
+            `Topic ${topic.setId} has nonzero performance without a confidence band`,
+        );
+    }
     const performance = hasPerformance ? pct(topic.performance) : null;
     const memory = hasMemory ? pct(topic.memory) : null;
     let gap: number | null = null;
@@ -253,13 +258,8 @@ function preparednessScore(topic: FarTopic): number {
     return topic.score ?? -1;
 }
 
-function hasPerformanceData(topic: TopicScore): boolean {
-    const performanceValues = [
-        topic.performance,
-        topic.performanceLow,
-        topic.performanceHigh,
-    ];
-    return performanceValues.some((value) => value !== 0);
+function hasPerformanceEvidence(topic: TopicScore): boolean {
+    return topic.performanceLow !== 0 || topic.performanceHigh !== 0;
 }
 
 function provenTopics(topics: FarTopic[]): FarTopic[] {

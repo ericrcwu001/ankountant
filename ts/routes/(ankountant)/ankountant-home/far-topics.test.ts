@@ -1,10 +1,10 @@
 // Copyright: Ankitects Pty Ltd and contributors
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
-import type { GetReadinessResponse, TopicScore } from "@generated/anki/scheduler_pb";
+import { type GetReadinessResponse, TopicScore } from "@generated/anki/scheduler_pb";
 import { expect, test } from "vitest";
 
-import { buildFarTopics, buildSectionTopics } from "./far-topics";
+import { buildFarTopics, buildSectionTopics, needsAttention, topStrongTopics } from "./far-topics";
 import { heightForTopicScore } from "./topo";
 
 const rounded = (value: number): number => Number(value.toFixed(3));
@@ -108,4 +108,50 @@ test("non-FAR sections use emitted topics without FAR placeholders", () => {
         "Evidence Sufficiency",
     ]);
     expect(topics.every((t) => !t.setId.includes("lease"))).toBe(true);
+});
+
+test("thin performance leaves Home topics unproven", () => {
+    const readiness = {
+        topics: [
+            new TopicScore({
+                setId: "trading_afs_htm",
+                memory: 0.8,
+                performance: 0,
+                gap: 0.8,
+                memoryInsufficient: false,
+                memoryLow: 0.7,
+                memoryHigh: 0.9,
+                performanceLow: 0,
+                performanceHigh: 0,
+            }),
+        ],
+    } as unknown as GetReadinessResponse;
+
+    const topic = buildFarTopics(readiness).find((t) => t.setId === "trading_afs_htm");
+
+    expect(topic?.performance).toBe(null);
+    expect(topic?.gap).toBe(null);
+    expect(topic?.unproven).toBe(true);
+    expect(topStrongTopics(buildFarTopics(readiness))).toEqual([]);
+    expect(needsAttention(buildFarTopics(readiness))).toEqual([]);
+});
+
+test("nonzero Home performance without a confidence band is rejected", () => {
+    const readiness = {
+        topics: [
+            new TopicScore({
+                setId: "trading_afs_htm",
+                memory: 0.8,
+                performance: 0.7,
+                gap: 0.1,
+                memoryInsufficient: false,
+                memoryLow: 0.7,
+                memoryHigh: 0.9,
+                performanceLow: 0,
+                performanceHigh: 0,
+            }),
+        ],
+    } as unknown as GetReadinessResponse;
+
+    expect(() => buildFarTopics(readiness)).toThrow(/without a confidence band/);
 });
