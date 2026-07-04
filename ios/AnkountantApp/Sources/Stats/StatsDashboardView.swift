@@ -18,6 +18,9 @@ struct StatsDashboardView: View {
     @State private var decks: [DeckInfo] = []
     @State private var selectedDeck: DeckInfo?
     @State private var deckLoadErrorMessage: String?
+    @State private var showImport = false
+    @State private var importMessage: String?
+    @State private var showImportAlert = false
 
     var body: some View {
         ScrollView {
@@ -36,32 +39,11 @@ struct StatsDashboardView: View {
                         }
                     }
                 } else if let graphs {
-                    ProgressOverviewCard(graphs: graphs)
-
-                    HStack(spacing: AnkountantSpacing.sm) {
-                        deckMenu
-                        periodMenu
-                        Spacer()
+                    if analyticsEvidenceIsEmpty(graphs) {
+                        emptyAnalyticsState
+                    } else {
+                        analyticsDashboard(graphs)
                     }
-
-                    if let deckLoadErrorMessage {
-                        Text(deckLoadErrorMessage)
-                            .ankountantStatusText(.danger, font: .caption)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-
-                    PeriodStatsCard(period: period, today: graphs.today, reviews: graphs.reviews)
-                    FutureDueChart(futureDue: graphs.futureDue, period: period)
-                    HeatmapChartOptimized(reviews: graphs.reviews)
-                    ReviewsChart(reviews: graphs.reviews, period: period)
-                    CardCountsChart(cardCounts: graphs.cardCounts)
-                    IntervalsChart(intervals: graphs.intervals)
-                    EaseChart(eases: graphs.eases)
-                    HourlyChart(hours: graphs.hours, period: period)
-                    ButtonsChart(buttons: graphs.buttons, period: period)
-                    AddedChart(added: graphs.added, period: period)
-                    RetentionChart(trueRetention: graphs.trueRetention)
-                    RetrievabilityChart(retrievability: graphs.retrievability)
                 }
             }
             .padding(AnkountantSpacing.lg)
@@ -75,6 +57,13 @@ struct StatsDashboardView: View {
         .refreshable {
             await loadDecks()
             await loadStats()
+        }
+        .fileImporter(isPresented: $showImport, allowedContentTypes: [.data]) { result in
+            handleImport(result)
+        }
+        .alert("Import", isPresented: $showImportAlert) {
+        } message: {
+            Text(importMessage ?? "")
         }
     }
 
@@ -141,6 +130,98 @@ struct StatsDashboardView: View {
         .accessibilityLabel(accessibilityLabel)
     }
 
+    @ViewBuilder
+    private func analyticsDashboard(_ graphs: Anki_Stats_GraphsResponse) -> some View {
+        ProgressOverviewCard(graphs: graphs)
+
+        HStack(spacing: AnkountantSpacing.sm) {
+            deckMenu
+            periodMenu
+            Spacer()
+        }
+
+        if let deckLoadErrorMessage {
+            Text(deckLoadErrorMessage)
+                .ankountantStatusText(.danger, font: .caption)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+
+        PeriodStatsCard(period: period, today: graphs.today, reviews: graphs.reviews)
+        FutureDueChart(futureDue: graphs.futureDue, period: period)
+        HeatmapChartOptimized(reviews: graphs.reviews)
+        ReviewsChart(reviews: graphs.reviews, period: period)
+        CardCountsChart(cardCounts: graphs.cardCounts)
+        IntervalsChart(intervals: graphs.intervals)
+        EaseChart(eases: graphs.eases)
+        HourlyChart(hours: graphs.hours, period: period)
+        ButtonsChart(buttons: graphs.buttons, period: period)
+        AddedChart(added: graphs.added, period: period)
+        RetentionChart(trueRetention: graphs.trueRetention)
+        RetrievabilityChart(retrievability: graphs.retrievability)
+    }
+
+    private var emptyAnalyticsState: some View {
+        ContentUnavailableView {
+            Label(emptyAnalyticsTitle, systemImage: "chart.bar.doc.horizontal")
+        } description: {
+            Text(emptyAnalyticsDescription)
+        } actions: {
+            VStack(spacing: AnkountantSpacing.sm) {
+                if selectedDeck != nil {
+                    Button("Clear deck filter", systemImage: "line.3.horizontal.decrease.circle") {
+                        selectedDeck = nil
+                    }
+                }
+                Button("Import package", systemImage: "square.and.arrow.down") {
+                    showImport = true
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 40)
+    }
+
+    private var emptyAnalyticsTitle: String {
+        if let selectedDeck {
+            return "No analytics for \(selectedDeck.name)"
+        }
+        return "No analytics evidence yet"
+    }
+
+    private var emptyAnalyticsDescription: String {
+        if selectedDeck != nil {
+            return "This deck has no cards or review history. Clear the filter or import a study package to start tracking evidence."
+        }
+        return "Import a study package, then review cards to fill retention, due load, and progress."
+    }
+
+    private func analyticsEvidenceIsEmpty(_ graphs: Anki_Stats_GraphsResponse) -> Bool {
+        cardCountTotal(graphs.cardCounts.excludingInactive) == 0
+            && graphs.added.added.values.allSatisfy { $0 == 0 }
+            && graphs.futureDue.futureDue.values.allSatisfy { $0 == 0 }
+            && graphs.today.answerCount == 0
+            && graphs.reviews.count.values.allSatisfy { reviewTotal($0) == 0 }
+    }
+
+    private func cardCountTotal(_ counts: Anki_Stats_GraphsResponse.CardCounts.Counts) -> UInt64 {
+        UInt64(counts.newCards)
+            + UInt64(counts.learn)
+            + UInt64(counts.relearn)
+            + UInt64(counts.young)
+            + UInt64(counts.mature)
+            + UInt64(counts.suspended)
+            + UInt64(counts.buried)
+    }
+
+    private func reviewTotal(_ reviews: Anki_Stats_GraphsResponse.ReviewCountsAndTimes.Reviews) -> UInt64 {
+        UInt64(reviews.learn)
+            + UInt64(reviews.relearn)
+            + UInt64(reviews.young)
+            + UInt64(reviews.mature)
+            + UInt64(reviews.filtered)
+    }
+
     private func loadDecks() async {
         do {
             decks = try deckClient.fetchAll()
@@ -175,6 +256,31 @@ struct StatsDashboardView: View {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            let ext = url.pathExtension.lowercased()
+            guard ext == "apkg" || ext == "colpkg" else {
+                importMessage = "Unsupported file type. Please select an .apkg or .colpkg file."
+                showImportAlert = true
+                return
+            }
+            do {
+                importMessage = try ImportHelper.importPackage(from: url)
+                Task {
+                    await loadDecks()
+                    await loadStats()
+                }
+            } catch {
+                importMessage = "Import failed: \(error.localizedDescription)"
+            }
+            showImportAlert = true
+        case .failure(let error):
+            importMessage = "Could not select file: \(error.localizedDescription)"
+            showImportAlert = true
+        }
     }
 }
 
