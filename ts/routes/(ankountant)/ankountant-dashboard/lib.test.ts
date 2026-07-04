@@ -115,6 +115,12 @@ test("emitted readiness requires a valid range, confidence, coverage, and eviden
     expect(() => buildReadinessView(new Readiness({ ...valid, coverage: 1.1 }))).toThrow(
         /coverage must be between 0 and 1/,
     );
+    expect(() => buildReadinessView(new Readiness({ ...valid, coverage: 0.4 }))).toThrow(
+        /coverage must be at least 60%/,
+    );
+    expect(() => buildReadinessView(new Readiness({ ...valid, coverage: 0.596 }))).toThrow(
+        /coverage must be at least 60%/,
+    );
 });
 
 test("abstaining readiness requires an explicit reason", () => {

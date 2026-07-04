@@ -92,6 +92,7 @@ public let readinessMinimumCoverage = 0.60
 public enum ReadinessValidationError: Error, Equatable, LocalizedError {
     case missingAbstainReason
     case invalidCoverage
+    case insufficientCoverage
     case nonFiniteScaleValue(String)
     case outOfRangeScaleValue(String)
     case invalidBand
@@ -105,6 +106,8 @@ public enum ReadinessValidationError: Error, Equatable, LocalizedError {
             "Readiness abstained without a reason."
         case .invalidCoverage:
             "Readiness coverage must be between 0 and 1."
+        case .insufficientCoverage:
+            "Readiness coverage must be at least \(formatPercent(readinessMinimumCoverage)) for an emitted range."
         case let .nonFiniteScaleValue(label):
             "Readiness \(label) must be a finite number."
         case let .outOfRangeScaleValue(label):
@@ -142,6 +145,9 @@ public func validatedReadinessBand(_ band: ReadinessBand) throws -> ReadinessBan
         )
     }
 
+    guard band.coverage >= readinessMinimumCoverage else {
+        throw ReadinessValidationError.insufficientCoverage
+    }
     try validateScaleValue("band low", band.bandLow)
     try validateScaleValue("band high", band.bandHigh)
     try validateScaleValue("point estimate", band.pointEstimate)

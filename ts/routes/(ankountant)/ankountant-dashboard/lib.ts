@@ -213,6 +213,11 @@ function coveragePercent(coverage: number): number {
 
 function validateEmittedReadiness(readiness: Readiness): void {
     const reasons = readiness.reasons ?? [];
+    if (readiness.coverage < READINESS_MIN_COVERAGE_PCT / 100) {
+        throw new Error(
+            `Readiness coverage must be at least ${READINESS_MIN_COVERAGE_PCT}% for an emitted range.`,
+        );
+    }
     assertScaleValue("band low", readiness.bandLow);
     assertScaleValue("band high", readiness.bandHigh);
     assertScaleValue("point estimate", readiness.pointEstimate);

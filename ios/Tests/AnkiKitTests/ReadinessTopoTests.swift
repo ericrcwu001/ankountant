@@ -124,6 +124,7 @@ struct ReadinessTopoTests {
         expectValidationError(.missingConfidence, band(low: 62, high: 78, point: 70, confidence: ""))
         expectValidationError(.missingEvidenceReasons, band(low: 62, high: 78, point: 70, reasons: []))
         expectValidationError(.invalidCoverage, band(low: 62, high: 78, point: 70, coverage: 1.1))
+        expectValidationError(.insufficientCoverage, band(low: 62, high: 78, point: 70, coverage: 0.4))
         expectValidationError(
             .missingAbstainReason,
             ReadinessBand(abstain: true, reason: "", bandLow: 0, bandHigh: 0, confidence: "")
