@@ -3,7 +3,11 @@ Copyright: Ankitects Pty Ltd and contributors
 License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 -->
 <script lang="ts">
-    import type { GraphsResponse } from "@generated/anki/stats_pb";
+    import type {
+        GraphsResponse,
+        GraphsResponse_CardCounts_Counts,
+        GraphsResponse_ReviewCountsAndTimes_Reviews,
+    } from "@generated/anki/stats_pb";
     import { bridgeCommand } from "@tslib/bridgecommand";
     import type { Component } from "svelte";
     import { writable } from "svelte/store";
@@ -28,13 +32,13 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     type Scope = "deck" | "collection" | "custom";
     type History = "year" | "all";
 
-    const search = writable("deck:current");
+    const search = writable("");
     const days = writable(365);
     const numberFormat = new Intl.NumberFormat();
 
-    let scope: Scope = "deck";
+    let scope: Scope = "collection";
     let history: History = "year";
-    let customSearch = "deck:current";
+    let customSearch = "";
 
     const charts: Component<any>[] = [
         CardCounts,
@@ -77,6 +81,22 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     function browserSearch(event: CustomEvent): void {
         bridgeCommand(`browserSearch: ${$search} ${event.detail.query}`);
+    }
+
+    function openImport(): void {
+        bridgeCommand("ankountant:import");
+    }
+
+    function emptyAnalyticsTitle(): string {
+        return scope === "collection"
+            ? "No analytics evidence yet"
+            : "No analytics evidence in this view";
+    }
+
+    function emptyAnalyticsDescription(): string {
+        return scope === "collection"
+            ? "Import a study package, then review cards to fill retention, due load, and progress."
+            : "This view has no cards or review history. Show the whole collection or import a study package to start tracking evidence.";
     }
 
     function formatNumber(value: number): string {
@@ -167,6 +187,40 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         const today = data.today!;
         return Math.max(0, today.answerCount - today.correctCount);
     }
+
+    function analyticsEvidenceIsEmpty(data: GraphsResponse): boolean {
+        return (
+            cardCountTotal(data.cardCounts!.excludingInactive!) === 0 &&
+            Object.values(data.added!.added).every((value) => value === 0) &&
+            Object.values(data.futureDue!.futureDue).every((value) => value === 0) &&
+            data.today!.answerCount === 0 &&
+            Object.values(data.reviews!.count).every(
+                (reviews) => reviewTotal(reviews) === 0,
+            )
+        );
+    }
+
+    function cardCountTotal(counts: GraphsResponse_CardCounts_Counts): number {
+        return (
+            counts.newCards +
+            counts.learn +
+            counts.relearn +
+            counts.young +
+            counts.mature +
+            counts.suspended +
+            counts.buried
+        );
+    }
+
+    function reviewTotal(reviews: GraphsResponse_ReviewCountsAndTimes_Reviews): number {
+        return (
+            reviews.learn +
+            reviews.relearn +
+            reviews.young +
+            reviews.mature +
+            reviews.filtered
+        );
+    }
 </script>
 
 <WithGraphData
@@ -241,91 +295,122 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         </div>
 
         {#if sourceData && revlogRange}
-            <section class="overview-card" aria-label="Statistics overview">
-                <div
-                    class="progress-ring"
-                    style:--progress={masteredFraction(sourceData)}
-                    aria-label={`Progress ${Math.round(masteredFraction(sourceData) * 100)} percent mastered`}
+            {#if analyticsEvidenceIsEmpty(sourceData)}
+                <section
+                    class="stats-state empty"
+                    data-testid="stats-empty"
+                    aria-label="No analytics evidence"
                 >
-                    <span>{Math.round(masteredFraction(sourceData) * 100)}</span>
-                    <small>%</small>
-                </div>
-
-                <div class="overview-copy">
-                    <p class="eyebrow">Progress</p>
-                    <h2>{formatPercent(masteredFraction(sourceData))} mastered</h2>
-                    <p>
-                        {formatNumber(activeCards(sourceData))} active cards in this view
-                    </p>
-                </div>
-
-                <div class="overview-metrics">
-                    <div>
-                        <span>{formatNumber(matureCardCount(sourceData))}</span>
-                        <span class="metric-label">Cards mastered</span>
+                    <div class="state-mark" aria-hidden="true">0</div>
+                    <p class="eyebrow">No evidence yet</p>
+                    <h2>{emptyAnalyticsTitle()}</h2>
+                    <p>{emptyAnalyticsDescription()}</p>
+                    <div class="state-actions">
+                        {#if scope !== "collection"}
+                            <button
+                                type="button"
+                                class="state-action"
+                                on:click={() => setScope("collection")}
+                            >
+                                Show collection
+                            </button>
+                        {/if}
+                        <button
+                            type="button"
+                            class="state-action primary"
+                            on:click={openImport}
+                        >
+                            Import package
+                        </button>
                     </div>
-                    <div>
-                        <span>{formatPercent(retentionFraction(sourceData))}</span>
-                        <span class="metric-label">Month retention</span>
+                </section>
+            {:else}
+                <section class="overview-card" aria-label="Statistics overview">
+                    <div
+                        class="progress-ring"
+                        style:--progress={masteredFraction(sourceData)}
+                        aria-label={`Progress ${Math.round(masteredFraction(sourceData) * 100)} percent mastered`}
+                    >
+                        <span>{Math.round(masteredFraction(sourceData) * 100)}</span>
+                        <small>%</small>
                     </div>
+
+                    <div class="overview-copy">
+                        <p class="eyebrow">Progress</p>
+                        <h2>{formatPercent(masteredFraction(sourceData))} mastered</h2>
+                        <p>
+                            {formatNumber(activeCards(sourceData))} active cards in this view
+                        </p>
+                    </div>
+
+                    <div class="overview-metrics">
+                        <div>
+                            <span>{formatNumber(matureCardCount(sourceData))}</span>
+                            <span class="metric-label">Cards mastered</span>
+                        </div>
+                        <div>
+                            <span>{formatPercent(retentionFraction(sourceData))}</span>
+                            <span class="metric-label">Month retention</span>
+                        </div>
+                        <div>
+                            <span>{formatNumber(reviewedToday(sourceData))}</span>
+                            <span class="metric-label">Reviewed today</span>
+                        </div>
+                        <div>
+                            <span>{formatNumber(dailyLoad(sourceData))}</span>
+                            <span class="metric-label">Daily load</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="today-card" aria-label="Today's review summary">
                     <div>
                         <span>{formatNumber(reviewedToday(sourceData))}</span>
-                        <span class="metric-label">Reviewed today</span>
+                        <span class="metric-label">Reviewed</span>
                     </div>
                     <div>
-                        <span>{formatNumber(dailyLoad(sourceData))}</span>
-                        <span class="metric-label">Daily load</span>
+                        <span>{formatMinutes(reviewedMillisToday(sourceData))}</span>
+                        <span class="metric-label">Time</span>
                     </div>
-                </div>
-            </section>
+                    <div>
+                        <span class="positive">
+                            {formatPercent(todayAccuracy(sourceData))}
+                        </span>
+                        <span class="metric-label">Accuracy</span>
+                    </div>
+                    <div>
+                        <span>{formatNumber(newToday(sourceData))}</span>
+                        <span class="metric-label">New</span>
+                    </div>
+                    <div>
+                        <span>{formatNumber(learningToday(sourceData))}</span>
+                        <span class="metric-label">Learning</span>
+                    </div>
+                    <div>
+                        <span>{formatNumber(reviewToday(sourceData))}</span>
+                        <span class="metric-label">Review</span>
+                    </div>
+                    <div>
+                        <span class="danger">
+                            {formatNumber(answerAgainCount(sourceData))}
+                        </span>
+                        <span class="metric-label">Again</span>
+                    </div>
+                </section>
 
-            <section class="today-card" aria-label="Today's review summary">
-                <div>
-                    <span>{formatNumber(reviewedToday(sourceData))}</span>
-                    <span class="metric-label">Reviewed</span>
-                </div>
-                <div>
-                    <span>{formatMinutes(reviewedMillisToday(sourceData))}</span>
-                    <span class="metric-label">Time</span>
-                </div>
-                <div>
-                    <span class="positive">
-                        {formatPercent(todayAccuracy(sourceData))}
-                    </span>
-                    <span class="metric-label">Accuracy</span>
-                </div>
-                <div>
-                    <span>{formatNumber(newToday(sourceData))}</span>
-                    <span class="metric-label">New</span>
-                </div>
-                <div>
-                    <span>{formatNumber(learningToday(sourceData))}</span>
-                    <span class="metric-label">Learning</span>
-                </div>
-                <div>
-                    <span>{formatNumber(reviewToday(sourceData))}</span>
-                    <span class="metric-label">Review</span>
-                </div>
-                <div>
-                    <span class="danger">
-                        {formatNumber(answerAgainCount(sourceData))}
-                    </span>
-                    <span class="metric-label">Again</span>
-                </div>
-            </section>
-
-            <section class="charts" aria-label="Statistics charts">
-                {#each charts as chart}
-                    <svelte:component
-                        this={chart}
-                        {sourceData}
-                        {prefs}
-                        {revlogRange}
-                        nightMode={$pageTheme.isDark}
-                        on:search={browserSearch}
-                    />
-                {/each}
-            </section>
+                <section class="charts" aria-label="Statistics charts">
+                    {#each charts as chart}
+                        <svelte:component
+                            this={chart}
+                            {sourceData}
+                            {prefs}
+                            {revlogRange}
+                            nightMode={$pageTheme.isDark}
+                            on:search={browserSearch}
+                        />
+                    {/each}
+                </section>
+            {/if}
         {:else if !loading && errorMessage}
             <section
                 class="stats-state error"
@@ -747,6 +832,39 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
         &:hover {
             background: color-mix(in srgb, var(--accent) 16%, transparent);
+        }
+    }
+
+    .state-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--space-sm);
+        margin-top: var(--space-sm);
+    }
+
+    .state-action {
+        min-height: 40px;
+        padding: 0 var(--space-lg);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--border-radius);
+        background: var(--canvas-elevated);
+        color: var(--fg);
+        font-size: var(--type-caption-size);
+        font-weight: 700;
+
+        &:hover {
+            background: var(--canvas-inset);
+        }
+
+        &.primary {
+            border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+            background: var(--accent-tint);
+            color: var(--accent);
+
+            &:hover {
+                background: color-mix(in srgb, var(--accent) 16%, transparent);
+            }
         }
     }
 
