@@ -22,13 +22,35 @@ struct ReaderConfigurationView: View {
     @Shared(.appStorage(ReaderPreferenceKey.languageField)) private var languageField: String = ""
 
     @State private var decks: [DeckInfo] = []
+    @State private var isLoadingDecks = true
     @State private var loadError: String?
 
     var body: some View {
         Form {
             Section("Deck") {
-                if decks.isEmpty {
-                    Text("Loading decks…").foregroundStyle(.secondary)
+                if isLoadingDecks {
+                    HStack {
+                        Spacer()
+                        ProgressView("Loading decks…")
+                        Spacer()
+                    }
+                    .foregroundStyle(.secondary)
+                } else if let loadError {
+                    ContentUnavailableView {
+                        Label("Could Not Load Decks", systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text(loadError)
+                    } actions: {
+                        Button("Retry") {
+                            Task { await loadDecks() }
+                        }
+                    }
+                } else if decks.isEmpty {
+                    ContentUnavailableView(
+                        "No Decks",
+                        systemImage: "rectangle.stack",
+                        description: Text("Create or import a deck before mapping reader fields.")
+                    )
                 } else {
                     Picker("Deck", selection: Binding($deckName)) {
                         Text("Select a deck").tag("")
@@ -74,9 +96,6 @@ struct ReaderConfigurationView: View {
                 Text("Field names from the notetype that holds your book chapters. Each note becomes a chapter; chapters with the same Book ID collapse into one book.")
             }
 
-            if let loadError {
-                Section { Text(loadError).foregroundStyle(.red) }
-            }
         }
         .navigationTitle("Reader Setup")
         .navigationBarTitleDisplayMode(.inline)
@@ -89,9 +108,14 @@ struct ReaderConfigurationView: View {
     }
 
     private func loadDecks() async {
+        isLoadingDecks = true
+        loadError = nil
+        defer { isLoadingDecks = false }
+
         do {
             decks = try deckClient.fetchAll().sorted { $0.name < $1.name }
         } catch {
+            decks = []
             loadError = "Failed to load decks: \(error.localizedDescription)"
         }
     }
