@@ -158,11 +158,11 @@ struct SimulationsHubView: View {
         do {
             let loaded = try performanceClient.listTbsTasks()
             tasks = loaded
-            // Open on the first shape that actually has tasks so the chooser
-            // never starts on an empty type.
-            if let first = shapeOrder.first(where: { shape in loaded.contains { $0.shape == shape } }) {
-                selectedShape = first
-            }
+            selectedShape = simulationShapeAfterLoad(
+                current: selectedShape,
+                tasks: loaded,
+                order: shapeOrder
+            )
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
@@ -170,4 +170,15 @@ struct SimulationsHubView: View {
         }
         isLoading = false
     }
+}
+
+func simulationShapeAfterLoad(
+    current: TbsShape,
+    tasks: [TbsTaskSummary],
+    order: [TbsShape]
+) -> TbsShape {
+    if tasks.contains(where: { $0.shape == current }) {
+        return current
+    }
+    return order.first(where: { shape in tasks.contains { $0.shape == shape } }) ?? current
 }
