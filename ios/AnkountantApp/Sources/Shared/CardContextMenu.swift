@@ -4,7 +4,6 @@ import AnkiClients
 import Dependencies
 import UIKit
 
-/// Context menu for card operations (suspend, bury, flag, undo)
 @MainActor
 struct CardContextMenu: View {
     let cardId: Int64
@@ -116,8 +115,9 @@ struct CardContextMenu: View {
             }
             .disabled(!canUndo || isUndoing)
         } label: {
-            Image(systemName: "ellipsis.circle")
+            Label("Card actions", systemImage: "ellipsis.circle")
                 .ankountantFont(.bodyEmphasis)
+                .labelStyle(.iconOnly)
         }
         .alert("Action failed", isPresented: $showError) {
             Button("OK") { }

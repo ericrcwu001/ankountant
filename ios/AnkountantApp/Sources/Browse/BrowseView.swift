@@ -583,8 +583,8 @@ struct NoteContextMenuButton: View {
                 CardContextMenu(
                     cardId: cardId,
                     noteId: noteId,
-                        onSuccess: onSuccess
-                    )
+                    onSuccess: onSuccess
+                )
             } else if cardActionError != nil {
                 Button {
                     showCardActionError = true
@@ -596,9 +596,9 @@ struct NoteContextMenuButton: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Card actions unavailable")
             } else {
-                Image(systemName: "ellipsis.circle")
-                    .ankountantFont(.bodyEmphasis)
-                    .foregroundStyle(.tertiary)
+                ProgressView()
+                    .controlSize(.small)
+                    .accessibilityLabel("Loading card actions")
             }
         }
         .alert("Card actions unavailable", isPresented: $showCardActionError) {

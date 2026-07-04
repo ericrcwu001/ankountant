@@ -83,19 +83,17 @@ struct ReviewView: View {
                     Button("Done") { onDismiss() }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
+                    Button("Undo answer", systemImage: "arrow.uturn.backward") {
                         session.undo()
-                    } label: {
-                        Image(systemName: "arrow.uturn.backward")
                     }
+                    .labelStyle(.iconOnly)
                     .disabled(!session.canUndo)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
+                    Button("Edit note", systemImage: "pencil") {
                         editingNote = session.currentNote
-                    } label: {
-                        Image(systemName: "pencil")
                     }
+                    .labelStyle(.iconOnly)
                     .disabled(session.currentNote == nil)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -108,15 +106,17 @@ struct ReviewView: View {
                 }
                 if showAudioReplayButton {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button {
+                        Button(
+                            session.isAudioPlaying ? "Pause audio" : "Replay audio",
+                            systemImage: session.isAudioPlaying ? "pause.circle" : "play.circle"
+                        ) {
                             if session.isAudioPlaying {
                                 session.bumpStopAudioRequest()
                             } else {
                                 session.bumpReplayRequest()
                             }
-                        } label: {
-                            Image(systemName: session.isAudioPlaying ? "pause.circle" : "play.circle")
                         }
+                        .labelStyle(.iconOnly)
                         .disabled(session.currentNote == nil)
                     }
                 }
@@ -135,10 +135,12 @@ struct ReviewView: View {
                             .disabled(session.currentTemplateTarget == nil)
                         } label: {
                             if session.currentFlag != 0 {
-                                Image(systemName: "flag.fill")
+                                Label("Review actions", systemImage: "flag.fill")
                                     .foregroundStyle(flagColor(for: session.currentFlag))
+                                    .labelStyle(.iconOnly)
                             } else {
-                                Image(systemName: "ellipsis.circle")
+                                Label("Review actions", systemImage: "ellipsis.circle")
+                                    .labelStyle(.iconOnly)
                             }
                         }
                         .disabled(session.currentNote == nil)
