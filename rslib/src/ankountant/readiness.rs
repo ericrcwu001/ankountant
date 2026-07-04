@@ -6,7 +6,8 @@
 //!
 //! - Memory: trailing-30d recall accuracy on the **study pile** (>= 5 reps).
 //! - Performance: accuracy on the **sealed bank** only (MCQ + TBS partial
-//!   credit, weighted 50/50), from the Attempt Log — never the study pile.
+//!   credit, weighted 50/50, speed-adjusted), from the Attempt Log — never the
+//!   study pile.
 //! - gap = memory - performance.
 //! - Readiness: abstain under thin evidence, else a Wilson accuracy band.
 
@@ -24,22 +25,23 @@ use crate::revlog::RevlogReviewKind;
 struct PerfAccum {
     mcq_correct: f64,
     mcq_total: f64,
+    mcq_time_penalty: f64,
     tbs_credit: f64,
     tbs_total: f64,
+    tbs_time_penalty: f64,
 }
 
 impl PerfAccum {
     fn performance(&self) -> Option<f64> {
         let mcq = (self.mcq_total > 0.0).then(|| self.mcq_correct / self.mcq_total);
         let tbs = (self.tbs_total > 0.0).then(|| self.tbs_credit / self.tbs_total);
-        match (mcq, tbs) {
-            (Some(m), Some(t)) => {
-                Some(m * constants::PERFORMANCE_MCQ_WEIGHT + t * constants::PERFORMANCE_TBS_WEIGHT)
-            }
-            (Some(m), None) => Some(m),
-            (None, Some(t)) => Some(t),
-            (None, None) => None,
-        }
+        weighted_performance(mcq, tbs)
+    }
+
+    fn time_penalty(&self) -> f64 {
+        let mcq = (self.mcq_total > 0.0).then(|| self.mcq_time_penalty / self.mcq_total);
+        let tbs = (self.tbs_total > 0.0).then(|| self.tbs_time_penalty / self.tbs_total);
+        weighted_performance(mcq, tbs).unwrap_or(0.0)
     }
 
     /// Attempts backing this set's Performance — the effective sample size for
@@ -47,6 +49,70 @@ impl PerfAccum {
     fn effective_n(&self) -> f64 {
         self.mcq_total + self.tbs_total
     }
+}
+
+#[derive(Clone, Copy)]
+enum PerformanceMode {
+    Confusion,
+    Research,
+    Tbs,
+    DocReview,
+}
+
+impl PerformanceMode {
+    fn parse(mode: &str) -> Result<Self> {
+        match mode {
+            "confusion" | "mcq" => Ok(Self::Confusion),
+            "research" => Ok(Self::Research),
+            "tbs" => Ok(Self::Tbs),
+            "doc_review" => Ok(Self::DocReview),
+            _ => invalid_input!("Unknown performance mode: {mode}"),
+        }
+    }
+
+    fn timing_target_ms(self) -> Option<u32> {
+        match self {
+            Self::Confusion => Some(constants::PERFORMANCE_CONFUSION_TARGET_MS),
+            Self::Tbs | Self::DocReview => Some(constants::PERFORMANCE_TBS_TARGET_MS),
+            Self::Research => None,
+        }
+    }
+}
+
+fn weighted_performance(mcq: Option<f64>, tbs: Option<f64>) -> Option<f64> {
+    match (mcq, tbs) {
+        (Some(m), Some(t)) => {
+            Some(m * constants::PERFORMANCE_MCQ_WEIGHT + t * constants::PERFORMANCE_TBS_WEIGHT)
+        }
+        (Some(m), None) => Some(m),
+        (None, Some(t)) => Some(t),
+        (None, None) => None,
+    }
+}
+
+fn valid_attempt_credit(credit: f64) -> Result<f64> {
+    if !credit.is_finite() || !(0.0..=1.0).contains(&credit) {
+        invalid_input!("invalid Attempt Log credit");
+    }
+    Ok(credit)
+}
+
+fn timed_credit(mode: PerformanceMode, credit: f64, latency_ms: u32) -> (f64, f64) {
+    let Some(target_ms) = mode.timing_target_ms() else {
+        return (credit, 0.0);
+    };
+    let target = target_ms as f64;
+    let zero_at = target * constants::PERFORMANCE_SLOW_ZERO_FACTOR;
+    let latency = latency_ms as f64;
+    let multiplier = if latency <= target {
+        1.0
+    } else if latency >= zero_at {
+        0.0
+    } else {
+        1.0 - (latency - target) / (zero_at - target)
+    };
+    let adjusted = credit * multiplier;
+    (adjusted, (credit - adjusted).max(0.0))
 }
 
 /// A5 — a Wilson band (as `0..1` fractions) centred on `point` given `n`
@@ -83,18 +149,24 @@ impl Collection {
             }
             sealed_attempts += 1;
             let acc = perf.entry(a.confusion_set_id.clone()).or_default();
+            let mode = PerformanceMode::parse(a.mode.as_str())?;
+            let raw_credit = valid_attempt_credit(a.outcome.credit)?;
             if logic::is_partial_credit_mode(a.mode.as_str()) {
                 // tbs / doc_review: fractional per-step (per-blank) partial credit.
-                acc.tbs_credit += a.outcome.credit;
+                let (credit, penalty) = timed_credit(mode, raw_credit, a.latency_ms);
+                acc.tbs_credit += credit;
                 acc.tbs_total += 1.0;
-                sealed_correct += a.outcome.credit;
+                acc.tbs_time_penalty += penalty;
+                sealed_correct += credit;
                 sealed_total += 1.0;
             } else {
                 // confusion / research / MCQ: pass/fail on credit >= 0.5.
-                let c = if a.outcome.credit >= 0.5 { 1.0 } else { 0.0 };
-                acc.mcq_correct += c;
+                let c = if raw_credit >= 0.5 { 1.0 } else { 0.0 };
+                let (credit, penalty) = timed_credit(mode, c, a.latency_ms);
+                acc.mcq_correct += credit;
                 acc.mcq_total += 1.0;
-                sealed_correct += c;
+                acc.mcq_time_penalty += penalty;
+                sealed_correct += credit;
                 sealed_total += 1.0;
             }
         }
@@ -277,6 +349,21 @@ fn band_reasons(
             "Lowest performance: {} ({:.0}%)",
             pretty_set_id(&t.set_id),
             t.performance * 100.0
+        ));
+    }
+
+    let speed_drag = topics
+        .iter()
+        .filter_map(|t| {
+            let penalty = perf.get(&t.set_id)?.time_penalty();
+            (penalty >= 0.005).then_some((t, penalty))
+        })
+        .max_by(|a, b| a.1.total_cmp(&b.1));
+    if let Some((t, penalty)) = speed_drag {
+        reasons.push(format!(
+            "Largest timing drag: {} (-{:.0} pts)",
+            pretty_set_id(&t.set_id),
+            penalty * 100.0
         ));
     }
 

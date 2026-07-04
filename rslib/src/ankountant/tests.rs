@@ -540,6 +540,17 @@ fn submit_result(
     submission: serde_json::Value,
     confidence: &str,
 ) -> Result<anki_proto::scheduler::SubmitPerformanceAttemptResponse> {
+    submit_result_with_latency(col, nid, mode, submission, confidence, 4200)
+}
+
+fn submit_result_with_latency(
+    col: &mut Collection,
+    nid: NoteId,
+    mode: &str,
+    submission: serde_json::Value,
+    confidence: &str,
+    latency_ms: u32,
+) -> Result<anki_proto::scheduler::SubmitPerformanceAttemptResponse> {
     SchedulerService::submit_performance_attempt(
         col,
         SubmitPerformanceAttemptRequest {
@@ -547,7 +558,7 @@ fn submit_result(
             mode: mode.into(),
             submission_json: submission.to_string(),
             confidence: confidence.into(),
-            latency_ms: 4200,
+            latency_ms,
         },
     )
 }
@@ -595,6 +606,7 @@ fn a8_confusion_answer_writes_one_attempt_note_with_fields() {
     assert_eq!(attempts.len(), before + 1);
     let last = attempts.iter().max_by_key(|a| a.ts).unwrap();
     assert_eq!(last.confidence, "confident");
+    assert_eq!(last.latency_ms, 4200);
     assert!(!last.confusion_set_id.is_empty());
     assert_eq!(last.mode, "confusion");
 }
@@ -651,6 +663,31 @@ fn a8_malformed_attempt_outcome_fails_fast() {
         }
         other => panic!("unexpected error: {other:?}"),
     }
+}
+
+#[test]
+fn a8_malformed_attempt_latency_fails_fast() {
+    let (mut col, _) = seeded();
+    let nid = first_sealed_mcq(&mut col);
+    let resp = submit(
+        &mut col,
+        nid,
+        "confusion",
+        json!({"choice":"Expense"}),
+        "guess",
+    );
+
+    let mut note = col
+        .storage
+        .get_note(NoteId(resp.attempt_note_id))
+        .unwrap()
+        .unwrap();
+    note.set_field(super::notetypes::attempt_fields::LATENCY_MS, "slow")
+        .unwrap();
+    col.update_note(&mut note).unwrap();
+
+    let err = col.ankountant_attempts("FAR").unwrap_err();
+    assert_eq!(invalid_input_message(err), "invalid Attempt Log latency_ms");
 }
 
 #[test]
@@ -1383,6 +1420,37 @@ fn a4_tbs_partial_credit_moves_performance() {
     assert!((topic.performance - 0.5).abs() < 1e-9);
 }
 
+#[test]
+fn a4_slow_correct_attempt_lowers_performance() {
+    let (mut col, _) = seeded();
+    use super::attempt_log::NewAttempt;
+    use super::attempt_log::Outcome;
+    col.transact(crate::ops::Op::AddNote, |col| {
+        col.ankountant_write_attempt(&NewAttempt {
+            item_ref: NoteId(1),
+            confusion_set_id: "capitalize_vs_expense".into(),
+            mode: "confusion".into(),
+            confidence: "confident".into(),
+            latency_ms: super::constants::PERFORMANCE_CONFUSION_TARGET_MS * 2,
+            outcome: Outcome {
+                credit: 1.0,
+                steps: vec![],
+                elapsed_ms: None,
+            },
+            section: "FAR".into(),
+            sealed: true,
+        })
+    })
+    .unwrap();
+    let resp = readiness(&mut col);
+    let topic = resp
+        .topics
+        .iter()
+        .find(|t| t.set_id == "capitalize_vs_expense")
+        .unwrap();
+    assert!((topic.performance - 0.5).abs() < 1e-9);
+}
+
 // --- A5 (A16–A19) ------------------------------------------------------------
 
 #[test]
@@ -1510,6 +1578,58 @@ fn a5_band_reasons_do_not_infer_gap_without_performance() {
             .iter()
             .any(|reason| reason.contains("Largest gap: trading afs htm")),
         "gap reason should not cite a topic without performance evidence: {:?}",
+        r.reasons
+    );
+}
+
+#[test]
+fn a5_band_reasons_report_timing_drag() {
+    let (mut col, _) = seeded();
+    use super::attempt_log::NewAttempt;
+    use super::attempt_log::Outcome;
+    let covered_sets: Vec<String> = col
+        .ankountant_confusable_map("FAR")
+        .keys()
+        .take(8)
+        .cloned()
+        .collect();
+    let slow_set = covered_sets[0].clone();
+
+    col.transact(crate::ops::Op::AddNote, |col| {
+        for set_id in &covered_sets {
+            for _ in 0..3 {
+                col.ankountant_write_attempt(&NewAttempt {
+                    item_ref: NoteId(1),
+                    confusion_set_id: set_id.clone(),
+                    mode: "confusion".into(),
+                    confidence: "confident".into(),
+                    latency_ms: if set_id == &slow_set {
+                        super::constants::PERFORMANCE_CONFUSION_TARGET_MS * 2
+                    } else {
+                        1000
+                    },
+                    outcome: Outcome {
+                        credit: 1.0,
+                        steps: vec![],
+                        elapsed_ms: None,
+                    },
+                    section: "FAR".into(),
+                    sealed: true,
+                })?;
+            }
+        }
+        Ok(())
+    })
+    .unwrap();
+
+    let r = readiness(&mut col).readiness.unwrap();
+    assert!(!r.abstain, "expected readiness band, got {}", r.reason);
+    assert!(
+        r.reasons.iter().any(|reason| reason.contains(&format!(
+            "Largest timing drag: {} (-50 pts)",
+            slow_set.replace('_', " ")
+        ))),
+        "timing drag reason missing: {:?}",
         r.reasons
     );
 }

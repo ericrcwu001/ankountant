@@ -22,6 +22,7 @@ pub(crate) struct AttemptRecord {
     pub(crate) mode: String,
     #[allow(dead_code)]
     pub(crate) confidence: String,
+    pub(crate) latency_ms: u32,
     pub(crate) outcome: Outcome,
     pub(crate) sealed: bool,
     /// Retained for completeness/forward use; reads are already section-scoped.
@@ -132,6 +133,11 @@ impl Collection {
                 .or_invalid("Attempt Log note missing ts")?
                 .parse::<i64>()
                 .or_invalid("invalid Attempt Log ts")?;
+            let latency_ms = fields
+                .get(f::LATENCY_MS)
+                .or_invalid("Attempt Log note missing latency_ms")?
+                .parse::<u32>()
+                .or_invalid("invalid Attempt Log latency_ms")?;
             out.push(AttemptRecord {
                 confusion_set_id: fields
                     .get(f::CONFUSION_SET_ID)
@@ -145,6 +151,7 @@ impl Collection {
                     .get(f::CONFIDENCE)
                     .cloned()
                     .or_invalid("Attempt Log note missing confidence")?,
+                latency_ms,
                 outcome,
                 sealed,
                 section: section_val,

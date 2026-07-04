@@ -38,6 +38,12 @@ pub(crate) const MEMORY_MIN_REPS: u32 = 5;
 /// FAR weighting of MCQ correctness vs TBS partial-credit in Performance.
 pub(crate) const PERFORMANCE_MCQ_WEIGHT: f64 = 0.5;
 pub(crate) const PERFORMANCE_TBS_WEIGHT: f64 = 0.5;
+/// Time budget for a sealed confusion/MCQ item before speed starts reducing credit.
+pub(crate) const PERFORMANCE_CONFUSION_TARGET_MS: u32 = 90_000;
+/// Time budget for a sealed TBS or document-review item before speed starts reducing credit.
+pub(crate) const PERFORMANCE_TBS_TARGET_MS: u32 = 300_000;
+/// At this multiple of the target budget, otherwise-correct credit reaches zero.
+pub(crate) const PERFORMANCE_SLOW_ZERO_FACTOR: f64 = 3.0;
 
 // --- A5: abstain thresholds + confidence ---
 /// Minimum sealed attempts before a readiness band is emitted.
