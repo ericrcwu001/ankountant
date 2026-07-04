@@ -156,7 +156,7 @@ struct DeckConfigView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { Task { await saveConfig() } }
-                        .disabled(loaded == nil || isSaving)
+                        .disabled(loaded == nil || isLoading || isSaving || isPresetMutating || isOptimizingFsrs)
                 }
             }
             .modifier(DeckConfigAlerts(
@@ -253,7 +253,7 @@ struct DeckConfigView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .disabled(isPresetMutating || presetOptions.isEmpty)
+                .disabled(isPresetMutating || isSaving || presetOptions.isEmpty)
             }
 
             LabeledContent("Used by") {
@@ -288,7 +288,7 @@ struct DeckConfigView: View {
                     Label("Manage Preset", systemImage: "slider.horizontal.below.rectangle")
                 }
             }
-            .disabled(isPresetMutating)
+            .disabled(isPresetMutating || isSaving)
         }
     }
 
