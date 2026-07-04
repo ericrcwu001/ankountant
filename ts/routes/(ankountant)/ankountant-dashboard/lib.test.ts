@@ -63,6 +63,13 @@ test("abstain view surfaces the reason + coverage and NO number (A55)", () => {
     expect(view.coveragePct).toBe(40);
 });
 
+test("missing readiness data is named without inventing a volume diagnosis", () => {
+    const view = buildReadinessView(undefined);
+    expect(view.abstain).toBe(true);
+    expect(view.reason).toBe("no readiness data");
+    expect(view.pointLabel).toBe("");
+});
+
 test("sufficient view is a CPA band + point + coverage, never a bare point (A54)", () => {
     const view = buildReadinessView(
         new Readiness({
@@ -85,6 +92,35 @@ test("sufficient view is a CPA band + point + coverage, never a bare point (A54)
     expect(view.coveragePct).toBe(75);
     expect(view.confidence).toBe("High");
     expect(view.reasons.length).toBeGreaterThan(0);
+});
+
+test("emitted readiness requires a valid range, confidence, coverage, and evidence", () => {
+    const valid = {
+        abstain: false,
+        bandLow: 62,
+        bandHigh: 78,
+        pointEstimate: 70,
+        confidence: "High",
+        coverage: 0.75,
+        reasons: ["Coverage: 75% of topics; 40 sealed attempts"],
+    };
+    expect(() => buildReadinessView(new Readiness({ ...valid, bandHigh: 62 }))).toThrow(
+        /low value below the high value/,
+    );
+    expect(() => buildReadinessView(new Readiness({ ...valid, pointEstimate: 90 }))).toThrow(
+        /inside the reported band/,
+    );
+    expect(() => buildReadinessView(new Readiness({ ...valid, confidence: "" }))).toThrow(/confidence is required/);
+    expect(() => buildReadinessView(new Readiness({ ...valid, reasons: [] }))).toThrow(/evidence reasons are required/);
+    expect(() => buildReadinessView(new Readiness({ ...valid, coverage: 1.1 }))).toThrow(
+        /coverage must be between 0 and 1/,
+    );
+});
+
+test("abstaining readiness requires an explicit reason", () => {
+    expect(() => buildReadinessView(new Readiness({ abstain: true, reason: "", coverage: 0.4 }))).toThrow(
+        /without a reason/,
+    );
 });
 
 test("evidence view names missing data and the give-up rule", () => {

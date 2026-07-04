@@ -13,6 +13,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         buildReadinessEvidence,
         buildReadinessView,
         buildTopicRows,
+        CPA_MAX_SCORE,
         GAP_WARNING_THRESHOLD,
     } from "../ankountant-dashboard/lib";
     import {
@@ -58,7 +59,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         (topic) => (topic.gap ?? 0) >= GAP_WARNING_THRESHOLD * 100,
     ).length;
     $: gaugeScore = view.abstain ? null : view.pointEstimate;
-    $: gaugeFill = C * SWEEP * ((gaugeScore ?? 0) / 100);
+    $: gaugeFill = C * SWEEP * ((gaugeScore ?? 0) / CPA_MAX_SCORE);
     $: hoveredTopic = hoveredTopicKey
         ? farTopics.find((topic) => topic.key === hoveredTopicKey)
         : undefined;

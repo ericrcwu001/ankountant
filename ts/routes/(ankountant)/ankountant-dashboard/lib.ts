@@ -114,11 +114,14 @@ export interface ReadinessView {
 }
 
 export function buildReadinessView(readiness: Readiness | undefined): ReadinessView {
-    const coveragePct = readiness ? fractionToPct(readiness.coverage) : 0;
+    const coveragePct = readiness ? coveragePercent(readiness.coverage) : 0;
     if (!readiness || readiness.abstain) {
+        if (readiness && !readiness.reason.trim()) {
+            throw new Error("Readiness abstained without a reason.");
+        }
         return {
             abstain: true,
-            reason: readiness?.reason ?? "insufficient volume",
+            reason: readiness?.reason ?? "no readiness data",
             bandLow: 0,
             bandHigh: 0,
             pointEstimate: 0,
@@ -133,18 +136,20 @@ export function buildReadinessView(readiness: Readiness | undefined): ReadinessV
             trackPassPct: (CPA_PASS_SCORE / CPA_MAX_SCORE) * 100,
         };
     }
+    validateEmittedReadiness(readiness);
     const low = Math.round(readiness.bandLow);
     const high = Math.round(readiness.bandHigh);
     const point = Math.round(readiness.pointEstimate);
+    const reasons = (readiness.reasons ?? []).map((reason) => reason.trim());
     return {
         abstain: false,
         reason: "",
         bandLow: low,
         bandHigh: high,
         pointEstimate: point,
-        confidence: readiness.confidence,
+        confidence: readiness.confidence.trim(),
         coveragePct,
-        reasons: readiness.reasons ?? [],
+        reasons,
         generatedAt: Number(readiness.generatedAt),
         bandLabel: `${low}–${high}`,
         pointLabel: `${point}`,
@@ -158,6 +163,9 @@ export function buildReadinessEvidence(
     view: ReadinessView,
     rows: TopicRow[],
 ): ReadinessEvidence {
+    if (!view.abstain && !view.reasons.length) {
+        throw new Error("Readiness evidence requires reasons for the emitted range.");
+    }
     const missingData: string[] = [];
     if (view.abstain && view.reason.toLowerCase().includes("volume")) {
         missingData.push(
@@ -182,7 +190,7 @@ export function buildReadinessEvidence(
 
     const evidenceLines = view.reasons.length
         ? view.reasons
-        : [view.abstain ? view.reason : "Readiness drivers were not recorded for this range."];
+        : [view.reason];
 
     return {
         evidenceLines,
@@ -193,6 +201,49 @@ export function buildReadinessEvidence(
         giveUpRule:
             `No readiness range until there are at least ${READINESS_MIN_SEALED_ATTEMPTS} sealed attempts and ${READINESS_MIN_COVERAGE_PCT}% topic coverage.`,
     };
+}
+
+function coveragePercent(coverage: number): number {
+    assertFiniteNumber("coverage", coverage);
+    if (coverage < 0 || coverage > 1) {
+        throw new Error("Readiness coverage must be between 0 and 1.");
+    }
+    return fractionToPct(coverage);
+}
+
+function validateEmittedReadiness(readiness: Readiness): void {
+    const reasons = readiness.reasons ?? [];
+    assertScaleValue("band low", readiness.bandLow);
+    assertScaleValue("band high", readiness.bandHigh);
+    assertScaleValue("point estimate", readiness.pointEstimate);
+    if (readiness.bandLow >= readiness.bandHigh) {
+        throw new Error("Readiness band must have a low value below the high value.");
+    }
+    if (
+        readiness.pointEstimate < readiness.bandLow
+        || readiness.pointEstimate > readiness.bandHigh
+    ) {
+        throw new Error("Readiness point estimate must be inside the reported band.");
+    }
+    if (!readiness.confidence.trim()) {
+        throw new Error("Readiness confidence is required for an emitted range.");
+    }
+    if (!reasons.length || reasons.some((reason) => !reason.trim())) {
+        throw new Error("Readiness evidence reasons are required for an emitted range.");
+    }
+}
+
+function assertScaleValue(label: string, value: number): void {
+    assertFiniteNumber(label, value);
+    if (value < 0 || value > CPA_MAX_SCORE) {
+        throw new Error(`Readiness ${label} must be between 0 and ${CPA_MAX_SCORE}.`);
+    }
+}
+
+function assertFiniteNumber(label: string, value: number): void {
+    if (!Number.isFinite(value)) {
+        throw new Error(`Readiness ${label} must be a finite number.`);
+    }
 }
 
 function bestNextAction(view: ReadinessView, rows: TopicRow[]): string {
