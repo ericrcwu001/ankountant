@@ -134,7 +134,7 @@ struct HomeView: View {
                     Text("Ankountant")
                         .font(.system(size: 24, weight: .semibold, design: .serif))
                         .foregroundStyle(.white)
-                    Text("CPA FAR EXAM PREP")
+                    Text("CPA EXAM PREP")
                         .ankountantFont(.micro)
                         .foregroundStyle(Color.white.opacity(0.68))
                 }
@@ -177,7 +177,7 @@ struct HomeView: View {
                 .stroke(Color.white.opacity(0.12), lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Ankountant CPA FAR exam prep topic mastery")
+        .accessibilityLabel("Ankountant CPA exam prep readiness and FAR topic mastery")
     }
 
     private var metricDeck: some View {
@@ -221,7 +221,7 @@ struct HomeView: View {
 
     private var farTopicList: some View {
         VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
-            Text("FAR Topics")
+            Text("FAR focus topics")
                 .ankountantFont(.micro)
                 .textCase(.uppercase)
                 .foregroundStyle(palette.textSecondary)
@@ -253,7 +253,7 @@ struct HomeView: View {
             Button {
                 path.append(HomeRoute.confusion)
             } label: {
-                Text("Practice confusion sets")
+                Text("Practice FAR confusion sets")
                     .ankountantFont(.bodyEmphasis)
                     .foregroundStyle(palette.accent)
                     .frame(maxWidth: .infinity)
