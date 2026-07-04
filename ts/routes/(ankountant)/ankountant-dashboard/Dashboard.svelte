@@ -6,7 +6,13 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     import type { GetReadinessResponse } from "@generated/anki/scheduler_pb";
 
     import { sectionName } from "../ankountant-home/summit";
-    import { buildReadinessView, buildTopicRows, formatUpdated } from "./lib";
+    import {
+        buildReadinessEvidence,
+        buildReadinessView,
+        buildTopicRows,
+        formatUpdated,
+        prettySetId,
+    } from "./lib";
 
     export let readiness: GetReadinessResponse;
     export let examDate = "";
@@ -14,15 +20,11 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     $: rows = buildTopicRows(readiness.topics);
     $: view = buildReadinessView(readiness.readiness);
+    $: evidence = buildReadinessEvidence(view, rows);
     $: updated = formatUpdated(view.generatedAt);
     $: examLabel = examDate
         ? `Exam-day projection (${examDate})`
         : "Exam-day projection";
-
-    // Pretty-print the snake_case set ids for display without losing the raw id.
-    function pretty(setId: string): string {
-        return setId.replace(/_/g, " ");
-    }
 </script>
 
 <div class="ankountant-dashboard" data-testid="dashboard">
@@ -89,6 +91,33 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                 confidence range, not an official AICPA score.
             </p>
         {/if}
+        <div class="evidence-panel" data-testid="readiness-evidence">
+            <div class="evidence-block">
+                <h3>Evidence behind this range</h3>
+                <ul>
+                    {#each evidence.evidenceLines as line}
+                        <li>{line}</li>
+                    {/each}
+                </ul>
+            </div>
+            <div class="evidence-block">
+                <h3>Still missing</h3>
+                <ul>
+                    {#each evidence.missingData as line}
+                        <li>{line}</li>
+                    {/each}
+                </ul>
+            </div>
+            <div class="evidence-block action">
+                <h3>Next best study action</h3>
+                <p>{evidence.nextAction}</p>
+            </div>
+            <div class="evidence-block">
+                <h3>Past prediction accuracy</h3>
+                <p>{evidence.calibrationStatus}</p>
+                <p class="give-up-rule">{evidence.giveUpRule}</p>
+            </div>
+        </div>
     </section>
 
     <!-- Per-topic Memory vs Performance on a shared 0–100 scale. -->
@@ -112,7 +141,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                             data-testid="topic-row"
                             data-set-id={row.setId}
                         >
-                            <td class="set-id">{pretty(row.setId)}</td>
+                            <td class="set-id">{prettySetId(row.setId)}</td>
                             <td class="memory num" data-testid="memory">
                                 {#if row.memoryPct === null}
                                     <span class="insufficient">insufficient</span>
@@ -336,6 +365,51 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         color: var(--fg-faint);
     }
 
+    .evidence-panel {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-lg);
+        margin-top: var(--space-lg);
+        padding-top: var(--space-lg);
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .evidence-block {
+        min-width: 0;
+
+        h3 {
+            margin: 0 0 var(--space-xs);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--fg-subtle);
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 1.1em;
+        }
+
+        li,
+        p {
+            margin: 2px 0;
+            font-size: 13px;
+            line-height: 1.45;
+            color: var(--fg-subtle);
+        }
+    }
+
+    .evidence-block.action p {
+        color: var(--fg);
+        font-weight: 600;
+    }
+
+    .give-up-rule {
+        padding-top: var(--space-xs);
+        color: var(--fg-faint) !important;
+    }
+
     // First-class abstain: neutral + hatch + icon + label, visually unlike a
     // low score (Ledger §5, C12). Hatch uses --border so it stays visible in
     // dark mode (C3).
@@ -467,5 +541,12 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     .insufficient {
         color: var(--fg-faint);
+    }
+
+    @media (max-width: 720px) {
+        .evidence-panel {
+            grid-template-columns: 1fr;
+            gap: var(--space-md);
+        }
     }
 </style>

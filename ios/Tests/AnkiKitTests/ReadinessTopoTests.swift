@@ -110,4 +110,69 @@ struct ReadinessTopoTests {
         ])
         #expect(summary.gapsToCloseCount == 2)
     }
+
+    @Test func readinessEvidenceNamesMissingDataAndGiveUpRule() {
+        let band = ReadinessBand(
+            abstain: true,
+            reason: "insufficient volume",
+            bandLow: 0,
+            bandHigh: 0,
+            confidence: "",
+            coverage: 0.4
+        )
+        let evidence = readinessEvidence(
+            band: band,
+            topics: [
+                TopicScoreModel(setId: "tax_timing", memory: 0, performance: 0.42, gap: 0, memoryInsufficient: true),
+            ]
+        )
+        #expect(evidence.giveUpRule.contains("20 sealed attempts"))
+        #expect(evidence.missingData.joined(separator: " ").contains("60% of topics"))
+        #expect(evidence.missingData.joined(separator: " ").contains("Tax Timing"))
+        #expect(evidence.calibrationStatus.contains("No past score-verification history"))
+    }
+
+    @Test func readinessEvidenceChoosesLargestGapAction() {
+        let band = ReadinessBand(
+            abstain: false,
+            reason: "",
+            bandLow: 74,
+            bandHigh: 85,
+            pointEstimate: 80,
+            confidence: "High",
+            coverage: 1,
+            reasons: ["Coverage: 100% of topics; 188 sealed attempts"]
+        )
+        let evidence = readinessEvidence(
+            band: band,
+            topics: [
+                TopicScoreModel(setId: "leases", memory: 0.9, performance: 0.52, gap: 0.38, memoryInsufficient: false),
+                TopicScoreModel(setId: "tax_timing", memory: 0.7, performance: 0.51, gap: 0.19, memoryInsufficient: false),
+            ]
+        )
+        #expect(evidence.nextAction.contains("Leases"))
+        #expect(evidence.nextAction.contains("memory is 90%"))
+        #expect(evidence.missingData.first?.contains("No hard blockers") == true)
+    }
+
+    @Test func readinessEvidenceDoesNotInventMemoryValueForThinMemoryGaps() {
+        let band = ReadinessBand(
+            abstain: false,
+            reason: "",
+            bandLow: 74,
+            bandHigh: 85,
+            pointEstimate: 80,
+            confidence: "High",
+            coverage: 1,
+            reasons: ["Coverage: 100% of topics; 188 sealed attempts"]
+        )
+        let evidence = readinessEvidence(
+            band: band,
+            topics: [
+                TopicScoreModel(setId: "tax_timing", memory: 0, performance: 0.42, gap: 0.38, memoryInsufficient: true),
+            ]
+        )
+        #expect(evidence.nextAction.contains("sealed exam-style practice"))
+        #expect(!evidence.nextAction.contains("memory is 0%"))
+    }
 }

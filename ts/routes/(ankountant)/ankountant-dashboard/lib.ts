@@ -14,6 +14,8 @@ export const GAP_WARNING_THRESHOLD = 0.25;
 export const CPA_PASS_SCORE = 75;
 /** Top of the reported CPA scale; mirrors Rust CPA_MAX_SCORE. */
 export const CPA_MAX_SCORE = 99;
+export const READINESS_MIN_SEALED_ATTEMPTS = 20;
+export const READINESS_MIN_COVERAGE_PCT = 60;
 
 /** View row for a single topic in the dashboard table. */
 export interface TopicRow {
@@ -30,6 +32,14 @@ export interface TopicRow {
     gapWarning: boolean;
 }
 
+export interface ReadinessEvidence {
+    evidenceLines: string[];
+    missingData: string[];
+    calibrationStatus: string;
+    nextAction: string;
+    giveUpRule: string;
+}
+
 /** Format a 0..1 fraction as an integer percentage string. */
 export function fractionToPct(fraction: number): number {
     return Math.round(fraction * 100);
@@ -38,6 +48,10 @@ export function fractionToPct(fraction: number): number {
 /** True when the "feels ready, isn't" gap should be visually flagged. */
 export function isGapWarning(gap: number): boolean {
     return gap >= GAP_WARNING_THRESHOLD;
+}
+
+export function prettySetId(setId: string): string {
+    return setId.replace(/_/g, " ");
 }
 
 /**
@@ -138,6 +152,70 @@ export function buildReadinessView(readiness: Readiness | undefined): ReadinessV
         trackWidthPct: (Math.max(high - low, 0) / CPA_MAX_SCORE) * 100,
         trackPassPct: (CPA_PASS_SCORE / CPA_MAX_SCORE) * 100,
     };
+}
+
+export function buildReadinessEvidence(
+    view: ReadinessView,
+    rows: TopicRow[],
+): ReadinessEvidence {
+    const missingData: string[] = [];
+    if (view.abstain && view.reason.toLowerCase().includes("volume")) {
+        missingData.push(
+            `Need at least ${READINESS_MIN_SEALED_ATTEMPTS} sealed attempts before a readiness range can be shown.`,
+        );
+    }
+    if (view.coveragePct < READINESS_MIN_COVERAGE_PCT) {
+        missingData.push(
+            `Need sealed evidence across ${READINESS_MIN_COVERAGE_PCT}% of topics; current coverage is ${view.coveragePct}%.`,
+        );
+    }
+
+    const thinMemory = rows.filter((row) => row.memoryPct === null).slice(0, 3);
+    if (thinMemory.length) {
+        missingData.push(
+            `Memory is still thin for ${thinMemory.map((row) => prettySetId(row.setId)).join(", ")}.`,
+        );
+    }
+    if (!missingData.length) {
+        missingData.push("No hard blockers for the current range; more sealed attempts will narrow uncertainty.");
+    }
+
+    const evidenceLines = view.reasons.length
+        ? view.reasons
+        : [view.abstain ? view.reason : "Readiness drivers were not recorded for this range."];
+
+    return {
+        evidenceLines,
+        missingData,
+        calibrationStatus:
+            "No past score-verification history is available yet; treat this as an uncalibrated projection until held-out outcomes are logged.",
+        nextAction: bestNextAction(view, rows),
+        giveUpRule:
+            `No readiness range until there are at least ${READINESS_MIN_SEALED_ATTEMPTS} sealed attempts and ${READINESS_MIN_COVERAGE_PCT}% topic coverage.`,
+    };
+}
+
+function bestNextAction(view: ReadinessView, rows: TopicRow[]): string {
+    if (!rows.length) {
+        return "Load a CPA bank or demo profile, then start sealed practice.";
+    }
+    if (view.coveragePct < READINESS_MIN_COVERAGE_PCT) {
+        return "Add sealed exam-style attempts in uncovered topics before trusting the readiness range.";
+    }
+
+    const gap = [...rows]
+        .filter((row) => row.gapWarning && row.memoryPct !== null)
+        .sort((a, b) => b.gap - a.gap)[0];
+    if (gap) {
+        return `Run a confusion-set drill for ${
+            prettySetId(gap.setId)
+        }; memory is ${gap.memoryPct}% and performance is ${gap.performancePct}%.`;
+    }
+
+    const weakest = [...rows].sort((a, b) => a.performancePct - b.performancePct)[0];
+    return `Do sealed exam-style practice for ${
+        prettySetId(weakest.setId)
+    }; current performance is ${weakest.performancePct}%.`;
 }
 
 /** Short "Updated 3:04 PM" style label from Unix seconds (empty when unknown). */

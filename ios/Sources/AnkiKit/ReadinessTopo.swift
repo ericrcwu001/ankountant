@@ -84,6 +84,30 @@ public struct SectionReadiness: Sendable, Equatable, Identifiable {
 
 /// Gap at/above this fraction is flagged (mirrors the desktop dashboard + Rust).
 public let topicGapWarningThreshold = 0.25
+public let readinessMinimumSealedAttempts = 20
+public let readinessMinimumCoverage = 0.60
+
+public struct ReadinessEvidence: Sendable, Equatable {
+    public let evidenceLines: [String]
+    public let missingData: [String]
+    public let calibrationStatus: String
+    public let nextAction: String
+    public let giveUpRule: String
+
+    public init(
+        evidenceLines: [String],
+        missingData: [String],
+        calibrationStatus: String,
+        nextAction: String,
+        giveUpRule: String
+    ) {
+        self.evidenceLines = evidenceLines
+        self.missingData = missingData
+        self.calibrationStatus = calibrationStatus
+        self.nextAction = nextAction
+        self.giveUpRule = giveUpRule
+    }
+}
 
 /// A point score plus its Wilson range ("62% (54–70%)"), or "insufficient" when
 /// the metric has no reliable value (nil).
@@ -103,6 +127,50 @@ public func formatPercent(_ fraction: Double) -> String {
 /// The CPA scaled-score band label ("60–84"); the score, not a percentage.
 public func readinessBandLabel(_ band: ReadinessBand) -> String {
     "\(Int(band.bandLow.rounded()))–\(Int(band.bandHigh.rounded()))"
+}
+
+public func readinessEvidence(band: ReadinessBand, topics: [TopicScoreModel]) -> ReadinessEvidence {
+    var missingData: [String] = []
+    if band.abstain && band.reason.localizedCaseInsensitiveContains("volume") {
+        missingData.append("Need at least \(readinessMinimumSealedAttempts) sealed attempts before a readiness range can be shown.")
+    }
+    if band.coverage < readinessMinimumCoverage {
+        missingData.append("Need sealed evidence across \(formatPercent(readinessMinimumCoverage)) of topics; current coverage is \(formatPercent(band.coverage)).")
+    }
+
+    let thinMemory = topics.filter(\.memoryInsufficient).prefix(3).map(\.displayName)
+    if !thinMemory.isEmpty {
+        missingData.append("Memory is still thin for \(thinMemory.joined(separator: ", ")).")
+    }
+    if missingData.isEmpty {
+        missingData.append("No hard blockers for the current range; more sealed attempts will narrow uncertainty.")
+    }
+
+    return ReadinessEvidence(
+        evidenceLines: band.reasons.isEmpty ? [band.abstain ? band.reason : "Readiness drivers were not recorded for this range."] : band.reasons,
+        missingData: missingData,
+        calibrationStatus: "No past score-verification history is available yet; treat this as an uncalibrated projection until held-out outcomes are logged.",
+        nextAction: bestNextReadinessAction(band: band, topics: topics),
+        giveUpRule: "No readiness range until there are at least \(readinessMinimumSealedAttempts) sealed attempts and \(formatPercent(readinessMinimumCoverage)) topic coverage."
+    )
+}
+
+private func bestNextReadinessAction(band: ReadinessBand, topics: [TopicScoreModel]) -> String {
+    guard !topics.isEmpty else {
+        return "Load a CPA bank or demo profile, then start sealed practice."
+    }
+    if band.coverage < readinessMinimumCoverage {
+        return "Add sealed exam-style attempts in uncovered topics before trusting the readiness range."
+    }
+    if let gap = topics
+        .filter({ $0.gapWarning && !$0.memoryInsufficient })
+        .max(by: { $0.gap < $1.gap }) {
+        return "Run a confusion-set drill for \(gap.displayName); memory is \(formatPercent(gap.memory)) and performance is \(formatPercent(gap.performance))."
+    }
+    if let weakest = topics.min(by: { $0.performance < $1.performance }) {
+        return "Do sealed exam-style practice for \(weakest.displayName); current performance is \(formatPercent(weakest.performance))."
+    }
+    return "Load a CPA bank or demo profile, then start sealed practice."
 }
 
 public extension TopicScoreModel {

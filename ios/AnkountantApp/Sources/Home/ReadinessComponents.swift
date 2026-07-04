@@ -13,11 +13,15 @@ import AnkiKit
 /// one sanctioned "readiness band" value color.
 struct ReadinessBandView: View {
     let band: ReadinessBand
+    var topics: [TopicScoreModel] = []
     @Environment(\.palette) private var palette
 
     var body: some View {
         if band.abstain {
-            AbstainView(reason: band.reason, coverage: band.coverage)
+            VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
+                AbstainView(reason: band.reason, coverage: band.coverage)
+                ReadinessEvidencePanel(evidence: readinessEvidence(band: band, topics: topics))
+            }
         } else {
             VStack(alignment: .leading, spacing: AnkountantSpacing.xs) {
                 HStack(alignment: .firstTextBaseline, spacing: AnkountantSpacing.sm) {
@@ -46,6 +50,7 @@ struct ReadinessBandView: View {
                 Text("Rough projection on the CPA 0–99 scale (pass 75); the band is the confidence range, not an official AICPA score.")
                     .ankountantFont(.micro)
                     .foregroundStyle(palette.textTertiary)
+                ReadinessEvidencePanel(evidence: readinessEvidence(band: band, topics: topics))
             }
         }
     }
@@ -140,6 +145,60 @@ struct TopicBreakdownList: View {
                     }
                     TopicScoreRow(topic: topic)
                 }
+            }
+        }
+    }
+}
+
+struct ReadinessEvidencePanel: View {
+    let evidence: ReadinessEvidence
+    var compact = false
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: compact ? AnkountantSpacing.sm : AnkountantSpacing.md) {
+            evidenceSection(
+                title: "Evidence behind this range",
+                systemImage: "checklist",
+                lines: evidence.evidenceLines
+            )
+            evidenceSection(
+                title: "Still missing",
+                systemImage: "tray",
+                lines: evidence.missingData
+            )
+            evidenceSection(
+                title: "Next best study action",
+                systemImage: "arrow.forward.circle",
+                lines: [evidence.nextAction],
+                emphasized: true
+            )
+            evidenceSection(
+                title: "Past prediction accuracy",
+                systemImage: "chart.xyaxis.line",
+                lines: [evidence.calibrationStatus, evidence.giveUpRule]
+            )
+        }
+        .padding(.top, compact ? 0 : AnkountantSpacing.sm)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func evidenceSection(
+        title: String,
+        systemImage: String,
+        lines: [String],
+        emphasized: Bool = false
+    ) -> some View {
+        VStack(alignment: .leading, spacing: AnkountantSpacing.xxs) {
+            Label(title, systemImage: systemImage)
+                .ankountantFont(.micro)
+                .textCase(.uppercase)
+                .foregroundStyle(palette.textSecondary)
+            ForEach(lines, id: \.self) { line in
+                Text(line)
+                    .ankountantFont(emphasized ? .bodyEmphasis : .caption)
+                    .foregroundStyle(emphasized ? palette.textPrimary : palette.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

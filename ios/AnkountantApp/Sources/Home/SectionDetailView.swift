@@ -58,7 +58,7 @@ struct SectionDetailView: View {
                 .ankountantFont(.sectionHeading)
                 .foregroundStyle(palette.textPrimary)
             if let summary {
-                ReadinessBandView(band: summary.band)
+                ReadinessBandView(band: summary.band, topics: summary.topics)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -69,6 +69,18 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
             summitHero
             metricDeck
+            if let farReadiness {
+                ReadinessEvidencePanel(
+                    evidence: readinessEvidence(band: farReadiness.band, topics: farReadiness.topics),
+                    compact: true
+                )
+                .padding(AnkountantSpacing.md)
+                .background(palette.surfaceElevated, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
+                        .stroke(palette.borderSubtle, lineWidth: 1)
+                )
+            }
             examScheduleControl
             farTopicList
             actions
