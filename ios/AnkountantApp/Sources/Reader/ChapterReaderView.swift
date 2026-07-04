@@ -512,14 +512,16 @@ private struct ChapterWebView: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            // Restore prior scroll position once the page reports a real
-            // content size; without this the scrollView height is still
-            // the initial frame size and our offset would be clamped.
             if let target = pendingInitialProgress, target > 0 {
                 let scrollView = webView.scrollView
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    let maxOffset = max(0, scrollView.contentSize.height - scrollView.bounds.height)
-                    scrollView.contentOffset.y = maxOffset * CGFloat(target)
+                Task { @MainActor [weak scrollView] in
+                    do {
+                        try await Task.sleep(for: .milliseconds(50))
+                    } catch {
+                        return
+                    }
+                    guard let scrollView else { return }
+                    ReaderScrollRestoration.apply(progress: target, to: scrollView)
                 }
             }
             pendingInitialProgress = nil
