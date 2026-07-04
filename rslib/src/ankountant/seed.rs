@@ -94,7 +94,7 @@ const DEMO_TOPICS: [DemoTopic; 13] = [
     // --- Weak: Memory & Performance both < 75 (real FAR pain points) ---
     // deferred taxes: memorized the rule, TBS computations sink them (big gap),
     // and they've ground a lot of MCQs without it clicking.
-    DemoTopic { set_id: "tax_timing",                 mem: (18, 25), mcq: (8, 16),  tbs: &[0.5, 0.667, 0.5] },
+    DemoTopic { set_id: "tax_timing",                 mem: (18, 25), mcq: (4, 16),  tbs: &[0.25, 0.333, 0.25] },
     DemoTopic { set_id: "pensions_equity",            mem: (16, 24), mcq: (9, 14),  tbs: &[0.667, 0.6] },
     DemoTopic { set_id: "government_nfp",             mem: (15, 24), mcq: (9, 14),  tbs: &[0.667, 0.75] },
 ];
@@ -572,6 +572,15 @@ impl Collection {
         let out = self.transact(crate::ops::Op::AddNote, |col| {
             col.load_far_seed_inner(with_history)
         })?;
+        if with_history {
+            let exam_iso = (chrono::Local::now().date_naive()
+                + chrono::Duration::days(constants::SEED_EXAM_OFFSET_DAYS))
+            .format("%Y-%m-%d")
+            .to_string();
+            self.ankountant_set_exam_date(super::DEFAULT_SECTION, &exam_iso)?;
+        } else if self.ankountant_exam_date(super::DEFAULT_SECTION)?.is_some() {
+            self.ankountant_set_exam_date(super::DEFAULT_SECTION, "")?;
+        }
         Ok(out.output)
     }
 
@@ -884,16 +893,6 @@ impl Collection {
         if with_history {
             // FSRS on so the seeded memory states + retrievability are live.
             self.set_config(BoolKey::Fsrs, &true)?;
-
-            // Exam date ~SEED_EXAM_OFFSET_DAYS out lights up the Home countdown
-            // and the deadline-anchored retention ramp (A1). Written with the
-            // inner setter because we are already inside a transaction.
-            let exam_iso = (chrono::Local::now().date_naive()
-                + chrono::Duration::days(constants::SEED_EXAM_OFFSET_DAYS))
-            .format("%Y-%m-%d")
-            .to_string();
-            let exam_key = config::exam_date_key(section);
-            self.set_config(exam_key.as_str(), &exam_iso)?;
 
             // A shared clock places every seeded revlog row on a real past
             // day-and-time while keeping ids unique.

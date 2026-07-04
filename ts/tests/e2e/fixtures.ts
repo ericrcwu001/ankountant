@@ -1,7 +1,7 @@
 // Copyright: Ankitects Pty Ltd and contributors
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
-import { test as base } from "@playwright/test";
+import { type APIRequestContext, test as base } from "@playwright/test";
 
 export { expect } from "@playwright/test";
 
@@ -98,18 +98,27 @@ function decodeLoadFarSeedResponse(bytes: Uint8Array): FarSeed {
     return out;
 }
 
-export const test = base.extend<{ seed: FarSeed }>({
-    // Auto fixture: load the FAR seed into the throwaway collection before each
-    // spec (an empty LoadFarSeedRequest defaults section -> FAR).
+function encodeLoadFarSeedRequest(withHistory: boolean): Buffer {
+    return withHistory ? Buffer.from([0x10, 0x01]) : Buffer.alloc(0);
+}
+
+async function loadFarSeed(request: APIRequestContext, withHistory: boolean): Promise<FarSeed> {
+    const res = await request.post("/_anki/loadFarSeed", {
+        headers: { "Content-Type": "application/binary" },
+        data: encodeLoadFarSeedRequest(withHistory),
+    });
+    if (!res.ok()) {
+        throw new Error(`loadFarSeed failed: ${res.status()} ${await res.text()}`);
+    }
+    const bytes = new Uint8Array(await res.body());
+    return decodeLoadFarSeedResponse(bytes);
+}
+
+export const test = base.extend<{ seed: FarSeed; seedWithHistory: FarSeed }>({
     seed: async ({ request }, use) => {
-        const res = await request.post("/_anki/loadFarSeed", {
-            headers: { "Content-Type": "application/binary" },
-            data: Buffer.alloc(0),
-        });
-        if (!res.ok()) {
-            throw new Error(`loadFarSeed failed: ${res.status()} ${await res.text()}`);
-        }
-        const bytes = new Uint8Array(await res.body());
-        await use(decodeLoadFarSeedResponse(bytes));
+        await use(await loadFarSeed(request, false));
+    },
+    seedWithHistory: async ({ request }, use) => {
+        await use(await loadFarSeed(request, true));
     },
 });

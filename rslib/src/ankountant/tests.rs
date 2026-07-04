@@ -1356,6 +1356,17 @@ fn f016_demo_history_is_strong_on_most_topics_with_a_few_weak_spots() {
         (2..=3).contains(&weak),
         "expected 2-3 weak topics (mem & perf < 75), got {weak}"
     );
+
+    let tax_timing = resp
+        .topics
+        .iter()
+        .find(|t| t.set_id == "tax_timing")
+        .unwrap();
+    assert!(
+        tax_timing.gap >= 0.25,
+        "expected tax_timing to show a dashboard warning gap, got {:.3}",
+        tax_timing.gap
+    );
 }
 
 #[test]
@@ -1423,6 +1434,16 @@ fn f016_content_only_seed_stays_a_clean_slate() {
         .get_all_revlog_entries(TimestampSecs(0))
         .unwrap();
     assert!(revlog.is_empty(), "content-only seed must add no revlog");
+}
+
+#[test]
+fn f016_content_only_reseed_clears_demo_exam_date() {
+    let mut col = Collection::new();
+    col.ankountant_load_far_seed(true).unwrap();
+    assert!(col.ankountant_exam_date("FAR").unwrap().is_some());
+
+    col.ankountant_load_far_seed(false).unwrap();
+    assert!(col.ankountant_exam_date("FAR").unwrap().is_none());
 }
 
 #[test]

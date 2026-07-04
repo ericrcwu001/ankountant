@@ -18,23 +18,21 @@ test("thin data shows the abstain message + reason and NO number (A55)", async (
     await expect(page.getByTestId("readiness-band")).toHaveCount(0);
 });
 
-test("readiness is labelled the exam-day projection tied to the set exam date (A57)", async ({ page }) => {
-    // Set the exam date via the STANDARD config-set RPC (no new setter). We do
-    // it in the page context so the same collection is mutated.
+test("readiness is labelled the exam-day projection tied to the set exam date (A57)", async ({ page, seedWithHistory }) => {
+    expect(seedWithHistory.studyRecallCards).toBeGreaterThan(0);
     await page.goto("/ankountant-dashboard");
     const heading = page.locator(".readiness h2");
-    await expect(heading).toContainText("Exam-day projection");
+    await expect(heading).toContainText(/Exam-day projection \(\d{4}-\d{2}-\d{2}\)/);
     await expect(heading).not.toContainText("today");
 });
 
-test("gap >= 0.25 renders the gap row with the gap-warning class (A56)", async ({ page }) => {
-    // The dashboard renders a gap-warning class on any topic row whose gap
-    // crosses 0.25; verified structurally against the seed's topic rows once a
-    // gap is present. This asserts the class hook exists in the DOM contract.
+test("gap >= 0.25 renders the gap row with the gap-warning class (A56)", async ({ page, seedWithHistory }) => {
+    expect(seedWithHistory.confusionSets).toBeGreaterThanOrEqual(4);
     await page.goto("/ankountant-dashboard");
-    // The class is applied conditionally; assert the selector is wired (rows
-    // exist and the class attribute is togglable) — the numeric gap is driven
-    // by submitted attempts in the full session flow (see confusion.test.ts).
-    const table = page.getByTestId("score-table");
-    await expect(table).toBeVisible();
+    const taxTiming = page.locator("[data-testid=\"topic-row\"][data-set-id=\"tax_timing\"]");
+    await expect(taxTiming).toBeVisible();
+    await expect(taxTiming).toHaveClass(/gap-warning/);
+    await expect(taxTiming.getByTestId("memory")).toContainText("72%");
+    await expect(taxTiming.getByTestId("performance")).toContainText("26%");
+    await expect(taxTiming.getByTestId("gap")).toContainText("46%");
 });
