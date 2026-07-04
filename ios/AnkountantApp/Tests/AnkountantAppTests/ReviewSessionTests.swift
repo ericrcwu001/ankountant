@@ -138,14 +138,14 @@ final class ReviewSessionTests: XCTestCase {
         }
     }
 
-    func testAnswerFailureKeepsCurrentCardAndReportsError() {
+    func testAnswerFailureKeepsCurrentCardAndReportsError() async {
         let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
         let stubResult = QueuedCardsResult(
             cards: [stubCard], newCount: 1, learningCount: 0, reviewCount: 0
         )
         let stubNote = NoteRecord(id: 100, guid: "g", mid: 200, mod: 0, flds: "", sfld: "", csum: 0)
 
-        withDependencies {
+        await withDependencies {
             $0.decksService.setCurrentDeck = { _ in }
             $0.schedulerService.getQueuedCards = { _ in stubResult }
             $0.schedulerService.answerReviewCard = { _, _, _, _ in throw ReviewSessionFixtureError.failed }
@@ -158,12 +158,46 @@ final class ReviewSessionTests: XCTestCase {
             session.start()
             XCTAssertEqual(session.currentCardId, 1)
 
+            await session.revealAnswer()
             session.answer(rating: .good)
 
             XCTAssertEqual(session.currentCardId, 1)
             XCTAssertEqual(session.sessionStats.reviewed, 0)
             XCTAssertFalse(session.isFinished)
             XCTAssertTrue(session.errorMessage?.contains("fixture failure") == true)
+        }
+    }
+
+    func testAnswerBeforeRevealIsIgnored() {
+        final class Counter: @unchecked Sendable { var value = 0 }
+        let answerCounter = Counter()
+        let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
+        let stubResult = QueuedCardsResult(
+            cards: [stubCard], newCount: 1, learningCount: 0, reviewCount: 0
+        )
+        let stubNote = NoteRecord(id: 100, guid: "g", mid: 200, mod: 0, flds: "", sfld: "", csum: 0)
+
+        withDependencies {
+            $0.decksService.setCurrentDeck = { _ in }
+            $0.schedulerService.getQueuedCards = { _ in stubResult }
+            $0.schedulerService.answerReviewCard = { _, _, _, _ in
+                answerCounter.value += 1
+            }
+            $0.notesService.getNote = { _ in stubNote }
+            $0.cardRenderingService.renderCard = { _ in
+                RenderedCard(frontHTML: "front", backHTML: "back", cardCSS: "")
+            }
+        } operation: {
+            let session = ReviewSession(deckId: 1)
+            session.start()
+
+            session.answer(rating: .good)
+
+            XCTAssertEqual(answerCounter.value, 0)
+            XCTAssertEqual(session.currentCardId, 1)
+            XCTAssertEqual(session.sessionStats.reviewed, 0)
+            XCTAssertFalse(session.canUndo)
+            XCTAssertFalse(session.showAnswer)
         }
     }
 

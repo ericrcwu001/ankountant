@@ -147,7 +147,7 @@ final class ReviewSession {
     }
 
     func answer(rating: Rating, confidence: ConfidenceLevel? = nil) {
-        guard let queued = currentQueuedCard else { return }
+        guard showAnswer, let queued = currentQueuedCard else { return }
 
         let timeSpent = UInt32(Date.now.timeIntervalSince(reviewStartTime) * 1000)
 
