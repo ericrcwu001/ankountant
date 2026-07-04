@@ -17,6 +17,29 @@ enum NoteFormRules {
             && hasEnteredField(fieldValues)
     }
 
+    static func addNoteRequirementMessage(
+        isSaving: Bool,
+        decks: [DeckInfo],
+        selectedDeckId: Int64,
+        selectedNotetypeId: Int64,
+        fieldValues: [String],
+        loadErrorMessage: String?
+    ) -> String? {
+        if isSaving || loadErrorMessage != nil {
+            return nil
+        }
+        guard !decks.isEmpty, selectedNotetypeId != 0, !fieldValues.isEmpty else {
+            return "Note form is still loading."
+        }
+        guard decks.contains(where: { $0.id == selectedDeckId }) else {
+            return "Choose a deck before adding."
+        }
+        guard hasEnteredField(fieldValues) else {
+            return "Enter at least one field before adding."
+        }
+        return nil
+    }
+
     static func canSaveEditedNote(
         isSaving: Bool,
         fieldNames: [String],
@@ -27,6 +50,21 @@ enum NoteFormRules {
             && loadErrorMessage == nil
             && !fieldNames.isEmpty
             && fieldValues.count >= fieldNames.count
+    }
+
+    static func editNoteRequirementMessage(
+        isSaving: Bool,
+        fieldNames: [String],
+        fieldValues: [String],
+        loadErrorMessage: String?
+    ) -> String? {
+        if isSaving || loadErrorMessage != nil {
+            return nil
+        }
+        guard !fieldNames.isEmpty, fieldValues.count >= fieldNames.count else {
+            return "Note fields are still loading."
+        }
+        return nil
     }
 
     static func fieldValues(for fieldNames: [String], draft: AddNoteDraft?) -> [String] {

@@ -49,6 +49,46 @@ struct NoteFormRulesTests {
         ))
     }
 
+    @Test func addRequirementMessageNamesTheMissingInput() {
+        let decks = [DeckInfo(id: 1, name: "Default")]
+
+        #expect(NoteFormRules.addNoteRequirementMessage(
+            isSaving: false,
+            decks: [],
+            selectedDeckId: 0,
+            selectedNotetypeId: 0,
+            fieldValues: [],
+            loadErrorMessage: nil
+        ) == "Note form is still loading.")
+
+        #expect(NoteFormRules.addNoteRequirementMessage(
+            isSaving: false,
+            decks: decks,
+            selectedDeckId: 2,
+            selectedNotetypeId: 10,
+            fieldValues: ["Front"],
+            loadErrorMessage: nil
+        ) == "Choose a deck before adding.")
+
+        #expect(NoteFormRules.addNoteRequirementMessage(
+            isSaving: false,
+            decks: decks,
+            selectedDeckId: 1,
+            selectedNotetypeId: 10,
+            fieldValues: ["  "],
+            loadErrorMessage: nil
+        ) == "Enter at least one field before adding.")
+
+        #expect(NoteFormRules.addNoteRequirementMessage(
+            isSaving: false,
+            decks: decks,
+            selectedDeckId: 1,
+            selectedNotetypeId: 10,
+            fieldValues: ["Front"],
+            loadErrorMessage: nil
+        ) == nil)
+    }
+
     @Test func draftFieldValuesFollowActualNotetypeFieldOrder() {
         let draft = AddNoteDraft(fieldValues: [
             "Back": "Answer",
@@ -92,6 +132,29 @@ struct NoteFormRulesTests {
             fieldValues: ["Question"],
             loadErrorMessage: nil
         ))
+    }
+
+    @Test func editRequirementMessageNamesLoadingState() {
+        #expect(NoteFormRules.editNoteRequirementMessage(
+            isSaving: false,
+            fieldNames: [],
+            fieldValues: [],
+            loadErrorMessage: nil
+        ) == "Note fields are still loading.")
+
+        #expect(NoteFormRules.editNoteRequirementMessage(
+            isSaving: false,
+            fieldNames: ["Front", "Back"],
+            fieldValues: ["Front"],
+            loadErrorMessage: nil
+        ) == "Note fields are still loading.")
+
+        #expect(NoteFormRules.editNoteRequirementMessage(
+            isSaving: false,
+            fieldNames: ["Front"],
+            fieldValues: ["Front"],
+            loadErrorMessage: nil
+        ) == nil)
     }
 
     @Test func normalizedTagsCollapseWhitespace() {

@@ -89,6 +89,14 @@ struct AddNoteView: View {
                             .font(.caption)
                     }
                 }
+
+                if let addRequirementMessage {
+                    Section {
+                        Text(addRequirementMessage)
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                    }
+                }
             }
             .navigationTitle("Add Note")
             .navigationBarTitleDisplayMode(.inline)
@@ -101,6 +109,7 @@ struct AddNoteView: View {
                         Task { await save() }
                     }
                     .disabled(!canAddNote)
+                    .accessibilityHint(addRequirementMessage ?? "")
                 }
             }
             .task {
@@ -120,6 +129,17 @@ struct AddNoteView: View {
 
     private var canAddNote: Bool {
         NoteFormRules.canAddNote(
+            isSaving: isSaving,
+            decks: decks,
+            selectedDeckId: selectedDeckId,
+            selectedNotetypeId: selectedNotetypeId,
+            fieldValues: fieldValues,
+            loadErrorMessage: loadErrorMessage
+        )
+    }
+
+    private var addRequirementMessage: String? {
+        NoteFormRules.addNoteRequirementMessage(
             isSaving: isSaving,
             decks: decks,
             selectedDeckId: selectedDeckId,
@@ -190,7 +210,7 @@ struct AddNoteView: View {
 
     private func save() async {
         guard canAddNote else {
-            saveErrorMessage = loadErrorMessage ?? "Enter at least one field before adding."
+            saveErrorMessage = loadErrorMessage ?? addRequirementMessage ?? "Enter at least one field before adding."
             return
         }
 

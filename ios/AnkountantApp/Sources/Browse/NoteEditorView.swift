@@ -53,6 +53,14 @@ struct NoteEditorView: View {
                         .font(.caption)
                 }
             }
+
+            if let saveRequirementMessage {
+                Section {
+                    Text(saveRequirementMessage)
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
+            }
         }
         .navigationTitle("Edit Note")
         .navigationBarTitleDisplayMode(.inline)
@@ -62,6 +70,7 @@ struct NoteEditorView: View {
                     Task { await save() }
                 }
                 .disabled(!canSaveNote)
+                .accessibilityHint(saveRequirementMessage ?? "")
             }
         }
         .overlay {
@@ -99,6 +108,15 @@ struct NoteEditorView: View {
         )
     }
 
+    private var saveRequirementMessage: String? {
+        NoteFormRules.editNoteRequirementMessage(
+            isSaving: isSaving,
+            fieldNames: fieldNames,
+            fieldValues: fieldValues,
+            loadErrorMessage: loadErrorMessage
+        )
+    }
+
     private func loadNote() {
         loadErrorMessage = nil
         saveErrorMessage = nil
@@ -117,7 +135,7 @@ struct NoteEditorView: View {
 
     private func save() async {
         guard canSaveNote else {
-            saveErrorMessage = loadErrorMessage ?? "Note fields are still loading."
+            saveErrorMessage = loadErrorMessage ?? saveRequirementMessage ?? "Note fields are still loading."
             return
         }
 
