@@ -3,7 +3,7 @@ Copyright: Ankitects Pty Ltd and contributors
 License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 Shell chrome for the Ankountant surfaces. A fixed navy left sidebar (brand mark,
-primary navigation, streak + profile) frames the light study surfaces to its
+primary navigation, focus + profile) frames the light study surfaces to its
 right. Routes live in a SvelteKit route group `(ankountant)/` so they share this
 chrome without changing their flat URLs. On launch the classic Qt chrome is
 hidden and this loads full-window (qt/aqt/main.py). Styled with the Ledger design
@@ -158,11 +158,11 @@ tokens (--accent = Ink Navy).
         </nav>
 
         <div class="sidebar-foot">
-            <div class="streak">
-                <div class="streak-row">
-                    <span class="streak-name">
+            <div class="focus-card" aria-label="Study focus">
+                <div class="focus-row">
+                    <span class="focus-name">
                         <svg
-                            class="streak-flame"
+                            class="focus-icon"
                             viewBox="0 0 24 24"
                             fill="currentColor"
                             aria-hidden="true"
@@ -170,23 +170,20 @@ tokens (--accent = Ink Navy).
                             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                             {@html icons.flame}
                         </svg>
-                        Streak
+                        Focus
                     </span>
-                    <span class="streak-count tabular">12 days</span>
-                </div>
-                <div class="streak-bar">
-                    <div class="streak-fill" style="width:62%"></div>
+                    <span class="focus-count">FAR</span>
                 </div>
             </div>
 
             <button
                 type="button"
                 class="profile"
-                aria-label="Open profile settings for Austin K."
+                aria-label="Open Ankountant preferences"
                 on:click={openSettings}
             >
                 <span class="avatar">AK</span>
-                <span class="profile-name">Austin K.</span>
+                <span class="profile-name">Preferences</span>
                 <svg
                     class="profile-caret"
                     viewBox="0 0 24 24"
@@ -317,20 +314,20 @@ tokens (--accent = Ink Navy).
         padding-top: var(--space-lg);
     }
 
-    .streak {
+    .focus-card {
         display: flex;
         flex-direction: column;
         gap: var(--space-sm);
         padding: 0 var(--space-xs);
     }
 
-    .streak-row {
+    .focus-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
     }
 
-    .streak-name {
+    .focus-name {
         display: inline-flex;
         align-items: center;
         gap: 7px;
@@ -339,29 +336,16 @@ tokens (--accent = Ink Navy).
         color: rgba(255, 255, 255, 0.82);
     }
 
-    .streak-flame {
+    .focus-icon {
         width: 15px;
         height: 15px;
         color: #e08a2e;
     }
 
-    .streak-count {
+    .focus-count {
         font-size: 13.5px;
         font-weight: 700;
         color: #fff;
-    }
-
-    .streak-bar {
-        height: 5px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.16);
-        overflow: hidden;
-    }
-
-    .streak-fill {
-        height: 100%;
-        border-radius: 999px;
-        background: linear-gradient(90deg, #4e86c6, #6ba6e4);
     }
 
     .profile {
