@@ -19,6 +19,10 @@ import AnkountantCardWeb
 ///  - Frame-load lifecycle so per-card evaluateJavaScript runs at the right moment
 @MainActor
 final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler, AVSpeechSynthesizerDelegate {
+    enum TypedAnswerBridgeMessage: Equatable {
+        case submit(String?)
+        case ignore
+    }
 
     // MARK: State tracked across updates
 
@@ -86,12 +90,11 @@ final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMess
         }
 
         if message.name == "ankountantSubmitTypedAnswer" {
-            if let string = message.body as? String {
-                onTypedAnswerSubmitted?(string)
-            } else if message.body is NSNull {
-                onTypedAnswerSubmitted?(nil)
-            } else {
-                onTypedAnswerSubmitted?(nil)
+            switch Self.typedAnswerBridgeMessage(from: message.body) {
+            case let .submit(answer):
+                onTypedAnswerSubmitted?(answer)
+            case .ignore:
+                break
             }
             return
         }
@@ -129,6 +132,16 @@ final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMess
 
         guard let href, !href.isEmpty else { return }
         openLink(href)
+    }
+
+    static func typedAnswerBridgeMessage(from body: Any) -> TypedAnswerBridgeMessage {
+        if let string = body as? String {
+            return .submit(string)
+        }
+        if body is NSNull {
+            return .submit(nil)
+        }
+        return .ignore
     }
 
     // MARK: - AVSpeechSynthesizerDelegate

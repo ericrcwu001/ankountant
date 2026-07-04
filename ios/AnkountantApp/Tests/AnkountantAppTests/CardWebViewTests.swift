@@ -83,6 +83,18 @@ final class CardWebViewTests: XCTestCase {
     }
 
     @MainActor
+    func testTypedAnswerBridgeMessageAcceptsStringAndNull() {
+        XCTAssertEqual(CardWebViewCoordinator.typedAnswerBridgeMessage(from: "typed"), .submit("typed"))
+        XCTAssertEqual(CardWebViewCoordinator.typedAnswerBridgeMessage(from: NSNull()), .submit(nil))
+    }
+
+    @MainActor
+    func testTypedAnswerBridgeMessageIgnoresMalformedPayloads() {
+        XCTAssertEqual(CardWebViewCoordinator.typedAnswerBridgeMessage(from: ["answer": "typed"]), .ignore)
+        XCTAssertEqual(CardWebViewCoordinator.typedAnswerBridgeMessage(from: 0), .ignore)
+    }
+
+    @MainActor
     func testResolvedCardLinkKeepsCustomAppLinks() {
         let url = CardWebViewCoordinator.resolvedCardLink(from: "anki://x-callback-url/search", baseURL: nil)
 
