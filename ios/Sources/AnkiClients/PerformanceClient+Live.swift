@@ -29,13 +29,13 @@ extension PerformanceClient: DependencyKey {
                 let query = "\"note:Ankountant TBS\" deck:Ankountant::Sealed::FAR::*"
                 let ids = try notes.searchNoteIds(query)
                 return try ids.map { id in
-                    let model = buildTbsModel(fields: try fields(of: id))
+                    let model = try buildTbsModel(fields: try fields(of: id))
                     return TbsTaskSummary(noteId: id, shape: model.shape, prompt: model.prompt)
                 }
             },
             loadTbs: { noteId in
                 let (fields, tags) = try fieldsAndTags(of: noteId)
-                return buildTbsModel(fields: fields, tags: tags)
+                return try buildTbsModel(fields: fields, tags: tags)
             },
             submitTbs: { noteId, submissionJson, confidence, latencyMs in
                 try scheduler.submitPerformanceAttempt(noteId, "tbs", submissionJson, confidence, latencyMs)

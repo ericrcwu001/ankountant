@@ -1,4 +1,4 @@
-import Foundation
+public import Foundation
 
 // Pure helpers for the TBS / Confusion surfaces, ported from the desktop
 // ts/routes/(ankountant)/ankountant-tbs/lib.ts and ankountant-confusion/lib.ts.
@@ -29,17 +29,43 @@ private let exhibitKinds: Set<String> = [
     "text", "email", "invoice", "table", "statement", "memo", "document", "stamp",
 ]
 
+public enum TbsParseError: Error, Equatable, LocalizedError, Sendable {
+    case missingJson(field: String)
+    case invalidJson(field: String, message: String)
+    case nonArrayJson(field: String)
+    case emptySteps
+    case unsupportedTbsType(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case let .missingJson(field):
+            "\(field) is missing."
+        case let .invalidJson(field, message):
+            "Invalid \(field): \(message)"
+        case let .nonArrayJson(field):
+            "\(field) must be an array."
+        case .emptySteps:
+            "steps_json must contain at least one step."
+        case let .unsupportedTbsType(shape):
+            "Unsupported tbs_type: \(shape)"
+        }
+    }
+}
+
 /// Build the full TBS render model from a note's raw fields (+ tags for the
 /// section, ADR 0008). Mirrors the desktop `buildTbsModel(fields, tags)`.
-public func buildTbsModel(fields: [String], tags: [String] = []) -> TbsModel {
-    let shapeRaw = field(fields, TbsField.tbsType) ?? "journal_entry"
-    let exhibits = parseExhibits(field(fields, TbsField.exhibitsJson))
+public func buildTbsModel(fields: [String], tags: [String] = []) throws -> TbsModel {
+    let shapeRaw = field(fields, TbsField.tbsType)
+    guard let shapeRaw, let shape = TbsShape(rawValue: shapeRaw) else {
+        throw TbsParseError.unsupportedTbsType(shapeRaw ?? "")
+    }
+    let exhibits = try parseExhibits(field(fields, TbsField.exhibitsJson))
     let document = exhibits.first(where: { $0.role == "document" })?.body
     return TbsModel(
-        shape: TbsShape(rawValue: shapeRaw) ?? .journalEntry,
+        shape: shape,
         prompt: field(fields, TbsField.prompt) ?? "",
         exhibits: exhibits,
-        steps: parseSteps(field(fields, TbsField.stepsJson)),
+        steps: try parseSteps(field(fields, TbsField.stepsJson)),
         section: sectionFromTags(tags),
         document: document
     )
@@ -64,8 +90,8 @@ public func paneExhibits(_ model: TbsModel) -> [Exhibit] {
 
 /// Parse exhibits_json into typed exhibits ({id, title, kind, role, body,
 /// columns, rows}). Mirrors the desktop `parseExhibits`.
-public func parseExhibits(_ raw: String?) -> [Exhibit] {
-    guard let array = jsonArray(raw) else { return [] }
+public func parseExhibits(_ raw: String?) throws -> [Exhibit] {
+    let array = try jsonArray("exhibits_json", raw)
     return array.enumerated().map { index, element in
         let object = element as? [String: Any]
         let kindRaw = (object?["kind"] as? String) ?? "text"
@@ -88,8 +114,9 @@ public func parseExhibits(_ raw: String?) -> [Exhibit] {
 /// `options[]` are the label-stripped candidates only). Weights default to 1/N
 /// (matching the Rust default_weight) so the rendered total reconciles with the
 /// A10 grading. Mirrors the desktop `parseSteps`.
-public func parseSteps(_ raw: String?) -> [RenderStep] {
-    guard let array = jsonArray(raw), !array.isEmpty else { return [] }
+public func parseSteps(_ raw: String?) throws -> [RenderStep] {
+    let array = try jsonArray("steps_json", raw)
+    guard !array.isEmpty else { throw TbsParseError.emptySteps }
     let defaultWeight = 1.0 / Double(array.count)
     return array.enumerated().map { index, element in
         let object = element as? [String: Any]
@@ -130,9 +157,7 @@ private func parseOptions(_ raw: Any?) -> [RenderOption] {
 public func segmentDocument(_ body: String?) -> [DocSegment] {
     guard let body, !body.isEmpty else { return [] }
     let pattern = #"<blank\s+step="([^"]+)">([\s\S]*?)</blank>"#
-    guard let regex = try? NSRegularExpression(pattern: pattern) else {
-        return [.text(key: "t0", text: body)]
-    }
+    let regex = regex(pattern)
     let ns = body as NSString
     var segments: [DocSegment] = []
     var last = 0
@@ -201,9 +226,7 @@ public func buildResearchSubmission(_ citation: String) -> String {
 /// " (capitalize_vs_expense q0)" so the stem never leaks the category.
 public func stripConfusionSlug(_ prompt: String) -> String {
     let pattern = #"\s*\([a-z0-9_]+\s+q\d+\)\s*$"#
-    guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
-        return prompt
-    }
+    let regex = regex(pattern, options: [.caseInsensitive])
     let range = NSRange(prompt.startIndex..<prompt.endIndex, in: prompt)
     var stripped = regex.stringByReplacingMatches(in: prompt, options: [], range: range, withTemplate: "")
     while let last = stripped.last, last.isWhitespace {
@@ -220,24 +243,38 @@ private func field(_ fields: [String], _ index: Int) -> String? {
     fields.indices.contains(index) ? fields[index] : nil
 }
 
-/// Parse a top-level JSON array, mirroring lib.ts `safeParse` + `Array.isArray`:
-/// nil input, invalid JSON, or a non-array top level all collapse to nil.
-private func jsonArray(_ raw: String?) -> [Any]? {
-    guard let raw, let data = raw.data(using: .utf8),
-          let parsed = try? JSONSerialization.jsonObject(with: data) else {
-        return nil
+private func jsonArray(_ fieldName: String, _ raw: String?) throws -> [Any] {
+    guard let raw, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        throw TbsParseError.missingJson(field: fieldName)
     }
-    return parsed as? [Any]
+    guard let data = raw.data(using: .utf8) else {
+        throw TbsParseError.invalidJson(field: fieldName, message: "could not encode as UTF-8")
+    }
+    do {
+        let parsed = try JSONSerialization.jsonObject(with: data)
+        guard let array = parsed as? [Any] else {
+            throw TbsParseError.nonArrayJson(field: fieldName)
+        }
+        return array
+    } catch let error as TbsParseError {
+        throw error
+    } catch {
+        throw TbsParseError.invalidJson(field: fieldName, message: error.localizedDescription)
+    }
 }
 
 /// Serialize a submission payload. Grading parses the JSON back, so key order is
 /// irrelevant; sorted here only for deterministic output.
 private func jsonString(_ object: [String: Any]) -> String {
-    guard let data = try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]),
-          let string = String(data: data, encoding: .utf8) else {
-        return "{}"
+    do {
+        let data = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+        guard let string = String(data: data, encoding: .utf8) else {
+            preconditionFailure("Could not encode submission JSON as UTF-8.")
+        }
+        return string
+    } catch {
+        preconditionFailure("Could not encode submission JSON: \(error.localizedDescription)")
     }
-    return string
 }
 
 /// A cell value for a submission: "" when empty, else the parsed number, else the
@@ -272,5 +309,13 @@ private func stringify(_ value: Any) -> String {
         return ""
     default:
         return String(describing: value)
+    }
+}
+
+private func regex(_ pattern: String, options: NSRegularExpression.Options = []) -> NSRegularExpression {
+    do {
+        return try NSRegularExpression(pattern: pattern, options: options)
+    } catch {
+        preconditionFailure("Invalid regular expression: \(error.localizedDescription)")
     }
 }

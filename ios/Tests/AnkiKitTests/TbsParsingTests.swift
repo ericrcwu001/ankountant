@@ -39,8 +39,19 @@ private func parseObject(_ json: String) throws -> [String: Any] {
     return object
 }
 
-@Test func parseStepsOnAnchorJournalEntry() {
-    let steps = parseSteps(anchorSteps)
+private func expectTbsParseError<T>(_ expected: String, _ body: () throws -> T) {
+    do {
+        _ = try body()
+        Issue.record("Expected TbsParseError containing \(expected)")
+    } catch let error as TbsParseError {
+        #expect(error.localizedDescription.contains(expected))
+    } catch {
+        Issue.record("Expected TbsParseError containing \(expected), got \(error)")
+    }
+}
+
+@Test func parseStepsOnAnchorJournalEntry() throws {
+    let steps = try parseSteps(anchorSteps)
 
     #expect(steps.count == 4)
     #expect(steps.map(\.id) == ["l1", "l2", "l3", "l4"])
@@ -60,8 +71,8 @@ private func parseObject(_ json: String) throws -> [String: Any] {
     #expect(!mirrored.contains { $0.lowercased().contains("correct") })
 }
 
-@Test func parseStepsDefaultsWeightToOneOverN() {
-    let steps = parseSteps(#"[{"id":"a"},{"id":"b"},{"id":"c"}]"#)
+@Test func parseStepsDefaultsWeightToOneOverN() throws {
+    let steps = try parseSteps(#"[{"id":"a"},{"id":"b"},{"id":"c"}]"#)
 
     #expect(steps.count == 3)
     for step in steps {
@@ -69,16 +80,24 @@ private func parseObject(_ json: String) throws -> [String: Any] {
     }
 }
 
-@Test func parseStepsReturnsEmptyForNonArrayOrEmpty() {
-    #expect(parseSteps(nil).isEmpty)
-    #expect(parseSteps("").isEmpty)
-    #expect(parseSteps("[]").isEmpty)
-    #expect(parseSteps("not json").isEmpty)
-    #expect(parseSteps("{\"id\":\"x\"}").isEmpty)
+@Test func parseStepsFailsForMissingMalformedOrEmptyJson() {
+    expectTbsParseError("steps_json is missing.") { try parseSteps(nil) }
+    expectTbsParseError("steps_json is missing.") { try parseSteps("") }
+    expectTbsParseError("steps_json must contain at least one step.") { try parseSteps("[]") }
+    expectTbsParseError("Invalid steps_json:") { try parseSteps("not json") }
+    expectTbsParseError("steps_json must be an array.") { try parseSteps("{\"id\":\"x\"}") }
 }
 
-@Test func buildTbsModelParsesJournalEntry() {
-    let model = buildTbsModel(fields: [
+@Test func parseExhibitsFailsForMissingOrMalformedJson() throws {
+    #expect(try parseExhibits("[]").isEmpty)
+    expectTbsParseError("exhibits_json is missing.") { try parseExhibits(nil) }
+    expectTbsParseError("exhibits_json is missing.") { try parseExhibits("") }
+    expectTbsParseError("Invalid exhibits_json:") { try parseExhibits("not json") }
+    expectTbsParseError("exhibits_json must be an array.") { try parseExhibits("{\"id\":\"x\"}") }
+}
+
+@Test func buildTbsModelParsesJournalEntry() throws {
+    let model = try buildTbsModel(fields: [
         "journal_entry",
         "Record the entry",
         #"[{"title":"T","body":"B"}]"#,
@@ -93,18 +112,23 @@ private func parseObject(_ json: String) throws -> [String: Any] {
     #expect(model.steps.count == 4)
 }
 
-@Test func buildTbsModelShapeFallback() {
-    #expect(buildTbsModel(fields: ["totally_unknown", "p", "[]", "[]"]).shape == .journalEntry)
-    #expect(buildTbsModel(fields: ["numeric", "p", "[]", "[]"]).shape == .numeric)
+@Test func buildTbsModelRejectsUnknownShape() throws {
+    expectTbsParseError("Unsupported tbs_type: totally_unknown") {
+        try buildTbsModel(fields: ["totally_unknown", "p", "[]", anchorSteps])
+    }
+    #expect(try buildTbsModel(fields: ["numeric", "p", "[]", anchorSteps]).shape == .numeric)
 }
 
-@Test func buildTbsModelToleratesShortFields() {
-    let model = buildTbsModel(fields: [])
-
-    #expect(model.shape == .journalEntry)
-    #expect(model.prompt == "")
-    #expect(model.exhibits.isEmpty)
-    #expect(model.steps.isEmpty)
+@Test func buildTbsModelRejectsShortFields() {
+    expectTbsParseError("Unsupported tbs_type: ") {
+        try buildTbsModel(fields: [])
+    }
+    expectTbsParseError("exhibits_json is missing.") {
+        try buildTbsModel(fields: ["numeric", "p"])
+    }
+    expectTbsParseError("steps_json is missing.") {
+        try buildTbsModel(fields: ["numeric", "p", "[]"])
+    }
 }
 
 @Test func buildJeSubmissionShapesAmounts() throws {
@@ -167,8 +191,8 @@ private func parseObject(_ json: String) throws -> [String: Any] {
 
 // MARK: - Research shape
 
-@Test func parseStepsResearchKeepsSafeExtrasStripsKey() {
-    let steps = parseSteps(researchSteps)
+@Test func parseStepsResearchKeepsSafeExtrasStripsKey() throws {
+    let steps = try parseSteps(researchSteps)
 
     #expect(steps.count == 1)
     let step = steps[0]
@@ -192,8 +216,8 @@ private func parseObject(_ json: String) throws -> [String: Any] {
 
 // MARK: - Doc-review shape
 
-@Test func parseStepsDocReviewParsesLabelStrippedOptions() {
-    let steps = parseSteps(docReviewSteps)
+@Test func parseStepsDocReviewParsesLabelStrippedOptions() throws {
+    let steps = try parseSteps(docReviewSteps)
 
     #expect(steps.count == 1)
     let blank = steps[0]
@@ -213,8 +237,8 @@ private func parseObject(_ json: String) throws -> [String: Any] {
     #expect(!stepLabels.contains { $0.lowercased().contains("correct") })
 }
 
-@Test func parseExhibitsParsesTypedKindRoleAndTable() {
-    let exhibits = parseExhibits(docReviewExhibits)
+@Test func parseExhibitsParsesTypedKindRoleAndTable() throws {
+    let exhibits = try parseExhibits(docReviewExhibits)
 
     #expect(exhibits.count == 2)
     let document = exhibits.first { $0.role == "document" }
@@ -277,8 +301,8 @@ private func parseObject(_ json: String) throws -> [String: Any] {
 
 // MARK: - Section + model routing
 
-@Test func buildTbsModelRoutesResearchAndSection() {
-    let model = buildTbsModel(
+@Test func buildTbsModelRoutesResearchAndSection() throws {
+    let model = try buildTbsModel(
         fields: ["research", "Cite the standard", "[]", researchSteps],
         tags: ["ds::foo", "sec::REG"]
     )
@@ -288,8 +312,8 @@ private func parseObject(_ json: String) throws -> [String: Any] {
     #expect(model.steps.first?.kind == "citation")
 }
 
-@Test func buildTbsModelRoutesDocReviewWithDocumentAndSection() {
-    let model = buildTbsModel(
+@Test func buildTbsModelRoutesDocReviewWithDocumentAndSection() throws {
+    let model = try buildTbsModel(
         fields: ["doc_review", "Review the list", docReviewExhibits, docReviewSteps],
         tags: ["sec::AUD"]
     )
@@ -301,13 +325,13 @@ private func parseObject(_ json: String) throws -> [String: Any] {
     #expect(paneExhibits(model).contains { $0.kind == "table" })
 }
 
-@Test func sectionFromTagsResolvesKnownAndFallsBackToFAR() {
+@Test func sectionFromTagsResolvesKnownAndFallsBackToFAR() throws {
     #expect(sectionFromTags(["sec::AUD"]) == "AUD")
     #expect(sectionFromTags(["ds::x", "sec::BAR"]) == "BAR")
     #expect(sectionFromTags(["sec::ZZZ"]) == "FAR")   // unknown section → FAR
     #expect(sectionFromTags([]) == "FAR")             // no tag → FAR
     // Default when tags are omitted entirely.
-    #expect(buildTbsModel(fields: ["numeric", "p", "[]", "[]"]).section == "FAR")
+    #expect(try buildTbsModel(fields: ["numeric", "p", "[]", anchorSteps]).section == "FAR")
 }
 
 // MARK: - Bundled literature corpus (client-side research search)
