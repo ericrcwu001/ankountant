@@ -34,7 +34,7 @@ struct ReadinessBandView: View {
                         .foregroundStyle(palette.textSecondary)
                 }
                 ReadinessBandTrack(band: band)
-                Text("\(formatPercent(band.coverage)) of exam covered · CPA 0–99, pass 75 (projection)")
+                Text("\(formatPercent(band.coverage)) of exam covered · CPA 0–99, pass 75 (exam-day projection)")
                     .ankountantFont(.caption)
                     .foregroundStyle(palette.textSecondary)
                     .monospacedDigit()
@@ -43,7 +43,7 @@ struct ReadinessBandView: View {
                         .ankountantFont(.caption)
                         .foregroundStyle(palette.textSecondary)
                 }
-                Text("Rough projection on the CPA 0–99 scale (pass 75); the band is the confidence range, not an official AICPA score.")
+                Text("Rough exam-day projection on the CPA 0–99 scale (pass 75); the band is the confidence range, not an official AICPA score.")
                     .ankountantFont(.micro)
                     .foregroundStyle(palette.textTertiary)
                 ReadinessEvidencePanel(evidence: readinessEvidence(band: band, topics: topics))
