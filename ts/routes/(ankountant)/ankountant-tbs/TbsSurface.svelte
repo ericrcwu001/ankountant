@@ -10,10 +10,17 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     import ConfidenceGate from "$lib/components/ConfidenceGate.svelte";
 
     import type { JeLineInput, NumericCellInput, TbsModel } from "./lib";
-    import { buildJeSubmission, buildNumericSubmission, JE_ACCOUNTS } from "./lib";
+    import {
+        buildJeSubmission,
+        buildNumericSubmission,
+        JE_ACCOUNTS,
+        renderableTbsShape,
+    } from "./lib";
 
     export let noteId: bigint;
     export let model: TbsModel;
+
+    $: shape = renderableTbsShape(model.shape);
 
     const startedAt = Date.now();
 
@@ -66,7 +73,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         submitError = null;
         try {
             const submissionJson =
-                model.shape === "numeric"
+                shape === "numeric"
                     ? buildNumericSubmission(numericCells)
                     : buildJeSubmission(jeLines);
             const resp = await submitPerformanceAttempt(
@@ -91,7 +98,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 <!-- NOTE: this is a dedicated task surface, NOT the flashcard reviewer. It must
      never expose Again/Hard/Good/Easy grading buttons (B4-D3 / A52). -->
-<div class="tbs-surface" data-testid="tbs-surface" data-shape={model.shape}>
+<div class="tbs-surface" data-testid="tbs-surface" data-shape={shape}>
     <header class="tbs-head">
         <h1>Task-Based Simulation</h1>
         <p class="prompt" data-testid="tbs-prompt">{model.prompt}</p>
@@ -106,7 +113,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     <div class="tbs-body">
         <div class="task card">
-            {#if model.shape === "numeric"}
+            {#if shape === "numeric"}
                 <table class="grid numeric-grid" data-testid="numeric-grid">
                     <thead>
                         <tr>

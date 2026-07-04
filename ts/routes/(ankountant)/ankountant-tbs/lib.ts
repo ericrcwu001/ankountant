@@ -63,6 +63,15 @@ export const TBS_SHAPES: readonly TbsShapeInfo[] = [
     },
 ];
 
+export type RenderableTbsShape = "journal_entry" | "numeric";
+
+export function renderableTbsShape(shape: TbsShape): RenderableTbsShape {
+    if (shape === "journal_entry" || shape === "numeric") {
+        return shape;
+    }
+    throw new Error(`TbsSurface cannot render ${shape}; use the specialized ${shape} surface.`);
+}
+
 /** Build the sealed-bank search that finds TBS notes of a given shape in a
  *  section (mirrors the research/doc-review page loaders). `shape` is the value
  *  stored in the `tbs_type` note field. */

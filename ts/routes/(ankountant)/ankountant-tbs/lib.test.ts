@@ -13,6 +13,7 @@ import {
     paneExhibits,
     parseExhibits,
     parseSteps,
+    renderableTbsShape,
     sectionFromTags,
     segmentDocument,
     tbsSearch,
@@ -39,6 +40,13 @@ test("tbsSearch pins both task shape and section", () => {
     );
     expect(tbsSearch("numeric", "REG")).toContain(`"tbs_type:numeric"`);
     expect(tbsSearch("numeric", "REG")).toContain("Ankountant::Sealed::REG::*");
+});
+
+test("renderableTbsShape rejects specialized research and doc-review shapes", () => {
+    expect(renderableTbsShape("journal_entry")).toBe("journal_entry");
+    expect(renderableTbsShape("numeric")).toBe("numeric");
+    expect(() => renderableTbsShape("research")).toThrow(/specialized research surface/);
+    expect(() => renderableTbsShape("doc_review")).toThrow(/specialized doc_review surface/);
 });
 
 test("parseSteps defaults weights to 1/N so totals reconcile with A10", () => {
