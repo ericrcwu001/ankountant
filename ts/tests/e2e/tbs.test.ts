@@ -124,6 +124,27 @@ test("the TBS chooser does not leak backend html on load failure", async ({ page
     await expect(page.getByTestId("tbs-error")).not.toContainText("don&#39;t");
 });
 
+test("the TBS chooser empty state keeps next steps visible", async ({ page }) => {
+    await page.route("**/_anki/searchNotes", async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: "application/binary",
+            body: Buffer.alloc(0),
+        });
+    });
+
+    await page.goto("/ankountant-tbs");
+
+    const empty = page.getByTestId("tbs-empty");
+    await expect(empty).toContainText("No Journal Entry simulation found");
+    await expect(page.getByTestId("tbs-section-chooser")).toBeVisible();
+    await expect(page.getByTestId("tbs-chooser")).toBeVisible();
+    await expect(empty.getByRole("link", { name: "Readiness evidence" })).toHaveAttribute(
+        "href",
+        "/ankountant-dashboard",
+    );
+});
+
 test("the TBS surface exposes NO Again/Hard/Good/Easy buttons (A52/B4-D3)", async ({ page, seed }) => {
     await page.goto(`/ankountant-tbs?note=${seed.sealedTbsNoteIds[0]}`);
     await expect(page.getByTestId("tbs-surface")).toBeVisible();

@@ -54,6 +54,10 @@ chooser opens on that note's shape and section.
     $: selectedSectionLabel = sectionChoiceLabel(selectedSection);
     $: emptySectionLabel =
         selectedSection === ALL_SECTIONS ? "all sections" : selectedSectionLabel;
+    $: readinessHref =
+        selectedSection === ALL_SECTIONS
+            ? "/ankountant-dashboard"
+            : `/ankountant-dashboard?section=${selectedSection}`;
 
     interface LoadedShape {
         noteId: bigint;
@@ -232,9 +236,16 @@ chooser opens on that note's shape and section.
         {:else if phase === "loading"}
             <p class="tbs-state" data-testid="tbs-loading">Loading…</p>
         {:else if phase === "empty"}
-            <p class="tbs-state" data-testid="tbs-empty">
-                No {selectedLabel} simulation was found for {emptySectionLabel} in this profile.
-            </p>
+            <div class="tbs-state empty-state" data-testid="tbs-empty">
+                <div class="state-mark" aria-hidden="true">0</div>
+                <p class="state-title">No {selectedLabel} simulation found</p>
+                <p class="state-detail">
+                    No {selectedLabel} simulation was found for {emptySectionLabel} in
+                    this profile. Switch the section or simulation type above, or use
+                    readiness evidence to choose the next practice target.
+                </p>
+                <a class="state-link" href={readinessHref}>Readiness evidence</a>
+            </div>
         {:else}
             <div class="tbs-state error-state" data-testid="tbs-error">
                 <p class="state-title">Couldn't load this simulation.</p>
@@ -357,9 +368,61 @@ chooser opens on that note's shape and section.
         color: var(--fg);
     }
 
+    .empty-state {
+        display: grid;
+        justify-items: start;
+        gap: var(--space-sm);
+        color: var(--fg);
+    }
+
+    .state-mark {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 50%;
+        background: var(--canvas-elevated);
+        color: var(--fg-faint);
+        font-size: 21px;
+        font-weight: 750;
+        line-height: 1;
+    }
+
     .state-title {
         margin: 0 0 var(--space-xs);
         font-weight: 650;
+    }
+
+    .state-detail {
+        max-width: 46rem;
+        margin: 0;
+        color: var(--fg-subtle);
+        line-height: 1.45;
+    }
+
+    .state-link {
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 var(--space-lg);
+        border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+        border-radius: var(--border-radius);
+        background: var(--accent-tint);
+        color: var(--accent);
+        font-size: var(--type-caption-size);
+        font-weight: 700;
+        text-decoration: none;
+
+        &:hover {
+            background: var(--canvas-inset);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent) !important;
+            outline-offset: 2px;
+        }
     }
 
     .err-msg {
