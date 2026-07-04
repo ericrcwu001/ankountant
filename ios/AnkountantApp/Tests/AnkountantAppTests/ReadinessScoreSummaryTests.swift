@@ -44,9 +44,9 @@ struct ReadinessScoreSummaryTests {
 
         let scores = summary.scoreSummaries
         #expect(scores.map(\.label) == ["Memory", "Performance", "Readiness"])
-        #expect(scores.map(\.valueText) == ["70%", "60%", "74–85"])
-        #expect(scores.map(\.rangeText) == ["60–80%", "50–70%", "CPA range"])
-        #expect(scores[2].fraction == nil)
+        #expect(scores.map(\.valueText) == ["70%", "60%", "80"])
+        #expect(scores.map(\.rangeText) == ["60–80%", "50–70%", "Range 74–85"])
+        #expect(scores[2].fraction == TopoScale.height(forScore: 80))
         #expect(scores[2].rangeFraction != nil)
         #expect(scores.allSatisfy { $0.available })
     }

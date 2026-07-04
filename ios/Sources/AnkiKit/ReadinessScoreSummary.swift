@@ -93,14 +93,15 @@ public extension ReadinessSummary {
             )
         }
 
+        let point = Int(validatedBand.pointEstimate.rounded())
         let low = Int(validatedBand.bandLow.rounded())
         let high = Int(validatedBand.bandHigh.rounded())
         return ReadinessScoreSummary(
             kind: .readiness,
-            valueText: "\(low)–\(high)",
-            rangeText: "CPA range",
+            valueText: "\(point)",
+            rangeText: "Range \(low)–\(high)",
             detailText: "\(validatedBand.confidence) confidence",
-            fraction: nil,
+            fraction: TopoScale.height(forScore: validatedBand.pointEstimate),
             rangeFraction: TopoScale.height(forScore: validatedBand.bandLow)...TopoScale.height(forScore: validatedBand.bandHigh),
             available: true
         )

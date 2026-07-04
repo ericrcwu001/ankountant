@@ -73,7 +73,7 @@ struct ReadinessScoreTile: View {
     private var accessibilityLabel: String {
         if score.available {
             if score.kind == .readiness {
-                return "\(score.label), projected range \(score.valueText), \(score.detailText)"
+                return "\(score.label), projected \(score.valueText), likely \(score.rangeText.lowercased()), \(score.detailText)"
             }
             return "\(score.label), \(score.valueText), range \(score.rangeText), \(score.detailText)"
         }

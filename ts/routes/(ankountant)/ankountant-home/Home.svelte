@@ -249,7 +249,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     role="img"
                     aria-label={view.abstain
                         ? `Readiness withheld, ${view.reason}`
-                        : `Readiness range ${view.bandLabel} on the CPA 0 to 99 scale`}
+                        : `Projected readiness ${view.pointEstimate}, likely range ${view.bandLabel} on the CPA 0 to 99 scale`}
                 >
                     <g transform="rotate(135 60 58)">
                         <circle
@@ -275,10 +275,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                         />
                     </g>
                     <text class="gauge-num tabular" x="60" y="60" text-anchor="middle">
-                        {view.abstain ? "—" : view.bandLabel}
+                        {view.abstain ? "—" : view.pointEstimate}
                     </text>
                     <text class="gauge-den tabular" x="60" y="78" text-anchor="middle">
-                        range
+                        projected
                     </text>
                 </svg>
                 <div class="gauge-status">
@@ -290,7 +290,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     {#if view.abstain}
                         {view.reason} · {view.coveragePct}% covered
                     {:else}
-                        CPA 0–99 · {view.coveragePct}% covered
+                        Range {view.bandLabel} · CPA 0–99 · {view.coveragePct}% covered
                     {/if}
                 </div>
                 <div class="readiness-brief" data-testid="readiness-brief">

@@ -317,10 +317,10 @@ struct ReadinessTopoTests {
         #expect(scores[1].valueText == "60%")
         #expect(scores[1].rangeText == "50–70%")
         #expect(scores[1].detailText == "Sealed tasks")
-        #expect(scores[2].valueText == "74–85")
-        #expect(scores[2].rangeText == "CPA range")
+        #expect(scores[2].valueText == "80")
+        #expect(scores[2].rangeText == "Range 74–85")
         #expect(scores[2].detailText == "High confidence")
-        #expect(scores[2].fraction == nil)
+        #expect(scores[2].fraction == TopoScale.height(forScore: 80))
         #expect(scores[2].rangeFraction == TopoScale.height(forScore: 74)...TopoScale.height(forScore: 85))
         #expect(scores.allSatisfy { $0.available })
     }

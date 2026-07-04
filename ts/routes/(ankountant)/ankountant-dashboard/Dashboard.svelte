@@ -75,17 +75,21 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             </div>
         {:else}
             <p class="band" data-testid="readiness-band">
-                <span class="range tabular hero">{view.bandLabel}</span>
+                <span class="point-label">Projected</span>
+                <span class="point tabular hero" data-testid="readiness-point">
+                    {view.pointEstimate}
+                </span>
+                <span class="range tabular" data-testid="readiness-range">
+                    Range {view.bandLabel}
+                </span>
                 <span class="confidence" data-testid="confidence">
                     {view.confidence} confidence
                 </span>
             </p>
-            <!-- Graded/faded Wilson band on the CPA 0–99 scale, with a pass tick
-                 at 75 — never a crisp point (uncertainty honesty, C12). -->
             <div
                 class="band-track"
                 role="img"
-                aria-label="Projected CPA band {view.bandLabel}, pass line 75"
+                aria-label="Projected CPA point {view.pointEstimate}, likely range {view.bandLabel}, pass line 75"
             >
                 <div
                     class="band-fill"
@@ -349,8 +353,15 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         margin: var(--space-sm) 0 0;
     }
 
-    .band .range {
+    .band .point {
         color: var(--accent);
+    }
+
+    .band .point-label,
+    .band .range {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--fg-subtle);
     }
 
     .band .confidence {

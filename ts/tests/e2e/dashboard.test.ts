@@ -24,13 +24,15 @@ test("thin data shows the abstain message + reason and NO number (A55)", async (
     await expect(row).not.toHaveClass(/gap-warning/);
 });
 
-test("sufficient data shows a readiness band with confidence and topic scores (A54)", async ({ page, seedWithHistory }) => {
+test("sufficient data shows a readiness point, range, confidence, and topic scores (A54)", async ({ page, seedWithHistory }) => {
     expect(seedWithHistory.sealedItems).toBeGreaterThanOrEqual(24);
     await page.goto("/ankountant-dashboard");
 
     await expect(page.getByTestId("abstain")).toHaveCount(0);
     await expect(page.getByTestId("readiness-band")).toBeVisible();
-    await expect(page.getByTestId("readiness-band")).toContainText(/\d+–\d+/);
+    await expect(page.getByTestId("readiness-band")).toContainText("Projected");
+    await expect(page.getByTestId("readiness-point")).toContainText(/^\d+$/);
+    await expect(page.getByTestId("readiness-range")).toContainText(/Range \d+–\d+/);
     await expect(page.getByTestId("confidence")).toContainText(/confidence/i);
 
     const row = page.getByTestId("topic-row").first();

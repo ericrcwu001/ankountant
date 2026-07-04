@@ -32,6 +32,16 @@ test("home readiness rail explains the score and links to full evidence", async 
     await expect(page.getByTestId("readiness-evidence")).toBeVisible();
 });
 
+test("home readiness rail shows the projected point with a likely range", async ({ page, seedWithHistory }) => {
+    expect(seedWithHistory.sealedItems).toBeGreaterThanOrEqual(24);
+    await page.goto("/ankountant-home");
+
+    const readiness = page.getByTestId("readiness");
+    await expect(readiness).toBeVisible();
+    await expect(readiness).toContainText("projected");
+    await expect(readiness).toContainText(/Range \d+–\d+/);
+});
+
 test("home section switcher reloads topic mastery and keeps evidence scoped", async ({ page, seed }) => {
     expect(seed.confusionSets).toBeGreaterThan(0);
     await page.goto("/ankountant-home");
