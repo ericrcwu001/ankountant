@@ -54,6 +54,26 @@ test("selecting a treatment scores it and reveals the correct treatment (A45/B2-
     await expect(page.getByTestId("confusion-correct-treatment")).not.toHaveText("");
 });
 
+test("a confusion attempt feeds the topic Performance shown on the dashboard (A46/A49)", async ({ page, seed }) => {
+    expect(seed.confusionSets).toBeGreaterThanOrEqual(4);
+    await page.goto("/ankountant-confusion");
+    const item = page.getByTestId("confusion-item");
+    await expect(item).toBeVisible();
+    const setId = await item.getAttribute("data-set-id");
+    expect(setId).toBeTruthy();
+
+    await page.getByTestId("confidence-confident").click();
+    await page.getByTestId("treatment").first().click();
+    await expect(page.getByTestId("verdict")).toBeVisible();
+
+    await page.goto("/ankountant-dashboard");
+    const row = page.locator(`[data-testid="topic-row"][data-set-id="${setId}"]`);
+    await expect(row).toBeVisible();
+    await expect(row.getByTestId("performance")).not.toContainText("insufficient");
+    await expect(row.getByTestId("performance")).toContainText(/%/);
+    await expect(row.getByTestId("performance-range")).toContainText(/%/);
+});
+
 test("submit failures stay in the confusion surface", async ({ page }) => {
     await page.route("**/_anki/submitPerformanceAttempt", async (route) => {
         await route.fulfill({
