@@ -321,6 +321,18 @@ def test_emit_writes_coverage_report(cfg: RunConfig) -> None:
     assert "Total" in report
 
 
+def test_emit_writes_clean_leakage_report(cfg: RunConfig) -> None:
+    write_jsonl(cfg.stage_dir("08-leak") / "kept.jsonl", _kept_rows())
+
+    emit.run(cfg)
+
+    report = (cfg.out_dir / "leakage_report.md").read_text(encoding="utf-8")
+    assert "Sealed references" in report
+    assert "| Shipped cards screened | 6 |" in report
+    assert "| Dropped as leaks | 0 |" in report
+    assert "No leaked shipped cards detected." in report
+
+
 def test_reports_target_generated_shipped_and_drops(tmp_path) -> None:
     c = RunConfig(run_id="test-reports-ws", sections=["FAR", "AUD"], offline=True)
     if c.out_dir.exists():
@@ -358,11 +370,16 @@ def test_reports_target_generated_shipped_and_drops(tmp_path) -> None:
 
     # drops across the three stages, with reasons
     write_jsonl(c.stage_dir("06-checked") / "dropped.jsonl", [{"item_id": "x1", "reason": "ungrounded"}])
-    write_jsonl(c.stage_dir("08-leak") / "dropped.jsonl", [{"item_id": "x2", "reason": "leak>0.92"}])
+    write_jsonl(c.stage_dir("08-leak") / "kept.jsonl", [{"item_id": "far-0", "bucket": "correct_useful"}])
+    write_jsonl(
+        c.stage_dir("08-leak") / "dropped.jsonl",
+        [{"item_id": "x2", "reason": "leak>0.92", "score": 0.99, "matched_ref": "copied prompt"}],
+    )
     write_jsonl(c.stage_dir("09-dedup") / "dropped.jsonl", [{"item_id": "x3", "reason": "dup>0.95"}])
 
     reports.run(c)
     report = (c.out_dir / "coverage_report.md").read_text(encoding="utf-8")
+    leakage_report = (c.out_dir / "leakage_report.md").read_text(encoding="utf-8")
 
     # Per-topic row: target 3, generated 2, shipped 1.
     assert "| FAR | revenue_recognition | 3 | 2 | 1 |" in report
@@ -371,6 +388,9 @@ def test_reports_target_generated_shipped_and_drops(tmp_path) -> None:
         assert reason in report
     assert "selfcheck" in report and "leakage" in report and "dedup" in report
     assert "**Total dropped** | | 3 |" in report
+    assert "| Shipped cards screened | 2 |" in leakage_report
+    assert "| Dropped as leaks | 1 |" in leakage_report
+    assert "| x2 | leak>0.92 | 0.990 | copied prompt |" in leakage_report
 
 
 def _read_jsonl(path):

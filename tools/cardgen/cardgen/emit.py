@@ -7,7 +7,7 @@ Reads ``09-dedup/kept.jsonl`` (``Candidate`` rows, each carrying a judge
 - ``cpa_bank.apkg``       — the importable pack (two note types, one per shape)
 - ``confusable_patch.json`` — CONFUSABLE map additions for MCQ/confusion items
 - ``emitted_manifest.jsonl`` — one row per emitted note (audit trail)
-- ``coverage_report.md``  — via :mod:`cardgen.reports`
+- ``coverage_report.md`` / ``leakage_report.md`` — via :mod:`cardgen.reports`
 
 The two genanki models mirror the app note types EXACTLY (names + field order,
 see ``rslib/src/ankountant/notetypes.rs``) so imported notes bind to the app's

@@ -1,13 +1,16 @@
-"""Coverage report — targets vs generated vs shipped, plus a drop breakdown.
+"""Run reports — coverage plus leakage proof.
 
 ``run(cfg)`` (called by :mod:`cardgen.emit`, or standalone) writes
-``cfg.out_dir/coverage_report.md`` from the DAG artifacts:
+``cfg.out_dir/coverage_report.md`` and ``cfg.out_dir/leakage_report.md`` from
+the DAG artifacts:
 
 - **target**    per (section, topic) — from ``03-worklist/worklist.jsonl``
 - **generated** per (section, topic) — from ``05-candidates/<item_id>.json``
 - **shipped**   per (section, topic) — from ``09-dedup/kept.jsonl``
 - **drops**     per (stage, reason)  — aggregated from every stage's
   ``dropped.jsonl`` (``06-checked``, ``08-leak``, ``09-dedup``)
+- **leakage**   shipped cards screened against the sealed-bank refs from
+  ``08-leak/kept.jsonl`` and ``08-leak/dropped.jsonl``
 
 Every input is read defensively: a missing artifact contributes zero, so the
 report is useful at any point in the pipeline (e.g. after a bare emit).
@@ -19,6 +22,7 @@ import json
 from collections import defaultdict
 
 from .config import RunConfig
+from .leakage import SHINGLE_THRESHOLD, load_sealed_refs
 from .models import read_jsonl
 from .util import slugify
 
@@ -99,7 +103,7 @@ def _pct(num: int, den: int) -> str:
     return f"{100.0 * num / den:.0f}%" if den else "-"
 
 
-def build_markdown(cfg: RunConfig) -> str:
+def build_coverage_markdown(cfg: RunConfig) -> str:
     target = _count_worklist(cfg)
     generated = _count_candidates(cfg)
     shipped = _count_shipped(cfg)
@@ -164,8 +168,56 @@ def build_markdown(cfg: RunConfig) -> str:
     return "\n".join(lines)
 
 
+def build_leakage_markdown(cfg: RunConfig) -> str:
+    refs = load_sealed_refs(cfg)
+    kept = list(read_jsonl(cfg.out_dir / "08-leak" / "kept.jsonl"))
+    dropped = list(read_jsonl(cfg.out_dir / "08-leak" / "dropped.jsonl"))
+    screened = len(kept) + len(dropped)
+
+    lines: list[str] = [
+        f"# Leakage report — run `{cfg.run_id}`",
+        "",
+        "## Summary",
+        "",
+        "| Metric | Value |",
+        "| --- | --: |",
+        f"| Sealed references | {len(refs)} |",
+        f"| Shipped cards screened | {screened} |",
+        f"| Kept | {len(kept)} |",
+        f"| Dropped as leaks | {len(dropped)} |",
+        f"| Cosine threshold | {cfg.leakage_threshold:.2f} |",
+        f"| Shingle threshold | {SHINGLE_THRESHOLD:.2f} |",
+        "",
+    ]
+
+    if dropped:
+        lines += [
+            "## Dropped Leaks",
+            "",
+            "| Item | Reason | Score | Matched sealed prompt |",
+            "| --- | --- | --: | --- |",
+        ]
+        for row in dropped:
+            item_id = row.get("item_id") or "?"
+            reason = row.get("reason") or "leakage"
+            score = row.get("score")
+            score_text = f"{float(score):.3f}" if isinstance(score, (int, float)) else "-"
+            matched = str(row.get("matched_ref") or "").replace("|", "\\|")
+            lines.append(f"| {item_id} | {reason} | {score_text} | {matched} |")
+    else:
+        lines += [
+            "## Verdict",
+            "",
+            "No leaked shipped cards detected.",
+        ]
+    lines.append("")
+    return "\n".join(lines)
+
+
 def run(cfg: RunConfig) -> None:
     cfg.out_dir.mkdir(parents=True, exist_ok=True)
-    out = cfg.out_dir / "coverage_report.md"
-    out.write_text(build_markdown(cfg), encoding="utf-8")
-    print(f"[cardgen] reports: wrote {out.name}")
+    coverage_out = cfg.out_dir / "coverage_report.md"
+    coverage_out.write_text(build_coverage_markdown(cfg), encoding="utf-8")
+    leakage_out = cfg.out_dir / "leakage_report.md"
+    leakage_out.write_text(build_leakage_markdown(cfg), encoding="utf-8")
+    print(f"[cardgen] reports: wrote {coverage_out.name}, {leakage_out.name}")

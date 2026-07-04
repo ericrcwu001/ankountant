@@ -29,7 +29,7 @@
 | generate   | 300 → 263 | **37 declined** by the v2 rule (no fabrication)                  |
 | self-check | 263 → 263 | 0 dropped (schema + grounding + TBS invariants)                  |
 | judge      | 263 → 181 | **181 correct+useful / 70 wrong / 12 bad-teaching**              |
-| leakage    | 181 → 181 | 0 leaks vs 84 sealed-bank refs                                   |
+| leakage    | 181 → 181 | 0 leaks vs 138 sealed-bank refs                                  |
 | dedup      | 181 → 161 | 20 near-duplicates removed                                       |
 | emit       | 161 → 161 | 161 notes across 67 decks                                        |
 
@@ -137,7 +137,7 @@ Every shipped card carries provenance, e.g.:
 | Beats a simpler method (keyword or vector)                       | A/B/C: BM25 vs vector vs hybrid+rerank, chunk-keyed, n=120                                  | **PASS** — hybrid 0.742 > BM25 0.608 / vector 0.592 |
 | App still scores with AI off                                     | deterministic offline embed/gen/judge backends                                              | 71 keyless tests; `CARDGEN_OFFLINE=1`               |
 | 7f AI card check (3 counts + cutoff)                             | the judge buckets                                                                           | 181 / 70 / 12                                       |
-| 7e Leakage check                                                 | cosine + word-shingle screen vs the sealed bank                                             | 161 screened vs 84 refs, 0 leaks                    |
+| 7e Leakage check                                                 | cosine + word-shingle screen vs the sealed bank                                             | 181 screened vs 138 refs, 0 leaks                   |
 | Adversarial — prompt injection                                   | ingest strips "ignore previous instructions"-style lines; passages framed as untrusted DATA | sanitizer in `ingest.py`                            |
 | Adversarial — correct-but-useless cards                          | v2 decline (`{"skip": true}`) + `bad_teaching` quarantine                                   | 37 declined + 12 quarantined                        |
 | Adversarial — service offline / rate-limited / broken output     | tenacity retry + model fallback + JSON validation                                           | `openai_generate.py`                                |
@@ -146,6 +146,7 @@ Every shipped card carries provenance, e.g.:
 
 - `tools/cardgen/out/proof3/cpa_bank.apkg` — importable pack (161 notes)
 - `tools/cardgen/out/proof3/coverage_report.md` — per-topic target/generated/shipped
+- `tools/cardgen/out/proof3/leakage_report.md` — 7e sealed-bank leakage screen
 - `tools/cardgen/out/proof3/baseline_report.md` — A/B/C detail
 - `tools/cardgen/out/proof3/07-judge/graded.jsonl` — per-card verdicts
 - `tools/cardgen/out/proof3/judge_calibration.json` — judge calibration vs the gold set (182 pos / 36 neg)

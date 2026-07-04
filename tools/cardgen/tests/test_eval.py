@@ -10,6 +10,8 @@ judge), which may not exist yet: they are monkeypatched or fixtured.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from cardgen import baseline, dedup, leakage
 from cardgen.baseline import (
     answer_relevancy,
@@ -34,10 +36,41 @@ from cardgen.models import (
     write_jsonl,
 )
 from cardgen.providers.offline import OfflineEmbedder, OfflineJudge
+from cardgen.util import normalize_text
 
 
 def _cfg(run_id: str) -> RunConfig:
     return RunConfig(run_id=run_id, offline=True)
+
+
+def _seed_content_path() -> Path:
+    return Path(__file__).resolve().parents[3] / "rslib" / "src" / "ankountant" / "seed_content.json"
+
+
+def _sealed_prompts_from_seed() -> list[str]:
+    data = read_json(_seed_content_path())
+    prompts: list[str] = []
+
+    mcqs = data.get("mcqs", {})
+    if isinstance(mcqs, dict):
+        for group in mcqs.values():
+            for item in group or []:
+                _append_seed_prompt(prompts, item)
+
+    for item in data.get("tbs", []) or []:
+        _append_seed_prompt(prompts, item)
+
+    for item in data.get("section_items", []) or []:
+        _append_seed_prompt(prompts, item)
+
+    return list(dict.fromkeys(prompts))
+
+
+def _append_seed_prompt(prompts: list[str], item: object) -> None:
+    if isinstance(item, dict):
+        prompt = item.get("prompt")
+        if isinstance(prompt, str) and prompt.strip():
+            prompts.append(normalize_text(prompt))
 
 
 # ===========================================================================
@@ -108,8 +141,7 @@ def test_dedup_representative_prefers_higher_faithful_then_bucket() -> None:
 # ===========================================================================
 def test_load_sealed_refs_reads_bank() -> None:
     refs = leakage.load_sealed_refs(_cfg("probe"))
-    # 52 mcq + 22 tbs + 10 section_item prompts, all unique.
-    assert len(refs) == 84
+    assert refs == _sealed_prompts_from_seed()
     assert all(isinstance(r, str) and r for r in refs)
 
 
