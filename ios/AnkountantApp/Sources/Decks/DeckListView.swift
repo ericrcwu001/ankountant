@@ -101,6 +101,7 @@ struct DeckListView: View {
             }
         }
         .scrollContentBackground(.hidden)
+        .ankountantTabBarClearance()
         .ankountantSectionBackground()
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(navigationTitle.isEmpty ? .inline : .automatic)

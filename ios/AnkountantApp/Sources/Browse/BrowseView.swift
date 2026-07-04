@@ -97,6 +97,7 @@ struct BrowseView: View {
         }
         .navigationTitle("Browse")
         .navigationBarTitleDisplayMode(.inline)
+        .ankountantTabBarClearance()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Menu {

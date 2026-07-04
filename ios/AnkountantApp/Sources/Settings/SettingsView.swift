@@ -64,6 +64,7 @@ struct SettingsView: View {
             }
             #endif
         }
+        .ankountantTabBarClearance()
         .navigationTitle("Settings")
         .navigationDestination(for: SettingsRoute.self) { route in
             destination(for: route)

@@ -67,6 +67,7 @@ struct StatsDashboardView: View {
             .padding(AnkountantSpacing.lg)
         }
         .scrollContentBackground(.hidden)
+        .ankountantTabBarClearance()
         .background(palette.surface)
         .navigationTitle("Statistics")
         .task { await loadDecks() }

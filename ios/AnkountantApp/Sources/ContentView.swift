@@ -3,9 +3,12 @@ import SwiftUI
 import AnkiSync
 import Sharing
 import Dependencies
+import AnkountantTheme
 
 struct ContentView: View {
     @Binding var pendingReviewDeckId: Int64?
+
+    @Environment(\.palette) private var palette
 
     @Dependency(\.syncCoordinator) private var coordinator
 
@@ -49,14 +52,14 @@ struct ContentView: View {
                 }
             }
             if showReaderTab {
-                Tab("Study", systemImage: "book") {
+                Tab("Reader", systemImage: "book") {
                     NavigationStack {
                         ReaderLibraryView()
                             .id(refreshID)
                     }
                 }
             }
-            Tab("Review", systemImage: "clock.arrow.circlepath") {
+            Tab("Browse", systemImage: "magnifyingglass") {
                 NavigationStack {
                     BrowseView()
                         .id(refreshID)
@@ -75,6 +78,8 @@ struct ContentView: View {
                 }
             }
         }
+        .toolbarBackground(palette.surfaceElevated, for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
         .sheet(isPresented: $showSync) {
             refreshID = UUID()
         } content: {

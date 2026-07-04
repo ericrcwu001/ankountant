@@ -71,6 +71,10 @@ public extension View {
     func ankountantSectionBackground() -> some View {
         modifier(AnkountantSectionBackgroundModifier())
     }
+
+    func ankountantTabBarClearance(_ height: CGFloat = AnkountantSpacing.xxxl) -> some View {
+        safeAreaPadding(.bottom, height)
+    }
 }
 
 private struct AnkountantSectionBackgroundModifier: ViewModifier {
