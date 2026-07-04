@@ -57,13 +57,7 @@ extension SchedulerService: DependencyKey {
                 var cards: [QueuedReviewCard] = []
                 for queued in response.cards {
                     guard queued.hasCard else { continue }
-                    let states = ReviewSchedulingStates(
-                        current: SchedulingStateToken(try queued.states.current.serializedData()),
-                        again:   SchedulingStateToken(try queued.states.again.serializedData()),
-                        hard:    SchedulingStateToken(try queued.states.hard.serializedData()),
-                        good:    SchedulingStateToken(try queued.states.good.serializedData()),
-                        easy:    SchedulingStateToken(try queued.states.easy.serializedData())
-                    )
+                    let states = try mapReviewSchedulingStates(queued)
                     let intervals: [Rating: String] = [
                         .again: formatInterval(scheduledSecs(queued.states.again)),
                         .hard:  formatInterval(scheduledSecs(queued.states.hard)),
@@ -208,6 +202,18 @@ private func protoRating(_ rating: Rating) -> Anki_Scheduler_CardAnswer.Rating {
     case .good: .good
     case .easy: .easy
     }
+}
+
+private func mapReviewSchedulingStates(_ queued: Anki_Scheduler_QueuedCards.QueuedCard) throws -> ReviewSchedulingStates {
+    var current = queued.states.current
+    current.customData = queued.card.customData
+    return ReviewSchedulingStates(
+        current: SchedulingStateToken(try current.serializedData()),
+        again: SchedulingStateToken(try queued.states.again.serializedData()),
+        hard: SchedulingStateToken(try queued.states.hard.serializedData()),
+        good: SchedulingStateToken(try queued.states.good.serializedData()),
+        easy: SchedulingStateToken(try queued.states.easy.serializedData())
+    )
 }
 
 private func mapCardRecord(_ c: Anki_Cards_Card) -> CardRecord {

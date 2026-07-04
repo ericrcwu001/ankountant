@@ -120,6 +120,11 @@ let package = Package(
             dependencies: ["AnkiKit"],
             swiftSettings: sharedSwiftSettings
         ),
+        .testTarget(
+            name: "AnkiServicesTests",
+            dependencies: ["AnkiServices", "AnkiKit", "AnkiProto"],
+            swiftSettings: sharedSwiftSettings
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

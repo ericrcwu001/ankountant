@@ -288,7 +288,7 @@ struct ReviewView: View {
 
     private func ratingButton(_ rating: Rating, color: Color) -> some View {
         Button {
-            session.answer(rating: rating)
+            session.answer(rating: rating, confidence: committedConfidence)
             committedConfidence = nil
         } label: {
             VStack(spacing: 4) {

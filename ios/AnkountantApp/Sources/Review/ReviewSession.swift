@@ -141,13 +141,14 @@ final class ReviewSession {
         typedAnswerContinuation = nil
     }
 
-    func answer(rating: Rating) {
+    func answer(rating: Rating, confidence: ConfidenceLevel? = nil) {
         guard let queued = currentQueuedCard else { return }
 
         let timeSpent = UInt32(Date.now.timeIntervalSince(reviewStartTime) * 1000)
 
         do {
-            try scheduler.answerReviewCard(queued.card.id, rating, timeSpent, queued.states)
+            let states = try queued.states.recordingConfidence(confidence?.rawValue)
+            try scheduler.answerReviewCard(queued.card.id, rating, timeSpent, states)
 
             sessionStats.reviewed += 1
             if rating != .again { sessionStats.correct += 1 }
