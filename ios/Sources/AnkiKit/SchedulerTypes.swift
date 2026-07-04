@@ -133,6 +133,10 @@ public struct TopicScoreModel: Sendable, Equatable, Identifiable {
         performanceLow: Double = 0,
         performanceHigh: Double = 0
     ) {
+        precondition(
+            performance == 0 || performanceLow != 0 || performanceHigh != 0,
+            "Topic performance cannot be non-zero without a confidence band."
+        )
         self.setId = setId
         self.memory = memory
         self.performance = performance

@@ -858,12 +858,11 @@ private struct FarTopicCard: Identifiable, Hashable {
     }
 
     private static func make(spec: Spec, topic: TopicScoreModel?) -> FarTopicCard {
-        let missingPerformance = topic == nil
-            || (topic?.performance == 0 && topic?.performanceLow == 0 && topic?.performanceHigh == 0)
+        let missingPerformance = topic?.performanceInsufficient ?? true
         let performance = topic.flatMap { missingPerformance ? nil : pct($0.performance) }
         let memory = topic.flatMap { $0.memoryInsufficient ? nil : pct($0.memory) }
         let gap = topic.flatMap { t in
-            memory == nil || performance == nil ? nil : pct(t.gap)
+            t.gapAvailable ? pct(t.gap) : nil
         }
         return FarTopicCard(
             id: spec.setId,

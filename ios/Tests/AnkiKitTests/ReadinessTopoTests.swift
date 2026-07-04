@@ -127,20 +127,38 @@ struct ReadinessTopoTests {
     }
 
     @Test func topicExtensions() {
-        let warn = TopicScoreModel(setId: "capitalize_vs_expense", memory: 0.8, performance: 0.5, gap: 0.30, memoryInsufficient: false)
+        let warn = TopicScoreModel(
+            setId: "capitalize_vs_expense",
+            memory: 0.8,
+            performance: 0.5,
+            gap: 0.30,
+            memoryInsufficient: false,
+            performanceLow: 0.4,
+            performanceHigh: 0.6
+        )
         #expect(warn.gapWarning)
         #expect(warn.displayName == "Capitalize Vs Expense")
-        let ok = TopicScoreModel(setId: "x", memory: 0.8, performance: 0.7, gap: 0.10, memoryInsufficient: false)
+        let ok = TopicScoreModel(
+            setId: "x",
+            memory: 0.8,
+            performance: 0.7,
+            gap: 0.10,
+            memoryInsufficient: false,
+            performanceLow: 0.6,
+            performanceHigh: 0.8
+        )
         #expect(!ok.gapWarning)
         let noPerf = TopicScoreModel(setId: "x", memory: 0.8, performance: 0, gap: 0, memoryInsufficient: false, performanceLow: 0, performanceHigh: 0)
         #expect(noPerf.performanceInsufficient)
+        #expect(!noPerf.gapWarning)
     }
 
     @Test func gapsToCloseCount() {
         let summary = ReadinessSummary(band: band(), topics: [
-            TopicScoreModel(setId: "a", memory: 0.9, performance: 0.5, gap: 0.40, memoryInsufficient: false),
-            TopicScoreModel(setId: "b", memory: 0.6, performance: 0.5, gap: 0.10, memoryInsufficient: false),
-            TopicScoreModel(setId: "c", memory: 0.9, performance: 0.6, gap: 0.30, memoryInsufficient: false),
+            TopicScoreModel(setId: "a", memory: 0.9, performance: 0.5, gap: 0.40, memoryInsufficient: false, performanceLow: 0.4, performanceHigh: 0.6),
+            TopicScoreModel(setId: "b", memory: 0.6, performance: 0.5, gap: 0.10, memoryInsufficient: false, performanceLow: 0.4, performanceHigh: 0.6),
+            TopicScoreModel(setId: "c", memory: 0.9, performance: 0.6, gap: 0.30, memoryInsufficient: false, performanceLow: 0.5, performanceHigh: 0.7),
+            TopicScoreModel(setId: "d", memory: 0.9, performance: 0, gap: 0.90, memoryInsufficient: false, performanceLow: 0, performanceHigh: 0),
         ])
         #expect(summary.gapsToCloseCount == 2)
     }
@@ -157,7 +175,7 @@ struct ReadinessTopoTests {
         let evidence = readinessEvidence(
             band: band,
             topics: [
-                TopicScoreModel(setId: "tax_timing", memory: 0, performance: 0.42, gap: 0, memoryInsufficient: true),
+                TopicScoreModel(setId: "tax_timing", memory: 0, performance: 0.42, gap: 0, memoryInsufficient: true, performanceLow: 0.32, performanceHigh: 0.52),
             ]
         )
         #expect(evidence.giveUpRule.contains("20 sealed attempts"))
@@ -180,8 +198,8 @@ struct ReadinessTopoTests {
         let evidence = readinessEvidence(
             band: band,
             topics: [
-                TopicScoreModel(setId: "leases", memory: 0.9, performance: 0.52, gap: 0.38, memoryInsufficient: false),
-                TopicScoreModel(setId: "tax_timing", memory: 0.7, performance: 0.51, gap: 0.19, memoryInsufficient: false),
+                TopicScoreModel(setId: "leases", memory: 0.9, performance: 0.52, gap: 0.38, memoryInsufficient: false, performanceLow: 0.42, performanceHigh: 0.62),
+                TopicScoreModel(setId: "tax_timing", memory: 0.7, performance: 0.51, gap: 0.19, memoryInsufficient: false, performanceLow: 0.41, performanceHigh: 0.61),
             ]
         )
         #expect(evidence.nextAction.contains("Leases"))
@@ -203,11 +221,43 @@ struct ReadinessTopoTests {
         let evidence = readinessEvidence(
             band: band,
             topics: [
-                TopicScoreModel(setId: "tax_timing", memory: 0, performance: 0.42, gap: 0.38, memoryInsufficient: true),
+                TopicScoreModel(setId: "tax_timing", memory: 0, performance: 0.42, gap: 0.38, memoryInsufficient: true, performanceLow: 0.32, performanceHigh: 0.52),
             ]
         )
         #expect(evidence.nextAction.contains("sealed exam-style practice"))
         #expect(!evidence.nextAction.contains("memory is 0%"))
+    }
+
+    @Test func readinessEvidenceDoesNotInventPerformanceValueWithoutSealedEvidence() {
+        let band = ReadinessBand(
+            abstain: false,
+            reason: "",
+            bandLow: 74,
+            bandHigh: 85,
+            pointEstimate: 80,
+            confidence: "High",
+            coverage: 1,
+            reasons: ["Coverage: 100% of topics; 188 sealed attempts"]
+        )
+        let evidence = readinessEvidence(
+            band: band,
+            topics: [
+                TopicScoreModel(
+                    setId: "leases",
+                    memory: 0.82,
+                    performance: 0,
+                    gap: 0.82,
+                    memoryInsufficient: false,
+                    memoryLow: 0.75,
+                    memoryHigh: 0.9,
+                    performanceLow: 0,
+                    performanceHigh: 0
+                ),
+            ]
+        )
+        #expect(evidence.missingData.joined(separator: " ").contains("Performance has no sealed evidence for Leases"))
+        #expect(evidence.nextAction.contains("performance has no sealed evidence yet"))
+        #expect(!evidence.nextAction.contains("performance is 0%"))
     }
 
     @Test func scoreSummariesExposeThreeRangeAwareSignals() {

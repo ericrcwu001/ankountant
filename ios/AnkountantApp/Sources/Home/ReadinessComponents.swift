@@ -218,7 +218,11 @@ struct TopicScoreRow: View {
                     .ankountantFont(.caption)
                     .foregroundStyle(palette.textPrimary)
                 Spacer()
-                if topic.gapWarning {
+                if !topic.gapAvailable {
+                    Text("Gap insufficient")
+                        .ankountantFont(.micro)
+                        .foregroundStyle(palette.textSecondary)
+                } else if topic.gapWarning {
                     Label("Gap \(formatPercent(topic.gap))", systemImage: "exclamationmark.triangle.fill")
                         .labelStyle(.titleAndIcon)
                         .ankountantStatusBadge(.warning)

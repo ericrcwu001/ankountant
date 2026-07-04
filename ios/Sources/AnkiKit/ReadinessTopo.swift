@@ -245,6 +245,10 @@ public func readinessEvidence(band: ReadinessBand, topics: [TopicScoreModel]) ->
     if !thinMemory.isEmpty {
         missingData.append("Memory is still thin for \(thinMemory.joined(separator: ", ")).")
     }
+    let missingPerformance = topics.filter(\.performanceInsufficient).prefix(3).map(\.displayName)
+    if !missingPerformance.isEmpty {
+        missingData.append("Performance has no sealed evidence for \(missingPerformance.joined(separator: ", ")).")
+    }
     if missingData.isEmpty {
         missingData.append("No hard blockers for the current range; more sealed attempts will narrow uncertainty.")
     }
@@ -275,14 +279,17 @@ private func bestNextReadinessAction(band: ReadinessBand, topics: [TopicScoreMod
         return "Add sealed exam-style attempts in uncovered topics before trusting the readiness range."
     }
     if let gap = topics
-        .filter({ $0.gapWarning && !$0.memoryInsufficient })
+        .filter(\.gapWarning)
         .max(by: { $0.gap < $1.gap }) {
         return "Run a confusion-set drill for \(gap.displayName); memory is \(formatPercent(gap.memory)) and performance is \(formatPercent(gap.performance))."
     }
-    if let weakest = topics.min(by: { $0.performance < $1.performance }) {
+    if let missingPerformance = topics.first(where: \.performanceInsufficient) {
+        return "Do sealed exam-style practice for \(missingPerformance.displayName); performance has no sealed evidence yet."
+    }
+    if let weakest = topics.filter({ !$0.performanceInsufficient }).min(by: { $0.performance < $1.performance }) {
         return "Do sealed exam-style practice for \(weakest.displayName); current performance is \(formatPercent(weakest.performance))."
     }
-    return "Load a CPA bank or demo profile, then start sealed practice."
+    preconditionFailure("Readiness topics require at least one performance value.")
 }
 
 public extension TopicScoreModel {
@@ -297,12 +304,13 @@ public extension TopicScoreModel {
         performanceLow == 0 && performanceHigh == 0
     }
 
-    var gapWarning: Bool { gap >= topicGapWarningThreshold }
+    var gapAvailable: Bool { !memoryInsufficient && !performanceInsufficient }
+    var gapWarning: Bool { gapAvailable && gap >= topicGapWarningThreshold }
 }
 
 public extension ReadinessSummary {
     /// Count of topics whose memory→performance gap is flag-worthy.
     var gapsToCloseCount: Int {
-        topics.filter { $0.gap >= topicGapWarningThreshold }.count
+        topics.count(where: \.gapWarning)
     }
 }
