@@ -169,7 +169,15 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     }
 </script>
 
-<WithGraphData {search} {days} let:sourceData let:loading let:prefs let:revlogRange>
+<WithGraphData
+    {search}
+    {days}
+    let:sourceData
+    let:loading
+    let:errorMessage
+    let:prefs
+    let:revlogRange
+>
     <section class="stats-surface" data-testid="stats">
         <header class="stats-header">
             <div>
@@ -317,8 +325,19 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     />
                 {/each}
             </section>
+        {:else if !loading && errorMessage}
+            <section class="stats-state error" data-testid="stats-load-error" role="alert">
+                <div class="state-mark" aria-hidden="true">!</div>
+                <p class="eyebrow">Statistics unavailable</p>
+                <h2>We couldn't load this evidence.</h2>
+                <p>{errorMessage}</p>
+            </section>
         {:else}
-            <section class="overview-card skeleton" aria-label="Loading statistics">
+            <section
+                class="overview-card skeleton"
+                aria-label="Loading statistics"
+                data-testid="stats-loading"
+            >
                 <div class="skeleton-ring"></div>
                 <div class="skeleton-copy">
                     <span></span>
@@ -473,7 +492,8 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     .overview-card,
     .today-card,
-    .charts {
+    .charts,
+    .stats-state {
         max-width: 1420px;
         margin-left: auto;
         margin-right: auto;
@@ -668,6 +688,54 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     .charts :global(button) {
         margin: 0;
+    }
+
+    .stats-state {
+        min-height: 280px;
+        display: grid;
+        justify-items: center;
+        align-content: center;
+        gap: var(--space-sm);
+        padding: var(--space-xl);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--border-radius-large);
+        background: var(--canvas-elevated);
+        box-shadow: var(--elevation-e1);
+        text-align: center;
+
+        h2 {
+            margin: 0;
+            font-size: var(--type-section-heading-size);
+            font-weight: var(--type-section-heading-weight);
+            line-height: var(--type-section-heading-line);
+            letter-spacing: 0;
+        }
+
+        p:not(.eyebrow) {
+            max-width: 54ch;
+            margin: 0;
+            color: var(--fg-subtle);
+            font-size: var(--type-callout-size);
+            line-height: var(--type-callout-line);
+        }
+
+        &.error .state-mark {
+            color: var(--fg-error);
+            background: color-mix(in srgb, var(--fg-error) 12%, transparent);
+            border-color: color-mix(in srgb, var(--fg-error) 22%, transparent);
+        }
+    }
+
+    .state-mark {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 50%;
+        font-size: 22px;
+        font-weight: 750;
+        line-height: 1;
     }
 
     .skeleton {

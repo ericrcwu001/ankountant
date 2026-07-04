@@ -13,6 +13,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     import { autoSavingPrefs } from "$lib/sveltelib/preferences";
 
+    import { readableBackendError } from "../(ankountant)/backendError";
     import { daysToRevlogRange } from "./graph-helpers";
 
     export let search: Writable<string>;
@@ -24,6 +25,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     );
 
     let sourceData: GraphsResponse | null = null;
+    let errorMessage = "";
     let loading = true;
     $: updateSourceData($search, $days);
 
@@ -31,8 +33,12 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         // ensure the fast-loading preferences come first
         await prefsPromise;
         loading = true;
+        errorMessage = "";
         try {
-            sourceData = await graphs({ search, days });
+            sourceData = await graphs({ search, days }, { alertOnError: false });
+        } catch (error) {
+            sourceData = null;
+            errorMessage = readableBackendError(error, "Statistics could not be loaded.");
         } finally {
             loading = false;
         }
@@ -48,5 +54,5 @@ graph data, as it gets updated as the user changes options, and we don't want
 the current graphs to disappear until the new graphs have finished loading.
 -->
 {#await prefsPromise then prefs}
-    <slot {revlogRange} {prefs} {sourceData} {loading} />
+    <slot {revlogRange} {prefs} {sourceData} {loading} {errorMessage} />
 {/await}
