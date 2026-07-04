@@ -246,20 +246,21 @@ struct CardWebView: UIViewRepresentable {
             }
         }
 
-        // Force bottom content inset so card content can always scroll above the floating
-        // action bar. WKWebView does not reliably inherit SwiftUI safeAreaInset changes,
-        // so we set it explicitly via DispatchQueue.main.async to override any WebKit-internal
-        // layout pass that might run after updateUIView.
         let targetInset = bottomContentInset
-        DispatchQueue.main.async {
-            webView.scrollView.contentInset.bottom = targetInset
-            var verticalInsets = webView.scrollView.verticalScrollIndicatorInsets
-            verticalInsets.bottom = targetInset
-            webView.scrollView.verticalScrollIndicatorInsets = verticalInsets
+        Task { @MainActor [weak webView] in
+            guard let webView else { return }
+            Self.applyBottomContentInset(targetInset, to: webView.scrollView)
         }
     }
 
     // MARK: - Helpers
+
+    static func applyBottomContentInset(_ inset: CGFloat, to scrollView: UIScrollView) {
+        scrollView.contentInset.bottom = inset
+        var verticalInsets = scrollView.verticalScrollIndicatorInsets
+        verticalInsets.bottom = inset
+        scrollView.verticalScrollIndicatorInsets = verticalInsets
+    }
 
     /// Loads the frame HTML template from the bundled CardWebViewBridge.js resource.
     /// Despite the .js extension, this file is the complete HTML frame document

@@ -108,6 +108,24 @@ final class CardWebViewTests: XCTestCase {
         XCTAssertFalse(CardWebViewCoordinator.isWebLink(custom))
     }
 
+    @MainActor
+    func testApplyBottomContentInsetPreservesOtherEdges() {
+        let scrollView = UIScrollView()
+        scrollView.contentInset = UIEdgeInsets(top: 1, left: 2, bottom: 3, right: 4)
+        scrollView.verticalScrollIndicatorInsets = UIEdgeInsets(top: 5, left: 6, bottom: 7, right: 8)
+
+        CardWebView.applyBottomContentInset(42, to: scrollView)
+
+        XCTAssertEqual(scrollView.contentInset.top, 1)
+        XCTAssertEqual(scrollView.contentInset.left, 2)
+        XCTAssertEqual(scrollView.contentInset.bottom, 42)
+        XCTAssertEqual(scrollView.contentInset.right, 4)
+        XCTAssertEqual(scrollView.verticalScrollIndicatorInsets.top, 5)
+        XCTAssertEqual(scrollView.verticalScrollIndicatorInsets.left, 6)
+        XCTAssertEqual(scrollView.verticalScrollIndicatorInsets.bottom, 42)
+        XCTAssertEqual(scrollView.verticalScrollIndicatorInsets.right, 8)
+    }
+
     private func assertColor(
         _ color: UIColor?,
         red expectedRed: CGFloat,
