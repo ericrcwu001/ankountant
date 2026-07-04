@@ -95,6 +95,27 @@ final class CardWebViewTests: XCTestCase {
     }
 
     @MainActor
+    func testLookupBridgeMessageAcceptsTextAndCoordinates() {
+        let lookup = CardWebViewCoordinator.lookupBridgeMessage(from: [
+            "text": "  asset  ",
+            "sentence": "The asset is impaired.",
+            "x": NSNumber(value: 12.5),
+            "y": NSNumber(value: 44),
+        ])
+
+        XCTAssertEqual(lookup?.text, "asset")
+        XCTAssertEqual(lookup?.sentence, "The asset is impaired.")
+        XCTAssertEqual(lookup?.point, CGPoint(x: 12.5, y: 44))
+    }
+
+    @MainActor
+    func testLookupBridgeMessageRejectsMalformedPayloads() {
+        XCTAssertNil(CardWebViewCoordinator.lookupBridgeMessage(from: ["text": "asset", "x": 1]))
+        XCTAssertNil(CardWebViewCoordinator.lookupBridgeMessage(from: ["text": "   ", "x": 1, "y": 2]))
+        XCTAssertNil(CardWebViewCoordinator.lookupBridgeMessage(from: "asset"))
+    }
+
+    @MainActor
     func testResolvedCardLinkKeepsCustomAppLinks() {
         let url = CardWebViewCoordinator.resolvedCardLink(from: "anki://x-callback-url/search", baseURL: nil)
 

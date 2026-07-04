@@ -24,6 +24,12 @@ final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMess
         case ignore
     }
 
+    struct LookupBridgeMessage: Equatable {
+        var text: String
+        var sentence: String?
+        var point: CGPoint
+    }
+
     // MARK: State tracked across updates
 
     var lastPageSignature: String?
@@ -112,13 +118,8 @@ final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMess
         }
 
         if message.name == "ankountantLookupText" {
-            // Silently drop when no lookup callback is wired (inert behavior per Q1 resolution).
-            guard let body = message.body as? [String: Any] else { return }
-            let text = body["text"] as? String
-            let sentence = body["sentence"] as? String
-            let x = (body["x"] as? NSNumber).map { CGFloat(truncating: $0) } ?? 0
-            let y = (body["y"] as? NSNumber).map { CGFloat(truncating: $0) } ?? 0
-            onLookupRequested?(text, sentence, CGPoint(x: x, y: y))
+            guard let lookup = Self.lookupBridgeMessage(from: message.body) else { return }
+            onLookupRequested?(lookup.text, lookup.sentence, lookup.point)
             return
         }
 
@@ -142,6 +143,22 @@ final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMess
             return .submit(nil)
         }
         return .ignore
+    }
+
+    static func lookupBridgeMessage(from body: Any) -> LookupBridgeMessage? {
+        guard let payload = body as? [String: Any],
+              let rawText = payload["text"] as? String,
+              let x = payload["x"] as? NSNumber,
+              let y = payload["y"] as? NSNumber else {
+            return nil
+        }
+        let text = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return nil }
+        return LookupBridgeMessage(
+            text: text,
+            sentence: payload["sentence"] as? String,
+            point: CGPoint(x: CGFloat(truncating: x), y: CGFloat(truncating: y))
+        )
     }
 
     // MARK: - AVSpeechSynthesizerDelegate
