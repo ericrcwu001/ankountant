@@ -38,34 +38,53 @@ persisted here — that path is still Qt/clipboard-only, same caveat as Add.
 
     const notetypeCache = new Map<string, Notetype>();
     let loadToken = 0;
+    let blockedSwitchAfterSaveFailure = false;
     let saveTimer: number | undefined;
 
     function fieldsEqual(a: string[], b: string[]): boolean {
         return a.length === b.length && a.every((v, i) => v === b[i]);
     }
 
-    async function save(): Promise<void> {
+    function resumeBlockedSwitch(note: Note): void {
+        if (blockedSwitchAfterSaveFailure && noteId !== note.id) {
+            blockedSwitchAfterSaveFailure = false;
+            void selectNote(noteId);
+        }
+    }
+
+    async function saveCurrentNote(): Promise<boolean> {
         if (saveTimer !== undefined) {
             window.clearTimeout(saveTimer);
             saveTimer = undefined;
         }
         if (!editor || !currentNote) {
-            return;
+            return true;
         }
+        const note = currentNote;
         const fields = editor.getFields();
         if (fieldsEqual(fields, lastSavedFields)) {
-            return;
+            resumeBlockedSwitch(note);
+            return true;
         }
         status = "saving";
         try {
-            currentNote.fields = fields;
-            await updateNotes({ notes: [currentNote], skipUndoEntry: false });
-            lastSavedFields = [...fields];
-            status = "saved";
-            onSaved?.(currentNote.id);
+            note.fields = fields;
+            await updateNotes({ notes: [note], skipUndoEntry: false });
+            if (currentNote?.id === note.id) {
+                lastSavedFields = [...fields];
+                status = "saved";
+            }
+            onSaved?.(note.id);
+            if (currentNote?.id === note.id) {
+                resumeBlockedSwitch(note);
+            }
+            return true;
         } catch (err) {
-            status = "error";
-            message = err instanceof Error ? err.message : String(err);
+            if (currentNote?.id === note.id) {
+                status = "error";
+                message = err instanceof Error ? err.message : String(err);
+            }
+            return false;
         }
     }
 
@@ -73,16 +92,23 @@ persisted here — that path is still Qt/clipboard-only, same caveat as Add.
         if (saveTimer !== undefined) {
             window.clearTimeout(saveTimer);
         }
-        saveTimer = window.setTimeout(() => void save(), 600);
+        saveTimer = window.setTimeout(() => void saveCurrentNote(), 600);
     }
 
     async function selectNote(id: bigint): Promise<void> {
         const token = ++loadToken;
         // Persist any edits to the previously-open note before switching.
-        await save();
+        const saved = await saveCurrentNote();
+        if (!saved) {
+            if (token === loadToken) {
+                blockedSwitchAfterSaveFailure = true;
+            }
+            return;
+        }
         if (token !== loadToken) {
             return;
         }
+        blockedSwitchAfterSaveFailure = false;
         currentNote = null;
         status = "idle";
         message = "";
@@ -118,7 +144,7 @@ persisted here — that path is still Qt/clipboard-only, same caveat as Add.
     $: void selectNote(noteId);
 
     onDestroy(() => {
-        void save();
+        void saveCurrentNote();
     });
 </script>
 
@@ -138,7 +164,7 @@ persisted here — that path is still Qt/clipboard-only, same caveat as Add.
             class="editor-host"
             role="group"
             on:input|capture={scheduleSave}
-            on:focusout|capture={() => void save()}
+            on:focusout|capture={() => void saveCurrentNote()}
         >
             <NoteEditor bind:this={editor} {api} />
         </div>
