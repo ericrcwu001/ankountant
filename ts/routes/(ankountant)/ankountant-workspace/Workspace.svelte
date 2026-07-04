@@ -40,6 +40,8 @@ client-side shortcut back to the shell home (mirrors the sidebar's Dashboard).
     let tree: TileNode = defaultLayout(initialSurface ?? "dashboard");
     let mounted = false;
     let addKind: SurfaceKind = "confusion";
+    let layoutError = "";
+    let layoutPersistenceEnabled = true;
 
     $: leaves = countLeaves(tree);
     $: canSplit = leaves < MAX_PANES;
@@ -67,23 +69,39 @@ client-side shortcut back to the shell home (mirrors the sidebar's Dashboard).
 
     function resetLayout(): void {
         tree = defaultLayout("dashboard");
+        layoutError = "";
+        layoutPersistenceEnabled = true;
     }
 
     function goHome(): void {
         goto("/ankountant-home"); // client-side, back to the shell home
     }
 
-    // Persist on every layout change once we've loaded the saved one.
-    $: if (mounted) {
+    function errorMessage(error: unknown): string {
+        return error instanceof Error ? error.message : String(error);
+    }
+
+    function persistLayout(layout: TileNode): void {
         try {
-            localStorage.setItem(STORAGE_KEY, serialize(tree));
-        } catch {
-            /* private mode / quota — layout just won't persist */
+            localStorage.setItem(STORAGE_KEY, serialize(layout));
+        } catch (error) {
+            layoutError = `Workspace layout could not be saved: ${errorMessage(error)}`;
+            layoutPersistenceEnabled = false;
         }
     }
 
+    $: if (mounted && layoutPersistenceEnabled) {
+        persistLayout(tree);
+    }
+
     onMount(() => {
-        const restored = deserialize(localStorage.getItem(STORAGE_KEY));
+        let restored: TileNode | null = null;
+        try {
+            restored = deserialize(localStorage.getItem(STORAGE_KEY));
+        } catch (error) {
+            layoutError = `Saved workspace layout could not be loaded: ${errorMessage(error)}`;
+            layoutPersistenceEnabled = false;
+        }
         if (restored) {
             tree = initialSurface ? ensureSurface(restored, initialSurface) : restored;
         } else if (initialSurface) {
@@ -149,6 +167,13 @@ client-side shortcut back to the shell home (mirrors the sidebar's Dashboard).
             </span>
         </div>
     </header>
+
+    {#if layoutError}
+        <div class="ws-error" role="alert" data-testid="workspace-layout-error">
+            <span>{layoutError}</span>
+            <button type="button" on:click={resetLayout}>Reset saved layout</button>
+        </div>
+    {/if}
 
     <div class="ws-grid">
         <TileView node={tree} path={[]} {canSplit} {canClose} />
@@ -265,6 +290,45 @@ client-side shortcut back to the shell home (mirrors the sidebar's Dashboard).
 
         &.full {
             color: var(--fg-error);
+        }
+    }
+
+    .ws-error {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        flex: 0 0 auto;
+        padding: var(--space-sm) var(--space-md);
+        color: var(--fg-error);
+        background: var(--gap-warning-bg);
+        border-bottom: 1px solid rgba(214, 69, 65, 0.4);
+
+        span {
+            flex: 1;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        button {
+            flex: 0 0 auto;
+            font: inherit;
+            font-size: var(--type-caption-size);
+            font-weight: 600;
+            color: var(--fg-error);
+            background: var(--canvas-elevated);
+            border: 1px solid rgba(214, 69, 65, 0.4);
+            border-radius: var(--border-radius);
+            padding: var(--space-xs) var(--space-md);
+            cursor: pointer;
+
+            &:hover {
+                border-color: var(--fg-error);
+            }
+
+            &:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 2px;
+            }
         }
     }
 

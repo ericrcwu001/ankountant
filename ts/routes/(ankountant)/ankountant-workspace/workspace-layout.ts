@@ -169,7 +169,11 @@ export function closeAt(tree: TileNode, path: Path): TileNode {
     });
 }
 
-export function setSurfaceAt(tree: TileNode, path: Path, surface: SurfaceKind): TileNode {
+export function setSurfaceAt(
+    tree: TileNode,
+    path: Path,
+    surface: SurfaceKind,
+): TileNode {
     return updateAt(tree, path, (node) => node.type === "leaf" ? { ...node, surface } : node);
 }
 
@@ -206,50 +210,57 @@ export function serialize(tree: TileNode): string {
     return JSON.stringify(tree);
 }
 
-/** Parse + validate a persisted layout. Returns null on anything malformed so
- *  the caller can fall back to a default; repairs partial damage (unknown
- *  surface, out-of-range ratio, missing id, one dead child) in place. */
 export function deserialize(raw: string | null | undefined): TileNode | null {
     if (!raw) {
         return null;
     }
+    let parsed: unknown;
     try {
-        return sanitize(JSON.parse(raw));
-    } catch {
-        return null;
+        parsed = JSON.parse(raw);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`Saved workspace layout contains invalid JSON: ${message}`);
     }
+    return sanitize(parsed);
 }
 
-function sanitize(node: unknown): TileNode | null {
+function sanitize(node: unknown): TileNode {
     if (!node || typeof node !== "object") {
-        return null;
+        throw new Error("Saved workspace layout node must be an object.");
     }
     const n = node as Record<string, unknown>;
     if (n.type === "leaf") {
-        const surface = KNOWN_SURFACES.has(n.surface as string)
-            ? (n.surface as SurfaceKind)
-            : "dashboard";
-        return { type: "leaf", id: typeof n.id === "string" ? n.id : nextId(), surface };
+        if (typeof n.id !== "string" || n.id === "") {
+            throw new Error("Saved workspace layout leaf is missing an id.");
+        }
+        if (typeof n.surface !== "string" || !KNOWN_SURFACES.has(n.surface)) {
+            throw new Error(`Unknown workspace surface: ${String(n.surface ?? "")}`);
+        }
+        return { type: "leaf", id: n.id, surface: n.surface as SurfaceKind };
     }
     if (n.type === "split") {
+        if (typeof n.id !== "string" || n.id === "") {
+            throw new Error("Saved workspace layout split is missing an id.");
+        }
+        if (n.dir !== "row" && n.dir !== "col") {
+            throw new Error(`Invalid workspace split direction: ${String(n.dir ?? "")}`);
+        }
+        if (typeof n.ratio !== "number" || !isFinite(n.ratio)) {
+            throw new Error("Saved workspace split ratio must be a finite number.");
+        }
+        if (n.ratio < MIN_RATIO || n.ratio > 1 - MIN_RATIO) {
+            throw new Error("Saved workspace split ratio is outside the allowed range.");
+        }
         const a = sanitize(n.a);
         const b = sanitize(n.b);
-        // A split with a dead child degrades to its surviving child.
-        if (!a || !b) {
-            return a ?? b ?? null;
-        }
-        const dir: SplitDir = n.dir === "col" ? "col" : "row";
-        const ratio = typeof n.ratio === "number" && isFinite(n.ratio)
-            ? Math.min(1 - MIN_RATIO, Math.max(MIN_RATIO, n.ratio))
-            : 0.5;
         return {
             type: "split",
-            id: typeof n.id === "string" ? n.id : nextId(),
-            dir,
-            ratio,
+            id: n.id,
+            dir: n.dir,
+            ratio: n.ratio,
             a,
             b,
         };
     }
-    return null;
+    throw new Error(`Unknown workspace layout node type: ${String(n.type ?? "")}`);
 }

@@ -108,15 +108,25 @@ test("serialize/deserialize round-trips a tree", () => {
     expect(back).toEqual(tree);
 });
 
-test("deserialize repairs bad input and rejects garbage", () => {
+test("deserialize returns null only for absent input", () => {
     expect(deserialize(null)).toBeNull();
-    expect(deserialize("not json")).toBeNull();
-    // Unknown surface repaired to dashboard.
-    const repaired = deserialize("{\"type\":\"leaf\",\"id\":\"x\",\"surface\":\"bogus\"}");
-    expect(repaired).toMatchObject({ type: "leaf", surface: "dashboard" });
-    // A split with one dead child degrades to the surviving child.
-    const degraded = deserialize(
-        "{\"type\":\"split\",\"id\":\"s\",\"dir\":\"row\",\"ratio\":0.5,\"a\":{\"type\":\"leaf\",\"id\":\"l\",\"surface\":\"tbs\"},\"b\":null}",
+    expect(deserialize(undefined)).toBeNull();
+    expect(deserialize("")).toBeNull();
+});
+
+test("deserialize rejects malformed persisted layouts", () => {
+    expect(() => deserialize("not json")).toThrow(/invalid JSON/);
+    expect(() => deserialize("{\"type\":\"leaf\",\"id\":\"x\",\"surface\":\"bogus\"}")).toThrow(
+        /Unknown workspace surface/,
     );
-    expect(degraded).toMatchObject({ type: "leaf", surface: "tbs" });
+    expect(() =>
+        deserialize(
+            "{\"type\":\"split\",\"id\":\"s\",\"dir\":\"row\",\"ratio\":0.5,\"a\":{\"type\":\"leaf\",\"id\":\"l\",\"surface\":\"tbs\"},\"b\":null}",
+        )
+    ).toThrow(/node must be an object/);
+    expect(() =>
+        deserialize(
+            "{\"type\":\"split\",\"id\":\"s\",\"dir\":\"row\",\"ratio\":0.01,\"a\":{\"type\":\"leaf\",\"id\":\"a\",\"surface\":\"tbs\"},\"b\":{\"type\":\"leaf\",\"id\":\"b\",\"surface\":\"dashboard\"}}",
+        )
+    ).toThrow(/outside the allowed range/);
 });

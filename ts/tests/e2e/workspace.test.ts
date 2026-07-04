@@ -3,6 +3,22 @@
 
 import { expect, test } from "./fixtures";
 
+test("workspace reports a corrupted saved layout", async ({ page }) => {
+    await page.addInitScript(() => {
+        localStorage.setItem("ankountant.workspace.layout.v1", "not json");
+    });
+    await page.goto("/ankountant-workspace?initial=literature");
+    await expect(page.getByTestId("literature-pane")).toBeVisible();
+    await expect(page.getByTestId("workspace-layout-error")).toContainText(
+        "invalid JSON",
+    );
+    await page.getByRole("button", { name: "Reset saved layout" }).click();
+    await expect(page.getByTestId("workspace-layout-error")).toHaveCount(0);
+    await expect
+        .poll(() => page.evaluate(() => localStorage.getItem("ankountant.workspace.layout.v1")))
+        .toContain("\"surface\":\"dashboard\"");
+});
+
 test("workspace find and replace blocks replace when fields fail to load", async ({ page, seed }) => {
     expect(seed.sealedItems).toBeGreaterThan(0);
     await page.route("**/_anki/fieldNamesForNotes", async (route) => {
