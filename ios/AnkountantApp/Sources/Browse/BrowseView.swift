@@ -574,6 +574,8 @@ struct NoteContextMenuButton: View {
 
     @Dependency(\.cardClient) var cardClient
     @State private var firstCardId: Int64?
+    @State private var cardActionError: String?
+    @State private var showCardActionError = false
 
     var body: some View {
         Group {
@@ -581,17 +583,43 @@ struct NoteContextMenuButton: View {
                 CardContextMenu(
                     cardId: cardId,
                     noteId: noteId,
-                    onSuccess: onSuccess
-                )
+                        onSuccess: onSuccess
+                    )
+            } else if cardActionError != nil {
+                Button {
+                    showCardActionError = true
+                } label: {
+                    Image(systemName: "exclamationmark.circle")
+                        .ankountantFont(.bodyEmphasis)
+                        .foregroundStyle(.red)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Card actions unavailable")
             } else {
                 Image(systemName: "ellipsis.circle")
                     .ankountantFont(.bodyEmphasis)
                     .foregroundStyle(.tertiary)
             }
         }
+        .alert("Card actions unavailable", isPresented: $showCardActionError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(cardActionError ?? "Unable to load card actions for this note.")
+        }
         .task(id: noteId) {
-            guard firstCardId == nil else { return }
-            firstCardId = (try? cardClient.fetchByNote(noteId))?.first?.id
+            firstCardId = nil
+            cardActionError = nil
+            showCardActionError = false
+            do {
+                let cards = try cardClient.fetchByNote(noteId)
+                guard let firstCard = cards.first else {
+                    cardActionError = "This note has no cards."
+                    return
+                }
+                firstCardId = firstCard.id
+            } catch {
+                cardActionError = "Failed to load card actions: \(error.localizedDescription)"
+            }
         }
     }
 }

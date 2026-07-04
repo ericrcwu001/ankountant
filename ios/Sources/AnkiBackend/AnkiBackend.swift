@@ -339,6 +339,7 @@ extension AnkiBackend {
         package static let schedTimingToday: UInt32 = 5
         package static let countsForDeckToday: UInt32 = 10
         package static let congratsInfo: UInt32 = 11
+        package static let buryOrSuspendCards: UInt32 = 14
         package static let emptyFilteredDeck: UInt32 = 15
         package static let rebuildFilteredDeck: UInt32 = 16
         package static let scheduleCardsAsNew: UInt32 = 17
@@ -378,6 +379,7 @@ extension AnkiBackend {
         package static let removeNotes: UInt32 = 7  // verified dispatch index
         package static let updateNotes: UInt32 = 5
         package static let getNote: UInt32 = 6
+        package static let cardsOfNote: UInt32 = 12
     }
 
     package enum DecksMethod {

@@ -220,6 +220,9 @@ struct CardContextMenu: View {
         guard let noteId else { return }
         do {
             let cards = try cardClient.fetchByNote(noteId)
+            guard !cards.isEmpty else {
+                throw cardContextMenuError("No cards found for this note.")
+            }
             for card in cards {
                 try action(card.id)
             }
@@ -229,6 +232,10 @@ struct CardContextMenu: View {
             errorMessage = buildMessage(error.localizedDescription)
             showError = true
         }
+    }
+
+    private func cardContextMenuError(_ message: String) -> NSError {
+        NSError(domain: "CardContextMenu", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
     }
 
     private func performFlag(_ value: UInt32) {
@@ -259,7 +266,13 @@ struct CardContextMenu: View {
     }
 
     private func refreshUndoAvailability() async {
-        canUndo = (try? cardClient.hasUndoableAction()) ?? false
+        do {
+            canUndo = try cardClient.hasUndoableAction()
+        } catch {
+            canUndo = false
+            errorMessage = "Could not load undo state: \(error.localizedDescription)"
+            showError = true
+        }
     }
 
     private func flagButton(_ value: UInt32) -> some View {
@@ -311,11 +324,19 @@ struct CardContextMenu: View {
             } ?? false
         } catch {
             isMarkedNote = false
+            errorMessage = "Could not load note mark state: \(error.localizedDescription)"
+            showError = true
         }
     }
 
     private func loadCurrentFlag() async {
-        currentFlag = (try? cardClient.getCardFlags(cardId)) ?? 0
+        do {
+            currentFlag = try cardClient.getCardFlags(cardId)
+        } catch {
+            currentFlag = 0
+            errorMessage = "Could not load card flag: \(error.localizedDescription)"
+            showError = true
+        }
     }
 
     private func flagColor(for value: UInt32) -> Color {
