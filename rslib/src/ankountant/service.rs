@@ -5,6 +5,7 @@
 //! transactional `SubmitPerformanceAttempt` write path (A10 + A8).
 
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 use anki_proto::scheduler;
 use serde_json::Value;
@@ -33,12 +34,12 @@ impl Collection {
         let steps_json = note
             .fields()
             .get(tbs_fields::STEPS_JSON)
-            .cloned()
-            .unwrap_or_default();
-        let steps = grading::parse_steps(&steps_json).or_invalid("invalid steps_json")?;
+            .or_invalid("TBS note missing steps_json")?;
+        let steps = grading::parse_steps(steps_json).or_invalid("invalid steps_json")?;
+        validate_attempt_item(&req.mode, &note, &steps)?;
 
         // Build the id -> submitted value map from the submission JSON.
-        let submitted = parse_submission(&req.mode, &req.submission_json)?;
+        let submitted = parse_submission(&req.mode, &req.submission_json, &steps)?;
         // research = single-citation, all-or-nothing (multi-valued key);
         // everything else (tbs / doc_review) = per-step partial credit.
         let (outcomes, total_credit) = if req.mode == "research" {
@@ -126,33 +127,115 @@ impl Collection {
 /// - research mode: `{"citation":"ASC …"}` maps to a single step id "citation".
 /// - tbs / doc_review mode: `{"steps":[{"id":"l1","value":...}]}` (doc_review
 ///   reuses this per-step path verbatim — one step per blank).
-fn parse_submission(mode: &str, json: &str) -> Result<HashMap<String, Value>> {
+fn parse_submission(
+    mode: &str,
+    json: &str,
+    expected_steps: &[grading::GradableStep],
+) -> Result<HashMap<String, Value>> {
     let mut out = HashMap::new();
     let root: Value = serde_json::from_str(json).or_invalid("invalid submission_json")?;
+    let root = root
+        .as_object()
+        .or_invalid("submission_json must be an object")?;
     match mode {
         "confusion" => {
-            if let Some(choice) = root.get("choice") {
-                out.insert("choice".to_string(), choice.clone());
+            let choice = root
+                .get("choice")
+                .and_then(Value::as_str)
+                .or_invalid("confusion submission missing choice")?;
+            if choice.trim().is_empty() {
+                invalid_input!("confusion submission missing choice");
             }
+            out.insert("choice".to_string(), Value::String(choice.to_string()));
         }
         "research" => {
-            if let Some(citation) = root.get("citation") {
-                out.insert("citation".to_string(), citation.clone());
+            let citation = root
+                .get("citation")
+                .and_then(Value::as_str)
+                .or_invalid("research submission missing citation")?;
+            if citation.trim().is_empty() {
+                invalid_input!("research submission missing citation");
             }
+            out.insert("citation".to_string(), Value::String(citation.to_string()));
         }
-        _ => {
-            if let Some(steps) = root.get("steps").and_then(|v| v.as_array()) {
-                for step in steps {
-                    if let (Some(id), Some(value)) = (step.get("id"), step.get("value")) {
-                        if let Some(id) = id.as_str() {
-                            out.insert(id.to_string(), value.clone());
-                        }
-                    }
+        "tbs" | "doc_review" => {
+            let submitted_steps = root
+                .get("steps")
+                .and_then(Value::as_array)
+                .or_invalid("performance submission missing steps")?;
+            let expected_ids: HashSet<&str> =
+                expected_steps.iter().map(|s| s.id.as_str()).collect();
+            for step in submitted_steps {
+                let step = step
+                    .as_object()
+                    .or_invalid("performance submission step must be an object")?;
+                let id = step
+                    .get("id")
+                    .and_then(Value::as_str)
+                    .or_invalid("performance submission step missing id")?;
+                if id.trim().is_empty() {
+                    invalid_input!("performance submission step missing id");
+                }
+                if !expected_ids.contains(id) {
+                    invalid_input!("unknown performance submission step id: {id}");
+                }
+                let value = step
+                    .get("value")
+                    .cloned()
+                    .or_invalid("performance submission step missing value")?;
+                if out.insert(id.to_string(), value).is_some() {
+                    invalid_input!("duplicate performance submission step id: {id}");
                 }
             }
         }
+        _ => invalid_input!("Unknown performance mode: {mode}"),
     }
     Ok(out)
+}
+
+fn validate_attempt_item(mode: &str, note: &Note, steps: &[grading::GradableStep]) -> Result<()> {
+    validate_gradable_steps(steps)?;
+    let item_kind = note
+        .fields()
+        .get(tbs_fields::TBS_TYPE)
+        .map(String::as_str)
+        .or_invalid("TBS note missing tbs_type")?;
+    match mode {
+        "confusion" if item_kind == "mcq" => {
+            if !steps.iter().any(|step| step.id == "choice") {
+                invalid_input!("confusion item missing choice step");
+            }
+            Ok(())
+        }
+        "research" if item_kind == "research" => {
+            if !steps.iter().any(|step| step.id == "citation") {
+                invalid_input!("research item missing citation step");
+            }
+            Ok(())
+        }
+        "doc_review" if item_kind == "doc_review" => Ok(()),
+        "tbs" if matches!(item_kind, "journal_entry" | "numeric") => Ok(()),
+        "confusion" | "research" | "doc_review" | "tbs" => {
+            invalid_input!("performance mode {mode} does not match item type {item_kind}")
+        }
+        _ => invalid_input!("Unknown performance mode: {mode}"),
+    }
+}
+
+fn validate_gradable_steps(steps: &[grading::GradableStep]) -> Result<()> {
+    if steps.is_empty() {
+        invalid_input!("TBS note has no gradable steps");
+    }
+    let mut ids = HashSet::new();
+    for step in steps {
+        if step.id.trim().is_empty() {
+            invalid_input!("TBS note has blank step id");
+        }
+        if !ids.insert(step.id.as_str()) {
+            invalid_input!("TBS note has duplicate step id: {}", step.id);
+        }
+    }
+    Ok(())
 }
 
 // SchedulerService RPC glue lives in scheduler/service/mod.rs; the thin impls

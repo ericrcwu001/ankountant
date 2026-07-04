@@ -530,6 +530,16 @@ fn submit(
     submission: serde_json::Value,
     confidence: &str,
 ) -> anki_proto::scheduler::SubmitPerformanceAttemptResponse {
+    submit_result(col, nid, mode, submission, confidence).unwrap()
+}
+
+fn submit_result(
+    col: &mut Collection,
+    nid: NoteId,
+    mode: &str,
+    submission: serde_json::Value,
+    confidence: &str,
+) -> Result<anki_proto::scheduler::SubmitPerformanceAttemptResponse> {
     SchedulerService::submit_performance_attempt(
         col,
         SubmitPerformanceAttemptRequest {
@@ -540,7 +550,13 @@ fn submit(
             latency_ms: 4200,
         },
     )
-    .unwrap()
+}
+
+fn invalid_input_message(err: AnkiError) -> String {
+    match err {
+        AnkiError::InvalidInput { source } => source.message(),
+        other => panic!("unexpected error: {other:?}"),
+    }
 }
 
 fn first_sealed_mcq(col: &mut Collection) -> NoteId {
@@ -635,6 +651,83 @@ fn a8_malformed_attempt_outcome_fails_fast() {
         }
         other => panic!("unexpected error: {other:?}"),
     }
+}
+
+#[test]
+fn a8_submit_rejects_malformed_payload_before_logging() {
+    let (mut col, _) = seeded();
+    let nid = first_sealed_mcq(&mut col);
+    let before = attempt_log_count(&mut col);
+
+    let err = submit_result(&mut col, nid, "confusion", json!({}), "guess").unwrap_err();
+    assert_eq!(
+        invalid_input_message(err),
+        "confusion submission missing choice"
+    );
+    assert_eq!(attempt_log_count(&mut col), before);
+}
+
+#[test]
+fn a8_submit_rejects_incomplete_tbs_step_before_logging() {
+    let (mut col, _) = seeded();
+    let nid = je_note(&mut col);
+    let before = attempt_log_count(&mut col);
+
+    let err = submit_result(
+        &mut col,
+        nid,
+        "tbs",
+        json!({"steps":[{"id":"l1"}]}),
+        "guess",
+    )
+    .unwrap_err();
+    assert_eq!(
+        invalid_input_message(err),
+        "performance submission step missing value"
+    );
+    assert_eq!(attempt_log_count(&mut col), before);
+}
+
+#[test]
+fn a8_submit_rejects_mode_item_mismatch_before_logging() {
+    let (mut col, _) = seeded();
+    let nid = je_note(&mut col);
+    let before = attempt_log_count(&mut col);
+
+    let err = submit_result(
+        &mut col,
+        nid,
+        "research",
+        json!({"citation":"ASC 842-20-25-1"}),
+        "guess",
+    )
+    .unwrap_err();
+    assert_eq!(
+        invalid_input_message(err),
+        "performance mode research does not match item type journal_entry"
+    );
+    assert_eq!(attempt_log_count(&mut col), before);
+}
+
+#[test]
+fn a8_submit_rejects_unknown_mode_before_logging() {
+    let (mut col, _) = seeded();
+    let nid = first_sealed_mcq(&mut col);
+    let before = attempt_log_count(&mut col);
+
+    let err = submit_result(
+        &mut col,
+        nid,
+        "essay",
+        json!({"choice":"Capitalize"}),
+        "guess",
+    )
+    .unwrap_err();
+    assert_eq!(
+        invalid_input_message(err),
+        "Unknown performance mode: essay"
+    );
+    assert_eq!(attempt_log_count(&mut col), before);
 }
 
 #[test]
