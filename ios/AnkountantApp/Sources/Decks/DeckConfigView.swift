@@ -187,8 +187,15 @@ struct DeckConfigView: View {
                 Section { ProgressView().frame(maxWidth: .infinity) }
             } else if let loadError {
                 Section {
-                    Text(loadError).foregroundStyle(.red)
-                    Button("Retry") { Task { await loadConfig() } }
+                    ContentUnavailableView {
+                        Label("Could Not Load Deck Options", systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text(loadError)
+                    } actions: {
+                        Button("Retry") {
+                            Task { await loadConfig() }
+                        }
+                    }
                 }
             } else {
                 presetSection
@@ -580,6 +587,7 @@ struct DeckConfigView: View {
     private func loadConfig() async {
         isLoading = true
         loadError = nil
+        loaded = nil
         do {
             let config = try deckClient.getDeckConfig(deckId)
             let context = try deckClient.fetchDeckConfigContext(deckId)
@@ -589,6 +597,7 @@ struct DeckConfigView: View {
             }
         } catch {
             await MainActor.run {
+                loaded = nil
                 loadError = "Failed to load deck options: \(error.localizedDescription)"
                 isLoading = false
             }

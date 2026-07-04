@@ -98,12 +98,19 @@ struct NotetypeFieldManagerView: View {
             if isLoading {
                 ProgressView()
             } else if let loadErrorMessage {
-                AnkountantStatusMessageView(
-                    title: "Could not load fields",
-                    message: loadErrorMessage,
-                    systemImage: "exclamationmark.triangle",
-                    tone: .warning
-                )
+                VStack(spacing: AnkountantSpacing.md) {
+                    AnkountantStatusMessageView(
+                        title: "Could not load fields",
+                        message: loadErrorMessage,
+                        systemImage: "exclamationmark.triangle",
+                        tone: .warning
+                    )
+
+                    Button("Retry") {
+                        Task { await loadFields() }
+                    }
+                    .buttonStyle(AnkountantPrimaryButtonStyle())
+                }
                 .padding()
             } else {
                 fieldEditor
@@ -231,6 +238,7 @@ struct NotetypeFieldManagerView: View {
     @MainActor
     private func loadFields() async {
         isLoading = true
+        loadErrorMessage = nil
         defer { isLoading = false }
 
         do {
