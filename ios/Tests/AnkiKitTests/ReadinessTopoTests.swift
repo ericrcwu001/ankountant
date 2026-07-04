@@ -85,8 +85,10 @@ struct ReadinessTopoTests {
         #expect(CPASection.tcp.displayName == "Tax Compliance and Planning")
         #expect(CPASection(code: "AUD") == .aud)
         #expect(CPASection(code: "XX") == nil)
-        #expect(CPASection.allCases.count == 6) // includes BAR for backend parity
+        #expect(CPASection.allCases == [.aud, .far, .reg, .bar, .isc, .tcp])
+        #expect(CPASection.practiceOrder == CPASection.allCases)
         #expect(!CPASection.homeOrder.contains(.bar))
+        #expect(CPASection.practiceOrder.contains(.bar))
     }
 
     // MARK: Formatters

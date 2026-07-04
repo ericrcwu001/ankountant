@@ -37,6 +37,8 @@ public enum CPASection: String, Sendable, Hashable, CaseIterable, Identifiable {
     /// The five peaks shown on the Home summit, FAR first. BAR excluded by design.
     public static let homeOrder: [CPASection] = [.far, .aud, .reg, .tcp, .isc]
 
+    public static let practiceOrder: [CPASection] = [.aud, .far, .reg, .bar, .isc, .tcp]
+
     /// Build from a backend/tag string; unknown codes return nil (callers may
     /// fall back to `.far`).
     public init?(code: String) {

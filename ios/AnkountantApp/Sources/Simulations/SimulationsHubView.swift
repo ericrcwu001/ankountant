@@ -95,7 +95,7 @@ struct SimulationsHubView: View {
                     NavigationLink(value: SimulationRoute.confusion(nil)) {
                         Label("All sections", systemImage: "arrow.triangle.branch")
                     }
-                    ForEach(CPASection.homeOrder) { section in
+                    ForEach(CPASection.practiceOrder) { section in
                         NavigationLink(value: SimulationRoute.confusion(section)) {
                             sectionRow(section)
                         }
