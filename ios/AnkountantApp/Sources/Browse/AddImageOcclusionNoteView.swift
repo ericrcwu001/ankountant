@@ -120,6 +120,14 @@ struct AddImageOcclusionNoteView: View {
                             .ankountantStatusText(.danger, font: .caption)
                     }
                 }
+
+                if !isSaving, let saveRequirementMessage {
+                    Section {
+                        Text(saveRequirementMessage)
+                            .ankountantFont(.caption)
+                            .foregroundStyle(palette.textSecondary)
+                    }
+                }
             }
             .scrollContentBackground(.hidden)
             .background(palette.background)
@@ -140,6 +148,7 @@ struct AddImageOcclusionNoteView: View {
                     }
                     .ankountantToolbarTextButton()
                     .disabled(!canSave || isSaving)
+                    .accessibilityHint(saveRequirementMessage ?? "")
                     .overlay {
                         if isSaving { ProgressView().scaleEffect(0.7) }
                     }
@@ -167,6 +176,28 @@ struct AddImageOcclusionNoteView: View {
             && selectedImage != nil
             && imageURL != nil
             && !masks.isEmpty
+    }
+
+    private var saveRequirementMessage: String? {
+        guard loadErrorMessage == nil else {
+            return nil
+        }
+        guard !decks.isEmpty else {
+            return nil
+        }
+        guard decks.contains(where: { $0.id == selectedDeckId }) else {
+            return "Choose a deck before saving."
+        }
+        guard selectedImage != nil else {
+            return "Pick an image before saving."
+        }
+        guard imageURL != nil else {
+            return "The selected image is still being prepared."
+        }
+        guard !masks.isEmpty else {
+            return "Draw at least one mask before saving."
+        }
+        return nil
     }
 
     @MainActor

@@ -93,6 +93,14 @@ struct EditImageOcclusionNoteView: View {
                                     .ankountantStatusText(.danger, font: .caption)
                             }
                         }
+
+                        if !isSaving, let saveRequirementMessage {
+                            Section {
+                                Text(saveRequirementMessage)
+                                    .ankountantFont(.caption)
+                                    .foregroundStyle(palette.textSecondary)
+                            }
+                        }
                     }
                     .scrollContentBackground(.hidden)
                     .background(palette.background)
@@ -114,7 +122,8 @@ struct EditImageOcclusionNoteView: View {
                     Task { await save() }
                 }
                 .ankountantToolbarTextButton()
-                .disabled(isLoading || loadError != nil || masks.isEmpty || isSaving)
+                .disabled(!canSave || isSaving)
+                .accessibilityHint(saveRequirementMessage ?? "")
                 .overlay { if isSaving { ProgressView().scaleEffect(0.7) } }
             }
         }
@@ -132,6 +141,20 @@ struct EditImageOcclusionNoteView: View {
             }
         }
         .task { await loadNote() }
+    }
+
+    private var canSave: Bool {
+        !isLoading && loadError == nil && !masks.isEmpty
+    }
+
+    private var saveRequirementMessage: String? {
+        guard !isLoading, loadError == nil else {
+            return nil
+        }
+        guard !masks.isEmpty else {
+            return "Draw at least one mask before saving."
+        }
+        return nil
     }
 
     @MainActor
