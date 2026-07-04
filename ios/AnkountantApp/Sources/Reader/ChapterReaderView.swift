@@ -72,6 +72,7 @@ struct ChapterReaderView: View {
                 html: wrappedHTML(chapter.content),
                 initialProgress: didRestoreInitialProgress ? nil : initialProgress(),
                 progress: $scrollProgress,
+                onInitialProgressConsumed: { didRestoreInitialProgress = true },
                 onTapLookup: tapLookup
                     ? { phrase in
                         lastTapPhrase = phrase
@@ -146,6 +147,7 @@ struct ChapterReaderView: View {
         }
         .onAppear {
             didRestoreInitialProgress = false
+            scrollProgress = initialProgress() ?? 0
         }
         .onDisappear {
             // Persist whatever the user reached. Save unconditionally —
@@ -341,6 +343,7 @@ private struct ChapterWebView: UIViewRepresentable {
     /// per appearance — set to nil after the initial restore.
     let initialProgress: Double?
     @Binding var progress: Double
+    let onInitialProgressConsumed: () -> Void
     /// Called with a tapped phrase (the engine does its own deinflection
     /// and word-segmentation, so we forward a generous chunk starting at
     /// the tap point rather than a pre-extracted word — handles CJK,
@@ -355,6 +358,7 @@ private struct ChapterWebView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator {
         Coordinator(
             progress: $progress,
+            onInitialProgressConsumed: onInitialProgressConsumed,
             onTapLookup: onTapLookup,
             onSelectionForNote: onSelectionForNote
         )
@@ -463,6 +467,7 @@ private struct ChapterWebView: UIViewRepresentable {
         var pendingInitialProgress: Double?
         var loadedHTML: String?
         @Binding var progress: Double
+        let onInitialProgressConsumed: () -> Void
         let onTapLookup: ((String) -> Void)?
         let onSelectionForNote: ((String) -> Void)?
         private weak var webView: WKWebView?
@@ -470,10 +475,12 @@ private struct ChapterWebView: UIViewRepresentable {
 
         init(
             progress: Binding<Double>,
+            onInitialProgressConsumed: @escaping () -> Void,
             onTapLookup: ((String) -> Void)?,
             onSelectionForNote: ((String) -> Void)?
         ) {
             self._progress = progress
+            self.onInitialProgressConsumed = onInitialProgressConsumed
             self.onTapLookup = onTapLookup
             self.onSelectionForNote = onSelectionForNote
         }
@@ -512,7 +519,10 @@ private struct ChapterWebView: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            if let target = pendingInitialProgress, target > 0 {
+            let target = pendingInitialProgress
+            pendingInitialProgress = nil
+            onInitialProgressConsumed()
+            if let target, target > 0 {
                 let scrollView = webView.scrollView
                 Task { @MainActor [weak scrollView] in
                     do {
@@ -524,7 +534,6 @@ private struct ChapterWebView: UIViewRepresentable {
                     ReaderScrollRestoration.apply(progress: target, to: scrollView)
                 }
             }
-            pendingInitialProgress = nil
         }
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
