@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn every_seeded_section_has_a_corpus() {
         let corpus = committed_corpus();
-        for section in ["FAR", "AUD", "REG"] {
+        for section in super::super::SECTIONS {
             assert!(
                 corpus.get(section).is_some_and(|v| !v.is_empty()),
                 "section {section} should have committed literature"
@@ -139,7 +139,9 @@ mod tests {
         // ONLY — never verbatim text, and never a committed overlay excerpt.
         let corpus = committed_corpus();
         for section in ["FAR", "BAR"] {
-            for p in corpus.get(section).into_iter().flatten() {
+            let passages = corpus.get(section).expect("section should have corpus");
+            assert!(!passages.is_empty(), "section {section} should have corpus");
+            for p in passages {
                 assert!(!p.verbatim, "{}: ASC body must not be verbatim", p.citation);
                 assert!(
                     p.overlay_excerpt.is_none(),
@@ -165,7 +167,9 @@ mod tests {
         // D10: IRC / PCAOB / NIST bodies are public domain, bundled verbatim.
         let corpus = committed_corpus();
         for section in ["REG", "AUD", "ISC", "TCP"] {
-            for p in corpus.get(section).into_iter().flatten() {
+            let passages = corpus.get(section).expect("section should have corpus");
+            assert!(!passages.is_empty(), "section {section} should have corpus");
+            for p in passages {
                 assert!(
                     p.verbatim,
                     "{} ({section}): public-domain body should be verbatim",
