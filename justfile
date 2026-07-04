@@ -85,7 +85,16 @@ test-ios:
 # reuses the ninja build's Cargo target dir so it needs no from-scratch rebuild.
 ankountant-evidence:
     CARGO_TARGET_DIR=out/rust cargo test -p anki _evidence -- --ignored --nocapture
-    @echo "Evidence written to docs_ankountant/evidence/{determinism,ablation,paraphrase}.html"
+    @echo "Evidence written to docs_ankountant/evidence/{determinism,ablation,paraphrase,undo}.html"
+
+# Run the one-command latency benchmark (challenge 7h / section 10) in RELEASE
+# and write docs_ankountant/evidence/latency.html. Set ANKOUNTANT_BENCH_CARDS
+# (default 10000; the doc's headline size is 50000) to size the deck. Release is
+# required for the numbers to be meaningful. Run `just check` once first so the
+# protobuf descriptors exist.
+ankountant-bench *args:
+    CARGO_TARGET_DIR=out/rust cargo test --release -p anki emit_latency_bench -- --ignored --nocapture {{ args }}
+    @echo "Latency benchmark written to docs_ankountant/evidence/latency.html"
 
 # --- Ankountant Phase-2a RAG card generator (tools/cardgen) -----------------
 # Standalone offline batch tool; not shipped in wheels/xcframework. Uses its own

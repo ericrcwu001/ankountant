@@ -20,6 +20,8 @@ mod determinism;
 #[cfg(test)]
 mod evidence;
 pub(crate) mod grading;
+#[cfg(test)]
+mod latency;
 pub(crate) mod literature;
 pub(crate) mod logic;
 pub(crate) mod notetypes;
@@ -32,6 +34,8 @@ pub(crate) mod service;
 pub(crate) mod settings;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod undo_evidence;
 
 /// The default section, used for items that predate the section dimension
 /// (ADR 0008) so an untagged note still resolves to a valid section.

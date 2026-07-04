@@ -1,0 +1,61 @@
+{
+    "actions": [
+        {
+            "action": "Button press acknowledged (answer_card)",
+            "key": "answer_ack",
+            "p50": 0.07454200000000001,
+            "p95": 0.099083,
+            "pass": true,
+            "samples": 200,
+            "target_p95": 50.0,
+            "unit": "ms",
+            "worst": 0.18920800000000002
+        },
+        {
+            "action": "Next card appears (get_queued_cards)",
+            "key": "next_card",
+            "p50": 0.066667,
+            "p95": 0.08370899999999999,
+            "pass": true,
+            "samples": 201,
+            "target_p95": 100.0,
+            "unit": "ms",
+            "worst": 0.14441700000000002
+        },
+        {
+            "action": "Dashboard first load (get_readiness)",
+            "key": "dashboard_load",
+            "p50": 10.174333,
+            "p95": 11.823542,
+            "pass": true,
+            "samples": 100,
+            "target_p95": 1000.0,
+            "unit": "ms",
+            "worst": 32.737750000000005
+        },
+        {
+            "action": "Dashboard refresh (build_confusion_queue)",
+            "key": "dashboard_refresh",
+            "p50": 9.521666,
+            "p95": 10.038625000000001,
+            "pass": true,
+            "samples": 100,
+            "target_p95": 500.0,
+            "unit": "ms",
+            "worst": 10.467291
+        }
+    ],
+    "all_targets_met": true,
+    "claim": "On a large deck, the shared Rust engine acknowledges an answer, serves the next card, and powers the dashboard within the stated p95 speed targets. Percentiles are reported as p50 / p95 / worst — no single hand-picked number.",
+    "deck": {
+        "answers_measured": 200,
+        "dashboard_iters": 100,
+        "filler_review_cards": 10000,
+        "total_cards": 10457
+    },
+    "generated_at": 1783138435,
+    "methodology": "In-process Rust engine, single machine. Times exclude the PyO3/IPC boundary and UI rendering; they are the engine floor the desktop (Python) and iOS (Swift) clients add to. Percentiles use the nearest-rank method.",
+    "profile": "release",
+    "reproduce": "just ankountant-bench   (ANKOUNTANT_BENCH_CARDS=50000 for the headline run)",
+    "title": "Latency benchmark — study actions vs speed targets (challenge 7h / section 10)"
+}

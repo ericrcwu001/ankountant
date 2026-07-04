@@ -1,0 +1,185 @@
+<!doctype html>
+<!--
+  Copyright: Ankitects Pty Ltd and contributors
+  License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
+
+  GENERATED — do not edit by hand. Regenerate with `just ankountant-bench`
+  (emitter: rslib/src/ankountant/latency.rs::emit_latency_evidence).
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ankountant — Latency Benchmark</title>
+    <style>
+      :root {
+        --bg: #0f1420;
+        --panel: #172033;
+        --panel-2: #1e2a42;
+        --ink: #e8edf6;
+        --muted: #9fb0cc;
+        --accent: #6ea8ff;
+        --ok: #4bd991;
+        --bad: #ff6b6b;
+        --border: #2a3a58;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+      h1 { font-size: 26px; margin: 0 0 4px; }
+      h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 32px 0 12px; }
+      p.claim { color: var(--muted); max-width: 70ch; }
+      code { background: var(--panel-2); padding: 2px 6px; border-radius: 5px; font-size: 13px; }
+      .badges { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0; }
+      .badge {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border);
+        background: var(--panel); font-weight: 600;
+      }
+      .badge .dot { width: 10px; height: 10px; border-radius: 50%; }
+      .pass .dot { background: var(--ok); } .pass { color: var(--ok); }
+      .fail .dot { background: var(--bad); } .fail { color: var(--bad); }
+      .warn { color: #ffcf6b; }
+      .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+      .meta { display: flex; gap: 28px; flex-wrap: wrap; }
+      .meta div { color: var(--muted); font-size: 13px; }
+      .meta b { color: var(--ink); font-size: 20px; display: block; font-variant-numeric: tabular-nums; }
+      table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+      th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+      th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+      td.num, th.num { text-align: right; }
+      td.ok { color: var(--ok); } td.bad { color: var(--bad); }
+      .foot { color: var(--muted); font-size: 13px; margin-top: 10px; }
+      details { margin-top: 16px; }
+      summary { cursor: pointer; color: var(--accent); }
+      pre { background: #0b0f18; border: 1px solid var(--border); border-radius: 10px; padding: 16px; overflow: auto; font-size: 12px; color: #c7d3e8; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1 id="title"></h1>
+      <p class="claim" id="claim"></p>
+      <p class="foot">Reproduce: <code id="reproduce"></code> · generated <span id="ts"></span></p>
+
+      <div class="badges" id="badges"></div>
+
+      <h2>Deck under test</h2>
+      <div class="card"><div class="meta" id="meta"></div></div>
+
+      <h2>Latency by action (p50 / p95 / worst)</h2>
+      <div class="card"><table id="actions"></table></div>
+      <p class="foot" id="methodology"></p>
+
+      <details>
+        <summary>Raw JSON record</summary>
+        <pre id="raw"></pre>
+      </details>
+    </div>
+
+    <script>
+      const DATA = {
+  "actions": [
+    {
+      "action": "Button press acknowledged (answer_card)",
+      "key": "answer_ack",
+      "p50": 0.07454200000000001,
+      "p95": 0.099083,
+      "pass": true,
+      "samples": 200,
+      "target_p95": 50.0,
+      "unit": "ms",
+      "worst": 0.18920800000000002
+    },
+    {
+      "action": "Next card appears (get_queued_cards)",
+      "key": "next_card",
+      "p50": 0.066667,
+      "p95": 0.08370899999999999,
+      "pass": true,
+      "samples": 201,
+      "target_p95": 100.0,
+      "unit": "ms",
+      "worst": 0.14441700000000002
+    },
+    {
+      "action": "Dashboard first load (get_readiness)",
+      "key": "dashboard_load",
+      "p50": 10.174333,
+      "p95": 11.823542,
+      "pass": true,
+      "samples": 100,
+      "target_p95": 1000.0,
+      "unit": "ms",
+      "worst": 32.737750000000005
+    },
+    {
+      "action": "Dashboard refresh (build_confusion_queue)",
+      "key": "dashboard_refresh",
+      "p50": 9.521666,
+      "p95": 10.038625000000001,
+      "pass": true,
+      "samples": 100,
+      "target_p95": 500.0,
+      "unit": "ms",
+      "worst": 10.467291
+    }
+  ],
+  "all_targets_met": true,
+  "claim": "On a large deck, the shared Rust engine acknowledges an answer, serves the next card, and powers the dashboard within the stated p95 speed targets. Percentiles are reported as p50 / p95 / worst — no single hand-picked number.",
+  "deck": {
+    "answers_measured": 200,
+    "dashboard_iters": 100,
+    "filler_review_cards": 10000,
+    "total_cards": 10457
+  },
+  "generated_at": 1783138435,
+  "methodology": "In-process Rust engine, single machine. Times exclude the PyO3/IPC boundary and UI rendering; they are the engine floor the desktop (Python) and iOS (Swift) clients add to. Percentiles use the nearest-rank method.",
+  "profile": "release",
+  "reproduce": "just ankountant-bench   (ANKOUNTANT_BENCH_CARDS=50000 for the headline run)",
+  "title": "Latency benchmark — study actions vs speed targets (challenge 7h / section 10)"
+};
+
+      const $ = (id) => document.getElementById(id);
+      $("title").textContent = DATA.title;
+      $("claim").textContent = DATA.claim;
+      $("reproduce").textContent = DATA.reproduce;
+      $("ts").textContent = new Date((DATA.generated_at || 0) * 1000).toISOString();
+      $("methodology").textContent = DATA.methodology;
+      $("raw").textContent = JSON.stringify(DATA, null, 2);
+
+      const release = DATA.profile === "release";
+      const badges = [
+        `<span class="badge ${DATA.all_targets_met ? "pass" : "fail"}"><span class="dot"></span>${DATA.all_targets_met ? "All targets met" : "Some targets missed"}</span>`,
+        `<span class="badge ${release ? "pass" : "fail"}"><span class="dot"></span>Build: ${DATA.profile}</span>`,
+      ];
+      $("badges").innerHTML = badges.join("");
+
+      const d = DATA.deck;
+      $("meta").innerHTML =
+        `<div>Total cards<b>${d.total_cards.toLocaleString()}</b></div>` +
+        `<div>Filler review cards<b>${d.filler_review_cards.toLocaleString()}</b></div>` +
+        `<div>Answers measured<b>${d.answers_measured.toLocaleString()}</b></div>` +
+        `<div>Dashboard iters<b>${d.dashboard_iters.toLocaleString()}</b></div>`;
+
+      const fmt = (x) => Number(x).toFixed(x < 10 ? 3 : 1);
+      $("actions").innerHTML =
+        `<tr><th>Action</th><th class="num">n</th><th class="num">p50</th><th class="num">p95</th><th class="num">worst</th><th class="num">target p95</th><th>Verdict</th></tr>` +
+        DATA.actions.map((a) =>
+          `<tr>
+             <td>${a.action}</td>
+             <td class="num">${a.samples.toLocaleString()}</td>
+             <td class="num">${fmt(a.p50)} ${a.unit}</td>
+             <td class="num">${fmt(a.p95)} ${a.unit}</td>
+             <td class="num">${fmt(a.worst)} ${a.unit}</td>
+             <td class="num">&lt; ${a.target_p95} ${a.unit}</td>
+             <td class="${a.pass ? "ok" : "bad"}">${a.pass ? "✓ pass" : "✗ over"}</td>
+           </tr>`
+        ).join("");
+    </script>
+  </body>
+</html>

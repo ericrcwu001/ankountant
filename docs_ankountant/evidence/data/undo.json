@@ -1,0 +1,85 @@
+{
+    "ankountant_a2": {
+        "custom_data_after": "{\"cf\":\"Confident\",\"te\":1}",
+        "custom_data_after_undo": "{\"cf\":\"Confident\"}",
+        "custom_data_before": "{\"cf\":\"Confident\"}",
+        "fired": true
+    },
+    "claim": "A representative sequence of undoable operations — including the Ankountant A2 too-easy defunding flag written inside answer_card — is fully reversible: every undo restores the exact prior whole-collection snapshot, every redo re-applies it, and a full database integrity check finds zero problems (no corruption).",
+    "collection": {
+        "cards": 8,
+        "decks": 6,
+        "notes": 8
+    },
+    "generated_at": 1783138251,
+    "integrity": {
+        "clean": true,
+        "problems": []
+    },
+    "reproduce": "just ankountant-evidence",
+    "steps": [
+        {
+            "index": 1,
+            "name": "Add note",
+            "op": "AddNote",
+            "redo_ok": true,
+            "undo_ok": true
+        },
+        {
+            "index": 2,
+            "name": "Answer new card Good",
+            "op": "AnswerCard",
+            "redo_ok": true,
+            "undo_ok": true
+        },
+        {
+            "index": 3,
+            "name": "Answer rote fast+Good+Confident (fires A2 defunding)",
+            "op": "AnswerCard",
+            "redo_ok": true,
+            "undo_ok": true
+        },
+        {
+            "index": 4,
+            "name": "Edit note field",
+            "op": "UpdateNote",
+            "redo_ok": true,
+            "undo_ok": true
+        },
+        {
+            "index": 5,
+            "name": "Bury card",
+            "op": "Bury",
+            "redo_ok": true,
+            "undo_ok": true
+        },
+        {
+            "index": 6,
+            "name": "Suspend card",
+            "op": "Suspend",
+            "redo_ok": true,
+            "undo_ok": true
+        },
+        {
+            "index": 7,
+            "name": "Toggle a config value",
+            "op": "UpdateConfig",
+            "redo_ok": true,
+            "undo_ok": true
+        },
+        {
+            "index": 8,
+            "name": "Add deck",
+            "op": "AddDeck",
+            "redo_ok": true,
+            "undo_ok": true
+        }
+    ],
+    "title": "Undo integrity — the Rust change keeps undo working (challenge 7a)",
+    "verdicts": {
+        "ankountant_a2_undo_ok": true,
+        "integrity_clean": true,
+        "redo_reapplies_state": true,
+        "undo_restores_state": true
+    }
+}
