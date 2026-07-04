@@ -8,8 +8,7 @@ import DependenciesMacros
 /// Rust side; this client only loads note structure and forwards submissions.
 @DependencyClient
 public struct PerformanceClient: Sendable {
-    /// List the sealed TBS tasks (search "note:Ankountant TBS" in the sealed
-    /// FAR decks), each summarised for the task list.
+    /// List the sealed TBS tasks, each summarised for the task list.
     public var listTbsTasks: @Sendable () throws -> [TbsTaskSummary]
     /// Load one sealed TBS note into its render model (answer keys stripped).
     public var loadTbs: @Sendable (_ noteId: Int64) throws -> TbsModel

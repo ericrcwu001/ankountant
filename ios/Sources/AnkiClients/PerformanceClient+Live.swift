@@ -9,11 +9,6 @@ extension PerformanceClient: DependencyKey {
         @Dependency(\.notesService) var notes
         @Dependency(\.schedulerService) var scheduler
 
-        @Sendable func fields(of noteId: Int64) throws -> [String] {
-            let note = try notes.getNote(noteId)
-            return note.flds.components(separatedBy: "\u{1f}")
-        }
-
         // Fields + section tags: the section (ADR 0008) rides in the note's
         // `sec::<SECTION>` tag, so the render model needs both to scope the
         // literature and reveal correctly.
@@ -26,11 +21,17 @@ extension PerformanceClient: DependencyKey {
 
         return Self(
             listTbsTasks: {
-                let query = "\"note:Ankountant TBS\" deck:Ankountant::Sealed::FAR::*"
+                let query = "\"note:Ankountant TBS\" deck:Ankountant::Sealed::*"
                 let ids = try notes.searchNoteIds(query)
                 return try ids.map { id in
-                    let model = try buildTbsModel(fields: try fields(of: id))
-                    return TbsTaskSummary(noteId: id, shape: model.shape, prompt: model.prompt)
+                    let (fields, tags) = try fieldsAndTags(of: id)
+                    let model = try buildTbsModel(fields: fields, tags: tags)
+                    return TbsTaskSummary(
+                        noteId: id,
+                        shape: model.shape,
+                        prompt: model.prompt,
+                        section: model.section
+                    )
                 }
             },
             loadTbs: { noteId in

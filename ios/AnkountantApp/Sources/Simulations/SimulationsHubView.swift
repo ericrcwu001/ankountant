@@ -35,7 +35,7 @@ struct SimulationsHubView: View {
                 ContentUnavailableView(
                     "No Simulations",
                     systemImage: "list.bullet.clipboard",
-                    description: Text("Load the FAR demo profile from Settings ▸ Developer ▸ Debug to get Task-Based Simulations.")
+                    description: Text("No sealed Task-Based Simulations were found in this profile.")
                 )
             } else {
                 loadedContent
@@ -66,7 +66,7 @@ struct SimulationsHubView: View {
             List {
                 Section(shapeLabel(selectedShape)) {
                     if filteredTasks.isEmpty {
-                        Text("No \(shapeLabel(selectedShape).lowercased()) simulations yet.")
+                        Text("No \(shapeLabel(selectedShape).lowercased()) simulations in this profile.")
                             .ankountantFont(.body)
                             .foregroundStyle(palette.textSecondary)
                     } else {
@@ -100,7 +100,7 @@ struct SimulationsHubView: View {
                 .ankountantFont(.body)
                 .foregroundStyle(palette.textPrimary)
                 .lineLimit(2)
-            Text(shapeLabel(task.shape))
+            Text("\(task.section) · \(shapeLabel(task.shape))")
                 .ankountantFont(.caption)
                 .foregroundStyle(palette.textSecondary)
         }

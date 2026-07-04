@@ -252,13 +252,15 @@ public enum ConfidenceLevel: String, Sendable, CaseIterable, Equatable {
 public struct TbsTaskSummary: Sendable, Identifiable, Equatable {
     public let noteId: Int64
     public let shape: TbsShape
+    public let section: String
     public let prompt: String
 
     public var id: Int64 { noteId }
 
-    public init(noteId: Int64, shape: TbsShape, prompt: String) {
+    public init(noteId: Int64, shape: TbsShape, prompt: String, section: String = "FAR") {
         self.noteId = noteId
         self.shape = shape
+        self.section = section
         self.prompt = prompt
     }
 }
