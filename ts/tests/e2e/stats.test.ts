@@ -22,12 +22,18 @@ test("stats: analytics page scrolls in the Ankountant shell body", async ({ page
 
 test("stats: graph load failure shows an inline error state", async ({ page, seedWithHistory }) => {
     expect(seedWithHistory.sealedItems).toBeGreaterThan(0);
+    let graphRequests = 0;
     await page.route("**/_anki/graphs", async (route) => {
-        await route.fulfill({
-            status: 500,
-            contentType: "text/html",
-            body: "<html><head><title>500 Internal Server Error</title></head><body>traceback</body></html>",
-        });
+        graphRequests += 1;
+        if (graphRequests === 1) {
+            await route.fulfill({
+                status: 500,
+                contentType: "text/html",
+                body: "<html><head><title>500 Internal Server Error</title></head><body>traceback</body></html>",
+            });
+        } else {
+            await route.continue();
+        }
     });
 
     await page.goto("/ankountant-stats");
@@ -37,4 +43,9 @@ test("stats: graph load failure shows an inline error state", async ({ page, see
     await expect(error).toContainText("We couldn't load this evidence.");
     await expect(error).toContainText("500 Internal Server Error. Statistics could not be loaded.");
     await expect(page.getByTestId("stats-loading")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Retry" }).click();
+    await expect.poll(() => graphRequests).toBeGreaterThan(1);
+    await expect(page.getByLabel("Statistics overview")).toBeVisible();
+    await expect(page.getByTestId("stats-load-error")).toHaveCount(0);
 });

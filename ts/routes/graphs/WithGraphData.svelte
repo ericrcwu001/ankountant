@@ -44,6 +44,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         }
     }
 
+    function retry(): void {
+        void updateSourceData($search, $days);
+    }
+
     $: revlogRange = daysToRevlogRange($days);
 </script>
 
@@ -54,5 +58,5 @@ graph data, as it gets updated as the user changes options, and we don't want
 the current graphs to disappear until the new graphs have finished loading.
 -->
 {#await prefsPromise then prefs}
-    <slot {revlogRange} {prefs} {sourceData} {loading} {errorMessage} />
+    <slot {revlogRange} {prefs} {sourceData} {loading} {errorMessage} {retry} />
 {/await}

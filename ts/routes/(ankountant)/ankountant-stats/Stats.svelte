@@ -177,6 +177,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     let:errorMessage
     let:prefs
     let:revlogRange
+    let:retry
 >
     <section class="stats-surface" data-testid="stats">
         <header class="stats-header">
@@ -331,6 +332,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                 <p class="eyebrow">Statistics unavailable</p>
                 <h2>We couldn't load this evidence.</h2>
                 <p>{errorMessage}</p>
+                <button type="button" class="retry-button" on:click={retry}>Retry</button>
             </section>
         {:else}
             <section
@@ -723,6 +725,22 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             color: var(--fg-error);
             background: color-mix(in srgb, var(--fg-error) 12%, transparent);
             border-color: color-mix(in srgb, var(--fg-error) 22%, transparent);
+        }
+    }
+
+    .retry-button {
+        min-height: 40px;
+        margin-top: var(--space-sm);
+        padding: 0 var(--space-lg);
+        border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+        border-radius: var(--border-radius);
+        background: var(--accent-tint);
+        color: var(--accent);
+        font-size: var(--type-caption-size);
+        font-weight: 700;
+
+        &:hover {
+            background: color-mix(in srgb, var(--accent) 16%, transparent);
         }
     }
 
