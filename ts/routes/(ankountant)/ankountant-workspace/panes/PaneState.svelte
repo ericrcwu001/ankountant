@@ -18,8 +18,8 @@ pane never renders blank.
     export let onRetry: (() => void) | undefined = undefined;
 
     $: hasEmptyActions =
-        (emptyActionHref !== "" && emptyActionLabel !== "")
-        || (emptySecondaryHref !== "" && emptySecondaryLabel !== "");
+        (emptyActionHref !== "" && emptyActionLabel !== "") ||
+        (emptySecondaryHref !== "" && emptySecondaryLabel !== "");
 </script>
 
 <div class="pane-state" data-phase={phase} data-testid="pane-state">

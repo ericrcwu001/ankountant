@@ -327,12 +327,18 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                 {/each}
             </section>
         {:else if !loading && errorMessage}
-            <section class="stats-state error" data-testid="stats-load-error" role="alert">
+            <section
+                class="stats-state error"
+                data-testid="stats-load-error"
+                role="alert"
+            >
                 <div class="state-mark" aria-hidden="true">!</div>
                 <p class="eyebrow">Statistics unavailable</p>
                 <h2>We couldn't load this evidence.</h2>
                 <p>{errorMessage}</p>
-                <button type="button" class="retry-button" on:click={retry}>Retry</button>
+                <button type="button" class="retry-button" on:click={retry}>
+                    Retry
+                </button>
             </section>
         {:else}
             <section

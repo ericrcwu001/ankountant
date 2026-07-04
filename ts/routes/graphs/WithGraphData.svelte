@@ -38,7 +38,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             sourceData = await graphs({ search, days }, { alertOnError: false });
         } catch (error) {
             sourceData = null;
-            errorMessage = readableBackendError(error, "Statistics could not be loaded.");
+            errorMessage = readableBackendError(
+                error,
+                "Statistics could not be loaded.",
+            );
         } finally {
             loading = false;
         }

@@ -79,11 +79,13 @@ test("workspace panes do not leak backend html on load failure", async ({ page }
     await expect(paneState).not.toContainText("don&#39;t");
 });
 
-for (const surface of [
-    { initial: "tbs", title: "No simulation task found" },
-    { initial: "research", title: "No research task found" },
-    { initial: "doc_review", title: "No document-review task found" },
-]) {
+for (
+    const surface of [
+        { initial: "tbs", title: "No simulation task found" },
+        { initial: "research", title: "No research task found" },
+        { initial: "doc_review", title: "No document-review task found" },
+    ]
+) {
     test(`workspace ${surface.initial} empty state links to next steps`, async ({ page }) => {
         await page.route("**/_anki/searchNotes", async (route) => {
             await route.fulfill({
@@ -109,10 +111,7 @@ for (const surface of [
     });
 }
 
-test("workspace browse empty search can recover through broader searches", async ({
-    page,
-    seed,
-}) => {
+test("workspace browse empty search can recover through broader searches", async ({ page, seed }) => {
     expect(seed.sealedItems).toBeGreaterThan(0);
 
     await page.goto(

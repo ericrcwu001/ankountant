@@ -240,9 +240,9 @@ chooser opens on that note's shape and section.
                 <div class="state-mark" aria-hidden="true">0</div>
                 <p class="state-title">No {selectedLabel} simulation found</p>
                 <p class="state-detail">
-                    No {selectedLabel} simulation was found for {emptySectionLabel} in
-                    this profile. Switch the section or simulation type above, or use
-                    readiness evidence to choose the next practice target.
+                    No {selectedLabel} simulation was found for {emptySectionLabel} in this
+                    profile. Switch the section or simulation type above, or use readiness
+                    evidence to choose the next practice target.
                 </p>
                 <a class="state-link" href={readinessHref}>Readiness evidence</a>
             </div>
