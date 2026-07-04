@@ -49,10 +49,16 @@ final class AccountStore {
 
     private init() {
         let defaults = UserDefaults.standard
-        if let data = defaults.data(forKey: Self.accountsKey),
-           let decoded = try? JSONDecoder().decode([AnkountantAccount].self, from: data),
-           !decoded.isEmpty {
-            self.accounts = decoded
+        if let data = defaults.data(forKey: Self.accountsKey) {
+            do {
+                let decoded = try JSONDecoder().decode([AnkountantAccount].self, from: data)
+                guard !decoded.isEmpty else {
+                    fatalError("Profile registry is empty.")
+                }
+                self.accounts = decoded
+            } catch {
+                fatalError("Failed to decode profile registry: \(error.localizedDescription)")
+            }
         } else {
             // First-run: seed with the legacy single-profile setup.
             self.accounts = [.newDefault()]
@@ -64,7 +70,7 @@ final class AccountStore {
         if !accounts.contains(where: { $0.id == selectedID }) {
             selectedID = accounts.first?.id ?? AnkountantAccount.defaultID
         }
-        persistAccounts()
+        try! persistAccounts()
         persistSelection()
     }
 
@@ -87,8 +93,14 @@ final class AccountStore {
             throw AccountStoreError.duplicateName
         }
         let account = AnkountantAccount(id: id, displayName: trimmed, createdAt: .now)
+        let originalAccounts = accounts
         accounts.append(account)
-        persistAccounts()
+        do {
+            try persistAccounts()
+        } catch {
+            accounts = originalAccounts
+            throw error
+        }
         return account
     }
 
@@ -97,11 +109,19 @@ final class AccountStore {
     func remove(_ account: AnkountantAccount, deleteFiles: Bool) throws {
         guard accounts.count > 1 else { throw AccountStoreError.cannotDeleteLast }
         guard account.id != selectedID else { throw AccountStoreError.cannotDeleteActive }
-        accounts.removeAll { $0.id == account.id }
-        persistAccounts()
         if deleteFiles {
             let dir = Self.profileDirectory(for: account.id)
-            try? FileManager.default.removeItem(at: dir)
+            if FileManager.default.fileExists(atPath: dir.path) {
+                try FileManager.default.removeItem(at: dir)
+            }
+        }
+        let originalAccounts = accounts
+        accounts.removeAll { $0.id == account.id }
+        do {
+            try persistAccounts()
+        } catch {
+            accounts = originalAccounts
+            throw error
         }
     }
 
@@ -147,7 +167,7 @@ final class AccountStore {
     /// One-time migration on first multi-profile launch: if there's a
     /// legacy `AnkiCollection/collection.anki2` outside any profile
     /// dir, move it into the default profile's directory.
-    static func migrateLegacyCollectionIfNeeded() {
+    static func migrateLegacyCollectionIfNeeded() throws {
         let appSupport = FileManager.default.urls(
             for: .applicationSupportDirectory, in: .userDomainMask
         ).first!
@@ -158,22 +178,21 @@ final class AccountStore {
         let fm = FileManager.default
         guard fm.fileExists(atPath: legacyCollection.path),
               !fm.fileExists(atPath: targetCollection.path) else { return }
-        try? fm.createDirectory(at: target, withIntermediateDirectories: true)
+        try fm.createDirectory(at: target, withIntermediateDirectories: true)
         for name in ["collection.anki2", "media", "media.db"] {
             let src = legacyRoot.appendingPathComponent(name)
             let dst = target.appendingPathComponent(name)
             if fm.fileExists(atPath: src.path), !fm.fileExists(atPath: dst.path) {
-                try? fm.moveItem(at: src, to: dst)
+                try fm.moveItem(at: src, to: dst)
             }
         }
     }
 
     // MARK: - Persistence
 
-    private func persistAccounts() {
-        if let data = try? JSONEncoder().encode(accounts) {
-            UserDefaults.standard.set(data, forKey: Self.accountsKey)
-        }
+    private func persistAccounts() throws {
+        let data = try JSONEncoder().encode(accounts)
+        UserDefaults.standard.set(data, forKey: Self.accountsKey)
     }
 
     private func persistSelection() {

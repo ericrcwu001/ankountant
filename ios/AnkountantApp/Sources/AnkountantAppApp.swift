@@ -52,7 +52,7 @@ struct AnkiAppApp: App {
         // layout into the default profile, then resolve the active
         // profile (consuming a pending switch from the previous session
         // if one was queued in Settings → Profiles).
-        AccountStore.migrateLegacyCollectionIfNeeded()
+        try! AccountStore.migrateLegacyCollectionIfNeeded()
         let activeProfile = MainActor.assumeIsolated {
             AccountStore.shared.consumePendingSwitch()
         }
