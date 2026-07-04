@@ -485,7 +485,9 @@ private struct ChapterWebView: UIViewRepresentable {
                 object: nil,
                 queue: .main
             ) { [weak self] _ in
-                self?.fetchSelection()
+                Task { @MainActor in
+                    self?.fetchSelection()
+                }
             }
         }
 
