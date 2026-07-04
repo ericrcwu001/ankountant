@@ -119,14 +119,13 @@ specific field; regex + case options map straight onto FindAndReplaceRequest.
     });
 </script>
 
-<div
+<button
+    type="button"
     class="fr-scrim"
-    role="button"
     tabindex="-1"
-    aria-label="Close"
+    aria-label="Close find and replace"
     on:click={onClose}
-    on:keydown={() => {}}
-></div>
+></button>
 <div class="fr-dialog" role="dialog" aria-modal="true" aria-label="Find and replace">
     <h2 class="fr-title">Find and Replace</h2>
     <p class="fr-scope">In {scopeLabel}.</p>
@@ -198,6 +197,7 @@ specific field; regex + case options map straight onto FindAndReplaceRequest.
         position: fixed;
         inset: 0;
         z-index: 1100;
+        padding: 0;
         background: rgba(0, 0, 0, 0.35);
         border: 0;
     }
