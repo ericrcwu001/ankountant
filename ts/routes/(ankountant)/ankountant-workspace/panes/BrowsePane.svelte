@@ -71,6 +71,7 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
     import FindReplaceDialog from "./FindReplaceDialog.svelte";
     import PaneState from "./PaneState.svelte";
 
+    const DEFAULT_QUERY = "deck:current";
     const ROW_HEIGHT = 28;
     const OVERSCAN = 6;
     const FLAG_LABELS = [
@@ -108,7 +109,7 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
     let phase: "loading" | "ready" | "error" = "loading";
     let message = "";
 
-    let query = initialParams.get("search") ?? "deck:current";
+    let query = initialParams.get("search") ?? DEFAULT_QUERY;
     let notesMode = initialNotesMode ?? false;
     let allColumns: BrowserColumns_Column[] = [];
     let columnByKey = new Map<string, BrowserColumns_Column>();
@@ -158,6 +159,21 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
           "minmax(0, 1fr) ".repeat(Math.max(0, activeColumns.length - 1))
         : "1fr";
     $: showEditor = selection.size === 1;
+    $: browseKind = notesMode ? "notes" : "cards";
+    $: normalizedQuery = query.trim();
+    $: hasRecoverableSearch =
+        normalizedQuery !== "" && normalizedQuery !== DEFAULT_QUERY;
+    $: canShowWholeCollection = normalizedQuery !== "";
+    $: emptyTitle = hasRecoverableSearch
+        ? `No ${browseKind} match this search`
+        : normalizedQuery === DEFAULT_QUERY
+          ? `No ${browseKind} in the current deck`
+          : `No ${browseKind} available`;
+    $: emptyDetail = hasRecoverableSearch
+        ? `This search returned no ${browseKind}. Return to the current deck, show the whole collection, or adjust the sidebar filters.`
+        : normalizedQuery === DEFAULT_QUERY
+          ? `The current deck has no ${browseKind} in this view. Show the whole collection, or choose a specific deck or tag in the sidebar.`
+          : `There are no ${browseKind} to show for this workspace view yet.`;
 
     // ---- config helpers -----------------------------------------------------
 
@@ -295,6 +311,23 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
     function runSearch(newQuery: string): void {
         query = newQuery;
         void runPaneAction(() => doSearch());
+    }
+
+    function searchFor(nextQuery: string): void {
+        query = nextQuery;
+        void runPaneAction(async () => {
+            await doSearch();
+            await tick();
+            searchInput?.focus();
+        });
+    }
+
+    function showCurrentDeck(): void {
+        searchFor(DEFAULT_QUERY);
+    }
+
+    function showWholeCollection(): void {
+        searchFor("");
     }
 
     async function toggleNotesMode(next: boolean): Promise<void> {
@@ -837,9 +870,31 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
                         on:scroll={() => (scrollTop = scrollEl?.scrollTop ?? 0)}
                     >
                         {#if total === 0 && phase === "ready"}
-                            <p class="empty">
-                                No {notesMode ? "notes" : "cards"} match this search.
-                            </p>
+                            <div class="empty" data-testid="browse-empty">
+                                <div class="empty-mark" aria-hidden="true">0</div>
+                                <p class="empty-title">{emptyTitle}</p>
+                                <p class="empty-detail">{emptyDetail}</p>
+                                {#if hasRecoverableSearch}
+                                    <button
+                                        type="button"
+                                        class="empty-action"
+                                        data-testid="browse-clear-search"
+                                        on:click={showCurrentDeck}
+                                    >
+                                        Show current deck
+                                    </button>
+                                {/if}
+                                {#if canShowWholeCollection}
+                                    <button
+                                        type="button"
+                                        class="empty-action secondary"
+                                        data-testid="browse-show-all"
+                                        on:click={showWholeCollection}
+                                    >
+                                        Show whole collection
+                                    </button>
+                                {/if}
+                            </div>
                         {:else}
                             <div
                                 class="table-spacer"
@@ -1099,10 +1154,79 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
     }
 
     .empty {
-        margin: 0;
+        min-height: 100%;
         padding: var(--space-xl);
-        text-align: center;
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        gap: var(--space-sm);
         color: var(--fg-subtle);
+        text-align: center;
+    }
+
+    .empty-mark {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 50%;
+        background: var(--canvas-elevated);
+        color: var(--fg-faint);
+        font-size: 21px;
+        font-weight: 750;
+        line-height: 1;
+    }
+
+    .empty-title {
+        margin: 0;
+        color: var(--fg);
+        font-weight: 650;
+    }
+
+    .empty-detail {
+        max-width: 30rem;
+        margin: 0;
+        color: var(--fg-subtle);
+        line-height: 1.45;
+    }
+
+    .empty-action {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 var(--space-md);
+        border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+        border-radius: var(--border-radius-sm);
+        background: var(--accent-tint);
+        color: var(--accent);
+        font-size: var(--type-caption-size);
+        font-weight: 700;
+        cursor: pointer;
+
+        &:hover {
+            background: var(--canvas-inset);
+        }
+
+        &:active {
+            transform: translateY(1px);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent) !important;
+            outline-offset: 2px;
+        }
+
+        &.secondary {
+            background: transparent;
+            color: var(--fg-subtle);
+
+            &:hover {
+                background: var(--canvas-inset);
+                color: var(--fg);
+            }
+        }
     }
 
     .editor-region {

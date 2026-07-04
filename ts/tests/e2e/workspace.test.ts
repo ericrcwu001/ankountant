@@ -109,6 +109,37 @@ for (const surface of [
     });
 }
 
+test("workspace browse empty search can recover through broader searches", async ({
+    page,
+    seed,
+}) => {
+    expect(seed.sealedItems).toBeGreaterThan(0);
+
+    await page.goto(
+        "/ankountant-workspace?initial=browse&search=tag:__ankountant_no_results__",
+    );
+
+    const empty = page.getByTestId("browse-empty");
+    await expect(empty).toContainText("No cards match this search");
+    await expect(empty).toContainText("Return to the current deck");
+    await expect(empty).toContainText("show the whole collection");
+    await expect(page.getByTestId("browse-search")).toHaveValue(
+        "tag:__ankountant_no_results__",
+    );
+
+    await page.getByTestId("browse-clear-search").click();
+
+    await expect(page.getByTestId("browse-search")).toHaveValue("deck:current");
+    await expect(empty).toContainText("No cards in the current deck");
+    await expect(page.getByTestId("browse-clear-search")).toHaveCount(0);
+
+    await page.getByTestId("browse-show-all").click();
+
+    await expect(page.getByTestId("browse-search")).toHaveValue("");
+    await expect(empty).toHaveCount(0);
+    await expect(page.locator(".browse-row").first()).toBeVisible();
+});
+
 test("workspace TBS pane reveals the answer key after submit", async ({ page, seed }) => {
     expect(seed.sealedTbsNoteIds.length).toBeGreaterThan(0);
     await page.goto("/ankountant-workspace?initial=tbs");
