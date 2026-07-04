@@ -44,9 +44,10 @@ Never renders which option is correct before submit (options carry no key).
     $: stepById = new Map<string, RenderStep>(model.steps.map((s) => [s.id, s]));
     $: resultById = new Map((results ?? []).map((r) => [r.id, r]));
     $: reveal = results ? buildRevealModel(fields, tags) : null;
+    $: answerInputsLocked = submitting || results !== null;
 
     async function submit(): Promise<void> {
-        if (confidence === null || submitting) {
+        if (confidence === null || answerInputsLocked) {
             return;
         }
         submitting = true;
@@ -103,7 +104,7 @@ Never renders which option is correct before submit (options carry no key).
                             data-testid="dr-blank-select"
                             data-blank-id={seg.blankId}
                             bind:value={answers[seg.blankId]}
-                            disabled={results !== null}
+                            disabled={answerInputsLocked}
                             aria-label={step?.label ?? seg.blankId}
                         >
                             <option value="">Select…</option>
@@ -135,7 +136,7 @@ Never renders which option is correct before submit (options carry no key).
                 disabled={submitting || confidence === null || results !== null}
                 on:click={submit}
             >
-                Submit review
+                {submitting ? "Submitting…" : "Submit review"}
             </button>
             {#if confidence === null}
                 <span class="gate-hint">Commit a confidence level first.</span>

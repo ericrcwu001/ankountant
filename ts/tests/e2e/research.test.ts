@@ -26,6 +26,8 @@ test("research: literature search + a correct citation + time-to-cite (T1/T2)", 
     await expect(page.getByTestId("research-time")).toBeVisible();
     // The answer key + basis are revealed only after submit.
     await expect(page.getByTestId("results-layer")).toBeVisible();
+    await expect(page.getByTestId("citation-input")).toBeDisabled();
+    await expect(page.getByTestId("lit-cite").first()).toBeDisabled();
 });
 
 test("research: a wrong citation is marked incorrect (T1)", async ({ page }) => {

@@ -15,6 +15,7 @@ sync — the cross-pane version is impossible without a shared store).
     export let section: string;
     /** Optional: called when the learner clicks "Use this citation". */
     export let onCite: ((citation: string) => void) | undefined = undefined;
+    export let citationEnabled = true;
 
     let query = "";
     $: entries = corpusForSection(section);
@@ -65,6 +66,7 @@ sync — the cross-pane version is impossible without a shared store).
                             type="button"
                             class="cite-btn"
                             data-testid="lit-cite"
+                            disabled={!citationEnabled}
                             on:click={() => onCite?.(e.citation)}
                         >
                             Use this citation
@@ -225,7 +227,7 @@ sync — the cross-pane version is impossible without a shared store).
         padding: var(--space-xs) var(--space-md);
         cursor: pointer;
 
-        &:hover {
+        &:hover:not([disabled]) {
             border-color: var(--accent);
             color: var(--accent);
         }
@@ -233,6 +235,11 @@ sync — the cross-pane version is impossible without a shared store).
         &:focus-visible {
             outline: 2px solid var(--accent) !important;
             outline-offset: 2px;
+        }
+
+        &[disabled] {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
     }
 

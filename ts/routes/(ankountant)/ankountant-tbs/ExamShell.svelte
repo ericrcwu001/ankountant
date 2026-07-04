@@ -25,6 +25,7 @@ section; the Literature tab is scoped to the note's section.
     export let committed: ConfidenceLevel | null = null;
     export let onCommit: (level: ConfidenceLevel) => void = () => {};
     export let onCite: ((citation: string) => void) | undefined = undefined;
+    export let citationEnabled = true;
 
     type Tool = "exhibits" | "literature" | "scratch";
     export let defaultTool: Tool = "exhibits";
@@ -96,7 +97,11 @@ section; the Literature tab is scoped to the note's section.
                 {#if tool === "exhibits"}
                     <ExhibitsPane {exhibits} />
                 {:else if tool === "literature"}
-                    <LiteraturePane section={model.section} {onCite} />
+                    <LiteraturePane
+                        section={model.section}
+                        {onCite}
+                        {citationEnabled}
+                    />
                 {:else}
                     <Spreadsheet />
                 {/if}

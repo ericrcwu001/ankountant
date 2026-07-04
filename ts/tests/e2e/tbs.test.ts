@@ -36,6 +36,10 @@ test("a JE TBS renders an editable grid and shows per-line + partial-credit tota
 
     await page.getByTestId("tbs-submit").click();
     await expect(page.getByTestId("tbs-total")).toContainText("75%");
+    await expect(rows.nth(0).getByTestId("je-account")).toBeDisabled();
+    await expect(rows.nth(0).getByTestId("je-side")).toBeDisabled();
+    await expect(rows.nth(0).getByTestId("je-amount")).toBeDisabled();
+    await expect(rows.nth(0).getByTestId("je-no-entry")).toBeDisabled();
 });
 
 test("a numeric TBS renders input cells graded per cell (A51/B4-D2)", async ({ page, seed }) => {
@@ -59,6 +63,7 @@ test("a numeric TBS renders input cells graded per cell (A51/B4-D2)", async ({ p
     await cells.nth(1).fill("12500");
     await page.getByTestId("tbs-submit").click();
     await expect(page.getByTestId("tbs-total")).toContainText("100%");
+    await expect(cells.first()).toBeDisabled();
 });
 
 test("a TBS submit failure stays in the surface", async ({ page, seed }) => {

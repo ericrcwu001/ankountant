@@ -35,6 +35,7 @@ test("doc-review: document with blanks + co-visible exhibits + partial credit (T
     await expect(page.getByTestId("docreview-total")).toBeVisible();
     // Per-blank ✓/✗ marks + a post-submit reveal.
     await expect(page.getByTestId("results-layer")).toBeVisible();
+    await expect(blanks.first()).toBeDisabled();
 });
 
 test("doc-review: each blank offers its confusion-set candidates (T3 AC2)", async ({ page }) => {

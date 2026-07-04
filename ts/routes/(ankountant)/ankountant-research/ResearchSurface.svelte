@@ -35,9 +35,10 @@ paraphrase + link and IRC/PCAOB/NIST show verbatim text.
     let submitError: string | null = null;
 
     $: reveal = results ? buildRevealModel(fields, tags) : null;
+    $: responseLocked = submitting || results !== null;
 
     async function submit(): Promise<void> {
-        if (confidence === null || citation.trim() === "" || submitting) {
+        if (confidence === null || citation.trim() === "" || responseLocked) {
             return;
         }
         submitting = true;
@@ -69,7 +70,12 @@ paraphrase + link and IRC/PCAOB/NIST show verbatim text.
     title="Research simulation"
     committed={confidence}
     onCommit={(l) => (confidence = l)}
-    onCite={(c) => (citation = c)}
+    onCite={(c) => {
+        if (!responseLocked) {
+            citation = c;
+        }
+    }}
+    citationEnabled={!responseLocked}
     defaultTool="literature"
 >
     <div class="research-response" data-testid="research-surface" data-shape="research">
@@ -85,7 +91,7 @@ paraphrase + link and IRC/PCAOB/NIST show verbatim text.
                 data-testid="citation-input"
                 bind:value={citation}
                 placeholder="e.g. ASC 842-20-25-1"
-                disabled={results !== null}
+                disabled={responseLocked}
             />
         </label>
 
@@ -93,13 +99,12 @@ paraphrase + link and IRC/PCAOB/NIST show verbatim text.
             <button
                 class="submit"
                 data-testid="research-submit"
-                disabled={submitting ||
+                disabled={responseLocked ||
                     confidence === null ||
-                    citation.trim() === "" ||
-                    results !== null}
+                    citation.trim() === ""}
                 on:click={submit}
             >
-                Submit citation
+                {submitting ? "Submitting…" : "Submit citation"}
             </button>
             {#if confidence === null}
                 <span class="gate-hint" data-testid="research-gate-hint">

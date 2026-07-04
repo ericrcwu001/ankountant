@@ -64,6 +64,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     let submitError: string | null = null;
 
     $: resultById = new Map((results ?? []).map((r) => [r.id, r]));
+    $: answerInputsLocked = submitting || results !== null;
 
     async function submit(): Promise<void> {
         if (confidence === null || submitting || results !== null) {
@@ -139,6 +140,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                         data-testid="cell-input"
                                         data-step-id={step.id}
                                         bind:value={numericCells[i].value}
+                                        disabled={answerInputsLocked}
                                     />
                                 </td>
                                 <td class="result" data-testid="cell-result">
@@ -187,7 +189,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                         data-step-id={step.id}
                                         bind:value={jeLines[i].account}
                                         disabled={jeLines[i].noEntry ||
-                                            resultById.has(step.id)}
+                                            answerInputsLocked}
                                     >
                                         <option value="">Select account…</option>
                                         {#each JE_ACCOUNTS as acct (acct)}
@@ -201,7 +203,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                         data-step-id={step.id}
                                         bind:value={jeLines[i].side}
                                         disabled={jeLines[i].noEntry ||
-                                            resultById.has(step.id)}
+                                            answerInputsLocked}
                                     >
                                         <option value="">Select</option>
                                         <option value="dr">Debit</option>
@@ -216,7 +218,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                         data-step-id={step.id}
                                         bind:value={jeLines[i].amount}
                                         disabled={jeLines[i].noEntry ||
-                                            resultById.has(step.id)}
+                                            answerInputsLocked}
                                     />
                                 </td>
                                 <td class="noentry-col">
@@ -226,7 +228,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                         data-step-id={step.id}
                                         aria-label="No entry required for this line"
                                         checked={jeLines[i].noEntry}
-                                        disabled={resultById.has(step.id)}
+                                        disabled={answerInputsLocked}
                                         on:change={() => toggleNoEntry(i)}
                                     />
                                 </td>
@@ -254,6 +256,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                     <select
                                         bind:value={spare.account}
                                         aria-label="Spare account"
+                                        disabled={answerInputsLocked}
                                     >
                                         <option value="">Spare (not graded)…</option>
                                         {#each JE_ACCOUNTS as acct (acct)}
@@ -265,6 +268,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                     <select
                                         bind:value={spare.side}
                                         aria-label="Spare debit/credit"
+                                        disabled={answerInputsLocked}
                                     >
                                         <option value="">Select</option>
                                         <option value="dr">Debit</option>
@@ -277,6 +281,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                         inputmode="decimal"
                                         bind:value={spare.amount}
                                         aria-label="Spare amount"
+                                        disabled={answerInputsLocked}
                                     />
                                 </td>
                                 <td class="noentry-col"></td>
@@ -294,7 +299,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     disabled={submitting || confidence === null || results !== null}
                     on:click={submit}
                 >
-                    Submit
+                    {submitting ? "Submitting…" : "Submit"}
                 </button>
 
                 {#if confidence === null}
