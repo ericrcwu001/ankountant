@@ -23,8 +23,7 @@ public enum TbsField {
     public static let sourcePassage = 5
 }
 
-/// Typed exhibit kinds (mirrors the Rust SeedExhibit `kind`); an unknown kind
-/// falls back to "text".
+/// Typed exhibit kinds (mirrors the Rust SeedExhibit `kind`).
 private let exhibitKinds: Set<String> = [
     "text", "email", "invoice", "table", "statement", "memo", "document", "stamp",
 ]
@@ -116,8 +115,7 @@ public func parseExhibits(_ raw: String?) throws -> [Exhibit] {
     return try array.enumerated().map { index, element in
         let fieldName = "exhibits_json[\(index)]"
         let object = try jsonObject(element, fieldName: fieldName)
-        let kindRaw = (object["kind"] as? String) ?? "text"
-        let kind = exhibitKinds.contains(kindRaw) ? kindRaw : "text"
+        let kind = try exhibitKind(object["kind"], fieldName: "\(fieldName).kind")
         return Exhibit(
             id: index,
             title: (object["title"] as? String) ?? "Exhibit \(index + 1)",
@@ -129,6 +127,19 @@ public func parseExhibits(_ raw: String?) throws -> [Exhibit] {
             rows: try optionalRowsArray(object["rows"], fieldName: "\(fieldName).rows")
         )
     }
+}
+
+private func exhibitKind(_ raw: Any?, fieldName: String) throws -> String {
+    guard let raw else {
+        return "text"
+    }
+    guard let kind = raw as? String, exhibitKinds.contains(kind) else {
+        throw TbsParseError.invalidValue(
+            field: fieldName,
+            message: "unknown exhibit kind: \(String(describing: raw))"
+        )
+    }
+    return kind
 }
 
 /// Parse steps_json into render steps, stripping the answer_key (retrieval

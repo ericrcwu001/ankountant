@@ -122,6 +122,10 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
     expectTbsParseError("Invalid exhibits_json[0].rows[0]: must be an array") {
         try parseExhibits(#"[{"rows":[1]}]"#)
     }
+    expectTbsParseError("Invalid exhibits_json[0].kind: unknown exhibit kind: chart") {
+        try parseExhibits(#"[{"kind":"chart"}]"#)
+    }
+    #expect(try parseExhibits(#"[{"title":"T"}]"#).first?.kind == "text")
 }
 
 @Test func buildTbsModelParsesJournalEntry() throws {

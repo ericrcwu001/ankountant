@@ -225,6 +225,16 @@ const EXHIBIT_KINDS: ExhibitKind[] = [
     "stamp",
 ];
 
+function parseExhibitKind(raw: unknown, fieldName: string): ExhibitKind {
+    if (raw === undefined) {
+        return "text";
+    }
+    if (typeof raw !== "string" || !EXHIBIT_KINDS.includes(raw as ExhibitKind)) {
+        throw new Error(`${fieldName} has unknown exhibit kind: ${String(raw)}`);
+    }
+    return raw as ExhibitKind;
+}
+
 function asStringArray(v: unknown): string[] | undefined {
     if (!Array.isArray(v)) {
         return undefined;
@@ -237,10 +247,7 @@ export function parseExhibits(raw: string | undefined): Exhibit[] {
     const parsed = parseJsonArray("exhibits_json", raw);
     return parsed.map((e, i) => {
         const obj = (e ?? {}) as Record<string, unknown>;
-        const kindRaw = typeof obj.kind === "string" ? obj.kind : "text";
-        const kind = (EXHIBIT_KINDS.includes(kindRaw as ExhibitKind)
-            ? kindRaw
-            : "text") as ExhibitKind;
+        const kind = parseExhibitKind(obj.kind, `exhibits_json[${i}].kind`);
         const rows = Array.isArray(obj.rows)
             ? (obj.rows as unknown[]).map((r) => asStringArray(r) ?? [])
             : undefined;

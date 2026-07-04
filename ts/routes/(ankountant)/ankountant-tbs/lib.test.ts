@@ -114,8 +114,12 @@ test("parseExhibits fails loudly on missing or malformed json", () => {
     expect(() => parseExhibits(undefined)).toThrow(/exhibits_json is missing/);
     expect(() => parseExhibits("not json")).toThrow(/Invalid exhibits_json/);
     expect(() => parseExhibits("{}")).toThrow(/exhibits_json must be an array/);
+    expect(() => parseExhibits(JSON.stringify([{ kind: "chart" }]))).toThrow(
+        /exhibits_json\[0\]\.kind has unknown exhibit kind: chart/,
+    );
     const ex = parseExhibits(JSON.stringify([{ title: "Ex 1", body: "text" }]));
     expect(ex[0].title).toBe("Ex 1");
+    expect(ex[0].kind).toBe("text");
 });
 
 test("parseSteps fails loudly on missing, malformed, or empty step json", () => {
@@ -191,7 +195,6 @@ test("parseExhibits reads typed exhibits (kind, table columns/rows, role)", () =
     expect(ex[1].kind).toBe("table");
     expect(ex[1].columns).toEqual(["Item", "Amount"]);
     expect(ex[1].rows).toEqual([["Rev", "100"]]);
-    // Unknown/missing kind defaults to text.
     expect(ex[2].kind).toBe("text");
 });
 
