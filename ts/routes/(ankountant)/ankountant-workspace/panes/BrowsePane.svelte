@@ -56,6 +56,7 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
         sortBackwardsKey,
         sortTypeKey,
     } from "./browseColumns";
+    import { deleteNotesConfirmation, deleteSelectionMenuLabel } from "./browseActions";
     import ContextMenu, { type MenuItem } from "./ContextMenu.svelte";
     import {
         decodeConfigJson,
@@ -564,7 +565,11 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
         if (native.length === 0) {
             return;
         }
-        if (!window.confirm(`Delete ${native.length} note(s)? You can undo this.`)) {
+        const noteIds = notesMode ? native : await resolveNoteIds();
+        if (noteIds.length === 0) {
+            return;
+        }
+        if (!window.confirm(deleteNotesConfirmation(noteIds.length))) {
             return;
         }
         await removeNotes({
@@ -591,7 +596,7 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
             })),
             { type: "separator" },
             {
-                label: n > 1 ? `Delete ${n} notes` : "Delete note",
+                label: deleteSelectionMenuLabel(n, notesMode),
                 danger: true,
                 onClick: () => void run(deleteSelected),
             },
