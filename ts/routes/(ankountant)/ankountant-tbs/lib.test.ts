@@ -15,6 +15,7 @@ import {
     parseExhibits,
     parseSteps,
     renderableTbsShape,
+    revealResultPresentation,
     SECTION_SEARCH_ORDER,
     sectionChoiceFromModel,
     sectionChoiceLabel,
@@ -446,4 +447,22 @@ test("buildRevealModel joins a research accepted-citation array", () => {
     ];
     const reveal = buildRevealModel(fields, ["sec::FAR"]);
     expect(reveal.steps[0].correctText).toBe("ASC 842-20-25-1 / 842-20-25-1");
+});
+
+test("revealResultPresentation keeps missing grader rows neutral", () => {
+    expect(revealResultPresentation("line-1", [{ id: "line-1", correct: true }])).toEqual({
+        status: "correct",
+        mark: "✓",
+        ariaLabel: "You were correct",
+    });
+    expect(revealResultPresentation("line-1", [{ id: "line-1", correct: false }])).toEqual({
+        status: "incorrect",
+        mark: "✗",
+        ariaLabel: "You were incorrect",
+    });
+    expect(revealResultPresentation("line-2", [{ id: "line-1", correct: false }])).toEqual({
+        status: "ungraded",
+        mark: "-",
+        ariaLabel: "Not graded",
+    });
 });

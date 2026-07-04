@@ -11,28 +11,27 @@ once results are in, so nothing is revealed before the learner commits.
 <script lang="ts">
     import type { StepResult } from "@generated/anki/scheduler_pb";
 
-    import type { RevealModel } from "./lib";
+    import { revealResultPresentation, type RevealModel } from "./lib";
 
     export let reveal: RevealModel;
     export let results: StepResult[];
-
-    $: correctById = new Map(results.map((r) => [r.id, r.correct]));
 </script>
 
 <section class="results-layer" data-testid="results-layer">
     <h2>Answer key & rationale</h2>
     <ul class="reveal-list">
         {#each reveal.steps as step (step.id)}
-            {@const ok = correctById.get(step.id)}
+            {@const result = revealResultPresentation(step.id, results)}
             <li class="reveal-row" data-testid="reveal-row" data-step-id={step.id}>
                 <span
                     class="mark"
-                    class:correct={ok}
-                    class:incorrect={ok === false}
+                    class:correct={result.status === "correct"}
+                    class:incorrect={result.status === "incorrect"}
+                    class:ungraded={result.status === "ungraded"}
                     role="img"
-                    aria-label={ok ? "You were correct" : "You were incorrect"}
+                    aria-label={result.ariaLabel}
                 >
-                    {ok ? "✓" : "✗"}
+                    {result.mark}
                 </span>
                 <span class="label">{step.label}</span>
                 <span class="correct-value" data-testid="reveal-correct">
@@ -97,6 +96,10 @@ once results are in, so nothing is revealed before the learner commits.
 
         &.incorrect {
             color: var(--fg-error);
+        }
+
+        &.ungraded {
+            color: var(--fg-subtle);
         }
     }
 

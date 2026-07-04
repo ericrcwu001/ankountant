@@ -587,6 +587,27 @@ export interface RevealModel {
     schemaTag: string;
 }
 
+export type RevealResultStatus = "correct" | "incorrect" | "ungraded";
+
+export interface RevealResultPresentation {
+    status: RevealResultStatus;
+    mark: string;
+    ariaLabel: string;
+}
+
+export function revealResultPresentation(
+    stepId: string,
+    results: readonly { id: string; correct: boolean }[],
+): RevealResultPresentation {
+    const result = results.find((r) => r.id === stepId);
+    if (!result) {
+        return { status: "ungraded", mark: "-", ariaLabel: "Not graded" };
+    }
+    return result.correct
+        ? { status: "correct", mark: "✓", ariaLabel: "You were correct" }
+        : { status: "incorrect", mark: "✗", ariaLabel: "You were incorrect" };
+}
+
 interface RawRevealStep {
     id?: unknown;
     label?: unknown;
