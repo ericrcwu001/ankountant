@@ -52,7 +52,9 @@ the first TBS note.
 </script>
 
 {#if phase === "ready" && model}
-    <DocReviewSurface {noteId} {model} {fields} {tags} />
+    {#key noteId}
+        <DocReviewSurface {noteId} {model} {fields} {tags} />
+    {/key}
 {:else if phase !== "ready"}
     <PaneState
         {phase}

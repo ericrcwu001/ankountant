@@ -10,12 +10,14 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 </script>
 
 {#if data.model}
-    <ResearchSurface
-        noteId={data.noteId}
-        model={data.model}
-        fields={data.fields}
-        tags={data.tags}
-    />
+    {#key data.noteId}
+        <ResearchSurface
+            noteId={data.noteId}
+            model={data.model}
+            fields={data.fields}
+            tags={data.tags}
+        />
+    {/key}
 {:else}
     <p class="empty" data-testid="research-empty">
         No research task available yet. Load the FAR demo content from the Ankountant

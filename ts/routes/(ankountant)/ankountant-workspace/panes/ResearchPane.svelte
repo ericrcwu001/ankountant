@@ -53,7 +53,9 @@ or a different section's item.
 </script>
 
 {#if phase === "ready" && model}
-    <ResearchSurface {noteId} {model} {fields} {tags} />
+    {#key noteId}
+        <ResearchSurface {noteId} {model} {fields} {tags} />
+    {/key}
 {:else if phase !== "ready"}
     <PaneState
         {phase}

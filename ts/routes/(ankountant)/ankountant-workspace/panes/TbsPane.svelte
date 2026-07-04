@@ -56,7 +56,9 @@ ankountant-tbs/TbsTab.svelte for the JE/numeric task types this pane can render.
 </script>
 
 {#if phase === "ready" && model}
-    <TbsSurface {noteId} {model} />
+    {#key noteId}
+        <TbsSurface {noteId} {model} />
+    {/key}
 {:else if phase !== "ready"}
     <PaneState
         {phase}
