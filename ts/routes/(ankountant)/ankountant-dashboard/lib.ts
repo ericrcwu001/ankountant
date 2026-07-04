@@ -278,7 +278,7 @@ function bestNextAction(view: ReadinessView, rows: TopicRow[]): string {
 
 /** Short "Updated 3:04 PM" style label from Unix seconds (empty when unknown). */
 export function formatUpdated(generatedAt: number): string {
-    if (!generatedAt) {
+    if (!Number.isFinite(generatedAt) || generatedAt <= 0) {
         return "";
     }
     const d = new Date(generatedAt * 1000);
@@ -286,7 +286,7 @@ export function formatUpdated(generatedAt: number): string {
 }
 
 export function formatUpdatedLine(generatedAt: number): string {
-    if (!generatedAt) {
+    if (!Number.isFinite(generatedAt) || generatedAt <= 0) {
         return "Last updated time unavailable; refresh readiness after more graded evidence is logged.";
     }
     const d = new Date(generatedAt * 1000);

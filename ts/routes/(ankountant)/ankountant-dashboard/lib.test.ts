@@ -4,7 +4,15 @@
 import { Readiness, TopicScore } from "@generated/anki/scheduler_pb";
 import { expect, test } from "vitest";
 
-import { buildReadinessEvidence, buildReadinessView, buildTopicRows, fractionToPct, isGapWarning } from "./lib";
+import {
+    buildReadinessEvidence,
+    buildReadinessView,
+    buildTopicRows,
+    formatUpdated,
+    formatUpdatedLine,
+    fractionToPct,
+    isGapWarning,
+} from "./lib";
 
 test("gap-warning fires at the 0.25 threshold (A56)", () => {
     expect(isGapWarning(0.24)).toBe(false);
@@ -215,4 +223,16 @@ test("evidence view does not invent a memory value for thin-memory gaps", () => 
 
 test("fractionToPct rounds", () => {
     expect(fractionToPct(0.666)).toBe(67);
+});
+
+test("updated labels require positive generated timestamps", () => {
+    expect(formatUpdated(0)).toBe("");
+    expect(formatUpdated(-1)).toBe("");
+    expect(formatUpdated(Number.NaN)).toBe("");
+    expect(formatUpdated(Number.POSITIVE_INFINITY)).toBe("");
+    expect(formatUpdatedLine(0)).toContain("time unavailable");
+    expect(formatUpdatedLine(-1)).toContain("time unavailable");
+    expect(formatUpdatedLine(Number.NaN)).toContain("time unavailable");
+    expect(formatUpdatedLine(Number.POSITIVE_INFINITY)).toContain("time unavailable");
+    expect(formatUpdatedLine(1_704_067_200)).toMatch(/^Last updated /);
 });
