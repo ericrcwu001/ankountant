@@ -391,14 +391,36 @@ export function buildTbsModel(fields: string[], tags?: string[]): TbsModel {
     }
     const exhibits = parseExhibits(fields[TBS_FIELD.exhibitsJson]);
     const doc = exhibits.find((e) => e.role === "document");
+    const steps = parseSteps(fields[TBS_FIELD.stepsJson]);
+    const document = doc?.body;
+    if (shape === "doc_review") {
+        validateDocReviewDocument(document, steps);
+    }
     return {
         shape,
         section: sectionFromTags(tags),
         prompt,
         exhibits,
-        steps: parseSteps(fields[TBS_FIELD.stepsJson]),
-        document: doc?.body,
+        steps,
+        document,
     };
+}
+
+function validateDocReviewDocument(document: string | undefined, steps: RenderStep[]): void {
+    if (document === undefined || document.trim() === "") {
+        throw new Error("doc_review document exhibit is missing.");
+    }
+    const blankIds = segmentDocument(document)
+        .filter((segment) => segment.type === "blank")
+        .map((segment) => segment.blankId);
+    if (blankIds.length === 0) {
+        throw new Error("doc_review document has no blank markers.");
+    }
+    const stepIds = new Set(steps.map((step) => step.id));
+    const missingStep = blankIds.find((blankId) => !stepIds.has(blankId));
+    if (missingStep) {
+        throw new Error(`doc_review blank ${missingStep} has no step.`);
+    }
 }
 
 /** Exhibits shown in the exhibits pane (everything except the doc-review doc). */

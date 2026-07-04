@@ -242,6 +242,35 @@ test("paneExhibits excludes the doc-review primary document", () => {
     expect(pane[0].title).toBe("Exhibit 1");
 });
 
+test("buildTbsModel rejects malformed doc-review documents", () => {
+    const stepsJson = JSON.stringify([
+        {
+            id: "b1",
+            kind: "blank",
+            label: "Blank 1",
+            answer_key: "o1",
+            options: [{ id: "o1", text: "Answer" }],
+        },
+    ]);
+    const noDocument = JSON.stringify([{ title: "Exhibit", body: "facts" }]);
+    const noMarkers = JSON.stringify([
+        { title: "Doc", kind: "document", role: "document", body: "plain text" },
+    ]);
+    const missingStep = JSON.stringify([
+        { title: "Doc", kind: "document", role: "document", body: "x <blank step=\"b2\">y</blank>" },
+    ]);
+
+    expect(() => buildTbsModel(["doc_review", "Review it.", noDocument, stepsJson])).toThrow(
+        /doc_review document exhibit is missing/,
+    );
+    expect(() => buildTbsModel(["doc_review", "Review it.", noMarkers, stepsJson])).toThrow(
+        /doc_review document has no blank markers/,
+    );
+    expect(() => buildTbsModel(["doc_review", "Review it.", missingStep, stepsJson])).toThrow(
+        /doc_review blank b2 has no step/,
+    );
+});
+
 test("parseSteps surfaces doc-review options but NEVER the answer key", () => {
     const stepsJson = JSON.stringify([
         {
