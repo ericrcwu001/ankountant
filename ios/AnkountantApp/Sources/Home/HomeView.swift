@@ -683,7 +683,7 @@ private struct FarTopicHeroChart: View {
 
     private func passLine(_ size: CGSize) -> some View {
         Path { path in
-            let y = size.height * 0.56
+            let y = topicPassLineY(size.height)
             path.move(to: CGPoint(x: 0, y: y))
             path.addLine(to: CGPoint(x: size.width, y: y))
         }
@@ -735,7 +735,7 @@ private struct FarSinglePeakChart: View {
             ZStack(alignment: .topLeading) {
                 MountainRangeCanvas(topics: [topic])
                 Path { path in
-                    let y = size.height * 0.52
+                    let y = topicPassLineY(size.height)
                     path.move(to: CGPoint(x: 0, y: y))
                     path.addLine(to: CGPoint(x: size.width, y: y))
                 }
@@ -743,7 +743,7 @@ private struct FarSinglePeakChart: View {
                 Text("PASS LINE · 75")
                     .ankountantFont(.micro)
                     .foregroundStyle(palette.accent)
-                    .position(x: size.width - 50, y: size.height * 0.52 - 12)
+                    .position(x: size.width - 50, y: topicPassLineY(size.height) - 12)
             }
             .background(palette.surface, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
@@ -759,7 +759,7 @@ private struct FarTopicSparkline: View {
         GeometryReader { geo in
             let size = geo.size
             let base = size.height - 2
-            let peak = base - size.height * 0.72
+            let peak = base - size.height * 0.72 * topic.height
             Path { path in
                 path.move(to: CGPoint(x: 1, y: base))
                 path.addLine(to: CGPoint(x: size.width * 0.52, y: peak))
@@ -816,7 +816,13 @@ private struct FlowLayout<Data: RandomAccessCollection, Content: View>: View whe
     }
 }
 
-private struct FarTopicCard: Identifiable, Hashable {
+private func topicPassLineY(_ height: Double) -> Double {
+    let base = height * 0.93
+    let plot = height * 0.72
+    return base - 0.75 * plot
+}
+
+struct FarTopicCard: Identifiable, Hashable {
     let id: String
     let setId: String
     let label: String
@@ -859,7 +865,8 @@ private struct FarTopicCard: Identifiable, Hashable {
 
     private static func make(spec: Spec, topic: TopicScoreModel?) -> FarTopicCard {
         let missingPerformance = topic?.performanceInsufficient ?? true
-        let performance = topic.flatMap { missingPerformance ? nil : pct($0.performance) }
+        let performanceFraction = topic.flatMap { missingPerformance ? nil : $0.performance }
+        let performance = performanceFraction.map(pct)
         let memory = topic.flatMap { $0.memoryInsufficient ? nil : pct($0.memory) }
         let gap = topic.flatMap { t in
             t.gapAvailable ? pct(t.gap) : nil
@@ -869,7 +876,7 @@ private struct FarTopicCard: Identifiable, Hashable {
             setId: spec.setId,
             label: spec.label,
             cx: spec.cx,
-            height: spec.height,
+            height: performanceFraction ?? 0,
             memory: memory,
             performance: performance,
             gap: gap,
@@ -893,16 +900,15 @@ private struct FarTopicCard: Identifiable, Hashable {
         let setId: String
         let label: String
         let cx: Double
-        let height: Double
     }
 
     private static let specs = [
-        Spec(setId: "operating_vs_finance_lease", label: "Leases", cx: 0.12, height: 0.88),
-        Spec(setId: "revrec_step_selection", label: "Revenue", cx: 0.27, height: 0.92),
-        Spec(setId: "capitalize_vs_expense", label: "PP&E", cx: 0.42, height: 0.87),
-        Spec(setId: "inventory_valuation", label: "Inventory", cx: 0.56, height: 0.78),
-        Spec(setId: "trading_afs_htm", label: "Investments", cx: 0.69, height: 0.85),
-        Spec(setId: "tax_timing", label: "Taxes", cx: 0.82, height: 0.75),
-        Spec(setId: "debt_extinguishment", label: "Debt", cx: 0.94, height: 0.68),
+        Spec(setId: "operating_vs_finance_lease", label: "Leases", cx: 0.12),
+        Spec(setId: "revrec_step_selection", label: "Revenue", cx: 0.27),
+        Spec(setId: "capitalize_vs_expense", label: "PP&E", cx: 0.42),
+        Spec(setId: "inventory_valuation", label: "Inventory", cx: 0.56),
+        Spec(setId: "trading_afs_htm", label: "Investments", cx: 0.69),
+        Spec(setId: "tax_timing", label: "Taxes", cx: 0.82),
+        Spec(setId: "debt_extinguishment", label: "Debt", cx: 0.94),
     ]
 }
