@@ -26,11 +26,15 @@ struct StatsDashboardView: View {
                     ProgressView("Loading statistics...")
                         .padding(.top, 40)
                 } else if let error = errorMessage {
-                    ContentUnavailableView(
-                        "Failed to Load Stats",
-                        systemImage: "exclamationmark.triangle",
-                        description: Text(error)
-                    )
+                    ContentUnavailableView {
+                        Label("Failed to Load Stats", systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text(error)
+                    } actions: {
+                        Button("Retry") {
+                            Task { await loadStats() }
+                        }
+                    }
                 } else if let graphs {
                     ProgressOverviewCard(graphs: graphs)
 
@@ -149,6 +153,7 @@ struct StatsDashboardView: View {
 
     private func loadStats() async {
         if graphs == nil { isLoading = true }
+        errorMessage = nil
         // Off the main actor: fetchGraphs is a synchronous FFI call and decoding
         // the (potentially large, e.g. "All Time") response is CPU-heavy. Running
         // either on @MainActor freezes the UI while switching time frames.
