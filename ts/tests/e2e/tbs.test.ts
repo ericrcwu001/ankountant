@@ -16,6 +16,9 @@ test("a JE TBS renders an editable grid and shows per-line + partial-credit tota
     await expect(grid).toBeVisible();
     const rows = page.getByTestId("je-row");
     await expect(rows).toHaveCount(4);
+    await expect(page.getByTestId("tbs-submit")).toBeDisabled();
+    await page.getByTestId("confidence-unsure").click();
+    await expect(page.getByTestId("tbs-submit")).toBeEnabled();
 
     // Fill three lines correctly (matching the seed's JE answer key) and one
     // wrong amount -> expect [ok,ok,ok,wrong] and 75% (reconciles with A35).
@@ -49,6 +52,7 @@ test("a numeric TBS renders input cells graded per cell (A51/B4-D2)", async ({ p
     }
     expect(numericId).not.toBeNull();
     await expect(page.getByTestId("numeric-grid")).toBeVisible();
+    await page.getByTestId("confidence-confident").click();
     const cells = page.getByTestId("cell-input");
     await expect(cells.first()).toBeVisible();
     await cells.nth(0).fill("250000");
@@ -66,6 +70,7 @@ test("a TBS submit failure stays in the surface", async ({ page, seed }) => {
         });
     });
     await page.goto(`/ankountant-tbs?note=${seed.sealedTbsNoteIds[0]}`);
+    await page.getByTestId("confidence-guess").click();
     await page.getByTestId("tbs-submit").click();
     await expect(page.getByTestId("tbs-submit-error")).toContainText(
         "500: forced submit failure",

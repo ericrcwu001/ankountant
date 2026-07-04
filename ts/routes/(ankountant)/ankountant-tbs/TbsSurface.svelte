@@ -6,6 +6,9 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     import type { StepResult } from "@generated/anki/scheduler_pb";
     import { submitPerformanceAttempt } from "@generated/backend";
 
+    import type { ConfidenceLevel } from "$lib/components/ConfidenceGate.svelte";
+    import ConfidenceGate from "$lib/components/ConfidenceGate.svelte";
+
     import type { JeLineInput, NumericCellInput, TbsModel } from "./lib";
     import { buildJeSubmission, buildNumericSubmission, JE_ACCOUNTS } from "./lib";
 
@@ -49,12 +52,16 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     let results: StepResult[] | null = null;
     let total: number | null = null;
+    let confidence: ConfidenceLevel | null = null;
     let submitting = false;
     let submitError: string | null = null;
 
     $: resultById = new Map((results ?? []).map((r) => [r.id, r]));
 
     async function submit(): Promise<void> {
+        if (confidence === null || submitting || results !== null) {
+            return;
+        }
         submitting = true;
         submitError = null;
         try {
@@ -67,10 +74,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     itemNoteId: noteId,
                     mode: "tbs",
                     submissionJson,
-                    // The pre-reveal confidence is captured by the confidence gate
-                    // in the confusion flow; the standalone TBS surface defaults to
-                    // Unsure so the Attempt Log always records a value.
-                    confidence: "Unsure",
+                    confidence,
                     latencyMs: Date.now() - startedAt,
                 },
                 { alertOnError: false },
@@ -92,6 +96,13 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         <h1>Task-Based Simulation</h1>
         <p class="prompt" data-testid="tbs-prompt">{model.prompt}</p>
     </header>
+
+    <div class="gate card">
+        <ConfidenceGate
+            committed={confidence}
+            onCommit={(level) => (confidence = level)}
+        />
+    </div>
 
     <div class="tbs-body">
         <div class="task card">
@@ -273,11 +284,15 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                 <button
                     class="submit"
                     data-testid="tbs-submit"
-                    disabled={submitting}
+                    disabled={submitting || confidence === null || results !== null}
                     on:click={submit}
                 >
                     Submit
                 </button>
+
+                {#if confidence === null}
+                    <span class="gate-hint">Commit a confidence level first.</span>
+                {/if}
 
                 {#if total !== null}
                     <p class="total" data-testid="tbs-total">
@@ -358,6 +373,12 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         // Theme-aware Ledger elevation (dark mode gets a real shadow, not the
         // near-invisible light-ink one).
         box-shadow: var(--elevation-e1);
+    }
+
+    .gate {
+        max-width: 62rem;
+        margin: 0 0 var(--space-lg);
+        padding: var(--space-lg);
     }
 
     .task {
@@ -509,6 +530,11 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         align-items: center;
         gap: var(--space-lg);
         margin-top: var(--space-lg);
+    }
+
+    .gate-hint {
+        color: var(--fg-subtle);
+        font-size: 13px;
     }
 
     .submit-error {
