@@ -329,6 +329,40 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
     #expect(choice == "Capitalize")
 }
 
+@Test func buildConfusionRevealModelExposesCorrectTreatment() throws {
+    let reveal = try buildConfusionRevealModel(
+        fields: [
+            "mcq",
+            "Which treatment applies?",
+            "[]",
+            #"[{"id":"choice","answer_key":"Capitalize","weight":1}]"#,
+            "ds::fixed_assets::capitalize",
+            "ASC 360-10-30",
+        ],
+        setId: "capitalize_vs_expense"
+    )
+
+    #expect(reveal.correctText == "Capitalize")
+    #expect(reveal.source == "ASC 360-10-30")
+    #expect(reveal.schemaTag == "ds::fixed_assets::capitalize")
+    #expect(reveal.setId == "capitalize_vs_expense")
+}
+
+@Test func buildConfusionRevealModelRejectsNonConfusionNotes() {
+    expectTbsParseError("Unsupported tbs_type: numeric") {
+        try buildConfusionRevealModel(fields: ["numeric", "", "[]", "[]"], setId: "set")
+    }
+}
+
+@Test func buildConfusionRevealModelRejectsMalformedChoiceKeys() {
+    expectTbsParseError("Invalid choice.answer_key: must be a non-empty string") {
+        try buildConfusionRevealModel(
+            fields: ["mcq", "", "[]", #"[{"id":"choice","answer_key":""}]"#],
+            setId: "set"
+        )
+    }
+}
+
 @Test func stripConfusionSlugRemovesTrailingDevSlug() {
     #expect(
         stripConfusionSlug("Which treatment applies? (capitalize_vs_expense q0)")

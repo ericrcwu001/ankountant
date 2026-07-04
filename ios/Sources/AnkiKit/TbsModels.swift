@@ -266,6 +266,20 @@ public struct ConfusionItemModel: Sendable, Identifiable, Equatable {
     }
 }
 
+public struct ConfusionRevealModel: Sendable, Equatable {
+    public let correctText: String
+    public let source: String
+    public let schemaTag: String
+    public let setId: String
+
+    public init(correctText: String, source: String, schemaTag: String, setId: String) {
+        self.correctText = correctText
+        self.source = source
+        self.schemaTag = schemaTag
+        self.setId = setId
+    }
+}
+
 /// The three discrete pre-reveal confidence levels (B1 confidence gate).
 public enum ConfidenceLevel: String, Sendable, CaseIterable, Equatable {
     case guess = "Guess"

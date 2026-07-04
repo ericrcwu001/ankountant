@@ -13,6 +13,7 @@ public struct PerformanceClient: Sendable {
     /// Load one sealed TBS note into its render model (answer keys stripped).
     public var loadTbs: @Sendable (_ noteId: Int64) throws -> TbsModel
     public var loadTbsReveal: @Sendable (_ noteId: Int64) throws -> TbsRevealModel
+    public var loadConfusionReveal: @Sendable (_ noteId: Int64, _ setId: String) throws -> ConfusionRevealModel
     /// Submit a graded TBS attempt (mode "tbs" — journal-entry / numeric).
     public var submitTbs: @Sendable (_ noteId: Int64, _ submissionJson: String, _ confidence: String, _ latencyMs: UInt32) throws -> PerformanceAttemptResult
     /// Submit a graded research attempt (mode "research"; all-or-nothing on the

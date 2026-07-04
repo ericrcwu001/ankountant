@@ -122,7 +122,9 @@ impl Collection {
                 let Some(note) = self.storage.get_note(nid)? else {
                     continue;
                 };
-                let prompt = self.item_prompt(&note)?;
+                let Some(prompt) = self.confusion_item_prompt(&note)? else {
+                    continue;
+                };
                 out.push(RawItem {
                     note_id: nid,
                     prompt,
@@ -135,25 +137,25 @@ impl Collection {
     }
 
     /// Extract a client-facing prompt from a note without leaking labels.
-    fn item_prompt(&mut self, note: &Note) -> Result<String> {
+    fn confusion_item_prompt(&mut self, note: &Note) -> Result<Option<String>> {
         let nt = self
             .get_notetype(note.notetype_id)?
             .or_not_found(note.notetype_id)?;
-        let prompt = if nt.name == super::notetypes::TBS_NOTETYPE {
-            note.fields()
-                .get(tbs_fields::PROMPT)
-                .cloned()
-                .or_invalid("Confusion item missing prompt")?
-        } else {
-            note.fields()
-                .first()
-                .cloned()
-                .or_invalid("Confusion item missing prompt")?
-        };
+        if nt.name != super::notetypes::TBS_NOTETYPE {
+            return Ok(None);
+        }
+        if note.fields().get(tbs_fields::TBS_TYPE).map(String::as_str) != Some("mcq") {
+            return Ok(None);
+        }
+        let prompt = note
+            .fields()
+            .get(tbs_fields::PROMPT)
+            .cloned()
+            .or_invalid("Confusion item missing prompt")?;
         if prompt.trim().is_empty() {
             invalid_input!("Confusion item missing prompt");
         }
-        Ok(prompt)
+        Ok(Some(prompt))
     }
 }
 

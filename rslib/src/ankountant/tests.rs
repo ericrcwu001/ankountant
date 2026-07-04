@@ -1295,6 +1295,24 @@ fn a3_dto_has_no_label_field() {
 }
 
 #[test]
+fn a3_queue_contains_only_confusion_mcqs() {
+    let (mut col, _) = seeded();
+    let resp = SchedulerService::build_confusion_queue(
+        &mut col,
+        BuildConfusionQueueRequest {
+            section: "FAR".into(),
+            max_items: 0,
+        },
+    )
+    .unwrap();
+    assert!(!resp.items.is_empty());
+    for item in resp.items {
+        let note = col.storage.get_note(NoteId(item.note_id)).unwrap().unwrap();
+        assert_eq!(note.fields()[super::notetypes::tbs_fields::TBS_TYPE], "mcq");
+    }
+}
+
+#[test]
 fn note_section_validates_explicit_tag() {
     let tags = vec!["ds::x".to_string(), "sec:: reg ".to_string()];
     assert_eq!(super::note_section(&tags).unwrap(), "REG");
@@ -1313,7 +1331,7 @@ fn note_section_validates_explicit_tag() {
 }
 
 #[test]
-fn a3_all_section_queue_spans_sections() {
+fn a3_all_section_queue_spans_available_confusion_mcq_sections() {
     let (mut col, _) = seeded();
     let resp = SchedulerService::build_confusion_queue(
         &mut col,
@@ -1331,12 +1349,22 @@ fn a3_all_section_queue_spans_sections() {
             super::note_section(&note.tags).unwrap()
         })
         .collect();
+    assert!(sections.contains("FAR"));
+    let mut expected_sections = HashSet::new();
     for section in super::SECTIONS {
-        assert!(
-            sections.contains(section),
-            "all-section queue missing {section}: {sections:?}"
-        );
+        let resp = SchedulerService::build_confusion_queue(
+            &mut col,
+            BuildConfusionQueueRequest {
+                section: section.into(),
+                max_items: 0,
+            },
+        )
+        .unwrap();
+        if !resp.items.is_empty() {
+            expected_sections.insert(section.to_string());
+        }
     }
+    assert_eq!(sections, expected_sections);
 }
 
 #[test]

@@ -3,12 +3,54 @@
 
 import { expect, test } from "vitest";
 
-import { buildChoiceSubmission, confusionQueuePhase, noThreeConsecutiveSameSet, selectedConfusionSection } from "./lib";
+import {
+    buildChoiceSubmission,
+    buildConfusionRevealModel,
+    confusionQueuePhase,
+    noThreeConsecutiveSameSet,
+    selectedConfusionSection,
+} from "./lib";
 
 test("buildChoiceSubmission wraps the treatment in {choice}", () => {
     expect(JSON.parse(buildChoiceSubmission("Finance lease"))).toEqual({
         choice: "Finance lease",
     });
+});
+
+test("buildConfusionRevealModel exposes the post-submit correct treatment", () => {
+    const reveal = buildConfusionRevealModel(
+        [
+            "mcq",
+            "Which treatment applies?",
+            "[]",
+            JSON.stringify([{ id: "choice", answer_key: "Capitalize", weight: 1 }]),
+            "ds::fixed_assets::capitalize",
+            "ASC 360-10-30",
+        ],
+        "capitalize_vs_expense",
+    );
+
+    expect(reveal).toEqual({
+        correctText: "Capitalize",
+        source: "ASC 360-10-30",
+        schemaTag: "ds::fixed_assets::capitalize",
+        setId: "capitalize_vs_expense",
+    });
+});
+
+test("buildConfusionRevealModel rejects non-confusion notes", () => {
+    expect(() => buildConfusionRevealModel(["numeric", "", "[]", "[]"], "set")).toThrow(
+        /Unsupported confusion tbs_type: numeric/,
+    );
+});
+
+test("buildConfusionRevealModel rejects malformed choice keys", () => {
+    expect(() =>
+        buildConfusionRevealModel(
+            ["mcq", "", "[]", JSON.stringify([{ id: "choice", answer_key: "" }])],
+            "set",
+        )
+    ).toThrow(/choice answer_key must be a non-empty string/);
 });
 
 test("noThreeConsecutiveSameSet detects the interleave invariant (A47)", () => {

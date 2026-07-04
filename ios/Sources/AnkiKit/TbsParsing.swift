@@ -126,6 +126,32 @@ public func buildTbsRevealModel(fields: [String], tags: [String] = []) throws ->
     )
 }
 
+public func buildConfusionRevealModel(fields: [String], setId: String) throws -> ConfusionRevealModel {
+    let tbsType = field(fields, TbsField.tbsType)
+    guard tbsType == "mcq" else {
+        throw TbsParseError.unsupportedTbsType(tbsType ?? "")
+    }
+    let rawSteps = try jsonArray("steps_json", field(fields, TbsField.stepsJson))
+    let choice = try rawSteps.enumerated().compactMap { index, element -> [String: Any]? in
+        let object = try jsonObject(element, fieldName: "steps_json[\(index)]")
+        return object["id"] as? String == "choice" ? object : nil
+    }.first
+    guard let choice else {
+        throw TbsParseError.invalidValue(field: "steps_json", message: "missing choice step")
+    }
+    guard let correctText = choice["answer_key"] as? String,
+          !correctText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    else {
+        throw TbsParseError.invalidValue(field: "choice.answer_key", message: "must be a non-empty string")
+    }
+    return ConfusionRevealModel(
+        correctText: correctText,
+        source: field(fields, TbsField.sourcePassage) ?? "",
+        schemaTag: field(fields, TbsField.schemaTag) ?? "",
+        setId: setId
+    )
+}
+
 public func sectionFromTags(_ tags: [String]) throws -> String {
     let prefix = "sec::"
     guard let tag = tags.first(where: { $0.hasPrefix(prefix) }) else {

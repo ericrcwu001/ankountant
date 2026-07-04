@@ -35,17 +35,20 @@ test("items are label-stripped: no category-label element (A44/B2-D1)", async ({
     await expect(page.locator("[data-testid=\"category-label\"]")).toHaveCount(0);
 });
 
-test("BAR deep link loads a section-specific confusion queue", async ({ page, seed }) => {
+test("BAR deep link shows the section-specific empty confusion state", async ({ page, seed }) => {
     expect(seed.confusionSets).toBeGreaterThanOrEqual(4);
     await page.goto("/ankountant-confusion?section=BAR");
-    await expect(page.getByTestId("confusion-item")).toBeVisible();
+    await expect(page.getByText("No BAR confusion items are available yet.")).toBeVisible();
+    await expect(page.getByTestId("confusion-item")).toHaveCount(0);
 });
 
-test("selecting a treatment scores it and shows a verdict (A45/B2-D2)", async ({ page }) => {
+test("selecting a treatment scores it and reveals the correct treatment (A45/B2-D2)", async ({ page }) => {
     await page.goto("/ankountant-confusion");
     await page.getByTestId("confidence-confident").click();
     await page.getByTestId("treatment").first().click();
     await expect(page.getByTestId("verdict")).toBeVisible();
+    await expect(page.getByTestId("confusion-reveal")).toBeVisible();
+    await expect(page.getByTestId("confusion-correct-treatment")).not.toHaveText("");
 });
 
 test("submit failures stay in the confusion surface", async ({ page }) => {

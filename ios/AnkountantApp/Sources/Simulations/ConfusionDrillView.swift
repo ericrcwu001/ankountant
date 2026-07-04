@@ -21,7 +21,9 @@ struct ConfusionDrillView: View {
     @State private var confidence: ConfidenceLevel? = nil
     @State private var itemStartedAt = Date.now
     @State private var lastCorrect: Bool? = nil
+    @State private var reveal: ConfusionRevealModel?
     @State private var submitError: String?
+    @State private var revealError: String?
     @State private var submitting = false
     @State private var isLoading = true
     @State private var loadError: String?
@@ -165,6 +167,14 @@ struct ConfusionDrillView: View {
                     .stroke(tone.opacity(0.4), lineWidth: 1)
             )
 
+            if let reveal {
+                confusionReveal(reveal)
+            }
+
+            if let revealError {
+                SimulationRevealErrorView(message: revealError)
+            }
+
             HStack {
                 Spacer()
                 Button("Next") { next() }
@@ -173,13 +183,49 @@ struct ConfusionDrillView: View {
         }
     }
 
+    private func confusionReveal(_ reveal: ConfusionRevealModel) -> some View {
+        VStack(alignment: .leading, spacing: AnkountantSpacing.xs) {
+            Text("Correct treatment")
+                .ankountantFont(.micro)
+                .foregroundStyle(palette.textSecondary)
+                .textCase(.uppercase)
+            Text(reveal.correctText)
+                .ankountantFont(.bodyEmphasis)
+                .foregroundStyle(palette.accent)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+            Text(reveal.schemaTag.isEmpty ? reveal.setId : "\(reveal.setId) · \(reveal.schemaTag)")
+                .ankountantFont(.micro)
+                .foregroundStyle(palette.accent)
+                .padding(.horizontal, AnkountantSpacing.sm)
+                .padding(.vertical, 2)
+                .background(palette.accent.opacity(0.12), in: Capsule())
+            if !reveal.source.isEmpty {
+                Text(reveal.source)
+                    .ankountantFont(.caption)
+                    .foregroundStyle(palette.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+        }
+        .padding(AnkountantSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(palette.surfaceElevated, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
+                .stroke(palette.borderSubtle, lineWidth: 1)
+        )
+    }
+
     private func load() async {
         do {
             items = try performanceClient.confusionQueue(queueSection, 60)
             index = 0
             confidence = nil
             lastCorrect = nil
+            reveal = nil
             submitError = nil
+            revealError = nil
             itemStartedAt = Date.now
             loadError = nil
         } catch {
@@ -192,12 +238,19 @@ struct ConfusionDrillView: View {
     private func choose(_ current: ConfusionItemModel, _ treatment: String) {
         guard let confidence, !submitting, lastCorrect == nil else { return }
         submitError = nil
+        reveal = nil
+        revealError = nil
         submitting = true
         defer { submitting = false }
         let latencyMs = UInt32(clamping: Int((Date.now.timeIntervalSince(itemStartedAt) * 1000).rounded()))
         do {
             let resp = try performanceClient.submitConfusion(current.noteId, treatment, confidence.rawValue, latencyMs)
             lastCorrect = resp.totalCredit >= 1
+            do {
+                reveal = try performanceClient.loadConfusionReveal(current.noteId, current.setId)
+            } catch {
+                revealError = "Attempt recorded, but the correct treatment could not be shown: \(error.localizedDescription)"
+            }
         } catch {
             submitError = "Could not record this attempt: \(error.localizedDescription)"
         }
@@ -207,7 +260,9 @@ struct ConfusionDrillView: View {
         index += 1
         confidence = nil
         lastCorrect = nil
+        reveal = nil
         submitError = nil
+        revealError = nil
         itemStartedAt = Date.now
     }
 }

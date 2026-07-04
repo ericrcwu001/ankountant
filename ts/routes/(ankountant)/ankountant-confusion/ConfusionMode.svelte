@@ -8,12 +8,17 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
 -->
 <script lang="ts">
     import type { ConfusionItem } from "@generated/anki/scheduler_pb";
-    import { submitPerformanceAttempt } from "@generated/backend";
+    import { getNote, submitPerformanceAttempt } from "@generated/backend";
 
     import type { ConfidenceLevel } from "$lib/components/ConfidenceGate.svelte";
     import ConfidenceGate from "$lib/components/ConfidenceGate.svelte";
 
-    import { buildChoiceSubmission, confusionQueuePhase } from "./lib";
+    import type { ConfusionRevealModel } from "./lib";
+    import {
+        buildChoiceSubmission,
+        buildConfusionRevealModel,
+        confusionQueuePhase,
+    } from "./lib";
 
     export let items: ConfusionItem[];
     export let section = "ALL";
@@ -22,8 +27,10 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
     let confidence: ConfidenceLevel | null = null;
     let itemStartedAt = Date.now();
     let lastCorrect: boolean | null = null;
+    let reveal: ConfusionRevealModel | null = null;
     let submitting = false;
     let submitError: string | null = null;
+    let revealError: string | null = null;
 
     $: current = items[index];
     $: phase = confusionQueuePhase(index, items.length);
@@ -50,15 +57,23 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
 
     async function choose(treatment: string): Promise<void> {
         // B2: discrimination is gated behind the committed confidence.
-        if (confidence === null || submitting || current == null) {
+        if (
+            confidence === null ||
+            submitting ||
+            current == null ||
+            lastCorrect !== null
+        ) {
             return;
         }
+        const answered = current;
         submitting = true;
         submitError = null;
+        reveal = null;
+        revealError = null;
         try {
             const resp = await submitPerformanceAttempt(
                 {
-                    itemNoteId: current.noteId,
+                    itemNoteId: answered.noteId,
                     mode: "confusion",
                     submissionJson: buildChoiceSubmission(treatment),
                     confidence,
@@ -67,6 +82,12 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
                 { alertOnError: false },
             );
             lastCorrect = resp.totalCredit >= 1;
+            try {
+                const note = await getNote({ nid: answered.noteId });
+                reveal = buildConfusionRevealModel(note.fields, answered.setId);
+            } catch (error) {
+                revealError = error instanceof Error ? error.message : String(error);
+            }
         } catch (error) {
             submitError = error instanceof Error ? error.message : String(error);
         } finally {
@@ -78,7 +99,9 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
         index += 1;
         confidence = null;
         lastCorrect = null;
+        reveal = null;
         submitError = null;
+        revealError = null;
         itemStartedAt = Date.now();
     }
 </script>
@@ -154,6 +177,38 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
                             {lastCorrect ? "Correct" : "Incorrect"}
                         </span>
                     </p>
+                    {#if reveal}
+                        <div class="correct-treatment" data-testid="confusion-reveal">
+                            <span class="reveal-label">Correct treatment</span>
+                            <strong data-testid="confusion-correct-treatment">
+                                {reveal.correctText}
+                            </strong>
+                            <span
+                                class="blueprint"
+                                data-testid="confusion-reveal-blueprint"
+                            >
+                                {reveal.setId}{reveal.schemaTag
+                                    ? ` · ${reveal.schemaTag}`
+                                    : ""}
+                            </span>
+                            {#if reveal.source}
+                                <p class="source" data-testid="confusion-reveal-source">
+                                    {reveal.source}
+                                </p>
+                            {/if}
+                        </div>
+                    {/if}
+                    {#if revealError}
+                        <p
+                            class="reveal-error"
+                            data-testid="confusion-reveal-error"
+                            role="alert"
+                        >
+                            Attempt recorded, but the correct treatment could not be
+                            shown:
+                            {revealError}
+                        </p>
+                    {/if}
                     <div class="feedback-actions">
                         <button
                             type="button"
@@ -295,6 +350,57 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
     .verdict-icon {
         font-size: 20px;
         font-weight: 700;
+    }
+
+    .correct-treatment {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        margin-top: var(--space-md);
+        padding: var(--space-md);
+        background: var(--canvas-elevated);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--border-radius);
+    }
+
+    .reveal-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--fg-subtle);
+    }
+
+    .correct-treatment strong {
+        font-size: 16px;
+        color: var(--accent);
+    }
+
+    .blueprint {
+        width: fit-content;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        color: var(--accent);
+        background: var(--accent-tint);
+        border-radius: var(--border-radius);
+        padding: 1px var(--space-sm);
+    }
+
+    .source {
+        margin: 0;
+        color: var(--fg-subtle);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .reveal-error {
+        margin: var(--space-md) 0 0;
+        padding: var(--space-sm) var(--space-md);
+        color: var(--fg-error);
+        background: var(--gap-warning-bg);
+        border: 1px solid rgba(214, 69, 65, 0.4);
+        border-radius: var(--border-radius);
     }
 
     .feedback-actions {
