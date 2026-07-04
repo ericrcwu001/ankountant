@@ -118,8 +118,15 @@ export function sectionChoiceLabel(choice: SectionChoice): string {
     return choice === ALL_SECTIONS ? "All sections" : choice;
 }
 
-export function sectionSearchOrder(section: string | null): readonly string[] {
-    return section && section.trim() !== "" ? [section] : SECTION_SEARCH_ORDER;
+export function sectionSearchOrder(section: string | null): readonly Section[] {
+    const code = section?.trim().toUpperCase();
+    if (!code) {
+        return SECTION_SEARCH_ORDER;
+    }
+    if ((SECTIONS as readonly string[]).includes(code)) {
+        return [code as Section];
+    }
+    throw new Error(`Unknown CPA section: ${code}`);
 }
 
 const SEC_TAG_PREFIX = "sec::";

@@ -73,8 +73,10 @@ test("SECTION_SEARCH_ORDER prefers FAR while covering every section", () => {
 
 test("sectionSearchOrder honors explicit sections and otherwise scans all", () => {
     expect(sectionSearchOrder("REG")).toEqual(["REG"]);
+    expect(sectionSearchOrder(" bar ")).toEqual(["BAR"]);
     expect(sectionSearchOrder(null)).toEqual(SECTION_SEARCH_ORDER);
     expect(sectionSearchOrder("")).toEqual(SECTION_SEARCH_ORDER);
+    expect(() => sectionSearchOrder("NOPE")).toThrow(/Unknown CPA section: NOPE/);
 });
 
 test("section choices expose all sections plus direct section scopes", () => {
