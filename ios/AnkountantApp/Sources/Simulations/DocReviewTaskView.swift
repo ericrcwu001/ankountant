@@ -26,6 +26,10 @@ struct DocReviewTaskView: View {
     @State private var submitError: String?
     @State private var startedAt = Date.now
 
+    private var blankInputsLocked: Bool {
+        submitting || results != nil
+    }
+
     init(noteId: Int64, model: TbsModel) {
         self.noteId = noteId
         self.model = model
@@ -161,7 +165,7 @@ struct DocReviewTaskView: View {
                 }
             }
             .pickerStyle(.menu)
-            .disabled(results != nil)
+            .disabled(blankInputsLocked)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(AnkountantSpacing.md)
