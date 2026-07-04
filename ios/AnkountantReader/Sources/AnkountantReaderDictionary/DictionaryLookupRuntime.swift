@@ -35,6 +35,7 @@ actor DictionaryLookupRuntime {
 
     enum RuntimeError: LocalizedError {
         case importFailed([String])
+        case invalidArchiveURL(String)
         case dictionaryNotFound(String)
         case noUpdatableDictionaries
 
@@ -44,6 +45,8 @@ actor DictionaryLookupRuntime {
                 return files.isEmpty
                     ? "Failed to import dictionary archive."
                     : "Failed to import: \(files.joined(separator: ", "))."
+            case let .invalidArchiveURL(url):
+                return "Invalid dictionary archive URL: \(url)"
             case let .dictionaryNotFound(id):
                 return "Dictionary not found: \(id)"
             case .noUpdatableDictionaries:
@@ -159,10 +162,14 @@ actor DictionaryLookupRuntime {
         }
 
         for archive in Self.recommendedArchives {
-            guard let metadataURL = URL(string: archive.metadataURL) else { continue }
+            guard let metadataURL = URL(string: archive.metadataURL) else {
+                throw RuntimeError.invalidArchiveURL(archive.metadataURL)
+            }
             let (data, _) = try await URLSession.shared.data(from: metadataURL)
             let remoteIndex = try JSONDecoder().decode(AppDictionaryIndex.self, from: data)
-            guard let downloadURL = URL(string: remoteIndex.downloadURL) else { continue }
+            guard let downloadURL = URL(string: remoteIndex.downloadURL) else {
+                throw RuntimeError.invalidArchiveURL(remoteIndex.downloadURL)
+            }
             let (file, _) = try await URLSession.shared.download(from: downloadURL)
             temporaries.append(file)
             _ = try importArchive(at: file, kind: archive.kind, requiresSecurityScope: false)
@@ -176,6 +183,7 @@ actor DictionaryLookupRuntime {
         try await ensureLoaded()
 
         let candidates = allDictionariesForUpdate()
+            .filter { $0.dictionary.info.index.isUpdatable }
         guard !candidates.isEmpty else { throw RuntimeError.noUpdatableDictionaries }
 
         var temporaries: [URL] = []
@@ -185,12 +193,16 @@ actor DictionaryLookupRuntime {
 
         for candidate in candidates {
             let index = candidate.dictionary.info.index
-            guard index.isUpdatable, let metadataURL = URL(string: index.indexURL) else { continue }
+            guard let metadataURL = URL(string: index.indexURL) else {
+                throw RuntimeError.invalidArchiveURL(index.indexURL)
+            }
 
             let (data, _) = try await URLSession.shared.data(from: metadataURL)
             let remoteIndex = try JSONDecoder().decode(AppDictionaryIndex.self, from: data)
-            guard remoteIndex.revision != index.revision,
-                  let downloadURL = URL(string: remoteIndex.downloadURL) else { continue }
+            guard remoteIndex.revision != index.revision else { continue }
+            guard let downloadURL = URL(string: remoteIndex.downloadURL) else {
+                throw RuntimeError.invalidArchiveURL(remoteIndex.downloadURL)
+            }
 
             let oldPath = candidate.dictionary.path
             let oldTitle = index.title
@@ -198,7 +210,7 @@ actor DictionaryLookupRuntime {
             temporaries.append(file)
             let importedTitle = try importArchive(at: file, kind: candidate.kind, requiresSecurityScope: false)
             if importedTitle != oldTitle {
-                try? FileManager.default.removeItem(at: oldPath)
+                try FileManager.default.removeItem(at: oldPath)
             }
         }
 
@@ -265,19 +277,19 @@ actor DictionaryLookupRuntime {
         case .term:
             guard let i = termDictionaries.firstIndex(where: { $0.info.id == dictionaryID })
             else { throw RuntimeError.dictionaryNotFound(dictionaryID) }
-            try? FileManager.default.removeItem(at: termDictionaries[i].path)
+            try FileManager.default.removeItem(at: termDictionaries[i].path)
             termDictionaries.remove(at: i)
             termDictionaries = normalized(termDictionaries)
         case .frequency:
             guard let i = frequencyDictionaries.firstIndex(where: { $0.info.id == dictionaryID })
             else { throw RuntimeError.dictionaryNotFound(dictionaryID) }
-            try? FileManager.default.removeItem(at: frequencyDictionaries[i].path)
+            try FileManager.default.removeItem(at: frequencyDictionaries[i].path)
             frequencyDictionaries.remove(at: i)
             frequencyDictionaries = normalized(frequencyDictionaries)
         case .pitch:
             guard let i = pitchDictionaries.firstIndex(where: { $0.info.id == dictionaryID })
             else { throw RuntimeError.dictionaryNotFound(dictionaryID) }
-            try? FileManager.default.removeItem(at: pitchDictionaries[i].path)
+            try FileManager.default.removeItem(at: pitchDictionaries[i].path)
             pitchDictionaries.remove(at: i)
             pitchDictionaries = normalized(pitchDictionaries)
         }

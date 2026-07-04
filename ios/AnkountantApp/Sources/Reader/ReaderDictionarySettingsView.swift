@@ -5,13 +5,6 @@ import Sharing
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Dictionary library management surface. Lists term / frequency / pitch
-/// dictionaries from `dictionaryLookupClient.loadState()`, lets the user
-/// import Yomitan-format ZIP archives, toggle enabled-state, or delete.
-///
-/// While the lookup engine is still a stub, every action no-ops and the
-/// list stays empty. The shape here is what the engine plugs into; no
-/// view-side changes needed when the real runtime ports.
 struct ReaderDictionarySettingsView: View {
     @Dependency(\.dictionaryLookupClient) var dictionary
 
@@ -110,6 +103,20 @@ struct ReaderDictionarySettingsView: View {
                 .disabled(isBusy)
 
                 Button {
+                    Task { await importRecommended() }
+                } label: {
+                    Label("Import recommended dictionaries", systemImage: "tray.and.arrow.down")
+                }
+                .disabled(isBusy)
+
+                Button {
+                    Task { await updateDictionaries() }
+                } label: {
+                    Label("Update dictionaries", systemImage: "arrow.triangle.2.circlepath")
+                }
+                .disabled(isBusy || libraryState.isEmpty)
+
+                Button {
                     Task { await refresh() }
                 } label: {
                     Label("Reload library", systemImage: "arrow.clockwise")
@@ -118,7 +125,7 @@ struct ReaderDictionarySettingsView: View {
             } header: {
                 Text("Library")
             } footer: {
-                Text("Import Yomitan-format dictionary ZIP archives. Reordering and update-on-version-change land when the lookup engine is fully wired.")
+                Text("Import Yomitan-format dictionary ZIP archives or download the recommended term and frequency dictionaries.")
             }
 
             if isBusy {
@@ -180,12 +187,29 @@ struct ReaderDictionarySettingsView: View {
         isBusy = true
         defer { isBusy = false }
         do {
-            // The engine takes the URLs and copies/extracts as needed —
-            // host-side security-scoped resource access is its concern,
-            // mirroring how DreamAfar's importer drives FileManager.
             libraryState = try await dictionary.importArchives(urls, selectedKind)
         } catch {
             actionError = "Import failed: \(error.localizedDescription)"
+        }
+    }
+
+    private func importRecommended() async {
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            libraryState = try await dictionary.importRecommended()
+        } catch {
+            actionError = "Recommended import failed: \(error.localizedDescription)"
+        }
+    }
+
+    private func updateDictionaries() async {
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            libraryState = try await dictionary.updateDictionaries()
+        } catch {
+            actionError = "Update failed: \(error.localizedDescription)"
         }
     }
 
