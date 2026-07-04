@@ -45,6 +45,24 @@ test("research: a normalized spelling still grades correct (T1 AC1)", async ({ p
     await expect(page.getByTestId("research-verdict")).toHaveClass(/correct/);
 });
 
+test("research: submit failures stay in the surface", async ({ page }) => {
+    await page.route("**/_anki/submitPerformanceAttempt", async (route) => {
+        await route.fulfill({
+            status: 500,
+            contentType: "text/plain",
+            body: "forced submit failure",
+        });
+    });
+    await page.goto("/ankountant-research");
+    await page.getByTestId("confidence-confident").click();
+    await page.getByTestId("citation-input").fill("ASC 842-20-25-1");
+    await page.getByTestId("research-submit").click();
+    await expect(page.getByTestId("research-submit-error")).toContainText(
+        "500: forced submit failure",
+    );
+    await expect(page.getByTestId("research-submit")).toBeEnabled();
+});
+
 test("research: exposes NO Again/Hard/Good/Easy buttons (parity with tbs.test.ts)", async ({ page }) => {
     await page.goto("/ankountant-research");
     await expect(page.getByTestId("exam-shell")).toBeVisible();

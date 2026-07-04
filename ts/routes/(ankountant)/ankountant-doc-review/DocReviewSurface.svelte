@@ -34,6 +34,7 @@ Never renders which option is correct before submit (options carry no key).
     let submitting = false;
     let results: StepResult[] | null = null;
     let total: number | null = null;
+    let submitError: string | null = null;
 
     const answers: Record<string, string> = Object.fromEntries(
         model.steps.map((s) => [s.id, ""]),
@@ -49,18 +50,27 @@ Never renders which option is correct before submit (options carry no key).
             return;
         }
         submitting = true;
+        submitError = null;
         try {
-            const resp = await submitPerformanceAttempt({
-                itemNoteId: noteId,
-                mode: "doc_review",
-                submissionJson: buildDocReviewSubmission(
-                    model.steps.map((s) => ({ id: s.id, value: answers[s.id] ?? "" })),
-                ),
-                confidence,
-                latencyMs: Date.now() - startedAt,
-            });
+            const resp = await submitPerformanceAttempt(
+                {
+                    itemNoteId: noteId,
+                    mode: "doc_review",
+                    submissionJson: buildDocReviewSubmission(
+                        model.steps.map((s) => ({
+                            id: s.id,
+                            value: answers[s.id] ?? "",
+                        })),
+                    ),
+                    confidence,
+                    latencyMs: Date.now() - startedAt,
+                },
+                { alertOnError: false },
+            );
             results = resp.steps;
             total = resp.totalCredit;
+        } catch (error) {
+            submitError = error instanceof Error ? error.message : String(error);
         } finally {
             submitting = false;
         }
@@ -137,6 +147,12 @@ Never renders which option is correct before submit (options carry no key).
                 </p>
             {/if}
         </div>
+
+        {#if submitError}
+            <p class="submit-error" data-testid="docreview-submit-error" role="alert">
+                Could not submit review: {submitError}
+            </p>
+        {/if}
 
         {#if results && reveal}
             <ResultsLayer {reveal} {results} />
@@ -246,6 +262,15 @@ Never renders which option is correct before submit (options carry no key).
     .gate-hint {
         font-size: 13px;
         color: var(--fg-subtle);
+    }
+
+    .submit-error {
+        margin: 0;
+        padding: var(--space-sm) var(--space-md);
+        color: var(--fg-error);
+        background: var(--gap-warning-bg);
+        border: 1px solid rgba(214, 69, 65, 0.4);
+        border-radius: var(--border-radius);
     }
 
     .total {

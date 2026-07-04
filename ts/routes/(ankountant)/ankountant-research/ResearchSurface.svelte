@@ -32,6 +32,7 @@ paraphrase + link and IRC/PCAOB/NIST show verbatim text.
     let results: StepResult[] | null = null;
     let correct: boolean | null = null;
     let elapsedMs = 0;
+    let submitError: string | null = null;
 
     $: reveal = results ? buildRevealModel(fields, tags) : null;
 
@@ -41,16 +42,22 @@ paraphrase + link and IRC/PCAOB/NIST show verbatim text.
         }
         submitting = true;
         elapsedMs = Date.now() - startedAt;
+        submitError = null;
         try {
-            const resp = await submitPerformanceAttempt({
-                itemNoteId: noteId,
-                mode: "research",
-                submissionJson: buildResearchSubmission(citation),
-                confidence,
-                latencyMs: elapsedMs,
-            });
+            const resp = await submitPerformanceAttempt(
+                {
+                    itemNoteId: noteId,
+                    mode: "research",
+                    submissionJson: buildResearchSubmission(citation),
+                    confidence,
+                    latencyMs: elapsedMs,
+                },
+                { alertOnError: false },
+            );
             results = resp.steps;
             correct = resp.totalCredit >= 1;
+        } catch (error) {
+            submitError = error instanceof Error ? error.message : String(error);
         } finally {
             submitting = false;
         }
@@ -100,6 +107,12 @@ paraphrase + link and IRC/PCAOB/NIST show verbatim text.
                 </span>
             {/if}
         </div>
+
+        {#if submitError}
+            <p class="submit-error" data-testid="research-submit-error" role="alert">
+                Could not submit citation: {submitError}
+            </p>
+        {/if}
 
         {#if correct !== null}
             <p
@@ -210,6 +223,15 @@ paraphrase + link and IRC/PCAOB/NIST show verbatim text.
     .gate-hint {
         font-size: 13px;
         color: var(--fg-subtle);
+    }
+
+    .submit-error {
+        margin: 0;
+        padding: var(--space-sm) var(--space-md);
+        color: var(--fg-error);
+        background: var(--gap-warning-bg);
+        border: 1px solid rgba(214, 69, 65, 0.4);
+        border-radius: var(--border-radius);
     }
 
     .verdict {

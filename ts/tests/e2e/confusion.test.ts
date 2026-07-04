@@ -42,6 +42,23 @@ test("selecting a treatment scores it and shows a verdict (A45/B2-D2)", async ({
     await expect(page.getByTestId("verdict")).toBeVisible();
 });
 
+test("submit failures stay in the confusion surface", async ({ page }) => {
+    await page.route("**/_anki/submitPerformanceAttempt", async (route) => {
+        await route.fulfill({
+            status: 500,
+            contentType: "text/plain",
+            body: "forced submit failure",
+        });
+    });
+    await page.goto("/ankountant-confusion");
+    await page.getByTestId("confidence-confident").click();
+    await page.getByTestId("treatment").first().click();
+    await expect(page.getByTestId("confusion-submit-error")).toContainText(
+        "500: forced submit failure",
+    );
+    await expect(page.getByTestId("treatment").first()).toBeEnabled();
+});
+
 test("consecutive items are not all the same treatment set (A47/B3-D1)", async ({ page, seed }) => {
     expect(seed.confusionSets).toBeGreaterThanOrEqual(4);
     await page.goto("/ankountant-confusion");

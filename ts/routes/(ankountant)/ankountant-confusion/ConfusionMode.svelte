@@ -22,6 +22,7 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
     let itemStartedAt = Date.now();
     let lastCorrect: boolean | null = null;
     let submitting = false;
+    let submitError: string | null = null;
 
     $: current = items[index];
     $: done = index >= items.length;
@@ -42,15 +43,21 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
             return;
         }
         submitting = true;
+        submitError = null;
         try {
-            const resp = await submitPerformanceAttempt({
-                itemNoteId: current.noteId,
-                mode: "confusion",
-                submissionJson: buildChoiceSubmission(treatment),
-                confidence,
-                latencyMs: Date.now() - itemStartedAt,
-            });
+            const resp = await submitPerformanceAttempt(
+                {
+                    itemNoteId: current.noteId,
+                    mode: "confusion",
+                    submissionJson: buildChoiceSubmission(treatment),
+                    confidence,
+                    latencyMs: Date.now() - itemStartedAt,
+                },
+                { alertOnError: false },
+            );
             lastCorrect = resp.totalCredit >= 1;
+        } catch (error) {
+            submitError = error instanceof Error ? error.message : String(error);
         } finally {
             submitting = false;
         }
@@ -60,6 +67,7 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
         index += 1;
         confidence = null;
         lastCorrect = null;
+        submitError = null;
         itemStartedAt = Date.now();
     }
 </script>
@@ -104,6 +112,16 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
                         </button>
                     {/each}
                 </div>
+            {/if}
+
+            {#if submitError}
+                <p
+                    class="submit-error"
+                    data-testid="confusion-submit-error"
+                    role="alert"
+                >
+                    Could not submit choice: {submitError}
+                </p>
             {/if}
 
             {#if lastCorrect !== null}
@@ -224,6 +242,15 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
 
     .feedback {
         margin-top: var(--space-lg);
+    }
+
+    .submit-error {
+        margin: var(--space-lg) 0 0;
+        padding: var(--space-sm) var(--space-md);
+        color: var(--fg-error);
+        background: var(--gap-warning-bg);
+        border: 1px solid rgba(214, 69, 65, 0.4);
+        border-radius: var(--border-radius);
     }
 
     // The verdict is the dominant element post-reveal; icon + label + colour +

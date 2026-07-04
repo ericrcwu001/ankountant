@@ -50,28 +50,35 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     let results: StepResult[] | null = null;
     let total: number | null = null;
     let submitting = false;
+    let submitError: string | null = null;
 
     $: resultById = new Map((results ?? []).map((r) => [r.id, r]));
 
     async function submit(): Promise<void> {
         submitting = true;
+        submitError = null;
         try {
             const submissionJson =
                 model.shape === "numeric"
                     ? buildNumericSubmission(numericCells)
                     : buildJeSubmission(jeLines);
-            const resp = await submitPerformanceAttempt({
-                itemNoteId: noteId,
-                mode: "tbs",
-                submissionJson,
-                // The pre-reveal confidence is captured by the confidence gate
-                // in the confusion flow; the standalone TBS surface defaults to
-                // Unsure so the Attempt Log always records a value.
-                confidence: "Unsure",
-                latencyMs: Date.now() - startedAt,
-            });
+            const resp = await submitPerformanceAttempt(
+                {
+                    itemNoteId: noteId,
+                    mode: "tbs",
+                    submissionJson,
+                    // The pre-reveal confidence is captured by the confidence gate
+                    // in the confusion flow; the standalone TBS surface defaults to
+                    // Unsure so the Attempt Log always records a value.
+                    confidence: "Unsure",
+                    latencyMs: Date.now() - startedAt,
+                },
+                { alertOnError: false },
+            );
             results = resp.steps;
             total = resp.totalCredit;
+        } catch (error) {
+            submitError = error instanceof Error ? error.message : String(error);
         } finally {
             submitting = false;
         }
@@ -279,6 +286,11 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     </p>
                 {/if}
             </div>
+            {#if submitError}
+                <p class="submit-error" data-testid="tbs-submit-error" role="alert">
+                    Could not submit attempt: {submitError}
+                </p>
+            {/if}
         </div>
 
         <aside class="exhibits" data-testid="exhibits">
@@ -497,6 +509,15 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         align-items: center;
         gap: var(--space-lg);
         margin-top: var(--space-lg);
+    }
+
+    .submit-error {
+        margin: var(--space-md) 0 0;
+        padding: var(--space-sm) var(--space-md);
+        color: var(--fg-error);
+        background: var(--gap-warning-bg);
+        border: 1px solid rgba(214, 69, 65, 0.4);
+        border-radius: var(--border-radius);
     }
 
     // Primary navy action (scoped → overrides the global button base).

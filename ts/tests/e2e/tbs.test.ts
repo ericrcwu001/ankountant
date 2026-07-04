@@ -57,6 +57,22 @@ test("a numeric TBS renders input cells graded per cell (A51/B4-D2)", async ({ p
     await expect(page.getByTestId("tbs-total")).toContainText("100%");
 });
 
+test("a TBS submit failure stays in the surface", async ({ page, seed }) => {
+    await page.route("**/_anki/submitPerformanceAttempt", async (route) => {
+        await route.fulfill({
+            status: 500,
+            contentType: "text/plain",
+            body: "forced submit failure",
+        });
+    });
+    await page.goto(`/ankountant-tbs?note=${seed.sealedTbsNoteIds[0]}`);
+    await page.getByTestId("tbs-submit").click();
+    await expect(page.getByTestId("tbs-submit-error")).toContainText(
+        "500: forced submit failure",
+    );
+    await expect(page.getByTestId("tbs-submit")).toBeEnabled();
+});
+
 test("the TBS surface exposes NO Again/Hard/Good/Easy buttons (A52/B4-D3)", async ({ page, seed }) => {
     await page.goto(`/ankountant-tbs?note=${seed.sealedTbsNoteIds[0]}`);
     await expect(page.getByTestId("tbs-surface")).toBeVisible();

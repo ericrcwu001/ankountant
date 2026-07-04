@@ -45,3 +45,25 @@ test("doc-review: each blank offers its confusion-set candidates (T3 AC2)", asyn
     const optionCount = await first.locator("option").count();
     expect(optionCount).toBeGreaterThanOrEqual(3);
 });
+
+test("doc-review: submit failures stay in the surface", async ({ page }) => {
+    await page.route("**/_anki/submitPerformanceAttempt", async (route) => {
+        await route.fulfill({
+            status: 500,
+            contentType: "text/plain",
+            body: "forced submit failure",
+        });
+    });
+    await page.goto("/ankountant-doc-review");
+    const blanks = page.getByTestId("dr-blank-select");
+    const n = await blanks.count();
+    for (let i = 0; i < n; i++) {
+        await blanks.nth(i).selectOption({ index: 1 });
+    }
+    await page.getByTestId("confidence-unsure").click();
+    await page.getByTestId("docreview-submit").click();
+    await expect(page.getByTestId("docreview-submit-error")).toContainText(
+        "500: forced submit failure",
+    );
+    await expect(page.getByTestId("docreview-submit")).toBeEnabled();
+});
