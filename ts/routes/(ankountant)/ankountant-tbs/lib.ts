@@ -574,6 +574,7 @@ export function buildJeSubmission(lines: JeLineInput[]): string {
 /** One numeric cell as edited. */
 export interface NumericCellInput {
     id: string;
+    label?: string;
     value: string;
 }
 
@@ -582,7 +583,7 @@ export function buildNumericSubmission(cells: NumericCellInput[]): string {
     return JSON.stringify({
         steps: cells.map((c) => ({
             id: c.id,
-            value: submissionNumber(c.value, `Value for ${c.id}`),
+            value: submissionNumber(c.value, `Value for ${c.label ?? defaultStepLabel(c.id)}`),
         })),
     });
 }

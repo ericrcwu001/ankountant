@@ -222,11 +222,11 @@ test("buildNumericSubmission coerces numbers per cell", () => {
 });
 
 test("buildNumericSubmission rejects non-finite or malformed cell values", () => {
-    expect(() => buildNumericSubmission([{ id: "c1", value: "NaN" }])).toThrow(
-        /Value for c1 must be a decimal number/,
+    expect(() => buildNumericSubmission([{ id: "c1", label: "Cell 1", value: "NaN" }])).toThrow(
+        /Value for Cell 1 must be a decimal number/,
     );
-    expect(() => buildNumericSubmission([{ id: "c2", value: "9".repeat(400) }])).toThrow(
-        /Value for c2 must be a finite number/,
+    expect(() => buildNumericSubmission([{ id: "c2", label: "Cell 2", value: "9".repeat(400) }])).toThrow(
+        /Value for Cell 2 must be a finite number/,
     );
 });
 

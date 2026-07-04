@@ -311,7 +311,7 @@ struct TbsTaskView: View {
             model = m
             jeLines = m.steps.map { JeLineInput(id: $0.id, label: $0.label) }
             spareJeLines = spareJournalEntryLines()
-            numericCells = m.steps.map { NumericCellInput(id: $0.id) }
+            numericCells = m.steps.map { NumericCellInput(id: $0.id, label: $0.label) }
             confidence = nil
             results = nil
             reveal = nil

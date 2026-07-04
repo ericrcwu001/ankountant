@@ -65,6 +65,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     }
     const numericCells: NumericCellInput[] = model.steps.map((s) => ({
         id: s.id,
+        label: s.label,
         value: "",
     }));
 

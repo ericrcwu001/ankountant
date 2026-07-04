@@ -319,8 +319,8 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
 }
 
 @Test func buildNumericSubmissionRejectsMalformedValues() {
-    expectTbsSubmissionError("Value for c1 must be a decimal number.") {
-        try buildNumericSubmission([NumericCellInput(id: "c1", value: "NaN")])
+    expectTbsSubmissionError("Value for Cell 1 must be a decimal number.") {
+        try buildNumericSubmission([NumericCellInput(id: "c1", label: "Cell 1", value: "NaN")])
     }
 }
 

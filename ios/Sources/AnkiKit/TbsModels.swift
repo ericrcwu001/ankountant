@@ -214,10 +214,12 @@ public let journalEntryAccounts: [String] = [
 /// One numeric cell as edited (mutable for SwiftUI binding).
 public struct NumericCellInput: Sendable, Identifiable, Equatable {
     public let id: String
+    public var label: String?
     public var value: String
 
-    public init(id: String, value: String = "") {
+    public init(id: String, label: String? = nil, value: String = "") {
         self.id = id
+        self.label = label
         self.value = value
     }
 }

@@ -419,7 +419,7 @@ public func buildJeSubmission(_ lines: [JeLineInput]) throws -> String {
 /// Shape the submission_json for a numeric TBS.
 public func buildNumericSubmission(_ cells: [NumericCellInput]) throws -> String {
     let steps = try cells.map { cell -> [String: Any] in
-        ["id": cell.id, "value": try submissionNumber(cell.value, fieldName: "Value for \(cell.id)")]
+        ["id": cell.id, "value": try submissionNumber(cell.value, fieldName: "Value for \(cell.label ?? defaultStepLabel(cell.id))")]
     }
     return jsonString(["steps": steps])
 }
