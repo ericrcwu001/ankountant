@@ -32,6 +32,8 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     let date = examDate;
     let saveState: "idle" | "saving" | "saved" | "error" = "idle";
     let savedDate = examDate;
+    let savingDate = "";
+    let saveError = "";
 
     const R = 46;
     const C = 2 * Math.PI * R;
@@ -68,13 +70,24 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     async function onDateChange(): Promise<void> {
         const nextDate = date;
-        if (nextDate === savedDate) {
+        if (nextDate === savedDate || nextDate === savingDate) {
             return;
         }
         saveState = "saving";
-        savedDate = nextDate;
-        await setExamDate({ section, date: nextDate });
-        saveState = "saved";
+        savingDate = nextDate;
+        saveError = "";
+        try {
+            await setExamDate({ section, date: nextDate });
+            savedDate = nextDate;
+            saveState = "saved";
+        } catch (error) {
+            saveState = "error";
+            saveError = error instanceof Error ? error.message : String(error);
+        } finally {
+            if (savingDate === nextDate) {
+                savingDate = "";
+            }
+        }
     }
 
     function nav(href: string): void {
@@ -161,13 +174,22 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     bind:value={date}
                     on:input={onDateChange}
                     on:change={onDateChange}
+                    disabled={saveState === "saving"}
                     data-testid="exam-date-input"
                 />
             </label>
-            <div class="save-state" data-testid="save-state" aria-live="polite">
+            <div
+                class="save-state"
+                data-state={saveState}
+                data-testid="save-state"
+                aria-live="polite"
+            >
                 {#if saveState === "saving"}Saving{:else if saveState === "saved"}Saved{:else if saveState === "error"}Save
                     failed{/if}
             </div>
+            {#if saveError}
+                <div class="save-error" role="alert">{saveError}</div>
+            {/if}
 
             <hr class="rail-div" />
 
@@ -585,6 +607,11 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             border-radius: var(--border-radius);
             padding: 0 var(--space-sm);
             font: inherit;
+
+            &:disabled {
+                color: var(--fg-faint);
+                cursor: progress;
+            }
         }
     }
 
@@ -594,6 +621,18 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         font-size: 12px;
         font-weight: 600;
         color: var(--fg-faint);
+
+        &[data-state="error"] {
+            color: var(--fg-error);
+        }
+    }
+
+    .save-error {
+        margin-top: var(--space-xxs);
+        font-size: 11px;
+        line-height: 1.35;
+        color: var(--fg-error);
+        overflow-wrap: anywhere;
     }
 
     .rail-div {
