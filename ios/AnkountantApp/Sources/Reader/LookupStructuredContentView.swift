@@ -191,21 +191,15 @@ struct LookupStructuredContentView: UIViewRepresentable {
 
         // MARK: HTML
 
-        private static func makeHTML(
+        static func makeHTML(
             dictionary: String,
             glossaries: [DictionaryLookupGlossary],
             dictionaryStyle: String
         ) -> String {
-            let dictionaryData = (try? JSONEncoder().encode(glossaries))
-                .flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
-            let escapedDictionary = dictionary
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "\"", with: "\\\"")
-            // Backticks would close the template literal we drop the
-            // dictionary CSS into below — escape them.
-            let escapedStyle = dictionaryStyle
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "`", with: "\\`")
+            let dictionaryData = jsonLiteral(glossaries)
+            let dictionaryLiteral = jsonLiteral(dictionary)
+            let dictionaryAttribute = htmlAttributeEscaped(dictionary)
+            let dictionaryStyleLiteral = jsonLiteral(dictionaryStyle)
 
             return """
             <!doctype html>
@@ -222,12 +216,13 @@ struct LookupStructuredContentView: UIViewRepresentable {
             </style>
             </head>
             <body>
-            <div id="content" data-dictionary="\(escapedDictionary)"></div>
+            <div id="content" data-dictionary="\(dictionaryAttribute)"></div>
             <script>
             (function() {
-                const dictName = "\(escapedDictionary)";
+                const dictName = \(dictionaryLiteral);
                 const glossaryItems = \(dictionaryData);
-                window.dictionaryStyles = { [dictName]: `\(escapedStyle)` };
+                const dictStyleValue = \(dictionaryStyleLiteral);
+                window.dictionaryStyles = { [dictName]: dictStyleValue };
                 window.compactGlossaries = false;
 
                 const contentRoot = document.getElementById('content');
@@ -282,6 +277,27 @@ struct LookupStructuredContentView: UIViewRepresentable {
             </body>
             </html>
             """
+        }
+
+        private static func jsonLiteral<T: Encodable>(_ value: T) -> String {
+            do {
+                let data = try JSONEncoder().encode(value)
+                guard let string = String(data: data, encoding: .utf8) else {
+                    preconditionFailure("Could not encode lookup structured content JSON as UTF-8.")
+                }
+                return string
+            } catch {
+                preconditionFailure("Could not encode lookup structured content JSON: \(error)")
+            }
+        }
+
+        private static func htmlAttributeEscaped(_ value: String) -> String {
+            value
+                .replacingOccurrences(of: "&", with: "&amp;")
+                .replacingOccurrences(of: "\"", with: "&quot;")
+                .replacingOccurrences(of: "'", with: "&#39;")
+                .replacingOccurrences(of: "<", with: "&lt;")
+                .replacingOccurrences(of: ">", with: "&gt;")
         }
 
         private static func mimeType(for path: String) -> String {

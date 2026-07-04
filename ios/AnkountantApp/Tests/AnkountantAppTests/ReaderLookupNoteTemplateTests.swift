@@ -1,6 +1,7 @@
 import AnkountantReader
 import AnkiClients
 import Testing
+@testable import AnkountantApp
 
 @Suite("ReaderLookupNoteTemplate")
 struct ReaderLookupNoteTemplateTests {
@@ -83,5 +84,27 @@ struct ReaderLookupNoteTemplateTests {
         )
         let restored = try ReaderLookupNoteTemplate.decode(from: original.encodedString())
         #expect(restored == original)
+    }
+}
+
+@MainActor
+@Suite("Lookup structured content")
+struct LookupStructuredContentTests {
+    @Test("makeHTML separates HTML attribute and JavaScript escaping")
+    func makeHTMLSeparatesEscapingContexts() {
+        let dictionary = #"A "quoted" <Dict> & Co"#
+        let style = #".tag::before { content: "${notInterpolation}"; }"#
+        let html = LookupStructuredContentView.Coordinator.makeHTML(
+            dictionary: dictionary,
+            glossaries: [
+                DictionaryLookupGlossary(dictionary: dictionary, definitions: ["5 < 6"])
+            ],
+            dictionaryStyle: style
+        )
+
+        #expect(html.contains(#"data-dictionary="A &quot;quoted&quot; &lt;Dict&gt; &amp; Co""#))
+        #expect(html.contains(#"const dictName = "A \"quoted\" <Dict> & Co";"#))
+        #expect(html.contains(#"const dictStyleValue = ".tag::before { content: \"${notInterpolation}\"; }";"#))
+        #expect(!html.contains(#"window.dictionaryStyles = { [dictName]: `"#))
     }
 }
