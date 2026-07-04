@@ -62,6 +62,7 @@ public enum LiteratureCorpusError: Error, Equatable, LocalizedError, Sendable {
     case unreadableResource(String)
     case malformedResource(String)
     case emptyCorpus
+    case unknownSection(String)
 
     public var errorDescription: String? {
         switch self {
@@ -73,6 +74,8 @@ public enum LiteratureCorpusError: Error, Equatable, LocalizedError, Sendable {
             "Bundled literature corpus is malformed: \(message)"
         case .emptyCorpus:
             "Bundled literature corpus must contain at least one section."
+        case let .unknownSection(section):
+            "Unknown CPA literature section: \(section)."
         }
     }
 }
@@ -98,9 +101,10 @@ public func loadLiteratureCorpus() throws -> [String: [CorpusEntry]] {
     return decoded
 }
 
-/// The bundled corpus passages for a section (empty for an unseeded section).
-public func corpusForSection(_ corpus: [String: [CorpusEntry]], _ section: String) -> [CorpusEntry] {
-    corpus[section] ?? []
+public func corpusForSection(_ corpus: [String: [CorpusEntry]], _ section: String) throws -> [CorpusEntry] {
+    let code = section.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+    guard let entries = corpus[code] else { throw LiteratureCorpusError.unknownSection(code) }
+    return entries
 }
 
 /// Substring/keyword search over `citation + title + body + tags` (T2 AC1). An

@@ -161,8 +161,18 @@ struct LiteraturePaneView: View {
     @Environment(\.openURL) private var openURL
     @State private var query = ""
 
-    private var entries: [CorpusEntry] { corpusForSection(bundledCorpus, section) }
-    private var results: [CorpusEntry] { searchCorpus(entries, query: query) }
+    private enum CorpusState {
+        case ready([CorpusEntry])
+        case failed(String)
+    }
+
+    private var corpusState: CorpusState {
+        do {
+            return .ready(try corpusForSection(bundledCorpus, section))
+        } catch {
+            return .failed(error.localizedDescription)
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
@@ -174,19 +184,42 @@ struct LiteraturePaneView: View {
                 .textFieldStyle(.roundedBorder)
                 .autocorrectionDisabled()
                 .accessibilityLabel("Search literature")
-            if results.isEmpty {
-                Text(query.isEmpty
-                    ? "No literature bundled for this section yet."
-                    : "No passages match \"\(query)\".")
-                    .ankountantFont(.caption)
-                    .foregroundStyle(palette.textSecondary)
-            } else {
-                ForEach(results) { entry in
-                    resultCard(entry)
-                }
+            switch corpusState {
+            case let .ready(entries):
+                literatureResults(entries)
+            case let .failed(message):
+                literatureError(message)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func literatureResults(_ entries: [CorpusEntry]) -> some View {
+        let results = searchCorpus(entries, query: query)
+        if results.isEmpty {
+            Text(query.isEmpty
+                ? "No literature bundled for this section yet."
+                : "No passages match \"\(query)\".")
+                .ankountantFont(.caption)
+                .foregroundStyle(palette.textSecondary)
+        } else {
+            ForEach(results) { entry in
+                resultCard(entry)
+            }
+        }
+    }
+
+    private func literatureError(_ message: String) -> some View {
+        AnkountantStatusMessageView(
+            title: "Literature unavailable",
+            message: message,
+            systemImage: "exclamationmark.triangle",
+            tone: .danger
+        )
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, AnkountantSpacing.sm)
+        .ankountantStatusPanel(.danger)
     }
 
     private func resultCard(_ entry: CorpusEntry) -> some View {

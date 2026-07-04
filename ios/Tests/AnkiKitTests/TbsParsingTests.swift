@@ -467,11 +467,14 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
 
     #expect(!corpus.isEmpty)
     // FAR ships ASC paraphrase (cite-only); REG ships verbatim IRC text.
-    #expect(corpusForSection(corpus, "FAR").contains { $0.citation == "ASC 842-20-25-1" && !$0.verbatim })
-    #expect(corpusForSection(corpus, "REG").contains { $0.verbatim })
+    #expect(try corpusForSection(corpus, "FAR").contains { $0.citation == "ASC 842-20-25-1" && !$0.verbatim })
+    #expect(try corpusForSection(corpus, " reg ").contains { $0.verbatim })
     // The ASC deep link is mapped from the JSON `deep_link` snake_case key.
-    let asc = corpusForSection(corpus, "FAR").first { $0.citation == "ASC 842-20-25-1" }
+    let asc = try corpusForSection(corpus, "FAR").first { $0.citation == "ASC 842-20-25-1" }
     #expect(asc?.deepLink?.contains("asc.fasb.org") == true)
+    #expect(throws: LiteratureCorpusError.unknownSection("NOPE")) {
+        try corpusForSection(corpus, "NOPE")
+    }
 }
 
 @Test func corpusEntryRejectsMalformedOptionalMetadata() {
