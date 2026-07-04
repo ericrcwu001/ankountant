@@ -525,6 +525,7 @@ export function segmentDocument(body: string | undefined): DocSegment[] {
 /** One journal-entry line as edited in the grid. */
 export interface JeLineInput {
     id: string;
+    label?: string;
     account: string;
     side: string;
     amount: string;
@@ -561,7 +562,10 @@ export function buildJeSubmission(lines: JeLineInput[]): string {
                 : {
                     account: l.account,
                     side: l.side,
-                    amount: submissionNumber(l.amount, `Amount for ${l.id}`),
+                    amount: submissionNumber(
+                        l.amount,
+                        `Amount for ${l.label ?? defaultStepLabel(l.id)}`,
+                    ),
                 },
         })),
     });

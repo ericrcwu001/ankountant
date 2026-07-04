@@ -153,9 +153,9 @@ struct SimulationsHubSelectionTests {
     }
 
     @Test func journalEntryAmountStillFailsFastWhenLineIsNotNoEntry() {
-        #expect(throws: TbsSubmissionError.invalidDecimal(field: "Amount for l1")) {
+        #expect(throws: TbsSubmissionError.invalidDecimal(field: "Amount for Line 1")) {
             try buildJeSubmission([
-                JeLineInput(id: "l1", account: "Cash", side: "dr", amount: "not-a-number"),
+                JeLineInput(id: "l1", label: "Line 1", account: "Cash", side: "dr", amount: "not-a-number"),
             ])
         }
     }

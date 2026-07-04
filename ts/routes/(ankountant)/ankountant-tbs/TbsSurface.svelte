@@ -36,6 +36,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     const jeLines: JeLineInput[] = model.steps.map((s) => ({
         id: s.id,
+        label: s.label,
         account: "",
         side: "",
         amount: "",

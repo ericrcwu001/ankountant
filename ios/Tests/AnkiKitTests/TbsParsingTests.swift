@@ -290,7 +290,7 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
 }
 
 @Test func buildJeSubmissionRejectsMalformedAmounts() {
-    expectTbsSubmissionError("Amount for l1 must be a decimal number.") {
+    expectTbsSubmissionError("Amount for Line 1 must be a decimal number.") {
         try buildJeSubmission([
             JeLineInput(id: "l1", account: "ROU Asset", side: "dr", amount: "1,000"),
         ])

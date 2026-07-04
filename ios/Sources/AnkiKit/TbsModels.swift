@@ -159,13 +159,15 @@ public enum DocSegment: Sendable, Equatable, Identifiable {
 /// One journal-entry line as edited in the grid (mutable for SwiftUI binding).
 public struct JeLineInput: Sendable, Identifiable, Equatable {
     public let id: String
+    public var label: String?
     public var account: String
     public var side: String
     public var amount: String
     public var noEntry: Bool
 
-    public init(id: String, account: String = "", side: String = "", amount: String = "", noEntry: Bool = false) {
+    public init(id: String, label: String? = nil, account: String = "", side: String = "", amount: String = "", noEntry: Bool = false) {
         self.id = id
+        self.label = label
         self.account = account
         self.side = side
         self.amount = amount

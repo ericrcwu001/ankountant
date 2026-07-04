@@ -405,7 +405,7 @@ public func buildJeSubmission(_ lines: [JeLineInput]) throws -> String {
             [
                 "account": line.account,
                 "side": line.side,
-                "amount": try submissionNumber(line.amount, fieldName: "Amount for \(line.id)"),
+                "amount": try submissionNumber(line.amount, fieldName: "Amount for \(line.label ?? defaultStepLabel(line.id))"),
             ]
         }
         return [

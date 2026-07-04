@@ -309,7 +309,7 @@ struct TbsTaskView: View {
         do {
             let m = try performanceClient.loadTbs(noteId)
             model = m
-            jeLines = m.steps.map { JeLineInput(id: $0.id) }
+            jeLines = m.steps.map { JeLineInput(id: $0.id, label: $0.label) }
             spareJeLines = spareJournalEntryLines()
             numericCells = m.steps.map { NumericCellInput(id: $0.id) }
             confidence = nil

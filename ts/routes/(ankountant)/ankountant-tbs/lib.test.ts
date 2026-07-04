@@ -204,9 +204,9 @@ test("buildJeSubmission shapes account/side/amount per step", () => {
 test("buildJeSubmission rejects malformed decimal amounts", () => {
     expect(() =>
         buildJeSubmission([
-            { id: "l1", account: "Cash", side: "dr", amount: "1,000" },
+            { id: "l1", label: "Line 1", account: "Cash", side: "dr", amount: "1,000" },
         ])
-    ).toThrow(/Amount for l1 must be a decimal number/);
+    ).toThrow(/Amount for Line 1 must be a decimal number/);
 });
 
 test("buildNumericSubmission coerces numbers per cell", () => {
