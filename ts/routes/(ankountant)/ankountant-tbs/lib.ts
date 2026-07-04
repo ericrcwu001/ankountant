@@ -63,6 +63,11 @@ export const TBS_SHAPES: readonly TbsShapeInfo[] = [
     },
 ];
 
+export function tbsShapeSearchOrder(selected: TbsShape): TbsShape[] {
+    const shapes = TBS_SHAPES.map((shape) => shape.shape);
+    return [selected, ...shapes.filter((shape) => shape !== selected)];
+}
+
 export type RenderableTbsShape = "journal_entry" | "numeric";
 
 export function renderableTbsShape(shape: TbsShape): RenderableTbsShape {

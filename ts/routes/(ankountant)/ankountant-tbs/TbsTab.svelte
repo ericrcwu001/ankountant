@@ -16,7 +16,7 @@ which case the chooser opens on that note's shape.
     import DocReviewSurface from "../ankountant-doc-review/DocReviewSurface.svelte";
     import ResearchSurface from "../ankountant-research/ResearchSurface.svelte";
     import type { TbsModel, TbsShape } from "./lib";
-    import { buildTbsModel, TBS_SHAPES, tbsSearch } from "./lib";
+    import { buildTbsModel, TBS_SHAPES, tbsSearch, tbsShapeSearchOrder } from "./lib";
     import TbsSurface from "./TbsSurface.svelte";
 
     export let initialNoteId: bigint = 0n;
@@ -42,33 +42,93 @@ which case the chooser opens on that note's shape.
     $: selectedLabel = TBS_SHAPES.find((s) => s.shape === selected)?.label ?? "TBS";
     $: selectedBlurb = TBS_SHAPES.find((s) => s.shape === selected)?.blurb ?? "";
 
+    interface LoadedShape {
+        noteId: bigint;
+        model: TbsModel;
+        fields: string[];
+        tags: string[];
+    }
+
+    async function fetchShape(shape: TbsShape): Promise<LoadedShape | null> {
+        const found = await searchNotes({ search: tbsSearch(shape, SECTION) });
+        const foundNoteId = found.ids.length > 0 ? found.ids[0] : 0n;
+        if (foundNoteId === 0n) {
+            return null;
+        }
+        const note = await getNote({ nid: foundNoteId });
+        return {
+            noteId: foundNoteId,
+            model: buildTbsModel(note.fields, note.tags),
+            fields: note.fields,
+            tags: note.tags,
+        };
+    }
+
+    function applyLoadedShape(shape: TbsShape, loaded: LoadedShape): void {
+        selected = shape;
+        noteId = loaded.noteId;
+        model = loaded.model;
+        fields = loaded.fields;
+        tags = loaded.tags;
+        phase = "ready";
+    }
+
+    function clearLoadedShape(): void {
+        noteId = 0n;
+        model = null;
+        fields = [];
+        tags = [];
+    }
+
     async function loadShape(shape: TbsShape): Promise<void> {
         selected = shape;
         const seq = ++loadSeq;
         phase = "loading";
-        model = null;
+        clearLoadedShape();
+        message = "";
         try {
-            const found = await searchNotes({ search: tbsSearch(shape, SECTION) });
+            const loaded = await fetchShape(shape);
             if (seq !== loadSeq) {
                 return;
             }
-            noteId = found.ids.length > 0 ? found.ids[0] : 0n;
-            if (noteId === 0n) {
+            if (!loaded) {
                 phase = "empty";
                 return;
             }
-            const note = await getNote({ nid: noteId });
-            if (seq !== loadSeq) {
-                return;
-            }
-            model = buildTbsModel(note.fields, note.tags);
-            fields = note.fields;
-            tags = note.tags;
-            phase = "ready";
+            applyLoadedShape(shape, loaded);
         } catch (err) {
             if (seq !== loadSeq) {
                 return;
             }
+            message = err instanceof Error ? err.message : String(err);
+            phase = "error";
+        }
+    }
+
+    async function loadInitialShape(): Promise<void> {
+        const requestedShape = selected;
+        const seq = ++loadSeq;
+        phase = "loading";
+        clearLoadedShape();
+        message = "";
+        try {
+            for (const shape of tbsShapeSearchOrder(requestedShape)) {
+                const loaded = await fetchShape(shape);
+                if (seq !== loadSeq) {
+                    return;
+                }
+                if (loaded) {
+                    applyLoadedShape(shape, loaded);
+                    return;
+                }
+            }
+            selected = requestedShape;
+            phase = "empty";
+        } catch (err) {
+            if (seq !== loadSeq) {
+                return;
+            }
+            selected = requestedShape;
             message = err instanceof Error ? err.message : String(err);
             phase = "error";
         }
@@ -82,10 +142,8 @@ which case the chooser opens on that note's shape.
     }
 
     onMount(() => {
-        // A deep-linked note is already loaded from +page.ts; otherwise open on
-        // the default (first) shape so the tab is never empty on arrival.
         if (!deepLinked) {
-            void loadShape(selected);
+            void loadInitialShape();
         }
     });
 </script>

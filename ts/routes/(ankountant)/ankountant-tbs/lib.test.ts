@@ -17,6 +17,7 @@ import {
     sectionFromTags,
     segmentDocument,
     tbsSearch,
+    tbsShapeSearchOrder,
 } from "./lib";
 
 test("buildTbsModel parses a JE note without leaking answer keys", () => {
@@ -40,6 +41,21 @@ test("tbsSearch pins both task shape and section", () => {
     );
     expect(tbsSearch("numeric", "REG")).toContain(`"tbs_type:numeric"`);
     expect(tbsSearch("numeric", "REG")).toContain("Ankountant::Sealed::REG::*");
+});
+
+test("tbsShapeSearchOrder starts with the requested shape", () => {
+    expect(tbsShapeSearchOrder("research")).toEqual([
+        "research",
+        "journal_entry",
+        "numeric",
+        "doc_review",
+    ]);
+    expect(tbsShapeSearchOrder("journal_entry")).toEqual([
+        "journal_entry",
+        "numeric",
+        "research",
+        "doc_review",
+    ]);
 });
 
 test("renderableTbsShape rejects specialized research and doc-review shapes", () => {

@@ -8,8 +8,8 @@ import { buildTbsModel } from "./lib";
 
 // The TBS tab hosts all four shapes behind a chooser (see TbsTab.svelte). A
 // concrete task can be deep-linked as ?note=<noteId> (the e2e does this); the
-// chooser then opens on that note's shape. Without an id we hand the chooser an
-// empty model and it loads the default (journal-entry) shape on mount.
+// chooser then opens on that note's shape. Without an id the chooser loads the
+// first available FAR simulation shape on mount.
 export const load = (async ({ url }) => {
     const noteIdParam = url.searchParams.get("note");
     const noteId = noteIdParam ? BigInt(noteIdParam) : 0n;
