@@ -71,7 +71,13 @@ struct ReviewView: View {
                     if let errorMessage = session.errorMessage {
                         failedView(errorMessage)
                     } else {
-                        finishedView
+                        ReviewFinishedView(
+                            summary: ReviewCompletionSummary(
+                                reviewed: session.sessionStats.reviewed,
+                                accuracy: session.sessionStats.accuracy
+                            ),
+                            onDone: onDismiss
+                        )
                     }
                 } else {
                     cardView
@@ -353,13 +359,6 @@ struct ReviewView: View {
         }
     }
 
-    private func formatInterval(_ days: Int) -> String {
-        if days == 0 { return "<1d" }
-        if days < 30 { return "\(days)d" }
-        if days < 365 { return "\(days / 30)mo" }
-        return String(format: "%.1fy", Double(days) / 365.0)
-    }
-
     private func failedView(_ message: String) -> some View {
         VStack(spacing: AnkountantSpacing.lg) {
             Spacer()
@@ -374,30 +373,6 @@ struct ReviewView: View {
                 .foregroundStyle(palette.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-            Spacer()
-            Button("Done") { onDismiss() }
-                .buttonStyle(AnkountantPrimaryButtonStyle())
-                .padding()
-        }
-    }
-
-    private var finishedView: some View {
-        VStack(spacing: AnkountantSpacing.lg) {
-            Spacer()
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(.green)
-            Text("Congratulations!")
-                .ankountantFont(.sectionHeading)
-                .foregroundStyle(palette.textPrimary)
-            Text("You've reviewed \(session.sessionStats.reviewed) cards")
-                .ankountantFont(.body)
-                .foregroundStyle(palette.textSecondary)
-            if session.sessionStats.reviewed > 0 {
-                Text("Accuracy: \(Int(session.sessionStats.accuracy * 100))%")
-                    .ankountantFont(.body)
-                    .foregroundStyle(palette.textSecondary)
-            }
             Spacer()
             Button("Done") { onDismiss() }
                 .buttonStyle(AnkountantPrimaryButtonStyle())
