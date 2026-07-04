@@ -95,7 +95,8 @@ struct StatsDashboardView: View {
         } label: {
             filterCapsule(
                 icon: "rectangle.stack",
-                label: selectedDeck?.name ?? "Collection"
+                label: selectedDeck?.name ?? "Collection",
+                accessibilityLabel: "Deck filter: \(selectedDeck?.name ?? "Whole Collection")"
             )
         }
     }
@@ -111,12 +112,13 @@ struct StatsDashboardView: View {
         } label: {
             filterCapsule(
                 icon: "calendar",
-                label: period.shortLabel
+                label: period.shortLabel,
+                accessibilityLabel: "History period: \(period.rawValue)"
             )
         }
     }
 
-    private func filterCapsule(icon: String, label: String) -> some View {
+    private func filterCapsule(icon: String, label: String, accessibilityLabel: String) -> some View {
         HStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.caption2)
@@ -130,6 +132,8 @@ struct StatsDashboardView: View {
         .padding(.vertical, 6)
         .background(Color(.secondarySystemFill))
         .clipShape(Capsule())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
     }
 
     private func loadDecks() async {
