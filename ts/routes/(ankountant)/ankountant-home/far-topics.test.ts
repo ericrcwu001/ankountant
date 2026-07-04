@@ -131,6 +131,7 @@ test("thin performance leaves Home topics unproven", () => {
 
     expect(topic?.performance).toBe(null);
     expect(topic?.gap).toBe(null);
+    expect(topic?.height).toBe(0);
     expect(topic?.unproven).toBe(true);
     expect(topStrongTopics(buildFarTopics(readiness))).toEqual([]);
     expect(needsAttention(buildFarTopics(readiness))).toEqual([]);

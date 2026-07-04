@@ -96,7 +96,7 @@ const FAR_TOPIC_SPECS: FarTopicSpec[] = [
 ];
 
 const TOP_ROW_COUNT = 5;
-const UNPROVEN_HEIGHT = 0.08;
+const UNPROVEN_HEIGHT = 0;
 const BACK_ROW_X = [0.12, 0.32, 0.52, 0.72, 0.9];
 const FRONT_ROW_X = [0.045, 0.175, 0.305, 0.435, 0.565, 0.695, 0.825, 0.955];
 
