@@ -536,7 +536,7 @@ private struct FarTopicRow: View {
                 .ankountantFont(.caption)
                 .foregroundStyle(palette.textPrimary)
             Spacer()
-            Text(topic.scoreLabel)
+            Text(topic.performanceLabel)
                 .ankountantFont(.captionBold)
                 .monospacedDigit()
                 .foregroundStyle(topic.isUnproven ? palette.textTertiary : palette.textPrimary)
@@ -681,33 +681,23 @@ private struct FarTopicHeroChart: View {
             let front = Array(topics.prefix(7))
             ZStack(alignment: .topLeading) {
                 MountainRangeCanvas(topics: front)
-                passLine(size)
                 ForEach(front) { topic in
                     let point = topic.point(in: size)
                     VStack(spacing: 1) {
                         Text(topic.shortLabel)
                             .font(.system(size: 7, weight: .semibold))
                             .foregroundStyle(Color.white.opacity(0.86))
-                        Text(topic.scoreLabel)
+                        Text(topic.performanceLabel)
                             .font(.system(size: 7, weight: .bold, design: .monospaced))
                             .foregroundStyle(Color.white.opacity(0.86))
                         Image(systemName: "flag.fill")
                             .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(topic.isBelow ? Color.orange : Color.white)
+                            .foregroundStyle(topic.isUnproven ? Color.white.opacity(0.45) : Color.white)
                     }
                     .position(x: point.x, y: max(12, point.y - 30))
                 }
             }
         }
-    }
-
-    private func passLine(_ size: CGSize) -> some View {
-        Path { path in
-            let y = topicPassLineY(size.height)
-            path.move(to: CGPoint(x: 0, y: y))
-            path.addLine(to: CGPoint(x: size.width, y: y))
-        }
-        .stroke(Color.white.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
     }
 }
 
@@ -750,20 +740,18 @@ private struct FarSinglePeakChart: View {
     @Environment(\.palette) private var palette
 
     var body: some View {
-        GeometryReader { geo in
-            let size = geo.size
+        GeometryReader { _ in
             ZStack(alignment: .topLeading) {
                 MountainRangeCanvas(topics: [topic])
-                Path { path in
-                    let y = topicPassLineY(size.height)
-                    path.move(to: CGPoint(x: 0, y: y))
-                    path.addLine(to: CGPoint(x: size.width, y: y))
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Sealed performance")
+                    Spacer()
+                    Text(topic.performanceLabel)
+                        .monospacedDigit()
                 }
-                .stroke(palette.accent.opacity(0.55), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                Text("PASS LINE · 75")
-                    .ankountantFont(.micro)
-                    .foregroundStyle(palette.accent)
-                    .position(x: size.width - 50, y: topicPassLineY(size.height) - 12)
+                .ankountantFont(.micro)
+                .foregroundStyle(palette.textSecondary)
+                .padding(12)
             }
             .background(palette.surface, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
@@ -836,12 +824,6 @@ private struct FlowLayout<Data: RandomAccessCollection, Content: View>: View whe
     }
 }
 
-private func topicPassLineY(_ height: Double) -> Double {
-    let base = height * 0.93
-    let plot = height * 0.72
-    return base - 0.75 * plot
-}
-
 struct FarTopicCard: Identifiable, Hashable {
     let id: String
     let setId: String
@@ -855,8 +837,7 @@ struct FarTopicCard: Identifiable, Hashable {
     let performanceRange: String
     let isUnproven: Bool
 
-    var scoreLabel: String { performance.map(String.init) ?? "—" }
-    var isBelow: Bool { performance.map { $0 < 75 } ?? false }
+    var performanceLabel: String { performance.map { "\($0)%" } ?? "—" }
     var shortLabel: String { label.replacingOccurrences(of: " & ", with: "\n") }
 
     var tokens: [String] {
@@ -867,7 +848,7 @@ struct FarTopicCard: Identifiable, Hashable {
 
     var accessibilityLabel: String {
         if isUnproven { return "\(label), not enough data yet" }
-        return "\(label), performance \(scoreLabel) percent"
+        return "\(label), sealed performance \(performanceLabel)"
     }
 
     func point(in size: CGSize) -> CGPoint {

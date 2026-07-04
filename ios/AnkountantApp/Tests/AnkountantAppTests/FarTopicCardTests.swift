@@ -25,7 +25,7 @@ struct FarTopicCardTests {
         let leases = try #require(cards.first { $0.setId == "operating_vs_finance_lease" })
         #expect(leases.height == 0)
         #expect(leases.performance == nil)
-        #expect(leases.scoreLabel == "—")
+        #expect(leases.performanceLabel == "—")
         #expect(leases.isUnproven)
     }
 
@@ -60,8 +60,8 @@ struct FarTopicCardTests {
         let leases = try #require(cards.first { $0.setId == "operating_vs_finance_lease" })
         #expect(leases.height == 0.52)
         #expect(leases.performance == 52)
-        #expect(leases.scoreLabel == "52")
+        #expect(leases.performanceLabel == "52%")
         #expect(!leases.isUnproven)
-        #expect(leases.isBelow)
+        #expect(leases.accessibilityLabel == "Leases, sealed performance 52%")
     }
 }
