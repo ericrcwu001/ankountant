@@ -8,6 +8,7 @@ struct ReviewView: View {
     let onDismiss: () -> Void
 
     @Environment(\.palette) private var palette
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @Shared(.appStorage(ReviewPreferences.Keys.showAudioReplayButton))
     private var showAudioReplayButton: Bool = true
@@ -284,14 +285,28 @@ struct ReviewView: View {
     }
 
     private var answerButtons: some View {
-        HStack(spacing: disperseAnswerButtons ? 16 : 8) {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: AnkountantSpacing.sm) {
+                    ratingButtons
+                }
+            } else {
+                HStack(spacing: disperseAnswerButtons ? 16 : 8) {
+                    ratingButtons
+                }
+            }
+        }
+        .padding(.horizontal, disperseAnswerButtons ? 20 : 16)
+        .padding(.vertical, 16)
+    }
+
+    private var ratingButtons: some View {
+        Group {
             ratingButton(.again, color: palette.danger)
             ratingButton(.hard, color: palette.warning)
             ratingButton(.good, color: palette.positive)
             ratingButton(.easy, color: palette.info)
         }
-        .padding(.horizontal, disperseAnswerButtons ? 20 : 16)
-        .padding(.vertical, 16)
     }
 
     private func ratingButton(_ rating: Rating, color: Color) -> some View {
@@ -302,10 +317,12 @@ struct ReviewView: View {
             VStack(spacing: 4) {
                 if showNextReviewTime {
                     Text(session.nextIntervals[rating] ?? "")
-                        .font(.caption2)
+                        .ankountantFont(.micro)
+                        .lineLimit(1)
                 }
                 Text(ratingLabel(rating))
-                    .font(.subheadline.weight(.medium))
+                    .ankountantFont(.captionBold)
+                    .lineLimit(1)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
