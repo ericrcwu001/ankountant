@@ -23,7 +23,7 @@ enum ImportHelper {
 
         let tempDir = FileManager.default.temporaryDirectory
         let tempFile = tempDir.appendingPathComponent(url.lastPathComponent)
-        try? FileManager.default.removeItem(at: tempFile)
+        try removeExistingFile(at: tempFile)
         try FileManager.default.copyItem(at: url, to: tempFile)
         defer { try? FileManager.default.removeItem(at: tempFile) }
 
@@ -34,7 +34,7 @@ enum ImportHelper {
     static func exportCollection(to filename: String = "collection.colpkg") throws -> URL {
         let tempDir = FileManager.default.temporaryDirectory
         let outPath = tempDir.appendingPathComponent(filename)
-        try? FileManager.default.removeItem(at: outPath)
+        try removeExistingFile(at: outPath)
 
         @Dependency(\.importExportService) var importExportService
         try importExportService.exportCollectionPackage(outPath.path, true)
@@ -58,7 +58,7 @@ enum ImportHelper {
         let filename = "\(safeName).apkg"
         let tempDir = FileManager.default.temporaryDirectory
         let outPath = tempDir.appendingPathComponent(filename)
-        try? FileManager.default.removeItem(at: outPath)
+        try removeExistingFile(at: outPath)
 
         @Dependency(\.importExportService) var importExportService
         _ = try importExportService.exportDeckPackage(
@@ -71,5 +71,11 @@ enum ImportHelper {
         )
 
         return outPath
+    }
+
+    private static func removeExistingFile(at url: URL) throws {
+        if FileManager.default.fileExists(atPath: url.path) {
+            try FileManager.default.removeItem(at: url)
+        }
     }
 }
