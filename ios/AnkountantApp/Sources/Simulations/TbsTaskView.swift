@@ -14,6 +14,7 @@ struct TbsTaskView: View {
     let noteId: Int64
 
     @Environment(\.palette) private var palette
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Dependency(\.performanceClient) var performanceClient
 
     @State private var model: TbsModel?
@@ -111,20 +112,7 @@ struct TbsTaskView: View {
     private func numericGrid(_ model: TbsModel) -> some View {
         VStack(spacing: 0) {
             ForEach($numericCells) { $cell in
-                HStack(spacing: 12) {
-                    Text(stepLabel(model, cell.id))
-                        .ankountantFont(.body)
-                        .foregroundStyle(palette.textPrimary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    TextField("Value", text: $cell.value)
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                        .ankountantFont(.mono)
-                        .frame(width: 120)
-                        .textFieldStyle(.roundedBorder)
-                        .disabled(answerInputsLocked)
-                    stepMark(for: cell.id)
-                }
+                numericCellRow(model, cell: $cell)
                 .padding(.vertical, 10)
                 if cell.id != numericCells.last?.id {
                     Divider()
@@ -137,6 +125,42 @@ struct TbsTaskView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(palette.border, lineWidth: 1)
         )
+    }
+
+    @ViewBuilder
+    private func numericCellRow(_ model: TbsModel, cell: Binding<NumericCellInput>) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
+                HStack(alignment: .firstTextBaseline) {
+                    numericCellLabel(model, cell.wrappedValue.id)
+                    stepMark(for: cell.wrappedValue.id)
+                }
+                numericValueField(cell)
+            }
+        } else {
+            HStack(spacing: 12) {
+                numericCellLabel(model, cell.wrappedValue.id)
+                numericValueField(cell)
+                stepMark(for: cell.wrappedValue.id)
+            }
+        }
+    }
+
+    private func numericCellLabel(_ model: TbsModel, _ id: String) -> some View {
+        Text(stepLabel(model, id))
+            .ankountantFont(.body)
+            .foregroundStyle(palette.textPrimary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func numericValueField(_ cell: Binding<NumericCellInput>) -> some View {
+        TextField("Value", text: cell.value)
+            .keyboardType(.decimalPad)
+            .multilineTextAlignment(.trailing)
+            .ankountantFont(.mono)
+            .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 120)
+            .textFieldStyle(.roundedBorder)
+            .disabled(answerInputsLocked)
     }
 
     // MARK: - Journal-entry grid
@@ -161,23 +185,12 @@ struct TbsTaskView: View {
                     }
                     .pickerStyle(.menu)
                     .disabled(answerInputsLocked || line.noEntry)
-                    HStack(spacing: 12) {
-                        Picker("Debit / Credit", selection: $line.side) {
-                            Text("Select").tag("")
-                            Text("Debit").tag("dr")
-                            Text("Credit").tag("cr")
-                        }
-                        .pickerStyle(.menu)
-                        .disabled(answerInputsLocked || line.noEntry)
-                        Spacer()
-                        TextField("Amount", text: $line.amount)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .ankountantFont(.mono)
-                            .frame(width: 120)
-                            .textFieldStyle(.roundedBorder)
-                            .disabled(answerInputsLocked || line.noEntry)
-                    }
+                    journalEntryDebitCreditRow(
+                        line: $line,
+                        sideTitle: "Debit / Credit",
+                        amountTitle: "Amount",
+                        disabled: answerInputsLocked || line.noEntry
+                    )
                     Toggle("No entry", isOn: $line.noEntry)
                         .disabled(answerInputsLocked)
                         .onChange(of: line.noEntry) { _, noEntry in
@@ -208,23 +221,12 @@ struct TbsTaskView: View {
                     }
                     .pickerStyle(.menu)
                     .disabled(answerInputsLocked)
-                    HStack(spacing: 12) {
-                        Picker("Spare debit / credit", selection: $line.side) {
-                            Text("Select").tag("")
-                            Text("Debit").tag("dr")
-                            Text("Credit").tag("cr")
-                        }
-                        .pickerStyle(.menu)
-                        .disabled(answerInputsLocked)
-                        Spacer()
-                        TextField("Spare amount", text: $line.amount)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .ankountantFont(.mono)
-                            .frame(width: 120)
-                            .textFieldStyle(.roundedBorder)
-                            .disabled(answerInputsLocked)
-                    }
+                    journalEntryDebitCreditRow(
+                        line: $line,
+                        sideTitle: "Spare debit / credit",
+                        amountTitle: "Spare amount",
+                        disabled: answerInputsLocked
+                    )
                 }
                 .padding(12)
                 .background(palette.surface.opacity(0.72), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -234,6 +236,47 @@ struct TbsTaskView: View {
                 )
             }
         }
+    }
+
+    @ViewBuilder
+    private func journalEntryDebitCreditRow(
+        line: Binding<JeLineInput>,
+        sideTitle: String,
+        amountTitle: String,
+        disabled: Bool
+    ) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
+                journalEntrySidePicker(line: line, title: sideTitle, disabled: disabled)
+                journalEntryAmountField(line: line, title: amountTitle, disabled: disabled)
+            }
+        } else {
+            HStack(spacing: 12) {
+                journalEntrySidePicker(line: line, title: sideTitle, disabled: disabled)
+                Spacer()
+                journalEntryAmountField(line: line, title: amountTitle, disabled: disabled)
+            }
+        }
+    }
+
+    private func journalEntrySidePicker(line: Binding<JeLineInput>, title: String, disabled: Bool) -> some View {
+        Picker(title, selection: line.side) {
+            Text("Select").tag("")
+            Text("Debit").tag("dr")
+            Text("Credit").tag("cr")
+        }
+        .pickerStyle(.menu)
+        .disabled(disabled)
+    }
+
+    private func journalEntryAmountField(line: Binding<JeLineInput>, title: String, disabled: Bool) -> some View {
+        TextField(title, text: line.amount)
+            .keyboardType(.decimalPad)
+            .multilineTextAlignment(.trailing)
+            .ankountantFont(.mono)
+            .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 120)
+            .textFieldStyle(.roundedBorder)
+            .disabled(disabled)
     }
 
     // MARK: - Submit
