@@ -34,6 +34,7 @@ export interface TopicRow {
 
 export interface ReadinessEvidence {
     evidenceLines: string[];
+    updatedAtLine: string;
     missingData: string[];
     calibrationStatus: string;
     nextAction: string;
@@ -194,6 +195,7 @@ export function buildReadinessEvidence(
 
     return {
         evidenceLines,
+        updatedAtLine: formatUpdatedLine(view.generatedAt),
         missingData,
         calibrationStatus:
             "No past score-verification history is available yet; treat this as an uncalibrated projection until held-out outcomes are logged.",
@@ -281,4 +283,12 @@ export function formatUpdated(generatedAt: number): string {
     }
     const d = new Date(generatedAt * 1000);
     return `Updated ${d.toLocaleString()}`;
+}
+
+export function formatUpdatedLine(generatedAt: number): string {
+    if (!generatedAt) {
+        return "Last updated time unavailable; refresh readiness after more graded evidence is logged.";
+    }
+    const d = new Date(generatedAt * 1000);
+    return `Last updated ${d.toLocaleString()}.`;
 }

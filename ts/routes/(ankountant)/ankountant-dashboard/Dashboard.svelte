@@ -101,6 +101,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                 </ul>
             </div>
             <div class="evidence-block">
+                <h3>Last updated</h3>
+                <p>{evidence.updatedAtLine}</p>
+            </div>
+            <div class="evidence-block">
                 <h3>Still missing</h3>
                 <ul>
                     {#each evidence.missingData as line}

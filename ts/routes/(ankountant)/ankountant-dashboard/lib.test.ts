@@ -147,6 +147,7 @@ test("evidence view names missing data and the give-up rule", () => {
     expect(evidence.missingData.join(" ")).toContain("60% of topics");
     expect(evidence.missingData.join(" ")).toContain("tax timing");
     expect(evidence.calibrationStatus).toContain("No past score-verification history");
+    expect(evidence.updatedAtLine).toContain("time unavailable");
 });
 
 test("evidence view chooses the largest memory-performance gap as next action", () => {
@@ -158,6 +159,7 @@ test("evidence view chooses the largest memory-performance gap as next action", 
             pointEstimate: 80,
             confidence: "High",
             coverage: 1,
+            generatedAt: 1_704_067_200n,
             reasons: ["Coverage: 100% of topics; 188 sealed attempts"],
         }),
     );
@@ -181,6 +183,8 @@ test("evidence view chooses the largest memory-performance gap as next action", 
     expect(evidence.nextAction).toContain("leases");
     expect(evidence.nextAction).toContain("memory is 90%");
     expect(evidence.missingData[0]).toContain("No hard blockers");
+    expect(evidence.updatedAtLine).toMatch(/^Last updated /);
+    expect(evidence.updatedAtLine).not.toContain("unavailable");
 });
 
 test("evidence view does not invent a memory value for thin-memory gaps", () => {

@@ -267,6 +267,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                         <span>Missing</span>
                         <p>{evidence.missingData[0]}</p>
                     </div>
+                    <div class="brief-row">
+                        <span>Updated</span>
+                        <p>{evidence.updatedAtLine}</p>
+                    </div>
                     <button
                         type="button"
                         class="brief-link"
