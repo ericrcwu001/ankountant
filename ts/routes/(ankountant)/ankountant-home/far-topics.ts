@@ -3,6 +3,7 @@
 
 import type { GetReadinessResponse, TopicScore } from "@generated/anki/scheduler_pb";
 
+import { hasTopicPerformanceEvidence, validateTopicScoreEvidence } from "../topic-evidence";
 import { heightForTopicScore, type TopoTopic } from "./topo";
 
 export interface FarTopic extends TopoTopic {
@@ -167,13 +168,11 @@ function buildTopic(input: {
     topic: TopicScore | undefined;
 }): FarTopic {
     const topic = input.topic;
-    const hasMemory = topic !== undefined && !topic.memoryInsufficient;
-    const hasPerformance = topic !== undefined && hasPerformanceEvidence(topic);
-    if (topic !== undefined && topic.performance !== 0 && !hasPerformance) {
-        throw new Error(
-            `Topic ${topic.setId} has nonzero performance without a confidence band`,
-        );
+    if (topic !== undefined) {
+        validateTopicScoreEvidence(topic);
     }
+    const hasMemory = topic !== undefined && !topic.memoryInsufficient;
+    const hasPerformance = topic !== undefined && hasTopicPerformanceEvidence(topic);
     const performance = hasPerformance ? pct(topic.performance) : null;
     const memory = hasMemory ? pct(topic.memory) : null;
     let gap: number | null = null;
@@ -258,10 +257,6 @@ function preparednessScore(topic: FarTopic): number {
     return topic.score ?? -1;
 }
 
-function hasPerformanceEvidence(topic: TopicScore): boolean {
-    return topic.performanceLow !== 0 || topic.performanceHigh !== 0;
-}
-
 function provenTopics(topics: FarTopic[]): FarTopic[] {
     return topics.filter((topic) => !topic.unproven);
 }
@@ -277,7 +272,7 @@ function pct(value: number): number {
 function rangeLabel(low: number, high: number): string {
     const lo = pct(low);
     const hi = pct(high);
-    return hi > lo ? `${lo}-${hi}%` : "";
+    return hi > lo ? `${lo}–${hi}%` : "";
 }
 
 function prettyTopic(setId: string): string {

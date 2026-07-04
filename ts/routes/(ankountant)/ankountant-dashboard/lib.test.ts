@@ -29,6 +29,8 @@ test("topic rows carry memory/performance/gap + gapWarning (A54/A56)", () => {
             performance: 0.65,
             gap: 0.25,
             memoryInsufficient: false,
+            memoryLow: 0.82,
+            memoryHigh: 0.96,
             performanceLow: 0.55,
             performanceHigh: 0.75,
         }),
@@ -37,6 +39,24 @@ test("topic rows carry memory/performance/gap + gapWarning (A54/A56)", () => {
     expect(rows[0].performancePct).toBe(65);
     expect(rows[0].gapPct).toBe(25);
     expect(rows[0].gapWarning).toBe(true);
+});
+
+test("topic gaps may be negative when performance exceeds memory", () => {
+    const rows = buildTopicRows([
+        new TopicScore({
+            setId: "research",
+            memory: 0.62,
+            performance: 0.74,
+            gap: -0.12,
+            memoryInsufficient: false,
+            memoryLow: 0.54,
+            memoryHigh: 0.7,
+            performanceLow: 0.66,
+            performanceHigh: 0.82,
+        }),
+    ]);
+    expect(rows[0].gapPct).toBe(-12);
+    expect(rows[0].gapWarning).toBe(false);
 });
 
 test("insufficient memory renders no number", () => {
@@ -108,6 +128,42 @@ test("nonzero performance without a confidence band is rejected", () => {
             }),
         ])
     ).toThrow(/without a confidence band/);
+});
+
+test("topic memory without a confidence band is rejected", () => {
+    expect(() =>
+        buildTopicRows([
+            new TopicScore({
+                setId: "s",
+                memory: 0.8,
+                performance: 0,
+                gap: 0,
+                memoryInsufficient: false,
+                memoryLow: 0,
+                memoryHigh: 0,
+                performanceLow: 0,
+                performanceHigh: 0,
+            }),
+        ])
+    ).toThrow(/memory requires a non-empty confidence band/);
+});
+
+test("topic points must sit inside their confidence bands", () => {
+    expect(() =>
+        buildTopicRows([
+            new TopicScore({
+                setId: "s",
+                memory: 0.8,
+                performance: 0.7,
+                gap: 0.1,
+                memoryInsufficient: false,
+                memoryLow: 0.7,
+                memoryHigh: 0.9,
+                performanceLow: 0.2,
+                performanceHigh: 0.6,
+            }),
+        ])
+    ).toThrow(/performance point must be inside/);
 });
 
 test("topic rows carry memory/performance confidence ranges (#3)", () => {

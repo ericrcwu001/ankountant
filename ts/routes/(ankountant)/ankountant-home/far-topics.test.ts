@@ -9,18 +9,21 @@ import { heightForTopicScore } from "./topo";
 
 const rounded = (value: number): number => Number(value.toFixed(3));
 
-const topic = (setId: string, performance: number): TopicScore =>
-    ({
+const topic = (setId: string, performance: number): TopicScore => {
+    const low = Math.max(0, performance - 0.08);
+    const high = Math.min(1, performance + 0.08);
+    return ({
         setId,
         memory: performance,
         performance,
         gap: 0,
         memoryInsufficient: false,
-        memoryLow: performance,
-        memoryHigh: performance,
-        performanceLow: performance,
-        performanceHigh: performance,
+        memoryLow: low,
+        memoryHigh: high,
+        performanceLow: low,
+        performanceHigh: high,
     }) as unknown as TopicScore;
+};
 
 test("FAR topic mountains are ranked by preparedness, row-major", () => {
     const readiness = {
@@ -155,4 +158,24 @@ test("nonzero Home performance without a confidence band is rejected", () => {
     } as unknown as GetReadinessResponse;
 
     expect(() => buildFarTopics(readiness)).toThrow(/without a confidence band/);
+});
+
+test("Home topics reject memory without a confidence band", () => {
+    const readiness = {
+        topics: [
+            new TopicScore({
+                setId: "trading_afs_htm",
+                memory: 0.8,
+                performance: 0,
+                gap: 0,
+                memoryInsufficient: false,
+                memoryLow: 0,
+                memoryHigh: 0,
+                performanceLow: 0,
+                performanceHigh: 0,
+            }),
+        ],
+    } as unknown as GetReadinessResponse;
+
+    expect(() => buildFarTopics(readiness)).toThrow(/memory requires a non-empty confidence band/);
 });

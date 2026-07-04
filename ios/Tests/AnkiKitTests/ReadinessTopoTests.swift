@@ -133,6 +133,8 @@ struct ReadinessTopoTests {
             performance: 0.5,
             gap: 0.30,
             memoryInsufficient: false,
+            memoryLow: 0.7,
+            memoryHigh: 0.9,
             performanceLow: 0.4,
             performanceHigh: 0.6
         )
@@ -144,21 +146,23 @@ struct ReadinessTopoTests {
             performance: 0.7,
             gap: 0.10,
             memoryInsufficient: false,
+            memoryLow: 0.7,
+            memoryHigh: 0.9,
             performanceLow: 0.6,
             performanceHigh: 0.8
         )
         #expect(!ok.gapWarning)
-        let noPerf = TopicScoreModel(setId: "x", memory: 0.8, performance: 0, gap: 0, memoryInsufficient: false, performanceLow: 0, performanceHigh: 0)
+        let noPerf = TopicScoreModel(setId: "x", memory: 0.8, performance: 0, gap: 0, memoryInsufficient: false, memoryLow: 0.7, memoryHigh: 0.9, performanceLow: 0, performanceHigh: 0)
         #expect(noPerf.performanceInsufficient)
         #expect(!noPerf.gapWarning)
     }
 
     @Test func gapsToCloseCount() {
         let summary = ReadinessSummary(band: band(), topics: [
-            TopicScoreModel(setId: "a", memory: 0.9, performance: 0.5, gap: 0.40, memoryInsufficient: false, performanceLow: 0.4, performanceHigh: 0.6),
-            TopicScoreModel(setId: "b", memory: 0.6, performance: 0.5, gap: 0.10, memoryInsufficient: false, performanceLow: 0.4, performanceHigh: 0.6),
-            TopicScoreModel(setId: "c", memory: 0.9, performance: 0.6, gap: 0.30, memoryInsufficient: false, performanceLow: 0.5, performanceHigh: 0.7),
-            TopicScoreModel(setId: "d", memory: 0.9, performance: 0, gap: 0.90, memoryInsufficient: false, performanceLow: 0, performanceHigh: 0),
+            TopicScoreModel(setId: "a", memory: 0.9, performance: 0.5, gap: 0.40, memoryInsufficient: false, memoryLow: 0.8, memoryHigh: 0.98, performanceLow: 0.4, performanceHigh: 0.6),
+            TopicScoreModel(setId: "b", memory: 0.6, performance: 0.5, gap: 0.10, memoryInsufficient: false, memoryLow: 0.5, memoryHigh: 0.7, performanceLow: 0.4, performanceHigh: 0.6),
+            TopicScoreModel(setId: "c", memory: 0.9, performance: 0.6, gap: 0.30, memoryInsufficient: false, memoryLow: 0.8, memoryHigh: 0.98, performanceLow: 0.5, performanceHigh: 0.7),
+            TopicScoreModel(setId: "d", memory: 0.9, performance: 0, gap: 0.90, memoryInsufficient: false, memoryLow: 0.8, memoryHigh: 0.98, performanceLow: 0, performanceHigh: 0),
         ])
         #expect(summary.gapsToCloseCount == 2)
     }
@@ -198,8 +202,8 @@ struct ReadinessTopoTests {
         let evidence = readinessEvidence(
             band: band,
             topics: [
-                TopicScoreModel(setId: "leases", memory: 0.9, performance: 0.52, gap: 0.38, memoryInsufficient: false, performanceLow: 0.42, performanceHigh: 0.62),
-                TopicScoreModel(setId: "tax_timing", memory: 0.7, performance: 0.51, gap: 0.19, memoryInsufficient: false, performanceLow: 0.41, performanceHigh: 0.61),
+                TopicScoreModel(setId: "leases", memory: 0.9, performance: 0.52, gap: 0.38, memoryInsufficient: false, memoryLow: 0.8, memoryHigh: 0.98, performanceLow: 0.42, performanceHigh: 0.62),
+                TopicScoreModel(setId: "tax_timing", memory: 0.7, performance: 0.51, gap: 0.19, memoryInsufficient: false, memoryLow: 0.6, memoryHigh: 0.8, performanceLow: 0.41, performanceHigh: 0.61),
             ]
         )
         #expect(evidence.nextAction.contains("Leases"))
@@ -219,7 +223,7 @@ struct ReadinessTopoTests {
         let evidence = readinessEvidence(
             band: band,
             topics: [
-                TopicScoreModel(setId: "leases", memory: 0.9, performance: 0.52, gap: 0.38, memoryInsufficient: false, performanceLow: 0.42, performanceHigh: 0.62),
+                TopicScoreModel(setId: "leases", memory: 0.9, performance: 0.52, gap: 0.38, memoryInsufficient: false, memoryLow: 0.8, memoryHigh: 0.98, performanceLow: 0.42, performanceHigh: 0.62),
             ]
         )
         #expect(evidence.nextAction.contains("20"))

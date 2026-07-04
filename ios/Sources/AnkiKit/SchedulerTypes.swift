@@ -133,10 +133,20 @@ public struct TopicScoreModel: Sendable, Equatable, Identifiable {
         performanceLow: Double = 0,
         performanceHigh: Double = 0
     ) {
-        precondition(
-            performance == 0 || performanceLow != 0 || performanceHigh != 0,
-            "Topic performance cannot be non-zero without a confidence band."
-        )
+        precondition(!setId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, "Topic score requires a set id.")
+        if memoryInsufficient {
+            precondition(memory == 0 && memoryLow == 0 && memoryHigh == 0, "Topic memory cannot be marked insufficient with evidence values.")
+        } else {
+            preconditionTopicEvidenceRange("memory", value: memory, low: memoryLow, high: memoryHigh)
+        }
+        let hasPerformanceEvidence = performanceLow != 0 || performanceHigh != 0
+        precondition(performance == 0 || hasPerformanceEvidence, "Topic performance cannot be non-zero without a confidence band.")
+        if hasPerformanceEvidence {
+            preconditionTopicEvidenceRange("performance", value: performance, low: performanceLow, high: performanceHigh)
+        }
+        if !memoryInsufficient && hasPerformanceEvidence {
+            preconditionGap(gap)
+        }
         self.setId = setId
         self.memory = memory
         self.performance = performance
@@ -147,6 +157,24 @@ public struct TopicScoreModel: Sendable, Equatable, Identifiable {
         self.performanceLow = performanceLow
         self.performanceHigh = performanceHigh
     }
+}
+
+private func preconditionTopicEvidenceRange(_ metric: String, value: Double, low: Double, high: Double) {
+    preconditionFraction("topic \(metric)", value)
+    preconditionFraction("topic \(metric) low", low)
+    preconditionFraction("topic \(metric) high", high)
+    precondition(low < high, "Topic \(metric) requires a non-empty confidence band.")
+    precondition(value >= low && value <= high, "Topic \(metric) point must be inside its confidence band.")
+}
+
+private func preconditionFraction(_ label: String, _ value: Double) {
+    precondition(value.isFinite, "\(label) must be a finite number.")
+    precondition(value >= 0 && value <= 1, "\(label) must be between 0 and 1.")
+}
+
+private func preconditionGap(_ value: Double) {
+    precondition(value.isFinite, "topic gap must be a finite number.")
+    precondition(value >= -1 && value <= 1, "topic gap must be between -1 and 1.")
 }
 
 /// The full readiness rollup for a section (band + per-topic scores).

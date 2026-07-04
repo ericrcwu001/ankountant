@@ -7,6 +7,8 @@
 
 import type { Readiness, TopicScore } from "@generated/anki/scheduler_pb";
 
+import { hasTopicPerformanceEvidence, validateTopicScoreEvidence } from "../topic-evidence";
+
 /** A gap >= this threshold is flagged (contract A56 / B5-D3). */
 export const GAP_WARNING_THRESHOLD = 0.25;
 
@@ -71,8 +73,9 @@ export function rangeLabel(low: number, high: number): string | null {
 /** Build the per-topic dashboard rows from the GetReadiness topics. */
 export function buildTopicRows(topics: TopicScore[]): TopicRow[] {
     return topics.map((t) => {
+        validateTopicScoreEvidence(t);
         const memoryPct = t.memoryInsufficient ? null : fractionToPct(t.memory);
-        const hasPerformanceEvidence = hasSealedPerformanceEvidence(t);
+        const hasPerformanceEvidence = hasTopicPerformanceEvidence(t);
         const performancePct = hasPerformanceEvidence ? fractionToPct(t.performance) : null;
         const gap = memoryPct === null || performancePct === null ? null : t.gap;
         return {
@@ -86,14 +89,6 @@ export function buildTopicRows(topics: TopicScore[]): TopicRow[] {
             gapWarning: gap !== null && isGapWarning(gap),
         };
     });
-}
-
-function hasSealedPerformanceEvidence(topic: TopicScore): boolean {
-    const hasConfidenceBand = topic.performanceLow !== 0 || topic.performanceHigh !== 0;
-    if (!hasConfidenceBand && topic.performance !== 0) {
-        throw new Error("Topic performance cannot be non-zero without a confidence band.");
-    }
-    return hasConfidenceBand;
 }
 
 /**
