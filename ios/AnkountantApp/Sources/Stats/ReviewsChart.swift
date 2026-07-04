@@ -7,55 +7,86 @@ struct ReviewsChart: View {
     let reviews: Anki_Stats_GraphsResponse.ReviewCountsAndTimes
     let period: StatsPeriod
 
-    private struct ReviewEntry: Identifiable {
-        let id = UUID()
+    private typealias Reviews = Anki_Stats_GraphsResponse.ReviewCountsAndTimes.Reviews
+
+    private static let types: [(name: String, keyPath: KeyPath<Reviews, UInt32>)] = [
+        ("Learn", \.learn),
+        ("Relearn", \.relearn),
+        ("Young", \.young),
+        ("Mature", \.mature),
+        ("Filtered", \.filtered),
+    ]
+
+    private struct Series: Identifiable {
+        let id: String
         let day: Int
         let type: String
         let count: Int
-        let color: Color
     }
 
-    private var entries: [ReviewEntry] {
+    private struct Model {
+        var series: [Series] = []
+        var total = 0
+        var uniqueDays = 0
+        var avgPerDay: Double { uniqueDays == 0 ? 0 : Double(total) / Double(uniqueDays) }
+    }
+
+    /// Aggregates the raw per-day review counts once per render. Days are binned
+    /// into a bounded number of buckets so long time frames ("All Time") don't
+    /// emit thousands of marks and freeze the main thread during layout.
+    private func buildModel() -> Model {
         let maxDay = period.days
-        let types: [(String, KeyPath<Anki_Stats_GraphsResponse.ReviewCountsAndTimes.Reviews, UInt32>, Color)] = [
-            ("Learn", \.learn, .blue),
-            ("Relearn", \.relearn, .orange),
-            ("Young", \.young, .green),
-            ("Mature", \.mature, .purple),
-            ("Filtered", \.filtered, .gray),
-        ]
-        var result: [ReviewEntry] = []
+        var validDays: [(day: Int, rev: Reviews)] = []
+        var minDay = 0
+        var total = 0
         for (dayOffset, rev) in reviews.count {
             let day = Int(dayOffset)
             guard day <= 0, abs(day) <= maxDay else { continue }
-            for (name, kp, color) in types {
-                let value = Int(rev[keyPath: kp])
-                if value > 0 {
-                    result.append(ReviewEntry(day: day, type: name, count: value, color: color))
-                }
+            let dayTotal = Int(rev.learn) + Int(rev.relearn) + Int(rev.young)
+                + Int(rev.mature) + Int(rev.filtered)
+            guard dayTotal > 0 else { continue }
+            validDays.append((day, rev))
+            minDay = min(minDay, day)
+            total += dayTotal
+        }
+
+        var model = Model()
+        model.total = total
+        model.uniqueDays = validDays.count
+        guard !validDays.isEmpty else { return model }
+
+        let size = StatsSeriesBinning.bucketSize(forSpanDays: (0 - minDay) + 1)
+        var buckets: [Int: [Int]] = [:]
+        for (day, rev) in validDays {
+            let key = StatsSeriesBinning.bucketKey(day: day, size: size)
+            var sums = buckets[key] ?? Array(repeating: 0, count: Self.types.count)
+            for (index, type) in Self.types.enumerated() {
+                sums[index] += Int(rev[keyPath: type.keyPath])
+            }
+            buckets[key] = sums
+        }
+
+        var series: [Series] = []
+        for (bucketDay, sums) in buckets {
+            for (index, type) in Self.types.enumerated() where sums[index] > 0 {
+                series.append(
+                    Series(id: "\(type.name)@\(bucketDay)", day: bucketDay, type: type.name, count: sums[index])
+                )
             }
         }
-        return result.sorted(by: { $0.day < $1.day })
-    }
-
-    private var totalReviews: Int {
-        entries.reduce(0) { $0 + $1.count }
-    }
-
-    private var avgPerDay: Double {
-        guard !entries.isEmpty else { return 0 }
-        let uniqueDays = Set(entries.map(\.day)).count
-        return Double(totalReviews) / Double(max(uniqueDays, 1))
+        model.series = series.sorted { $0.day < $1.day }
+        return model
     }
 
     var body: some View {
+        let model = buildModel()
         VStack(alignment: .leading, spacing: 8) {
             Text("Reviews").ankountantFont(.bodyEmphasis)
 
-            if entries.isEmpty {
+            if model.series.isEmpty {
                 Text("No review data").foregroundStyle(.secondary).frame(height: 180)
             } else {
-                Chart(entries) { entry in
+                Chart(model.series) { entry in
                     BarMark(
                         x: .value("Day", entry.day),
                         y: .value("Count", entry.count)
@@ -79,8 +110,8 @@ struct ReviewsChart: View {
             }
 
             HStack(spacing: 16) {
-                footerItem("Total", value: "\(totalReviews)")
-                footerItem("Avg/day", value: String(format: "%.1f", avgPerDay))
+                footerItem("Total", value: "\(model.total)")
+                footerItem("Avg/day", value: String(format: "%.1f", model.avgPerDay))
             }
             .font(.caption2)
         }

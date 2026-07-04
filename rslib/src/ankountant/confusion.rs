@@ -29,9 +29,25 @@ impl Collection {
         section: &str,
         max_items: i32,
     ) -> Result<BuildConfusionQueueResponse> {
+        if all_sections_requested(section) {
+            let queues = super::SECTIONS
+                .iter()
+                .map(|section| self.build_confusion_queue_for_section(section))
+                .collect::<Result<Vec<_>>>()?;
+            let mut items = round_robin(queues);
+            truncate(&mut items, max_items);
+            return Ok(BuildConfusionQueueResponse { items });
+        }
+
+        let mut items = self.build_confusion_queue_for_section(section)?;
+        truncate(&mut items, max_items);
+        Ok(BuildConfusionQueueResponse { items })
+    }
+
+    fn build_confusion_queue_for_section(&mut self, section: &str) -> Result<Vec<ConfusionItem>> {
         let map = self.ankountant_confusable_map(section);
         if map.is_empty() {
-            return Ok(BuildConfusionQueueResponse { items: vec![] });
+            return Ok(vec![]);
         }
 
         // Per-set discrimination accuracy from confusion-mode Attempt Log notes.
@@ -71,11 +87,7 @@ impl Collection {
                 });
             }
         }
-
-        if max_items > 0 && items.len() > max_items as usize {
-            items.truncate(max_items as usize);
-        }
-        Ok(BuildConfusionQueueResponse { items })
+        Ok(items)
     }
 
     /// Mean confusion-mode accuracy per set_id from the Attempt Log (A3 AC2).
@@ -136,4 +148,34 @@ impl Collection {
         }
         note.fields().first().cloned().unwrap_or_default()
     }
+}
+
+fn all_sections_requested(section: &str) -> bool {
+    let section = section.trim();
+    section == "*" || section.eq_ignore_ascii_case("ALL")
+}
+
+fn truncate(items: &mut Vec<ConfusionItem>, max_items: i32) {
+    if max_items > 0 && items.len() > max_items as usize {
+        items.truncate(max_items as usize);
+    }
+}
+
+fn round_robin(queues: Vec<Vec<ConfusionItem>>) -> Vec<ConfusionItem> {
+    let total = queues.iter().map(Vec::len).sum();
+    let mut positions = vec![0; queues.len()];
+    let mut out = Vec::with_capacity(total);
+    while out.len() < total {
+        let before = out.len();
+        for (idx, queue) in queues.iter().enumerate() {
+            if positions[idx] < queue.len() {
+                out.push(queue[positions[idx]].clone());
+                positions[idx] += 1;
+            }
+        }
+        if out.len() == before {
+            break;
+        }
+    }
+    out
 }

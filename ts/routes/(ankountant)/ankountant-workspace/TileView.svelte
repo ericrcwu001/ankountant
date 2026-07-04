@@ -8,7 +8,7 @@ child TileViews (self-import — the Svelte 5 replacement for svelte:self) sized
 threaded down so every pane's header enables/disables consistently.
 -->
 <script lang="ts">
-    import type { Path, TileNode } from "./layout";
+    import type { Path, TileNode } from "./workspace-layout";
     import Pane from "./Pane.svelte";
     import Resizer from "./Resizer.svelte";
     import TileView from "./TileView.svelte";

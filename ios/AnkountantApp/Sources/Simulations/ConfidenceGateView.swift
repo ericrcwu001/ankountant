@@ -2,11 +2,6 @@ import SwiftUI
 import AnkiKit
 import AnkountantTheme
 
-/// B1 confidence gate — the pre-reveal commitment (mirrors the desktop
-/// ts/lib/components/ConfidenceGate.svelte). Three discrete, equal-weight levels
-/// (Guess / Unsure / Confident) with no default selection. Commit is once-only:
-/// after the first pick the other levels disable and the choice is marked with
-/// brand chrome plus a selected trait — never colour alone.
 struct ConfidenceGateView: View {
     @Binding var committed: ConfidenceLevel?
     var onCommit: (ConfidenceLevel) -> Void = { _ in }
@@ -19,7 +14,7 @@ struct ConfidenceGateView: View {
                 .ankountantFont(.bodyEmphasis)
                 .foregroundStyle(palette.textPrimary)
 
-            HStack(spacing: AnkountantSpacing.sm) {
+            VStack(spacing: AnkountantSpacing.sm) {
                 ForEach(ConfidenceLevel.allCases, id: \.self) { level in
                     levelButton(level)
                 }
@@ -34,18 +29,35 @@ struct ConfidenceGateView: View {
         return Button {
             choose(level)
         } label: {
-            Text(level.rawValue)
-                .ankountantFont(selected ? .bodyEmphasis : .body)
-                .foregroundStyle(selected ? palette.accent : palette.textPrimary)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .background(
-                    RoundedRectangle(cornerRadius: AnkountantRadius.control, style: .continuous)
-                        .fill(selected ? palette.accent.opacity(0.12) : palette.surfaceInset)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: AnkountantRadius.control, style: .continuous)
-                        .stroke(selected ? palette.accent : palette.border, lineWidth: 1)
-                )
+            HStack(spacing: AnkountantSpacing.md) {
+                Image(systemName: icon(for: level))
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(selected ? palette.onAccent : palette.accent)
+                    .frame(width: 34, height: 34)
+                    .background(
+                        selected ? palette.accent : palette.accent.opacity(0.1),
+                        in: Circle()
+                    )
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(level.rawValue)
+                        .ankountantFont(.bodyEmphasis)
+                    Text(subtitle(for: level))
+                        .ankountantFont(.caption)
+                        .foregroundStyle(palette.textSecondary)
+                }
+                Spacer()
+            }
+            .foregroundStyle(selected ? palette.accent : palette.textPrimary)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .padding(.horizontal, AnkountantSpacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: AnkountantRadius.control, style: .continuous)
+                    .fill(selected ? palette.accent.opacity(0.12) : palette.surfaceInset)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AnkountantRadius.control, style: .continuous)
+                    .stroke(selected ? palette.accent : palette.border, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
         .disabled(committed != nil && !selected)
@@ -56,5 +68,21 @@ struct ConfidenceGateView: View {
         guard committed == nil else { return }
         committed = level
         onCommit(level)
+    }
+
+    private func icon(for level: ConfidenceLevel) -> String {
+        switch level {
+        case .guess: "questionmark"
+        case .unsure: "face.dashed"
+        case .confident: "checkmark"
+        }
+    }
+
+    private func subtitle(for level: ConfidenceLevel) -> String {
+        switch level {
+        case .guess: "I'm guessing"
+        case .unsure: "I'm not certain"
+        case .confident: "I'm pretty sure"
+        }
     }
 }

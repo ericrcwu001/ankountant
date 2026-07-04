@@ -480,6 +480,7 @@ export const JE_ACCOUNTS: string[] = [
     "Land",
     "Building",
     "Equipment",
+    "ROU Asset",
     "Right-of-Use Asset",
     "Accumulated Depreciation",
     "Patent",

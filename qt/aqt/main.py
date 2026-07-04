@@ -1725,11 +1725,25 @@ title="{}" {}>{}</button>""".format(
         if env:
             candidates.append(Path(env))
         # qt/aqt/main.py -> qt/aqt -> qt -> <repo root>
-        candidates.append(Path(__file__).resolve().parents[2] / "tools" / "cardgen" / "out" / "tmpl4")
+        candidates.append(
+            Path(__file__).resolve().parents[2] / "tools" / "cardgen" / "out" / "tmpl4"
+        )
         for d in candidates:
-            if any((d / n).exists() for n in ("cpa_bank.apkg", "online_bank.apkg", "stress_bank.apkg")):
+            if any(
+                (d / n).exists()
+                for n in ("cpa_bank.apkg", "online_bank.apkg", "stress_bank.apkg")
+            ):
+                return d
+            if any(d.glob("stress_bank_part*.apkg")):
                 return d
         return None
+
+    def _stress_bank_packs(self, pack_dir: Path) -> list[Path]:
+        shards = sorted(pack_dir.glob("stress_bank_part*.apkg"))
+        if shards:
+            return shards
+        pack = pack_dir / "stress_bank.apkg"
+        return [pack] if pack.exists() else []
 
     def load_cpa_bank(self) -> None:
         """Import the full generated CPA bank in one click: the AI/template deck
@@ -1752,7 +1766,11 @@ title="{}" {}>{}</button>""".format(
                 parent=self,
             )
             return
-        packs = [p for p in (pack_dir / "cpa_bank.apkg", pack_dir / "online_bank.apkg") if p.exists()]
+        packs = [
+            p
+            for p in (pack_dir / "cpa_bank.apkg", pack_dir / "online_bank.apkg")
+            if p.exists()
+        ]
         if not packs:
             showInfo("No .apkg packs found to import.", parent=self)
             return
@@ -1793,7 +1811,9 @@ title="{}" {}>{}</button>""".format(
                         if not section:
                             continue
                         key = f"ankountant.confusable.{section}"
-                        current = updates.get(key) or col.get_config(key, default={}) or {}
+                        current = (
+                            updates.get(key) or col.get_config(key, default={}) or {}
+                        )
                         current[set_id] = {
                             "tags": entry.get("tags", []),
                             "treatments": entry.get("treatments", []),
@@ -1826,16 +1846,16 @@ title="{}" {}>{}</button>""".format(
         from aqt.operations import CollectionOp
 
         pack_dir = self._cpa_bank_dir()
-        pack = (pack_dir / "stress_bank.apkg") if pack_dir else None
-        if pack is None or not pack.exists():
+        packs = self._stress_bank_packs(pack_dir) if pack_dir else []
+        if not packs:
             showInfo(
-                "Couldn't find stress_bank.apkg. Generate it with"
-                " tools/cardgen/scripts/stress_bank.py (or set ANKOUNTANT_CPA_BANK_DIR).",
+                "Couldn't find stress_bank.apkg or stress_bank_part*.apkg. Generate it with"
+                " just cardgen-stress (or set ANKOUNTANT_CPA_BANK_DIR).",
                 parent=self,
             )
             return
         if not askUser(
-            "Import the ~50k-card STRESS TEST deck and seed a synthetic review"
+            f"Import the ~50k-card STRESS TEST deck from {len(packs)} pack(s) and seed a synthetic review"
             " history across ALL of them (review state + FSRS memory + revlog), so"
             " review-driven features work at scale? This adds tens of thousands of"
             " duplicate cards under Ankountant::Stress:: (tagged 'stress') and may"
@@ -1847,13 +1867,17 @@ title="{}" {}>{}</button>""".format(
         seeded = {"n": 0}
 
         def op(col: Collection) -> Any:
-            req = ImportAnkiPackageRequest(
-                package_path=str(pack),
-                options=ImportAnkiPackageOptions(
-                    merge_notetypes=True, with_scheduling=False, with_deck_configs=False
-                ),
-            )
-            changes = col.import_anki_package(req)
+            changes = None
+            for pack in packs:
+                req = ImportAnkiPackageRequest(
+                    package_path=str(pack),
+                    options=ImportAnkiPackageOptions(
+                        merge_notetypes=True,
+                        with_scheduling=False,
+                        with_deck_configs=False,
+                    ),
+                )
+                changes = col.import_anki_package(req)
             # Give every imported card a synthetic review history (card review
             # state + FSRS memory + revlog) so review-driven features (stats,
             # retention, maturity, FSRS readiness) have data at scale.
@@ -1872,87 +1896,130 @@ title="{}" {}>{}</button>""".format(
         """Synthesize a plausible review history for every stress-test card so
         review-driven features work at scale: each card is set to a matured review
         state with an FSRS memory state, and several revlog rows are spread over
-        the trailing ~180 days (for stats / heatmap / true-retention). Written in
-        bulk (batched backend card updates + one revlog ``executemany``) so it
-        stays fast at 50k+. Returns the number of cards seeded."""
+        the trailing ~180 days (for stats / heatmap / true-retention). Work is
+        chunked to avoid huge Python<->Rust JSON payloads at 50k+ cards. Returns
+        the number of cards seeded."""
         import time
 
         from anki import cards_pb2
+        from anki.cards import Card
 
-        cids = list(col.find_cards("deck:Ankountant::Stress::*")) or list(col.find_cards("tag:stress"))
+        cids = list(col.find_cards("deck:Ankountant::Stress::*")) or list(
+            col.find_cards("tag:stress")
+        )
         if not cids:
             return 0
-        cid_set = set(cids)
         today = col.sched.today
         now_ms = int(time.time() * 1000)
         now_s = now_ms // 1000
 
-        # nid/did/ord for the stress cards, read in one pass (avoids 50k round-trips).
+        card_update_batch_size = 1000
+        sql_query_batch_size = 900
+        revlog_insert_batch_size = 5000
+
+        # nid/did/ord for the stress cards, read in chunks. Querying every card in
+        # the collection and filtering in Python is expensive in large profiles.
         meta: dict[int, tuple[int, int, int]] = {}
-        for cid, nid, did, ordv in col.db.all("SELECT id, nid, did, ord FROM cards"):
-            if cid in cid_set:
+        for start in range(0, len(cids), sql_query_batch_size):
+            chunk = cids[start : start + sql_query_batch_size]
+            placeholders = ",".join("?" for _ in chunk)
+            for cid, nid, did, ordv in col.db.all(
+                f"SELECT id, nid, did, ord FROM cards WHERE id IN ({placeholders})",
+                *chunk,
+            ):
                 meta[cid] = (nid, did, ordv)
 
         # 1) Matured review state + FSRS memory, batched.
         seeded = 0
-        batch: list = []
+        batch: list[Card] = []
         for i, cid in enumerate(cids):
             m = meta.get(cid)
             if m is None:
                 continue
             nid, did, ordv = m
             interval = 1 + (i * 7) % 90
-            offset = (i % 60) - 20  # spread overdue..future so the review queue populates
+            offset = (
+                i % 60
+            ) - 20  # spread overdue..future so the review queue populates
             batch.append(
-                cards_pb2.Card(
-                    id=cid,
-                    note_id=nid,
-                    deck_id=did,
-                    template_idx=ordv,
-                    ctype=2,  # review
-                    queue=2,  # review
-                    due=today + offset,
-                    interval=interval,
-                    ease_factor=2500,
-                    reps=3 + i % 18,
-                    lapses=1 if i % 6 == 0 else 0,
-                    remaining_steps=0,
-                    memory_state=cards_pb2.FsrsMemoryState(
-                        stability=float(interval) * 1.5 + 5.0,
-                        difficulty=3.0 + float(i % 7),
+                Card(
+                    col,
+                    backend_card=cards_pb2.Card(
+                        id=cid,
+                        note_id=nid,
+                        deck_id=did,
+                        template_idx=ordv,
+                        ctype=2,  # review
+                        queue=2,  # review
+                        due=today + offset,
+                        interval=interval,
+                        ease_factor=2500,
+                        reps=3 + i % 18,
+                        lapses=1 if i % 6 == 0 else 0,
+                        remaining_steps=0,
+                        memory_state=cards_pb2.FsrsMemoryState(
+                            stability=float(interval) * 1.5 + 5.0,
+                            difficulty=3.0 + float(i % 7),
+                        ),
+                        desired_retention=0.9,
+                        last_review_time_secs=now_s
+                        - max(0, interval - offset) * 86_400,
                     ),
-                    desired_retention=0.9,
-                    last_review_time_secs=now_s - max(0, interval - offset) * 86_400,
                 )
             )
             seeded += 1
-            if len(batch) >= 2000:
-                col._backend.update_cards(cards=batch, skip_undo_entry=True)
+            if len(batch) >= card_update_batch_size:
+                col.update_cards(batch, skip_undo_entry=True)
                 batch = []
         if batch:
-            col._backend.update_cards(cards=batch, skip_undo_entry=True)
+            col.update_cards(batch, skip_undo_entry=True)
 
         # 2) Revlog rows spread across the trailing window. ``seq`` keeps ids unique
         # while staying within the intended day (seq << ms/day), and OR IGNORE
         # tolerates the astronomically-rare clash with a real row.
-        rows: list[tuple] = []
-        seq = 0
-        for i, cid in enumerate(cids):
-            interval = 1 + (i * 7) % 90
-            last_ivl = 0
-            for j in range(1 + (i % 4)):
-                days_ago = 1 + ((i * 3 + j * 29) % 179)
-                rid = (now_ms - days_ago * 86_400_000) + seq
-                seq += 1
-                ease = 1 if (i + j) % 9 == 0 else 3
-                ivl = interval if j == (i % 4) else max(1, interval // 2)
-                rows.append((rid, cid, -1, ease, ivl, last_ivl, 2500, 2000 + (seq % 8000), 1))
-                last_ivl = ivl
-        col.db.executemany(
+        revlog_sql = (
             "INSERT OR IGNORE INTO revlog (id, cid, usn, ease, ivl, lastIvl, factor, time, type)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            rows,
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
+
+        def insert_revlog() -> None:
+            rows: list[tuple] = []
+            seq = 0
+
+            def flush() -> None:
+                nonlocal rows
+                if rows:
+                    col.db.executemany(revlog_sql, rows)
+                    rows = []
+
+            for i, cid in enumerate(cids):
+                interval = 1 + (i * 7) % 90
+                last_ivl = 0
+                for j in range(1 + (i % 4)):
+                    days_ago = 1 + ((i * 3 + j * 29) % 179)
+                    rid = (now_ms - days_ago * 86_400_000) + seq
+                    seq += 1
+                    ease = 1 if (i + j) % 9 == 0 else 3
+                    ivl = interval if j == (i % 4) else max(1, interval // 2)
+                    rows.append(
+                        (
+                            rid,
+                            cid,
+                            -1,
+                            ease,
+                            ivl,
+                            last_ivl,
+                            2500,
+                            2000 + (seq % 8000),
+                            1,
+                        )
+                    )
+                    last_ivl = ivl
+                    if len(rows) >= revlog_insert_batch_size:
+                        flush()
+            flush()
+
+        col.db.transact(insert_revlog)
 
         # Seed the rote-latency EMA so that latency-based feature isn't empty.
         col.set_config("ankountant.latency.rote", 4200)
@@ -2053,11 +2120,12 @@ title="{}" {}>{}</button>""".format(
     def _apply_ankountant_window_style(self) -> None:
         """Paint the QMainWindow/QDockWidget frame with the design-system canvas
         color while in Ankountant mode, so nothing flashes Qt gray around the
-        webviews. Re-applied on theme change."""
-        if self._ankountant_fullscreen:
-            from aqt.theme import theme_manager
+        webviews. Re-applied on theme change.
 
-            canvas = theme_manager.var(colors.CANVAS)
+        The Ankountant shell is a light-only experience, so the frame is always
+        the light canvas (never the dark one) to match the light webviews."""
+        if self._ankountant_fullscreen:
+            canvas = colors.CANVAS["light"]
             self.setStyleSheet(
                 f"QMainWindow {{ background-color: {canvas}; }}"
                 f" QDockWidget {{ background-color: {canvas}; }}"

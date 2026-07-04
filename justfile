@@ -99,6 +99,10 @@ cardgen *args:
 cardgen-full *args:
     cd tools/cardgen && UV_PROJECT_ENVIRONMENT=.venv uv run python -m cardgen.cli all --target 50000 {{ args }}
 
+# Build the sharded stress-test pack from the emitted bank.
+cardgen-stress *args:
+    cd tools/cardgen && UV_PROJECT_ENVIRONMENT=.venv uv run python scripts/stress_bank.py {{ args }}
+
 # Run cardgen tests (offline, keyless).
 test-cardgen:
     cd tools/cardgen && UV_PROJECT_ENVIRONMENT=.venv CARDGEN_OFFLINE=1 uv run pytest

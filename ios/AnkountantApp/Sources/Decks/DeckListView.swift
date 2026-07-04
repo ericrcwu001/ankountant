@@ -80,6 +80,7 @@ struct DeckListView: View {
         .scrollContentBackground(.hidden)
         .ankountantSectionBackground()
         .navigationTitle(navigationTitle)
+        .navigationBarTitleDisplayMode(navigationTitle.isEmpty ? .inline : .automatic)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

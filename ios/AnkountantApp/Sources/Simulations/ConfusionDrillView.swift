@@ -47,7 +47,7 @@ struct ConfusionDrillView: View {
             ContentUnavailableView(
                 "No confusion items",
                 systemImage: "questionmark.circle",
-                description: Text("Load the FAR demo profile from Settings ▸ Developer ▸ Debug to build the queue.")
+                description: Text("Load a demo profile or CPA bank to build the queue.")
             )
         } else if done {
             finishedCard
@@ -156,7 +156,7 @@ struct ConfusionDrillView: View {
 
     private func load() async {
         do {
-            items = try performanceClient.confusionQueue("FAR", 60)
+            items = try performanceClient.confusionQueue("ALL", 60)
             loadError = nil
         } catch {
             loadError = error.localizedDescription

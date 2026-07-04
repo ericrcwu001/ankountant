@@ -9,35 +9,52 @@ struct FutureDueChart: View {
     @Environment(\.palette) private var palette
     @State private var includeBacklog = false
 
-    private var filteredData: [(day: Int, count: Int)] {
-        let maxDay = period.days
-        return futureDue.futureDue
-            .compactMap { (dayOffset, count) -> (day: Int, count: Int)? in
-                let day = Int(dayOffset)
-                if !includeBacklog && day < 0 { return nil }
-                guard day < maxDay else { return nil }
-                return (day: day, count: Int(count))
-            }
-            .sorted(by: { $0.day < $1.day })
+    private struct Model {
+        var bars: [(day: Int, count: Int)] = []
+        var total = 0
+        var tomorrow = 0
+        var avgPerDay = 0.0
     }
 
-    private var totalDue: Int { filteredData.reduce(0) { $0 + $1.count } }
-    private var dueTomorrow: Int { filteredData.first(where: { $0.day == 1 })?.count ?? 0 }
-    private var avgPerDay: Double {
-        let positiveDays = filteredData.filter { $0.day >= 0 }
-        guard !positiveDays.isEmpty else { return 0 }
-        let maxOffset = positiveDays.map(\.day).max() ?? 1
-        return Double(positiveDays.reduce(0) { $0 + $1.count }) / Double(max(maxOffset, 1))
+    private func buildModel() -> Model {
+        let maxDay = period.days
+        var raw: [(day: Int, count: Int)] = []
+        var total = 0
+        var tomorrow = 0
+        var positiveSum = 0
+        var maxOffset = 1
+        var hasPositive = false
+        for (dayOffset, count) in futureDue.futureDue {
+            let day = Int(dayOffset)
+            if !includeBacklog && day < 0 { continue }
+            guard day < maxDay else { continue }
+            let value = Int(count)
+            raw.append((day: day, count: value))
+            total += value
+            if day == 1 { tomorrow += value }
+            if day >= 0 {
+                hasPositive = true
+                positiveSum += value
+                maxOffset = max(maxOffset, day)
+            }
+        }
+        var model = Model()
+        model.total = total
+        model.tomorrow = tomorrow
+        model.avgPerDay = hasPositive ? Double(positiveSum) / Double(max(maxOffset, 1)) : 0
+        model.bars = StatsSeriesBinning.binned(raw)
+        return model
     }
 
     var body: some View {
+        let model = buildModel()
         VStack(alignment: .leading, spacing: 8) {
             Text("Future Due").ankountantFont(.bodyEmphasis)
 
-            if filteredData.isEmpty {
+            if model.bars.isEmpty {
                 Text("No cards due").foregroundStyle(.secondary).frame(height: 180)
             } else {
-                Chart(filteredData, id: \.day) { item in
+                Chart(model.bars, id: \.day) { item in
                     BarMark(
                         x: .value("Day", item.day),
                         y: .value("Cards", item.count)
@@ -59,9 +76,9 @@ struct FutureDueChart: View {
             }
 
             HStack(spacing: 16) {
-                footerItem("Total", value: "\(totalDue)")
-                footerItem("Avg/day", value: String(format: "%.1f", avgPerDay))
-                footerItem("Tomorrow", value: "\(dueTomorrow)")
+                footerItem("Total", value: "\(model.total)")
+                footerItem("Avg/day", value: String(format: "%.1f", model.avgPerDay))
+                footerItem("Tomorrow", value: "\(model.tomorrow)")
                 footerItem("Daily Load", value: "\(futureDue.dailyLoad)")
             }
         }

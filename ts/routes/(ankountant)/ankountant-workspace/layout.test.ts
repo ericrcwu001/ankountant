@@ -3,7 +3,7 @@
 
 import { expect, test } from "vitest";
 
-import type { SplitNode, TileNode } from "./layout";
+import type { SplitNode, TileNode } from "./workspace-layout";
 import {
     addPane,
     canSplit,
@@ -20,7 +20,7 @@ import {
     setRatioAt,
     setSurfaceAt,
     splitAt,
-} from "./layout";
+} from "./workspace-layout";
 
 test("defaultLayout is a single leaf", () => {
     const tree = defaultLayout("dashboard");

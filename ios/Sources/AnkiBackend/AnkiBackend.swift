@@ -213,6 +213,28 @@ public final class AnkiBackend: Sendable {
         )
     }
 
+    public func setExamDate(section: String, date: String) throws {
+        var req = Anki_Scheduler_SetExamDateRequest()
+        req.section = section
+        req.date = date
+        try callVoid(
+            service: Service.scheduler,
+            method: SchedulerMethod.setExamDate,
+            request: req
+        )
+    }
+
+    public func getExamDate(section: String) throws -> String {
+        var req = Anki_Scheduler_GetExamDateRequest()
+        req.section = section
+        let response: Anki_Scheduler_GetExamDateResponse = try invoke(
+            service: Service.scheduler,
+            method: SchedulerMethod.getExamDate,
+            request: req
+        )
+        return response.date
+    }
+
     // MARK: - Raw FFI
 
     private func callRaw(service: UInt32, method: UInt32, input: Data) throws -> Data {
@@ -337,6 +359,8 @@ extension AnkiBackend {
         // F016 FAR demo seed loader — wired to the DebugView "Load FAR demo
         // profile" action via SchedulerService.loadFarSeed (FR-6 / drift guard).
         package static let loadFarSeed: UInt32 = 43
+        package static let setExamDate: UInt32 = 44
+        package static let getExamDate: UInt32 = 45
     }
 
     // BackendDeckConfigService (service 11). Method indices verified against

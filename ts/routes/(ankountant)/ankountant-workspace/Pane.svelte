@@ -11,8 +11,8 @@ current surface into the new pane; the user re-points it with the switcher.
 
     import type { WorkspaceActions } from "./context";
     import { WORKSPACE_ACTIONS } from "./context";
-    import type { LeafNode, Path, SurfaceKind } from "./layout";
-    import { SURFACE_KINDS } from "./layout";
+    import type { LeafNode, Path, SurfaceKind } from "./workspace-layout";
+    import { SURFACE_KINDS } from "./workspace-layout";
     import { SURFACES } from "./surfaces";
 
     export let node: LeafNode;

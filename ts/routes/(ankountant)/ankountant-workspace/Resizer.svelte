@@ -12,7 +12,7 @@ than reusing resizable.ts, whose px/store API does not fit a fractional BSP.
 
     import type { WorkspaceActions } from "./context";
     import { WORKSPACE_ACTIONS } from "./context";
-    import type { Path, SplitDir } from "./layout";
+    import type { Path, SplitDir } from "./workspace-layout";
 
     export let dir: SplitDir;
     export let path: Path;

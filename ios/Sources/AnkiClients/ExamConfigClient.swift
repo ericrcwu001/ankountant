@@ -1,13 +1,8 @@
 public import Dependencies
 import DependenciesMacros
 
-/// A1 — the section's exam date, stored in the Anki collection config so it
-/// syncs across devices (and matches the desktop). Saving a date is what makes
-/// the live scheduler deadline-anchored: `rslib` reads this same key
-/// (`ankountant.<section>.exam.date`) in `card_state_updater`.
-///
-/// Lives in `AnkiClients` because the bridge to `setConfigJSONValue` is an Anki
-/// concern; the value is a bare ISO-8601 (YYYY-MM-DD) string.
+/// A1 — the section's exam date. The backend stores it as a sync-safe settings
+/// note so desktop and iOS merge date edits through normal object sync.
 @DependencyClient
 public struct ExamConfigClient: Sendable {
     /// The section's exam date as an ISO-8601 string, or nil when unset.

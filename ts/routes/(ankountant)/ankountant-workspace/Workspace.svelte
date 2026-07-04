@@ -5,8 +5,8 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 Root of the Ankountant study workspace: owns the BSP layout tree, exposes the
 edit actions to descendant panes via context, persists to localStorage, and
 renders a slim toolbar over the recursive tile grid. Capped at MAX_PANES (4).
-"← Home" returns to the Ankountant shell home (client-side; the shell top bar is
-suppressed on this route so the workspace owns its own chrome).
+The Ankountant shell sidebar stays visible alongside this route; "← Home" is a
+client-side shortcut back to the shell home (mirrors the sidebar's Dashboard).
 -->
 <script lang="ts">
     import { onMount, setContext } from "svelte";
@@ -15,7 +15,7 @@ suppressed on this route so the workspace owns its own chrome).
 
     import type { WorkspaceActions } from "./context";
     import { WORKSPACE_ACTIONS } from "./context";
-    import type { SurfaceKind, TileNode } from "./layout";
+    import type { SurfaceKind, TileNode } from "./workspace-layout";
     import {
         addPane,
         closeAt,
@@ -29,7 +29,7 @@ suppressed on this route so the workspace owns its own chrome).
         setSurfaceAt,
         splitAt,
         SURFACE_KINDS,
-    } from "./layout";
+    } from "./workspace-layout";
     import { SURFACES } from "./surfaces";
     import TileView from "./TileView.svelte";
 

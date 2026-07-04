@@ -1,6 +1,10 @@
 // Copyright: Ankitects Pty Ltd and contributors
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
+use std::future::Future;
+
+use futures::stream::FuturesUnordered;
+use futures::StreamExt;
 use itertools::Itertools;
 use serde::Deserialize;
 use serde::Serialize;
@@ -10,6 +14,8 @@ use tracing::debug;
 use crate::card::Card;
 use crate::card::CardQueue;
 use crate::card::CardType;
+use crate::error::SyncError;
+use crate::error::SyncErrorKind;
 use crate::notes::Note;
 use crate::prelude::*;
 use crate::revlog::RevlogEntry;
@@ -21,6 +27,7 @@ use crate::sync::collection::normal::NormalSyncer;
 use crate::sync::collection::protocol::EmptyInput;
 use crate::sync::collection::protocol::SyncProtocol;
 use crate::sync::collection::start::ServerSyncState;
+use crate::sync::http_client::HttpSyncClient;
 use crate::sync::request::IntoSyncRequest;
 use crate::tags::join_tags;
 use crate::tags::split_tags;
@@ -86,13 +93,42 @@ pub struct CardEntry {
     pub data: String,
 }
 
+/// Fetch a single chunk from the server. Kept as a free async fn so the
+/// returned future owns its client clone and can be driven concurrently inside
+/// a `FuturesUnordered`.
+async fn fetch_one_chunk(server: HttpSyncClient) -> Result<Chunk> {
+    server.chunk(EmptyInput::request()).await?.json()
+}
+
 impl NormalSyncer<'_> {
     pub(in crate::sync) async fn process_chunks_from_server(
         &mut self,
         state: &ClientSyncState,
     ) -> Result<()> {
+        // The server streams a sequence of chunks terminated by a `done` flag.
+        // Every object is popped from the server's cursor exactly once (the
+        // server serializes requests per session under a global lock) and is
+        // applied locally keyed by unique id, so the order chunks arrive in does
+        // not change the result. That lets us keep several requests in flight to
+        // hide round-trip latency: we stop requesting once any response reports
+        // `done`, then drain whatever is still outstanding (which returns empty).
+        let server = self.server.clone();
+        let mut in_flight = FuturesUnordered::new();
+        for _ in 0..MAX_CHUNKS_IN_FLIGHT {
+            in_flight.push(fetch_one_chunk(server.clone()));
+        }
+
+        let mut saw_done = false;
         loop {
-            let chunk = self.server.chunk(EmptyInput::request()).await?.json()?;
+            let next = in_flight.next().await;
+            let chunk = match next {
+                None => break,
+                Some(Ok(chunk)) => chunk,
+                // A failed request tears down the server session, so any
+                // outstanding siblings will report a follow-on conflict; drain
+                // them and surface the most actionable error.
+                Some(Err(first)) => return Err(drain_for_error(first, in_flight).await),
+            };
 
             debug!(
                 done = chunk.done,
@@ -106,22 +142,34 @@ impl NormalSyncer<'_> {
                 p.remote_update += chunk.cards.len() + chunk.notes.len() + chunk.revlog.len()
             })?;
 
-            let done = chunk.done;
+            if chunk.done {
+                saw_done = true;
+            }
             self.col.apply_chunk(chunk, state.pending_usn)?;
-
             self.progress.check_cancelled()?;
 
-            if done {
-                return Ok(());
+            // Keep the pipeline topped up until the server signals it's drained.
+            if !saw_done {
+                in_flight.push(fetch_one_chunk(server.clone()));
             }
         }
+
+        Ok(())
     }
 
     pub(in crate::sync) async fn send_chunks_to_server(
         &mut self,
         state: &ClientSyncState,
     ) -> Result<()> {
+        // Generating a chunk clears the local pending-sync flag on the objects it
+        // contains, so generation must stay sequential; only the network sends
+        // are pipelined. The server applies chunks keyed by unique id, so send
+        // order is irrelevant. If any send fails, the whole sync errors out and
+        // the caller rolls back the transaction (restoring the pending flags), so
+        // clearing them before a send is confirmed is safe.
+        let server = self.server.clone();
         let mut ids = self.col.get_chunkable_ids(state.pending_usn)?;
+        let mut in_flight = FuturesUnordered::new();
 
         loop {
             let chunk: Chunk = self.col.get_chunk(&mut ids, Some(state.server_usn))?;
@@ -139,17 +187,85 @@ impl NormalSyncer<'_> {
                 p.local_update += chunk.cards.len() + chunk.notes.len() + chunk.revlog.len()
             })?;
 
-            self.server
-                .apply_chunk(ApplyChunkRequest { chunk }.try_into_sync_request()?)
-                .await?;
+            let request = ApplyChunkRequest { chunk }.try_into_sync_request()?;
+            let server = server.clone();
+            in_flight.push(async move {
+                server.apply_chunk(request).await?;
+                Ok::<(), AnkiError>(())
+            });
 
-            self.progress.check_cancelled()?;
+            // Cap concurrency. Awaiting here also throttles generation so we don't
+            // clear the pending flag on the whole collection up front.
+            if in_flight.len() >= MAX_CHUNKS_IN_FLIGHT {
+                let next = in_flight.next().await;
+                match next {
+                    Some(Ok(())) => self.progress.check_cancelled()?,
+                    Some(Err(first)) => return Err(drain_for_error(first, in_flight).await),
+                    None => {}
+                }
+            }
 
             if done {
-                return Ok(());
+                break;
             }
         }
+
+        // Wait for the remaining sends to complete.
+        loop {
+            let next = in_flight.next().await;
+            match next {
+                Some(Ok(())) => self.progress.check_cancelled()?,
+                Some(Err(first)) => return Err(drain_for_error(first, in_flight).await),
+                None => break,
+            }
+        }
+
+        Ok(())
     }
+}
+
+/// True if the error is a 409 Conflict surfaced by the sync server.
+fn is_conflict(err: &AnkiError) -> bool {
+    matches!(
+        err,
+        AnkiError::SyncError {
+            source: SyncError {
+                kind: SyncErrorKind::Conflict,
+                ..
+            },
+        }
+    )
+}
+
+/// When several chunk requests are in flight and one fails, the server tears
+/// down the sync session, so the siblings tend to fail afterwards with a 409
+/// Conflict. Those are secondary symptoms, so prefer any non-conflict error
+/// (e.g. the 400 that asks the client to run a database check) when reporting.
+fn preferred_error(current: AnkiError, candidate: AnkiError) -> AnkiError {
+    if is_conflict(&current) && !is_conflict(&candidate) {
+        candidate
+    } else {
+        current
+    }
+}
+
+/// Drain the still-in-flight requests after a failure, returning the most
+/// actionable error. Draining rather than dropping lets a root-cause error win
+/// over the conflicts its siblings report once the session is gone.
+async fn drain_for_error<T, F>(first: AnkiError, mut in_flight: FuturesUnordered<F>) -> AnkiError
+where
+    F: Future<Output = Result<T>>,
+{
+    let mut best = first;
+    loop {
+        let next = in_flight.next().await;
+        match next {
+            Some(Err(err)) => best = preferred_error(best, err),
+            Some(Ok(_)) => {}
+            None => break,
+        }
+    }
+    best
 }
 
 impl Collection {
@@ -424,7 +540,15 @@ impl Usn {
     }
 }
 
-pub const CHUNK_SIZE: usize = 250;
+pub const CHUNK_SIZE: usize = 2000;
+
+/// Maximum number of chunk requests kept in flight at once during collection
+/// sync. Our self-hosted sync server serializes requests per session under a
+/// global lock, so this doesn't add server-side parallelism; it pipelines
+/// requests so the network round-trip latency of one chunk overlaps the server
+/// processing and local DB work of the others. Each in-flight chunk buffers up
+/// to `CHUNK_SIZE` objects in memory per direction, so keep this modest.
+pub const MAX_CHUNKS_IN_FLIGHT: usize = 4;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ApplyChunkRequest {

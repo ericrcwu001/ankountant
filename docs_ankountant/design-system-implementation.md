@@ -1,8 +1,26 @@
 # Ledger design system — implementation build spec (web + iOS)
 
-> Status: **Verified apply-spec (source of truth)** · Owner: eric · Last updated: 2026-07-01
+> Status: **Implemented for Ankountant summit UI surfaces; broader token migration remains a reference spec** · Owner: eric · Last updated: 2026-07-03
 > Turns the agreed system into exact, file-scoped edits. Values come from **`design-tokens.json`** (do not invent hexes); rationale is in **`design-system.md`**.
 > Accent = **Ink Navy** `#1F3A5F` (light) / `#7FA6D4` (dark). Single identity + light/dark. 8px controls. System-native type. Tabular numerals. Tinted elevation. Cool-slate neutrals.
+
+## 2026-07-03 summit UI overhaul
+
+Implemented surfaces:
+
+- Desktop `ankountant-home`: navy app rail, white metric rail, sync-safe exam-date control, abstain-aware readiness gauge with range, live strong/attention topics, and FAR topographic topic mastery map.
+- Desktop topographic renderer: FAR topics remain data-bound to backend readiness, with layered foreground/background SVG mountains, clipped contours, pass-line flags, hover-toggled topic detail cards, and the existing topic drill-down links.
+- iOS `Home`: native summit hero, topic list, topic detail screen with Memory/Performance ranges and Gap, exam-date control backed by the sync-safe backend RPCs, and phase-aware review/confusion actions.
+- iOS `Review`: pre-reveal confidence gate is now a required card-style panel before answer reveal.
+- iOS shell: bottom navigation now matches the supplied Home/Study/Review/Analytics/More framing while preserving Reader, Browse/Review, Stats, and Settings destinations.
+- iOS `Analytics`: Progress summary card added above the existing detailed charts.
+
+Verification:
+
+- `just test-ts` passes.
+- `just test-e2e` passes for the desktop web surfaces.
+- `just rebuild-web` hot-reloads the running PyQt shell.
+- Full desktop visual QA is performed with `just run` in the live PyQt app, not a browser-only render.
 
 ---
 

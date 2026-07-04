@@ -12,7 +12,6 @@
 
 import type { SvelteComponent } from "svelte";
 
-import type { SurfaceKind } from "./layout";
 import AddPane from "./panes/AddPane.svelte";
 import BrowsePane from "./panes/BrowsePane.svelte";
 import ConfusionPane from "./panes/ConfusionPane.svelte";
@@ -22,6 +21,7 @@ import LiteraturePane from "./panes/LiteraturePane.svelte";
 import ResearchPane from "./panes/ResearchPane.svelte";
 import StatsPane from "./panes/StatsPane.svelte";
 import TbsPane from "./panes/TbsPane.svelte";
+import type { SurfaceKind } from "./workspace-layout";
 
 export interface SurfaceDef {
     kind: SurfaceKind;

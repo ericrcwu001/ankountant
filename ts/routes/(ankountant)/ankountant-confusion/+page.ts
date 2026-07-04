@@ -5,7 +5,7 @@ import { buildConfusionQueue } from "@generated/backend";
 
 import type { PageLoad } from "./$types";
 
-const SECTION = "FAR";
+const SECTION = "ALL";
 
 export const load = (async () => {
     // A3 returns an already label-stripped, interleaved queue (B3-D1). We never

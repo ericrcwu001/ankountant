@@ -56,8 +56,8 @@ The first judge pass (`tmpl1`) returned **1 wrong + 4 bad_teaching**, both genui
 1. **Wrong** — the IRA phase-out row labeled $236k-$246k as the "covered by a
    workplace plan" MFJ range; that range is actually the "spouse-covered, you not
    covered" case (covered MFJ is $126k-$146k). Fixed the row's scenario.
-2. **Bad teaching** — the research exhibits echoed the source sentence *including
-   the citation*, making the "research" self-answering. Fixed by using a
+2. **Bad teaching** — the research exhibits echoed the source sentence _including
+   the citation_, making the "research" self-answering. Fixed by using a
    scenario-only exhibit and redacting the citation from any exhibit body
    (`templates._redact_tokens`).
 
@@ -91,8 +91,8 @@ lifting the deck from 113 to **325 shipped cards** (2.9x).
 What changed in the harvester:
 
 - **Cloze precision filter, tuned against the judge's own `tmpl3` labels.** Keep a
-  fill-in-the-blank only when the sentence is a *rule/threshold tied to a named
-  provision* (e.g. "section 179", "adoption credit", "self-employment tax") and
+  fill-in-the-blank only when the sentence is a _rule/threshold tied to a named
+  provision_ (e.g. "section 179", "adoption credit", "self-employment tax") and
   reject worked-example figures (proper-name / narrative transactions, calendar
   dates, worksheet line refs, `$a ± $b` formulas, anaphoric "This limit …"). On the
   213 `tmpl3`-graded cloze cards this filter keeps **87% of the judge's "good" and
@@ -103,7 +103,7 @@ What changed in the harvester:
   breaks (`AC-2\nACCOUNT MANAGEMENT\nControl:\na. …`); the old single-line regex
   caught only 18. The block regex captures **77 base controls** (skipping the
   near-duplicate "-1 Policy and Procedures" boilerplate).
-- **AU-C references** broadened (parenthesized *or* bare cite) -> 37, cap 4/section.
+- **AU-C references** broadened (parenthesized _or_ bare cite) -> 37, cap 4/section.
 - **All 13 ingested IRS pubs** iterated (Pub 17/334/501/505/535/541/542/544/550/551/
   946/970 + Circular 230) -> **379 grounded cloze rows** after filtering + dedup.
 
@@ -112,12 +112,12 @@ calibration **PASS** -> **13 batches** fully judged by independent Cursor subage
 (2 waves) -> **325 correct_useful, 175 bad_teaching, 1 wrong** -> leakage 0 (vs 84
 sealed refs) -> dedup 0 -> **325 shipped** (`out/tmpl4/cpa_bank.apkg`, 120 decks).
 
-| Cut               | tmpl3 |     tmpl4 |
-| ----------------- | ----: | --------: |
-| Candidate pool    |   271 |       501 |
-| Shipped           |   113 |   **325** |
-| Cloze ship-rate   |   29% | **~54%**  |
-| Wrong (blocked)   |     0 |         1 |
+| Cut             | tmpl3 |    tmpl4 |
+| --------------- | ----: | -------: |
+| Candidate pool  |   271 |      501 |
+| Shipped         |   113 |  **325** |
+| Cloze ship-rate |   29% | **~54%** |
+| Wrong (blocked) |     0 |        1 |
 
 - **Shipped by section:** REG 151, ISC 82, TCP 56, AUD 36.
 - **By template:** `irs_cloze_recall` 201, `nist_control_research` 77,
@@ -128,16 +128,16 @@ sealed refs) -> dedup 0 -> **325 shipped** (`out/tmpl4/cpa_bank.apkg`, 120 decks
 Two honest takeaways:
 
 - **1 wrong across 501 cards, caught by the gate.** An AU-C exhibit inverted "the
-  auditor is *not* obligated to search for significant deficiencies"; the
+  auditor is _not_ obligated to search for significant deficiencies"; the
   independent judge flagged it and it did not ship. Grounding + verbatim extraction
   otherwise produced no factual errors — the safety property templates buy.
 - **The corpus, not the filter, is now the binding constraint.** Raising the
-  per-source cap does *not* add cloze cards (the precision filter is the limit), and
+  per-source cap does _not_ add cloze cards (the precision filter is the limit), and
   the ~231 genuinely-good threshold sentences in these IRS pubs are ~87% shipped.
   The remaining `bad_teaching` are semantic worked-examples ("Dean's partnership
   figures", "$178 SL 2nd-year depreciation") that no regex can separate — which is
-  exactly what an independent judge is for. Materially more cards means *more
-  corpus/seams* (e.g. FAR via OpenStax, NIST control enhancements), not more cloze
+  exactly what an independent judge is for. Materially more cards means _more
+  corpus/seams_ (e.g. FAR via OpenStax, NIST control enhancements), not more cloze
   squeezing.
 
 ## Honest scope / next steps

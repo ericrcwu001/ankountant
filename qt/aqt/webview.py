@@ -376,7 +376,7 @@ class AnkiWebView(QWebEngineView):
         self.set_title(kind.value)
         self.setPage(AnkiWebPage(self._onBridgeCmd, kind, self))
         # reduce flicker
-        self.page().setBackgroundColor(theme_manager.qcolor(colors.CANVAS))
+        self.page().setBackgroundColor(self._canvas_qcolor())
 
         # in new code, use .set_bridge_command() instead of setting this directly
         self.onBridgeCmd: Callable[[str], Any] = self.defaultOnBridgeCmd
@@ -406,6 +406,32 @@ class AnkiWebView(QWebEngineView):
         )
         if self._uses_dynamic_styling:
             self.add_dynamic_styling_and_props_then_show()
+
+    def _forces_light_mode(self) -> bool:
+        """Whether this webview always renders light, ignoring the app theme.
+
+        The Ankountant surfaces are a light-only experience (designed for light
+        mode; the dashboard pins its own light palette), so their webviews opt
+        out of the host app's night-mode regardless of the current app theme.
+        In practice everything runs in the single-SPA ANKOUNTANT_SHELL; the
+        standalone page kinds are covered for consistency."""
+        return self._kind in (
+            AnkiWebViewKind.ANKOUNTANT_SHELL,
+            AnkiWebViewKind.ANKOUNTANT_DASHBOARD,
+            AnkiWebViewKind.ANKOUNTANT_CONFUSION,
+            AnkiWebViewKind.ANKOUNTANT_TBS,
+        )
+
+    def _night_mode_active(self) -> bool:
+        """night-mode state to apply to this webview's page."""
+        return theme_manager.night_mode and not self._forces_light_mode()
+
+    def _canvas_qcolor(self) -> QColor:
+        """Page background colour, forced light for the Ankountant shell so its
+        light surfaces never flash the dark canvas before they paint."""
+        if self._forces_light_mode():
+            return QColor(colors.CANVAS["light"])
+        return theme_manager.qcolor(colors.CANVAS)
 
     def page(self) -> AnkiWebPage:
         return cast(AnkiWebPage, super().page())
@@ -854,13 +880,18 @@ html {{ {font} }}
     def add_dynamic_styling_and_props_then_show(self) -> None:
         "Add dynamic styling, title, set platform-specific body classes and reveal."
         css = self.standard_css()
-        body_classes = theme_manager.body_class().split(" ")
+        # Pass the effective night-mode so the light-only Ankountant shell never
+        # picks up the legacy nightMode/night_mode body classes (which drive
+        # e.g. the editor's invert styles).
+        body_classes = theme_manager.body_class(
+            night_mode=self._night_mode_active()
+        ).split(" ")
 
         def after_injection(arg: Any) -> None:
             gui_hooks.webview_did_inject_style_into_page(self)
             self.show()
 
-        if theme_manager.night_mode:
+        if self._night_mode_active():
             night_mode = 'document.documentElement.classList.add("night-mode");'
         else:
             night_mode = ""
@@ -893,7 +924,7 @@ html {{ {font} }}
         from aqt import mw
 
         self.set_open_links_externally(True)
-        if theme_manager.night_mode:
+        if self._night_mode_active():
             extra = "#night"
         else:
             extra = ""
@@ -929,14 +960,14 @@ html {{ {font} }}
 
     def on_theme_did_change(self) -> None:
         # avoid flashes if page reloaded
-        self.page().setBackgroundColor(theme_manager.qcolor(colors.CANVAS))
+        self.page().setBackgroundColor(self._canvas_qcolor())
         # update night-mode class, and legacy nightMode/night-mode body classes
         self.eval(
             f"""
 (function() {{
     const doc = document.documentElement;
     const body = document.body.classList;
-    if ({1 if theme_manager.night_mode else 0}) {{
+    if ({1 if self._night_mode_active() else 0}) {{
         doc.dataset.bsTheme = "dark";
         doc.classList.add("night-mode");
         body.add("night_mode");

@@ -19,6 +19,8 @@ revealing only after a commit (A41–A43).
 </script>
 
 <script lang="ts">
+    import { confidenceShortcutIndex } from "$lib/components/confidence-gate";
+
     export let committed: ConfidenceLevel | null = null;
     /** Called once, when a level is first committed. */
     export let onCommit: (level: ConfidenceLevel) => void = () => {};
@@ -32,11 +34,8 @@ revealing only after a commit (A41–A43).
     }
 
     function onKeydown(event: KeyboardEvent): void {
-        if (committed !== null) {
-            return;
-        }
-        const idx = ["1", "2", "3"].indexOf(event.key);
-        if (idx >= 0) {
+        const idx = confidenceShortcutIndex(event, committed);
+        if (idx !== null) {
             event.preventDefault();
             choose(CONFIDENCE_LEVELS[idx]);
         }

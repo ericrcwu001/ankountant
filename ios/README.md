@@ -29,7 +29,10 @@ Ankountant wraps the official [ankitects/anki](https://github.com/ankitects/anki
 - **Note Browser** -- search notes across all decks, deck filter chips (top-level decks auto-include subdecks), lazy-load results (50 per page)
 - **Note Editor** -- edit note fields with accurate field names from the Rust notetype RPC
 - **Statistics Dashboard** -- full-year review heatmap (auto-scrolls to today), streak counter, retention rate, forecast chart, card count breakdown
-- **Reader** -- read books from your collection chapter-by-chapter; tap any word for a Yomitan-compatible dictionary lookup; chained popups, search history, per-dictionary collapsed memory; TTS speak button with language-aware voice selection; bundled Korean fonts (Sarasa Mono K, Nanum Myeongjo, Nanum Gothic); vertical writing mode and Latin/CJK auto-detection; cross-device progress sync
+- **CPA FAR Home** -- summit hero, exam countdown, readiness range, sync-safe exam date, FAR topic list, and topic detail drill-ins for Memory, Performance, and Gap
+- **Pre-Reveal Confidence Check** -- review sessions require Guess/Unsure/Confident before answer reveal so confidence is captured before feedback
+- **Progress Summary** -- the Analytics tab starts with a compact mastered-card, retention, reviewed-today, and daily-load summary before the detailed charts
+- **Study Reader** -- the Study tab reads books from your collection chapter-by-chapter; tap any word for a Yomitan-compatible dictionary lookup; chained popups, search history, per-dictionary collapsed memory; TTS speak button with language-aware voice selection; bundled Korean fonts (Sarasa Mono K, Nanum Myeongjo, Nanum Gothic); vertical writing mode and Latin/CJK auto-detection; cross-device progress sync
 - **Multi-Profile Accounts** -- isolated Anki collections per profile, fast picker in the decks toolbar, per-profile sync credentials and review history
 - **Image Occlusion** -- create and edit notes with rectangle, ellipse, polygon, and text masks; reviewer parity with upstream Anki
 - **Multi-Theme System** -- Vivid + Muted palettes, Light/Dark/Follow-System; persists across app and home-screen widgets via App Group
@@ -150,6 +153,6 @@ Ankountant's iOS client began as a fork of **[antigluten/amgi](https://github.co
 
 - **[Vladimir Gusev](https://github.com/antigluten)** and the [antigluten/amgi](https://github.com/antigluten/amgi) project — the original iOS client this app is built upon
 - **[Damien Elmes](https://github.com/dae)** and the [ankitects/anki](https://github.com/ankitects/anki) contributors for the Rust backend that powers this app
-- **[DreamAfar](https://github.com/DreamAfar)** for the v0.0.3/v0.0.4 forks of amgi that contributed Image Occlusion, the multi-theme system, the Settings tab, the card template editor, retrievability stats, tag management, the rich note editor, and the GitHub Actions IPA workflow
+- **[DreamAfar](https://github.com/DreamAfar)** for the v0.0.3/v0.0.4 forks of amgi that contributed Image Occlusion, the multi-theme system, settings surfaces now grouped under More, the card template editor, retrievability stats, tag management, the rich note editor, and the GitHub Actions IPA workflow
 - **[AnkiDroid](https://github.com/ankidroid/Anki-Android)** for pioneering the Rust backend bridge pattern on mobile
 - **[Point-Free](https://www.pointfree.co/)** for [swift-dependencies](https://github.com/pointfreeco/swift-dependencies)

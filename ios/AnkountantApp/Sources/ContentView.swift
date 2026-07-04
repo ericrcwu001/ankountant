@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var showImportAlert = false
     @State private var toast: SyncToast.Kind?
     @State private var toastDismissTask: Task<Void, Never>?
+    @State private var homePath = NavigationPath()
 
     @Shared(.appStorage(ReaderPreferences.Keys.showTab))
     private var showReaderTab: Bool = true
@@ -23,8 +24,8 @@ struct ContentView: View {
     var body: some View {
         TabView {
             Tab("Home", systemImage: "house") {
-                NavigationStack {
-                    HomeView(pendingReviewDeckId: $pendingReviewDeckId)
+                NavigationStack(path: $homePath) {
+                    HomeView(pendingReviewDeckId: $pendingReviewDeckId, path: $homePath)
                         .id(refreshID)
                         .toolbar {
                             ToolbarItem(placement: .topBarLeading) {
@@ -48,32 +49,27 @@ struct ContentView: View {
                         }
                 }
             }
-            Tab(role: .search) {
-                NavigationStack {
-                    BrowseView()
-                        .id(refreshID)
-                }
-            }
             if showReaderTab {
-                Tab("Reader", systemImage: "books.vertical") {
+                Tab("Study", systemImage: "book") {
                     NavigationStack {
                         ReaderLibraryView()
                             .id(refreshID)
                     }
                 }
             }
-            Tab("Stats", systemImage: "chart.bar") {
+            Tab("Review", systemImage: "clock.arrow.circlepath") {
+                NavigationStack {
+                    BrowseView()
+                        .id(refreshID)
+                }
+            }
+            Tab("Analytics", systemImage: "chart.bar") {
                 NavigationStack {
                     StatsDashboardView()
                         .id(refreshID)
                 }
             }
-            // NOTE: Keep the top-level tab count at 5 or fewer on iPhone.
-            // A 6th tab makes iOS collapse the overflow into a system "More"
-            // tab, whose own UINavigationController then nests with each tab's
-            // NavigationStack and produces a doubled back button on subpages.
-            // Developer tools live inside Settings (below) instead of a 6th tab.
-            Tab("Settings", systemImage: "gearshape") {
+            Tab("More", systemImage: "line.3.horizontal") {
                 NavigationStack {
                     SettingsView()
                         .id(refreshID)

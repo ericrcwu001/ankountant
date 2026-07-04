@@ -38,7 +38,6 @@ use crate::prelude::*;
 use crate::revlog::RevlogEntry;
 use crate::revlog::RevlogId;
 use crate::revlog::RevlogReviewKind;
-use crate::search::SortMode;
 use crate::timestamp::TimestampMillis;
 
 /// The hand-authored + AI-drafted FAR content, embedded at build time. Shape is
@@ -49,21 +48,78 @@ const SEED_CONTENT_JSON: &str = include_str!("seed_content.json");
 /// A34 asserts is blank).
 const GEN_METHOD_SEED: &str = "far-seed-content workflow (Sonnet author + independent verify)";
 
-/// Confusion sets that receive fake history in a demo profile. The fourth set
-/// (`trading_afs_htm`) is deliberately left thin so its per-topic readiness
-/// reads "insufficient" while the overall band still emits (coverage 3/4).
-const COVERED_SETS: [&str; 3] = [
-    "capitalize_vs_expense",
-    "operating_vs_finance_lease",
-    "revrec_step_selection",
+/// One demo topic's tuned lived-in history. The numbers are chosen to read like
+/// a real, months-deep study profile rather than a synthetic fixture: strong on
+/// most of FAR (Memory & Performance both > 80) with a few genuine weak spots
+/// (< 75) — deferred taxes, pensions/equity, and government/NFP, the areas real
+/// FAR candidates most often struggle with.
+///
+/// Numbers are deliberately UN-clean: scores are spread out (not a flat 89-90
+/// wall), sample sizes are lumpy (weak topics get ground harder), TBS credits are
+/// real step fractions (quarters/thirds/fifths, never a tidy 0.85), and the
+/// Memory↔Performance gap varies — some topics you can recite but can't apply
+/// (big +gap), a couple you understand better than you've drilled lately
+/// (-gap) — which is the whole point of tracking the two signals separately.
+///
+/// - `mem` = (correct, total) trailing-window recall reps → Memory = correct/total.
+/// - `mcq` = (correct, total) sealed discrimination attempts.
+/// - `tbs` = sealed partial-credit TBS attempts.
+///   Performance = mean(mcq pass/fail) blended 50/50 with mean(tbs credit).
+struct DemoTopic {
+    set_id: &'static str,
+    mem: (u32, u32),
+    mcq: (u32, u32),
+    tbs: &'static [f64],
+}
+
+/// The lived-in demo profile: every FAR topic has been worked (a good majority
+/// of the study pile reviewed), 10 strong and 3 weak, so Home shows a believable
+/// summit range with a handful of topics still below the CPA pass line.
+#[rustfmt::skip]
+const DEMO_TOPICS: [DemoTopic; 13] = [
+    // --- Strong: Memory & Performance both > 80, with organic spread + gaps ---
+    // conceptual: can recite the framework, weaker at applying it (mem>>perf).
+    DemoTopic { set_id: "conceptual_framework",       mem: (27, 29), mcq: (12, 13), tbs: &[0.75, 0.667] },
+    DemoTopic { set_id: "capitalize_vs_expense",      mem: (26, 29), mcq: (12, 13), tbs: &[1.0, 0.75, 0.75] },
+    DemoTopic { set_id: "cash_receivables",           mem: (24, 27), mcq: (11, 12), tbs: &[1.0, 0.8] },
+    DemoTopic { set_id: "revrec_step_selection",      mem: (25, 28), mcq: (11, 12), tbs: &[0.833, 0.75] },
+    // leases: solid recall, application still lags (a real "recognize the gap" story).
+    DemoTopic { set_id: "operating_vs_finance_lease", mem: (26, 28), mcq: (10, 12), tbs: &[0.833, 0.75] },
+    DemoTopic { set_id: "debt_extinguishment",        mem: (23, 27), mcq: (9, 10),  tbs: &[0.75, 0.833] },
+    // statements: drilled less lately, but genuinely gets it (perf>mem reversal).
+    DemoTopic { set_id: "financial_statements",       mem: (22, 27), mcq: (11, 12), tbs: &[1.0, 0.833] },
+    DemoTopic { set_id: "inventory_valuation",        mem: (23, 27), mcq: (9, 10),  tbs: &[0.75, 0.8] },
+    DemoTopic { set_id: "trading_afs_htm",            mem: (21, 26), mcq: (9, 10),  tbs: &[0.833, 0.75] },
+    DemoTopic { set_id: "intangibles_impairment",     mem: (22, 26), mcq: (10, 11), tbs: &[0.75, 0.833] },
+    // --- Weak: Memory & Performance both < 75 (real FAR pain points) ---
+    // deferred taxes: memorized the rule, TBS computations sink them (big gap),
+    // and they've ground a lot of MCQs without it clicking.
+    DemoTopic { set_id: "tax_timing",                 mem: (18, 25), mcq: (8, 16),  tbs: &[0.5, 0.667, 0.5] },
+    DemoTopic { set_id: "pensions_equity",            mem: (16, 24), mcq: (9, 14),  tbs: &[0.667, 0.6] },
+    DemoTopic { set_id: "government_nfp",             mem: (15, 24), mcq: (9, 14),  tbs: &[0.667, 0.75] },
 ];
 
-// Fake-history volumes, tuned so the aggregate lands in an honest, provisional
-// band (~40 sealed attempts @ ~60% => "Med" confidence) with a visible gap.
-const MEMORY_REPS_PER_SET: u32 = 12;
-const MEMORY_CORRECT_PER_SET: u32 = 9; // 75% recall accuracy
-const CONFUSION_ATTEMPTS_PER_SET: u32 = 10;
-const CONFUSION_CORRECT_PER_SET: u32 = 6; // 60% discrimination accuracy
+/// True `correct` times out of `total`, spread as evenly as possible across the
+/// sequence (so a card's history interleaves right/wrong instead of "all the
+/// misses first" — a synthetic tell). Rep `i` is correct iff the running count
+/// ticks up at `i`.
+fn is_correct_rep(i: u32, total: u32, correct: u32) -> bool {
+    if total == 0 {
+        return false;
+    }
+    ((i + 1) * correct) / total > (i * correct) / total
+}
+
+/// Split `total` items across `n` buckets as evenly as possible: bucket `i` gets
+/// the base share, plus one more for the first `total % n` buckets. Guarantees
+/// `share(correct) <= share(total)` per bucket when `correct <= total`, so a
+/// card is never assigned more correct reps than reps.
+fn per_card_share(total: usize, n: usize, i: usize) -> u32 {
+    if n == 0 {
+        return 0;
+    }
+    (total / n + usize::from(i < total % n)) as u32
+}
 
 #[derive(Debug, Deserialize)]
 struct SeedContent {
@@ -263,7 +319,12 @@ struct SetSpec {
     treatments: [&'static str; 2],
 }
 
-const SETS: [SetSpec; 4] = [
+// The full FAR blueprint: one confusion set per Home topo topic (see
+// `ts/.../far-topics.ts`). The first four are the "anchor" sets the grading +
+// e2e tests pin by index (`SETS[1]` = lease JE, `SETS[2]` = revrec numeric), so
+// their order must not change; the rest complete the 13-topic map so a lived-in
+// demo profile can show a per-topic Memory/Performance score for every summit.
+const SETS: [SetSpec; 13] = [
     SetSpec {
         set_id: "capitalize_vs_expense",
         tags: ["ds::cost::capitalize", "ds::cost::expense"],
@@ -287,7 +348,81 @@ const SETS: [SetSpec; 4] = [
             "Held-to-maturity (amortized cost)",
         ],
     },
+    SetSpec {
+        set_id: "inventory_valuation",
+        tags: ["ds::inventory::lcm", "ds::inventory::lcnrv"],
+        treatments: ["Lower of cost or market", "Lower of cost and NRV"],
+    },
+    SetSpec {
+        set_id: "debt_extinguishment",
+        tags: ["ds::debt::extinguish", "ds::debt::modify"],
+        treatments: ["Extinguishment (derecognize)", "Modification (retain)"],
+    },
+    SetSpec {
+        set_id: "intangibles_impairment",
+        tags: ["ds::intangible::finite", "ds::intangible::indefinite"],
+        treatments: ["Finite-life (amortize)", "Indefinite-life (test only)"],
+    },
+    SetSpec {
+        set_id: "cash_receivables",
+        tags: ["ds::ar::allowance", "ds::ar::writeoff"],
+        treatments: ["Allowance method", "Direct write-off"],
+    },
+    SetSpec {
+        set_id: "financial_statements",
+        tags: ["ds::stmt::operating", "ds::stmt::financing"],
+        treatments: ["Operating activity", "Financing activity"],
+    },
+    SetSpec {
+        set_id: "conceptual_framework",
+        tags: ["ds::concept::relevance", "ds::concept::faithful"],
+        treatments: ["Relevance", "Faithful representation"],
+    },
+    SetSpec {
+        set_id: "tax_timing",
+        tags: ["ds::tax::temporary", "ds::tax::permanent"],
+        treatments: ["Temporary difference", "Permanent difference"],
+    },
+    SetSpec {
+        set_id: "pensions_equity",
+        tags: ["ds::pension::service", "ds::pension::interest"],
+        treatments: ["Service cost", "Interest cost"],
+    },
+    SetSpec {
+        set_id: "government_nfp",
+        tags: ["ds::govnfp::govtwide", "ds::govnfp::fund"],
+        treatments: ["Government-wide (accrual)", "Fund (modified accrual)"],
+    },
 ];
+
+/// FAR study `topic_tag` → confusion `set_id`, mirroring the Home topo map. Used
+/// to (1) tag recall cards authored without a `ds::` tag with their topic's set
+/// so Memory becomes measurable per topic, and (2) let the lived-in history
+/// seeder find the study cards backing each set.
+const FAR_TOPIC_SETS: [(&str, &str); 13] = [
+    ("far::ppe", "capitalize_vs_expense"),
+    ("far::leases", "operating_vs_finance_lease"),
+    ("far::revenue", "revrec_step_selection"),
+    ("far::investments", "trading_afs_htm"),
+    ("far::inventory", "inventory_valuation"),
+    ("far::debt", "debt_extinguishment"),
+    ("far::intangibles", "intangibles_impairment"),
+    ("far::cash_ar", "cash_receivables"),
+    ("far::statements", "financial_statements"),
+    ("far::conceptual", "conceptual_framework"),
+    ("far::taxes", "tax_timing"),
+    ("far::pensions_equity", "pensions_equity"),
+    ("far::gov_nfp", "government_nfp"),
+];
+
+/// The `SetSpec` a FAR recall `topic_tag` belongs to, if any.
+fn far_set_for_topic(topic_tag: &str) -> Option<&'static SetSpec> {
+    let set_id = FAR_TOPIC_SETS
+        .iter()
+        .find(|(t, _)| *t == topic_tag)
+        .map(|(_, s)| *s)?;
+    SETS.iter().find(|s| s.set_id == set_id)
+}
 
 // Multi-section confusion sets (ADR 0008 / D8). FAR keeps `SETS`; each other
 // section that carries seeded TBS gets ≥1 set so doc-review blanks can reuse it
@@ -348,20 +483,79 @@ fn find_set(section: &str, set_id: &str) -> Option<&'static SetSpec> {
     section_sets(section).iter().find(|s| s.set_id == set_id)
 }
 
-/// A shared cursor for placing seeded revlog rows on specific past days while
-/// keeping every id unique across the whole seed. `seq` is decremented into the
-/// id so same-day rows differ by a few ms and never collide.
+/// Deterministic [0,1) PRNG (a splitmix64 finalizer) keyed by an integer. Lets
+/// the demo history carry organic-looking jitter (varied volume, latencies,
+/// button mix, review times) that is nonetheless byte-identical on every seed —
+/// the determinism tests re-seed two collections and compare their scores.
+fn rng01(seed: u64) -> f64 {
+    let mut z = seed.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    z ^= z >> 31;
+    (z >> 11) as f64 / ((1u64 << 53) as f64)
+}
+
+/// Mix a few small stable indices (topic / card / rep) into a PRNG seed. Uses
+/// stable INDICES, never card ids (which differ per seed), so it stays
+/// deterministic across independently seeded collections.
+fn mix(a: u64, b: u64, c: u64) -> u64 {
+    a.wrapping_mul(0x0100_0000_01b3)
+        ^ (b.wrapping_add(1)).wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        ^ (c.wrapping_add(1)).wrapping_mul(0x85EB_CA6B_02F5_1E1F)
+}
+
+/// A plausible whole-second time-of-day for a study rep, drawn from a few real
+/// study windows (early morning, lunch, evening) so the Stats "Hourly Breakdown"
+/// spreads across the day instead of a single synthetic bar.
+fn session_tod_secs(seed: u64) -> i64 {
+    // Evening-weighted study windows (repeats bias the draw), spread morning →
+    // late evening so the Hourly Breakdown is a believable multi-hour shape.
+    const HOURS: [i64; 12] = [7, 8, 8, 9, 12, 13, 13, 19, 20, 21, 21, 22];
+    let hour = HOURS[(rng01(mix(seed, 101, 0)) * HOURS.len() as f64) as usize % HOURS.len()];
+    let minute = (rng01(mix(seed, 102, 0)) * 60.0) as i64;
+    let second = (rng01(mix(seed, 103, 0)) * 60.0) as i64;
+    (hour * 60 + minute) * 60 + second
+}
+
+/// Places seeded revlog rows on specific past days at realistic times of day,
+/// keeping every id unique. Ids are `midnight(days_ago) + time_of_day` with a
+/// per-day tie-breaker in the low milliseconds (whole-second base + a <1000 tie
+/// can never collide within a day, and distinct days never share a midnight).
 struct RevlogClock {
-    now_ms: i64,
-    seq: i64,
+    today_midnight_ms: i64,
+    day_counts: std::collections::HashMap<i64, i64>,
+    /// Global cursor for back-dated card-creation ids (see `card_id`).
+    card_seq: i64,
 }
 
 impl RevlogClock {
-    /// A unique revlog id `days_ago` days in the past (shifted by a few ms).
-    fn id(&mut self, days_ago: i64) -> i64 {
-        let id = self.now_ms - days_ago * 86_400_000 - self.seq;
-        self.seq += 1;
-        id
+    fn new() -> Self {
+        let now = TimestampMillis::now().0;
+        RevlogClock {
+            today_midnight_ms: now - now.rem_euclid(86_400_000),
+            day_counts: std::collections::HashMap::new(),
+            card_seq: 0,
+        }
+    }
+
+    /// A unique revlog id `days_ago` days back at `tod_secs` time of day.
+    fn id(&mut self, days_ago: i64, tod_secs: i64) -> i64 {
+        let tie = self.day_counts.entry(days_ago).or_insert(0);
+        let this = *tie;
+        *tie += 1;
+        self.today_midnight_ms - days_ago * 86_400_000 + tod_secs.clamp(0, 86_399) * 1_000 + this
+    }
+
+    /// A unique, back-dated card-creation id: 06:00 on the card's first-study day
+    /// plus a global sequence offset (< the 07:00 earliest review, so creation
+    /// always precedes the card's history). Distinct days differ by their
+    /// midnight; same-day cards differ by the sequence — never a collision. This
+    /// spreads Anki's "Added" stats graph across the real study window instead of
+    /// piling every card onto today.
+    fn card_id(&mut self, creation_day: i64) -> i64 {
+        let s = self.card_seq;
+        self.card_seq += 1;
+        self.today_midnight_ms - creation_day * 86_400_000 + 6 * 3_600_000 + s
     }
 }
 
@@ -440,6 +634,10 @@ impl Collection {
         // Track card ids per ds:: tag so the memory history can target them.
         let mut ds_cards: std::collections::HashMap<String, Vec<CardId>> =
             std::collections::HashMap::new();
+        // Per-topic cursor so recall cards without an authored ds:: tag get
+        // alternated across their set's two sides (an even split).
+        let mut topic_ds_counter: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
         let mut study_decks: std::collections::HashMap<String, DeckId> =
             std::collections::HashMap::new();
         for card in &content.recall {
@@ -467,9 +665,23 @@ impl Collection {
             // cards (doc 6). new_note() zero-fills them, so setting only
             // Front/Back here is enough.
             note.set_field(1, format!("{}\n\nSource: {}", card.back, card.source))?;
+            // Effective discrimination tag: honour an authored ds:: tag, else
+            // place the card in its topic's confusion set (alternating the two
+            // sides) so Memory can be measured for every topic — not just the
+            // four originally authored as discrimination pairs.
+            let ds_tag = if !card.ds_tag.is_empty() {
+                card.ds_tag.clone()
+            } else if let Some(spec) = far_set_for_topic(&card.topic_tag) {
+                let n = topic_ds_counter.entry(card.topic_tag.clone()).or_default();
+                let tag = spec.tags[*n % 2].to_string();
+                *n += 1;
+                tag
+            } else {
+                String::new()
+            };
             let mut tags = vec![cog.to_string(), card.topic_tag.clone()];
-            if !card.ds_tag.is_empty() {
-                tags.push(card.ds_tag.clone());
+            if !ds_tag.is_empty() {
+                tags.push(ds_tag.clone());
             }
             note.tags = tags;
             self.add_note_inner(&mut note, deck)?;
@@ -477,12 +689,9 @@ impl Collection {
             if cog == TAG_COG_ROTE {
                 summary.rote_cards += 1;
             }
-            if !card.ds_tag.is_empty() {
+            if !ds_tag.is_empty() {
                 let cids = self.storage.card_ids_of_notes(&[note.id])?;
-                ds_cards
-                    .entry(card.ds_tag.clone())
-                    .or_default()
-                    .extend(cids);
+                ds_cards.entry(ds_tag).or_default().extend(cids);
             }
         }
 
@@ -494,42 +703,44 @@ impl Collection {
                 "{sealed_deck_base}::{}",
                 spec.set_id
             ))?;
-
-            // >= 6 sealed single-choice MCQs per set, real prompts from content
-            // (fallback to a generic prompt only if content is missing).
-            let items = content.mcqs.get(spec.set_id);
-            let count = items.map(|v| v.len()).unwrap_or(0).max(6);
-            for q in 0..count {
-                let (prompt, correct, tag, source) = match items.and_then(|v| v.get(q)) {
-                    Some(it) => (
-                        it.prompt.clone(),
-                        it.correct_treatment.clone(),
-                        it.ds_tag.clone(),
-                        it.source.clone(),
-                    ),
-                    None => {
-                        let tag = spec.tags[q % 2].to_string();
-                        (
-                            format!("Which treatment applies? ({} q{q})", spec.set_id),
-                            spec.treatments[q % 2].to_string(),
-                            tag,
-                            String::new(),
-                        )
-                    }
-                };
-                let steps = json!([{"id":"choice","answer_key": correct, "weight": 1.0}]);
+            let items = content
+                .mcqs
+                .get(spec.set_id)
+                .or_invalid(format!("missing authored MCQs for {}", spec.set_id))?;
+            require!(
+                items.len() >= 6,
+                "expected at least 6 authored MCQs for {}, got {}",
+                spec.set_id,
+                items.len()
+            );
+            for it in items {
+                require!(
+                    spec.treatments.contains(&it.correct_treatment.as_str()),
+                    "unknown treatment {:?} for {}",
+                    it.correct_treatment,
+                    spec.set_id
+                );
+                require!(
+                    spec.tags.contains(&it.ds_tag.as_str()),
+                    "unknown ds_tag {:?} for {}",
+                    it.ds_tag,
+                    spec.set_id
+                );
+                let steps = json!([
+                    {"id": "choice", "answer_key": it.correct_treatment.clone(), "weight": 1.0}
+                ]);
                 let mut note = tbs_nt.new_note();
                 note.set_field(tbs_fields::TBS_TYPE, "mcq")?;
-                note.set_field(tbs_fields::PROMPT, &prompt)?;
+                note.set_field(tbs_fields::PROMPT, &it.prompt)?;
                 note.set_field(tbs_fields::EXHIBITS_JSON, "[]")?;
                 note.set_field(tbs_fields::STEPS_JSON, steps.to_string())?;
-                note.set_field(tbs_fields::SCHEMA_TAG, &tag)?;
-                if !source.is_empty() {
-                    note.set_field(tbs_fields::SOURCE_PASSAGE, &source)?;
+                note.set_field(tbs_fields::SCHEMA_TAG, &it.ds_tag)?;
+                if !it.source.is_empty() {
+                    note.set_field(tbs_fields::SOURCE_PASSAGE, &it.source)?;
                     note.set_field(tbs_fields::GEN_METHOD, GEN_METHOD_SEED)?;
                     note.set_field(tbs_fields::CHECKER_STATUS, "pass")?;
                 }
-                note.tags = vec![tag];
+                note.tags = vec![it.ds_tag.clone()];
                 self.add_note_inner(&mut note, sealed_deck)?;
                 self.suspend_note_cards(note.id)?;
                 summary.sealed_items += 1;
@@ -684,37 +895,62 @@ impl Collection {
             let exam_key = config::exam_date_key(section);
             self.set_config(exam_key.as_str(), &exam_iso)?;
 
-            // A shared clock keeps every seeded revlog id unique while placing
-            // rows on specific past days.
-            let mut clock = RevlogClock {
-                now_ms: TimestampMillis::now().0,
-                seq: 0,
-            };
+            // A shared clock places every seeded revlog row on a real past
+            // day-and-time while keeping ids unique.
+            let mut clock = RevlogClock::new();
+            let today = self.timing_today()?.days_elapsed as i32;
+            let decay = crate::scheduler::fsrs::memory_state::get_decay_from_params(&[]);
 
-            // In-window recall reps back the readiness Memory metric for the
-            // covered sets; the 4th set is left thin on purpose (give-up rule).
-            for set_id in COVERED_SETS {
-                let spec = SETS.iter().find(|s| s.set_id == set_id).unwrap();
+            // Every FAR topic gets a per-topic Memory + Performance history tuned
+            // by DEMO_TOPICS (10 strong, 3 weak). A couple of cards per topic are
+            // left untouched (New) so there is still a fresh pile to work through;
+            // each studied card gets its own months-long expanding-interval walk.
+            for (ti, topic) in DEMO_TOPICS.iter().enumerate() {
+                let spec = SETS.iter().find(|s| s.set_id == topic.set_id).unwrap();
                 let mut cids: Vec<CardId> = Vec::new();
                 for tag in spec.tags {
                     if let Some(v) = ds_cards.get(tag) {
                         cids.extend(v.iter().copied());
                     }
                 }
-                self.seed_memory_history(
-                    &cids,
-                    MEMORY_REPS_PER_SET,
-                    MEMORY_CORRECT_PER_SET,
-                    &mut clock,
-                )?;
-                let items = set_mcq_ids.get(set_id).cloned().unwrap_or_default();
-                self.seed_performance_history(section, set_id, &items)?;
-            }
+                // Leave a few cards New; study the rest.
+                let leave_new = constants::SEED_NEW_PER_TOPIC.min(cids.len().saturating_sub(1));
+                let split = cids.len().saturating_sub(leave_new);
+                let studied = &cids[..split];
+                let n = studied.len().max(1);
 
-            // Reshape the flat New pile into a realistic new/learning/young/
-            // mature mix, and spread weeks of review activity for the stats
-            // heatmap + streak.
-            self.seed_lived_in_card_states(section, &mut clock)?;
+                // Distribute this topic's trailing-window recall reps across its
+                // studied cards, hitting (mem.0 correct / mem.1 total) EXACTLY so
+                // Memory is controlled while each card's own history stays organic.
+                let (mem_correct, mem_total) = (topic.mem.0 as usize, topic.mem.1 as usize);
+                for (ci, &cid) in studied.iter().enumerate() {
+                    let win_reps = per_card_share(mem_total, n, ci);
+                    let win_correct = per_card_share(mem_correct, n, ci);
+                    let older = 2 + (rng01(mix(ti as u64, ci as u64, 7)) * 4.0) as u32; // 2..5
+                    self.simulate_card_history(
+                        cid,
+                        mix(ti as u64, ci as u64, 0),
+                        win_reps,
+                        win_correct,
+                        older,
+                        today,
+                        decay,
+                        &mut clock,
+                    )?;
+                }
+
+                // Sealed attempts define this topic's Performance.
+                let items = set_mcq_ids.get(topic.set_id).cloned().unwrap_or_default();
+                self.seed_performance_history(
+                    section,
+                    topic.set_id,
+                    ti as u64,
+                    topic.mcq.0,
+                    topic.mcq.1,
+                    topic.tbs,
+                    &items,
+                )?;
+            }
         }
 
         Ok(summary)
@@ -759,207 +995,230 @@ impl Collection {
         Ok(())
     }
 
-    /// Inject `total` recall revlog rows across `cids` (`correct` of them a
-    /// Good), spread over the trailing window so Memory can be measured for the
-    /// set AND the rows land on many different days (heatmap/streak).
-    fn seed_memory_history(
-        &mut self,
-        cids: &[CardId],
-        total: u32,
-        correct: u32,
-        clock: &mut RevlogClock,
-    ) -> Result<()> {
-        if cids.is_empty() {
-            return Ok(());
-        }
-        for i in 0..total {
-            let cid = cids[i as usize % cids.len()];
-            let button = if i < correct { 3 } else { 1 };
-            // Spread across the trailing window (kept < MEMORY_WINDOW_DAYS via
-            // SEED_MEMORY_SPREAD_DAYS) so every rep stays in-window but on a
-            // different day.
-            let days_ago =
-                1 + (i as i64 * (constants::SEED_MEMORY_SPREAD_DAYS - 1)) / total.max(1) as i64;
-            self.seed_revlog_row(cid, days_ago, button, 0, 0, clock)?;
-        }
-        Ok(())
-    }
-
-    /// Insert one recall revlog row `days_ago` days in the past, using the
-    /// shared `clock` for a unique id that still lands on the intended day.
-    fn seed_revlog_row(
+    /// Write one seeded revlog row with an explicit id / kind / intervals.
+    #[allow(clippy::too_many_arguments)]
+    fn add_seed_revlog(
         &mut self,
         cid: CardId,
-        days_ago: i64,
-        button: u8,
+        id: i64,
         last_interval: i32,
         interval: i32,
-        clock: &mut RevlogClock,
+        button: u8,
+        kind: RevlogReviewKind,
+        taken_millis: u32,
     ) -> Result<()> {
-        let taken_millis = 2_500 + (clock.seq as u32).wrapping_mul(97) % 8_000;
-        let id = clock.id(days_ago);
         self.storage.add_revlog_entry(
             &RevlogEntry {
                 id: RevlogId(id),
                 cid,
                 usn: Usn(-1),
                 button_chosen: button,
-                review_kind: RevlogReviewKind::Review,
+                review_kind: kind,
                 interval,
                 last_interval,
+                ease_factor: 2_500,
                 taken_millis,
-                ..Default::default()
             },
             false,
         )?;
         Ok(())
     }
 
-    /// Turn the flat New pile into a lived-in mix of new/learning/young/mature
-    /// cards (so deck due badges + the card-count/interval/future-due/
-    /// retrievability charts populate) and spread weeks of review activity for
-    /// the heatmap + streak.
+    /// Simulate one studied card's full review history — an expanding-interval
+    /// walk from a back-dated first study up to today — then set the card's live
+    /// state from what actually happened. Writes realistic revlog rows:
+    /// Learning → Review, Relearning after a lapse; per-row `last_ivl → ivl`
+    /// growth; spread across real times of day with log-normal latencies.
     ///
-    /// Confusion-set study cards are reshaped for looks too, but get no
-    /// activity revlog here, so the readiness Memory metric stays exactly
-    /// what `seed_memory_history` produced and the thin 4th set stays
-    /// insufficient.
-    fn seed_lived_in_card_states(&mut self, section: &str, clock: &mut RevlogClock) -> Result<()> {
-        let today = self.timing_today()?.days_elapsed as i32;
-        let usn = self.usn()?;
-        let decay = crate::scheduler::fsrs::memory_state::get_decay_from_params(&[]);
-
-        // Study cards that belong to a confusion set (covered or the thin 4th):
-        // reshaped, but excluded from the activity revlog below.
-        let mut confusion_cids: std::collections::HashSet<CardId> =
-            std::collections::HashSet::new();
-        for spec in &SETS {
-            for tag in spec.tags {
-                let search = format!("tag:{tag} deck:Ankountant::Study::{section}::*");
-                for cid in self.search_cards(search.as_str(), SortMode::NoOrder)? {
-                    confusion_cids.insert(cid);
-                }
-            }
-        }
-
-        let all = self.search_cards(
-            format!("deck:Ankountant::Study::{section}::*").as_str(),
-            SortMode::NoOrder,
-        )?;
-
-        let new_end = constants::SEED_MIX_NEW;
-        let learn_end = new_end + constants::SEED_MIX_LEARN;
-        let young_end = learn_end + constants::SEED_MIX_YOUNG;
-        let slots = young_end + constants::SEED_MIX_MATURE;
-
-        // Non-confusion review cards that back the spread-out activity history.
-        let mut pool: Vec<CardId> = Vec::new();
-        for (i, &cid) in all.iter().enumerate() {
-            let slot = (i as u32) % slots;
-            if slot < new_end {
-                continue; // leave a fresh New pile
-            }
-            let Some(original) = self.storage.get_card(cid)? else {
-                continue;
-            };
-            let mut card = original.clone();
-            card.ease_factor = 2_500;
-            card.desired_retention = Some(0.9);
-            card.decay = Some(decay);
-            if slot < learn_end {
-                // Intraday learning card, due now.
-                card.ctype = CardType::Learn;
-                card.queue = CardQueue::Learn;
-                card.remaining_steps = 1;
-                card.reps = 1 + (i as u32 % 3);
-                card.due = (clock.now_ms / 1_000) as i32;
-                card.memory_state = Some(FsrsMemoryState {
-                    stability: 1.0 + (i % 3) as f32,
-                    difficulty: 5.0,
-                });
-                card.last_review_time = Some(TimestampSecs::now());
+    /// The trailing-window reps (`win_reps`, `win_correct` of them a pass) DEFINE
+    /// this card's contribution to its topic's Memory and are kept EXACT; the
+    /// `older` reps are extra out-of-window history purely for a lived-in heatmap
+    /// / retention chart and never touch the 30-day Memory window. Jitter is
+    /// drawn from `seed` (a stable topic/card index), so it is organic-looking
+    /// yet identical on every re-seed.
+    #[allow(clippy::too_many_arguments)]
+    fn simulate_card_history(
+        &mut self,
+        cid: CardId,
+        seed: u64,
+        win_reps: u32,
+        win_correct: u32,
+        older: u32,
+        today: i32,
+        decay: f32,
+        clock: &mut RevlogClock,
+    ) -> Result<()> {
+        // --- Build the review schedule as (days_ago, correct), oldest first. ---
+        let mut reps: Vec<(i64, bool)> = Vec::new();
+        // Older, out-of-window reps: a first study up to ~4 months ago, then a
+        // few early reviews down toward (but never inside) the 30-day window.
+        // Mostly correct — these are cards the user has already learned.
+        let first_day = constants::SEED_BACKFILL_START_DAY
+            + 9
+            + (rng01(mix(seed, 20, 0)) * (constants::SEED_BACKFILL_SPREAD_DAYS - 10) as f64) as i64;
+        for r in 0..older {
+            let t = if older <= 1 {
+                0.0
             } else {
-                let mature = slot >= young_end;
-                let interval = if mature {
-                    21 + (i as u32 * 13) % 70
+                r as f64 / (older - 1) as f64
+            };
+            let base =
+                first_day - (t * (first_day - constants::SEED_BACKFILL_START_DAY) as f64) as i64;
+            let jit = ((rng01(mix(seed, 21, r as u64)) - 0.5) * 6.0) as i64;
+            let day = (base + jit).clamp(constants::SEED_BACKFILL_START_DAY, first_day + 3);
+            // Cards being reviewed months ago are mostly remembered (~88%).
+            let correct = rng01(mix(seed, 22, r as u64)) > 0.12;
+            reps.push((day, correct));
+        }
+        // In-window reps: days 1..=SEED_MEMORY_SPREAD_DAYS, weighted toward
+        // recent (u² bias), with the EXACT correct/total split for Memory.
+        for r in 0..win_reps {
+            let u = rng01(mix(seed, 23, r as u64));
+            let day = 1 + (u * u * (constants::SEED_MEMORY_SPREAD_DAYS - 1) as f64) as i64;
+            let correct = is_correct_rep(r, win_reps, win_correct);
+            reps.push((day.clamp(1, constants::SEED_MEMORY_SPREAD_DAYS), correct));
+        }
+        reps.sort_by_key(|r| std::cmp::Reverse(r.0));
+
+        // --- Walk the schedule, writing rows + evolving the interval. ---
+        let mut ivl: i32 = 0;
+        let mut n_reps: u32 = 0;
+        let mut lapses: u32 = 0;
+        let mut prev_again = false;
+        for (idx, &(days_ago, correct)) in reps.iter().enumerate() {
+            let last_ivl = ivl;
+            let rs = mix(seed, 30, idx as u64);
+            let button: u8 = if correct {
+                let u = rng01(rs);
+                if u < 0.16 {
+                    2 // Hard (still a pass)
+                } else if u > 0.86 {
+                    4 // Easy
                 } else {
-                    1 + (i as u32 * 7) % 20
-                };
-                // Young cards spread overdue..soon; mature cards mostly future.
-                let offset = if mature {
-                    i as i32 % 30
-                } else {
-                    (i as i32 % 12) - 4
-                };
-                let lapse_every = if mature { 7 } else { 5 };
-                let stability = if mature {
-                    interval as f32 * 1.6 + 10.0
-                } else {
-                    interval as f32 * 1.3 + 3.0
-                };
-                card.ctype = CardType::Review;
-                card.queue = CardQueue::Review;
-                card.interval = interval;
-                card.due = today + offset;
-                card.reps = if mature {
-                    8 + i as u32 % 20
-                } else {
-                    3 + i as u32 % 7
-                };
-                card.lapses = (i as u32 % lapse_every == 0) as u32;
-                card.remaining_steps = 0;
-                card.memory_state = Some(FsrsMemoryState {
-                    stability,
-                    difficulty: 3.0 + (i % 6) as f32,
-                });
-                let last_days = (interval as i64 - offset as i64).max(0);
-                card.last_review_time = Some(TimestampSecs::now().adding_secs(-last_days * 86_400));
-                if !confusion_cids.contains(&cid) {
-                    pool.push(cid);
+                    3 // Good
+                }
+            } else {
+                1 // Again
+            };
+            let kind = if n_reps == 0 {
+                RevlogReviewKind::Learning
+            } else if prev_again {
+                RevlogReviewKind::Relearning
+            } else {
+                RevlogReviewKind::Review
+            };
+            // Evolve the interval the way a scheduler would, so `last_ivl != ivl`
+            // and the True-Retention young/mature split is real.
+            ivl = match button {
+                1 => 0,
+                2 => ((last_ivl as f64) * 1.2).max(1.0) as i32,
+                4 => {
+                    if last_ivl == 0 {
+                        4
+                    } else {
+                        ((last_ivl as f64) * 3.3) as i32
+                    }
+                }
+                _ => {
+                    if last_ivl == 0 {
+                        1 + (rng01(mix(rs, 5, 0)) * 2.0) as i32
+                    } else {
+                        ((last_ivl as f64) * 2.4) as i32
+                    }
                 }
             }
-            self.update_card_inner(&mut card, original, usn)?;
+            .min(365);
+            let recorded_ivl = if button == 1 { 0 } else { ivl.max(1) };
+            // Log-normal-ish latency with a fat tail; slower on Again/Hard.
+            let u = rng01(mix(rs, 6, 0));
+            let mut latency = 900.0 + u * u * u * 38_000.0;
+            if button <= 2 {
+                latency *= 1.4;
+            }
+            let taken = latency.min(60_000.0) as u32;
+            let tod = session_tod_secs(mix(seed, 40, idx as u64));
+            let id = clock.id(days_ago, tod);
+            self.add_seed_revlog(cid, id, last_ivl, recorded_ivl, button, kind, taken)?;
+            prev_again = button == 1;
+            if button == 1 {
+                lapses += 1;
+            }
+            n_reps += 1;
         }
 
-        self.seed_activity_history(&pool, clock)?;
-        Ok(())
-    }
-
-    /// Spread review rows over ~`SEED_ACTIVITY_SPREAD_DAYS` days across `pool`
-    /// (non-confusion study cards), so the heatmap, reviews, buttons and
-    /// true-retention charts look used and the streak is real. An occasional
-    /// rest day keeps the heatmap from looking unnaturally solid.
-    fn seed_activity_history(&mut self, pool: &[CardId], clock: &mut RevlogClock) -> Result<()> {
-        if pool.is_empty() {
+        // --- Set the card's live state from what actually happened. ---
+        let Some(original) = self.storage.get_card(cid)? else {
             return Ok(());
+        };
+        let usn = self.usn()?;
+        let mut card = original.clone();
+        card.ease_factor = 2_100 + (rng01(mix(seed, 50, 0)) * 700.0) as u16; // ~2100..2800
+        card.desired_retention = Some(0.88 + rng01(mix(seed, 51, 0)) as f32 * 0.06);
+        card.decay = Some(decay);
+        card.reps = n_reps;
+        card.lapses = lapses;
+        card.remaining_steps = 0;
+        let last_days_ago = reps.last().map(|r| r.0).unwrap_or(1);
+        if prev_again || ivl == 0 {
+            // Ended on a lapse -> relearning, due today.
+            card.ctype = CardType::Relearn;
+            card.queue = CardQueue::Learn;
+            card.interval = 1;
+            card.remaining_steps = 1;
+            card.due = (clock.today_midnight_ms / 1_000) as i32;
+            card.memory_state = Some(FsrsMemoryState {
+                stability: 1.5 + rng01(mix(seed, 52, 0)) as f32 * 2.0,
+                difficulty: 6.5 + rng01(mix(seed, 53, 0)) as f32 * 2.0,
+            });
+        } else {
+            card.ctype = CardType::Review;
+            card.queue = CardQueue::Review;
+            card.interval = ivl.max(1) as u32;
+            // Next due = last review + interval, so some are overdue, some ahead.
+            card.due = today - last_days_ago as i32 + ivl.max(1);
+            let stability = ivl as f32 * (0.9 + rng01(mix(seed, 54, 0)) as f32 * 0.4) + 2.0;
+            card.memory_state = Some(FsrsMemoryState {
+                stability: stability.max(1.0),
+                difficulty: 3.0 + rng01(mix(seed, 55, 0)) as f32 * 5.0,
+            });
         }
-        for d in 0..constants::SEED_ACTIVITY_SPREAD_DAYS {
-            if d % 9 == 8 {
-                continue; // a rest day now and then
-            }
-            let per_day = 2 + (d % 3);
-            for k in 0..per_day {
-                let idx = ((d * 7 + k * 3) as usize) % pool.len();
-                let button = match (d + k) % 7 {
-                    0 => 1, // Again
-                    1 => 2, // Hard
-                    _ => 3, // Good
-                };
-                // Mix young (<21) and mature (>=21) last intervals so the True
-                // Retention grid has both rows.
-                let last_interval = 1 + ((d + k) % 40) as i32;
-                self.seed_revlog_row(pool[idx], d, button, last_interval, last_interval, clock)?;
-            }
+        card.last_review_time = Some(
+            TimestampSecs(clock.today_midnight_ms / 1_000).adding_secs(-last_days_ago * 86_400),
+        );
+        self.update_card_inner(&mut card, original, usn)?;
+
+        // Back-date the card's creation (its id) to just before its first review,
+        // so Anki's "Added" stats graph reflects the months of study instead of
+        // showing every card created today. `revlog.cid` is repointed in lock
+        // step. (Demo seed on a throwaway profile; card ids carry no meaning to
+        // sync/undo here.)
+        let creation_day = reps.first().map(|r| r.0).unwrap_or(1);
+        let new_id = clock.card_id(creation_day);
+        if new_id < cid.0 {
+            self.storage
+                .db
+                .execute("UPDATE cards SET id=?1 WHERE id=?2", [new_id, cid.0])?;
+            self.storage
+                .db
+                .execute("UPDATE revlog SET cid=?1 WHERE cid=?2", [new_id, cid.0])?;
         }
         Ok(())
     }
 
-    /// Write sealed confusion + TBS attempts for a set so its Performance (and
-    /// the aggregate readiness band) has real evidence.
+    /// Write a topic's sealed confusion + TBS attempts so its Performance (and
+    /// the aggregate readiness band) has real evidence: `mcq_total` single-choice
+    /// discrimination attempts (`mcq_correct` right, interleaved) plus one
+    /// partial-credit TBS attempt per credit in `tbs_credits`. `topic_seed`
+    /// drives the confidence + latency jitter deterministically.
+    #[allow(clippy::too_many_arguments)]
     fn seed_performance_history(
         &mut self,
         section: &str,
         set_id: &str,
+        topic_seed: u64,
+        mcq_correct: u32,
+        mcq_total: u32,
+        tbs_credits: &[f64],
         item_ids: &[NoteId],
     ) -> Result<()> {
         let pick = |i: usize| -> NoteId {
@@ -968,14 +1227,28 @@ impl Collection {
                 .copied()
                 .unwrap_or(NoteId(1))
         };
-        for i in 0..CONFUSION_ATTEMPTS_PER_SET {
-            let correct = i < CONFUSION_CORRECT_PER_SET;
+        for i in 0..mcq_total {
+            let correct = is_correct_rep(i, mcq_total, mcq_correct);
+            // Confidence is NOT a mirror of correctness: a real learner is
+            // sometimes confidently wrong and sometimes unsure-but-right.
+            let u = rng01(mix(topic_seed, 60, i as u64));
+            let confidence = if correct {
+                if u < 0.25 {
+                    "unsure"
+                } else {
+                    "confident"
+                }
+            } else if u < 0.18 {
+                "confident"
+            } else {
+                "guess"
+            };
             self.ankountant_write_attempt(&NewAttempt {
                 item_ref: pick(i as usize),
                 confusion_set_id: set_id.to_string(),
                 mode: "confusion".to_string(),
-                confidence: if correct { "confident" } else { "guess" }.to_string(),
-                latency_ms: 3200,
+                confidence: confidence.to_string(),
+                latency_ms: 2_400 + (rng01(mix(topic_seed, 61, i as u64)) * 7_000.0) as u32,
                 outcome: Outcome {
                     credit: if correct { 1.0 } else { 0.0 },
                     steps: vec![],
@@ -985,14 +1258,26 @@ impl Collection {
                 sealed: true,
             })?;
         }
-        // A couple of partial-credit TBS attempts (blends 50/50 into Performance).
-        for credit in [0.5f64, 0.75] {
+        // Partial-credit TBS attempts (blend 50/50 into Performance).
+        for (i, &credit) in tbs_credits.iter().enumerate() {
+            let u = rng01(mix(topic_seed, 62, i as u64));
+            let confidence = if credit >= 0.8 {
+                if u < 0.2 {
+                    "unsure"
+                } else {
+                    "confident"
+                }
+            } else if u < 0.3 {
+                "confident"
+            } else {
+                "unsure"
+            };
             self.ankountant_write_attempt(&NewAttempt {
-                item_ref: pick(0),
+                item_ref: pick(i),
                 confusion_set_id: set_id.to_string(),
                 mode: "tbs".to_string(),
-                confidence: "unsure".to_string(),
-                latency_ms: 45_000,
+                confidence: confidence.to_string(),
+                latency_ms: 30_000 + (rng01(mix(topic_seed, 63, i as u64)) * 40_000.0) as u32,
                 outcome: Outcome {
                     credit,
                     steps: vec![],

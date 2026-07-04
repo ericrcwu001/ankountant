@@ -1,0 +1,90 @@
+// Copyright: Ankitects Pty Ltd and contributors
+// License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
+
+import type { GetReadinessResponse, TopicScore } from "@generated/anki/scheduler_pb";
+import { expect, test } from "vitest";
+
+import { buildFarTopics } from "./far-topics";
+import { heightForTopicScore } from "./topo";
+
+const rounded = (value: number): number => Number(value.toFixed(3));
+
+const topic = (setId: string, performance: number): TopicScore =>
+    ({
+        setId,
+        memory: performance,
+        performance,
+        gap: 0,
+        memoryInsufficient: false,
+        memoryLow: performance,
+        memoryHigh: performance,
+        performanceLow: performance,
+        performanceHigh: performance,
+    }) as unknown as TopicScore;
+
+test("FAR topic mountains are ranked by preparedness, row-major", () => {
+    const readiness = {
+        topics: [
+            topic("operating_vs_finance_lease", 0.67),
+            topic("revrec_step_selection", 0.91),
+            topic("capitalize_vs_expense", 0.84),
+            topic("inventory_valuation", 0.75),
+            topic("trading_afs_htm", 0.98),
+            topic("tax_timing", 0.62),
+            topic("debt_extinguishment", 0.71),
+            topic("intangibles_impairment", 0.89),
+            topic("cash_receivables", 0.53),
+            topic("financial_statements", 0.77),
+            topic("conceptual_framework", 0.69),
+            topic("pensions_equity", 0.58),
+            topic("government_nfp", 0.81),
+        ],
+    } as unknown as GetReadinessResponse;
+
+    const topics = buildFarTopics(readiness);
+    const expectedScores = [
+        98,
+        91,
+        89,
+        84,
+        81,
+        77,
+        75,
+        71,
+        69,
+        67,
+        62,
+        58,
+        53,
+    ];
+
+    expect(topics.map((t) => t.performance)).toEqual(expectedScores);
+    expect(topics.slice(0, 5).map((t) => t.tier)).toEqual([
+        "back",
+        "back",
+        "back",
+        "back",
+        "back",
+    ]);
+    expect(topics.slice(5).every((t) => t.tier === "front")).toBe(true);
+    expect(topics.slice(0, 5).map((t) => rounded(t.cx))).toEqual([
+        0.12,
+        0.32,
+        0.52,
+        0.72,
+        0.9,
+    ]);
+    expect(topics.slice(5).map((t) => rounded(t.cx))).toEqual([
+        0.045,
+        0.175,
+        0.305,
+        0.435,
+        0.565,
+        0.695,
+        0.825,
+        0.955,
+    ]);
+    expect(topics.map((t) => t.height)).toEqual(
+        topics.map((topic) => heightForTopicScore(topic.performance ?? 0, topic.tier)),
+    );
+});

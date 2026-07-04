@@ -1,11 +1,37 @@
-# iOS "Summit" Home — Topographic Readiness Range (Layout #3)
+# iOS "Summit" Home — FAR Topic Flow
 
-> Branch: `ios-summit-home` · Scope: **iOS only** (no `.proto` / Rust / Python changes) ·
-> Status: **planning complete, ready to implement**
+> Branch: working tree UI overhaul · Scope: **iOS + shared exam-date protobuf/client dispatch** ·
+> Status: **implemented 2026-07-03**
 >
-> Produced by a two-wave, 13-subagent draft→adversarial-cross-check process. This
-> document is the reconciled, single source of truth. Where agents disagreed, the
-> resolution and its rationale are recorded inline.
+> The original plan below described a five-section summit overview. The shipped
+> implementation intentionally follows the supplied reference image instead:
+> a FAR-focused hero range, FAR topic list, topic detail flow, pre-reveal
+> confidence check, and Progress summary.
+
+## Implementation Update
+
+Implemented iOS surfaces:
+
+- `HomeView` now renders the FAR summit hero, countdown/readiness cards, sync-safe exam-date control, FAR topic list, phase-aware study CTA, and confusion practice entry.
+- `FarTopicDetailView` shows a selected topic's Memory, Performance, Gap, Memory range, Performance range, and confusion-set tokens.
+- `ReviewView` requires a Guess/Unsure/Confident selection before answer reveal.
+- `ContentView` now uses the supplied Home/Study/Review/Analytics/More tab shell while preserving the Reader, Browse/Review, Stats, and Settings destinations.
+- `StatsDashboardView` now starts with a Progress summary card while preserving the existing full chart stack.
+
+Data/feature preservation:
+
+- Home still uses `DeckListView`, so deck browsing, import, sync, profile picker, and pull-to-refresh behavior stay in the existing app shell.
+- Exam date now uses the backend `setExamDate`/`getExamDate` RPCs through `ExamConfigClient+Live`, matching desktop and avoiding local-only app storage.
+- Readiness and topic values are live from `schedulerService.getReadiness`; insufficient data renders as withheld/insufficient instead of invented scores.
+
+Verification:
+
+- Built successfully with `xcodebuild build -project ios/AnkountantApp/AnkountantApp.xcodeproj -scheme AnkountantApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' -quiet`.
+- Computer Use visual QA inspected the rebuilt simulator Home screen and saved `work/ios-home-computer-use-final.png`.
+
+---
+
+The archived original plan follows for design history.
 
 ---
 

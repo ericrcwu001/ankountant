@@ -4,9 +4,11 @@ import AnkiProto
 
 /// Reviews contribution heatmap.
 /// - Defaults to showing the last 6 months.
-/// - The "Last …" range menu resizes the visible window (grid width follows
-///   `selectedDateRange`); the caller must fetch enough history to back the
-///   largest range it wants selectable.
+/// - The "Last …" range menu **rescales** the grid to fit the whole selected
+///   window into the card width: shorter ranges render larger cells, longer
+///   ranges render denser cells. (Previously the cell size was fixed and the
+///   grid scrolled, so every range showed the same trailing weeks at the same
+///   scale — "6 months" looked identical to "2 years".)
 struct HeatmapChartOptimized: View {
     let reviews: Anki_Stats_GraphsResponse.ReviewCountsAndTimes
 
@@ -20,26 +22,36 @@ struct HeatmapChartOptimized: View {
     @State private var maxCount: Int = 1
     @State private var totalReviews: Int = 0
 
+    /// Measured width of the grid viewport, used to size cells so the entire
+    /// selected range fits on screen (non-compact only).
+    @State private var gridWidth: CGFloat = 0
+
     var compactHeight: CGFloat? = nil
+
+    private static let monthFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.setLocalizedDateFormatFromTemplate("MMM")
+        return formatter
+    }()
 
     private var isCompact: Bool {
         compactHeight != nil
-    }
-
-    private var cellSpacing: CGFloat {
-        isCompact ? 1.25 : 2
     }
 
     private var weekdayLabelWidth: CGFloat {
         isCompact ? 16 : 22
     }
 
-    private var cellSize: CGFloat {
-        guard let compactHeight else { return 12 }
-        let reservedHeight: CGFloat = 92
-        let availableGridHeight = max(56, compactHeight - reservedHeight)
-        let computed = (availableGridHeight - (cellSpacing * 6)) / 7
-        return min(12, max(7, computed))
+    /// Number of week-columns needed to cover the selected range.
+    private var columnCount: Int {
+        max(4, (selectedDateRange + 7) / 7 + 1)
+    }
+
+    /// Past ~9 months the grid is too dense for per-row weekday / per-column
+    /// month labels to be legible, so they're dropped (the extra width goes to
+    /// the cells instead).
+    private var isDense: Bool {
+        !isCompact && columnCount > 40
     }
 
     // MARK: - Derived Computed Properties (sync, over snapshot)
@@ -69,72 +81,94 @@ struct HeatmapChartOptimized: View {
         return (0..<day).reduce(0) { $0 + (visibleData[-$1] ?? 0) }
     }
 
-    // MARK: - Grid Data
+    // MARK: - Grid Model
 
-    private var weeksToShow: Int {
-        // Drive the grid width from the selected range so the "Last …" menu
-        // visibly resizes the calendar. Showing empty leading cells for a
-        // wider range is expected (GitHub-style contribution graph), which is
-        // what makes the range button feel responsive even before older data
-        // exists.
-        let totalDays = selectedDateRange + 7
-        return max(4, totalDays / 7 + 1)
+    /// Precomputed grid geometry. Cell offsets are derived with integer math
+    /// (`offset(column:day:)`) instead of a `Calendar` lookup per cell, so
+    /// rescaling to a long range no longer freezes the main thread.
+    private struct HeatmapGrid {
+        let columns: Int
+        /// Weekday index of "today" with Monday = 0 … Sunday = 6.
+        let todayIndex: Int
+        let cellSize: CGFloat
+        let cellSpacing: CGFloat
+        let labelWidth: CGFloat
+        let showsSideLabels: Bool
+        let monthLabels: [(label: String, column: Int)]
+
+        /// Day offset for a cell: 0 = today, negative = past, positive = future.
+        /// The rightmost column is the current week.
+        func offset(column: Int, day: Int) -> Int {
+            (column - (columns - 1)) * 7 + (day - todayIndex)
+        }
     }
 
-    private var weeks: [[Date]] {
+    private func makeGrid() -> HeatmapGrid {
+        let columns = columnCount
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let startDate = calendar.date(byAdding: .weekOfYear, value: -(weeksToShow - 1), to: today)!
-        let startOfWeek = calendar.date(
-            from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: startDate)
-        )!
+        let todayIndex = (calendar.component(.weekday, from: today) + 5) % 7
 
-        var result: [[Date]] = []
-        var current = startOfWeek
-        while current <= today {
-            var week: [Date] = []
-            for dayOff in 0..<7 {
-                week.append(calendar.date(byAdding: .day, value: dayOff, to: current)!)
+        let dense = isDense
+        let spacing: CGFloat = isCompact ? 1.25 : (columns > 52 ? 1 : 2)
+        let labelWidth: CGFloat = (isCompact || !dense) ? weekdayLabelWidth : 0
+        let size = cellSize(columns: columns, spacing: spacing, labelWidth: labelWidth)
+
+        var monthLabels: [(label: String, column: Int)] = []
+        if !dense {
+            var lastMonth = -1
+            for column in 0..<columns {
+                let mondayOffset = (column - (columns - 1)) * 7 - todayIndex
+                guard let date = calendar.date(byAdding: .day, value: mondayOffset, to: today) else { continue }
+                let month = calendar.component(.month, from: date)
+                if month != lastMonth {
+                    monthLabels.append((Self.monthFormatter.string(from: date), column))
+                    lastMonth = month
+                }
             }
-            result.append(week)
-            current = calendar.date(byAdding: .weekOfYear, value: 1, to: current)!
         }
-        return result
+
+        return HeatmapGrid(
+            columns: columns,
+            todayIndex: todayIndex,
+            cellSize: size,
+            cellSpacing: spacing,
+            labelWidth: labelWidth,
+            showsSideLabels: isCompact || !dense,
+            monthLabels: monthLabels
+        )
     }
 
-    private var monthLabels: [(String, Int)] {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "MMM"
-        var labels: [(String, Int)] = []
-        var lastMonth = -1
-        for (weekIdx, week) in weeks.enumerated() {
-            let month = Calendar.current.component(.month, from: week[0])
-            if month != lastMonth {
-                labels.append((fmt.string(from: week[0]), weekIdx))
-                lastMonth = month
-            }
+    /// Cell edge length. In compact mode it's driven by the available height;
+    /// otherwise it's sized so `columns` week-columns fill the measured width.
+    private func cellSize(columns: Int, spacing: CGFloat, labelWidth: CGFloat) -> CGFloat {
+        if let compactHeight {
+            let reservedHeight: CGFloat = 92
+            let availableGridHeight = max(56, compactHeight - reservedHeight)
+            return min(12, max(7, (availableGridHeight - (spacing * 6)) / 7))
         }
-        return labels
+        guard gridWidth > 0 else { return 12 }
+        let available = gridWidth - labelWidth
+        let perColumn = available / CGFloat(max(columns, 1))
+        return min(16, max(1.5, perColumn - spacing))
     }
 
     // MARK: - Body
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let grid = makeGrid()
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Reviews")
                     .ankountantFont(.sectionHeading)
                     .foregroundStyle(palette.textPrimary)
                 Spacer()
 
-                // Date range picker (when not compact)
                 if !isCompact {
                     Menu {
                         ForEach([30, 90, 180, 365, 730], id: \.self) { days in
                             Button(dateRangeLabel(days)) {
-                                Task {
-                                    await updateDateRange(days)
-                                }
+                                Task { await updateDateRange(days) }
                             }
                         }
                     } label: {
@@ -165,18 +199,33 @@ struct HeatmapChartOptimized: View {
                     }
                 }
 
-                // Horizontal scroll to pan across the selected window. The
-                // "Last …" range menu controls how much history is shown, so
-                // there's no scroll-based auto-expansion.
-                ScrollView(.horizontal, showsIndicators: !isCompact) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        monthHeaderView()
-                        gridView()
+                if isCompact {
+                    // Compact widgets keep the fixed-size + horizontal pan layout.
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        gridStack(grid)
+                    }
+                    .defaultScrollAnchor(.trailing)
+                } else {
+                    // Full card: fit the whole selected range to the width
+                    // (oldest → newest, left → right). Render only once the
+                    // width is known so a long range doesn't lay out oversized
+                    // for a frame at the fallback cell size.
+                    Group {
+                        if gridWidth > 0 {
+                            gridStack(grid)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        } else {
+                            Color.clear.frame(height: 110)
+                        }
+                    }
+                    .onGeometryChange(for: CGFloat.self) { proxy in
+                        proxy.size.width
+                    } action: { width in
+                        if abs(width - gridWidth) > 0.5 { gridWidth = width }
                     }
                 }
-                .defaultScrollAnchor(.trailing)
 
-                legendView()
+                legendView(grid)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -198,47 +247,58 @@ struct HeatmapChartOptimized: View {
 
     // MARK: - View Components
 
-    private func monthHeaderView() -> some View {
+    private func gridStack(_ grid: HeatmapGrid) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if !grid.monthLabels.isEmpty {
+                monthHeaderView(grid)
+            }
+            gridView(grid)
+        }
+    }
+
+    private func monthHeaderView(_ grid: HeatmapGrid) -> some View {
         HStack(spacing: 0) {
-            Spacer().frame(width: weekdayLabelWidth)
-            ForEach(0..<weeks.count, id: \.self) { weekIdx in
-                if let label = monthLabels.first(where: { $0.1 == weekIdx }) {
-                    Text(label.0)
+            if grid.showsSideLabels {
+                Spacer().frame(width: grid.labelWidth)
+            }
+            ForEach(0..<grid.columns, id: \.self) { column in
+                if let label = grid.monthLabels.first(where: { $0.column == column }) {
+                    Text(label.label)
                         .font(.system(size: 9))
                         .foregroundStyle(palette.textSecondary)
                         .fixedSize()
-                        .frame(width: cellSize + cellSpacing, alignment: .leading)
+                        .frame(width: grid.cellSize + grid.cellSpacing, alignment: .leading)
                 } else {
-                    Spacer().frame(width: cellSize + cellSpacing)
+                    Spacer().frame(width: grid.cellSize + grid.cellSpacing)
                 }
             }
         }
         .frame(height: 14)
     }
 
-    private func gridView() -> some View {
+    private func gridView(_ grid: HeatmapGrid) -> some View {
         HStack(alignment: .top, spacing: 0) {
-            VStack(spacing: cellSpacing) {
-                ForEach(0..<7, id: \.self) { day in
-                    Text(weekdayLabel(day))
-                        .font(.system(size: 8))
-                        .foregroundStyle(palette.textSecondary)
-                        .frame(width: weekdayLabelWidth, height: cellSize)
+            if grid.showsSideLabels {
+                VStack(spacing: grid.cellSpacing) {
+                    ForEach(0..<7, id: \.self) { day in
+                        Text(weekdayLabel(day))
+                            .font(.system(size: 8))
+                            .foregroundStyle(palette.textSecondary)
+                            .frame(width: grid.labelWidth, height: grid.cellSize)
+                    }
                 }
             }
 
-            HStack(spacing: cellSpacing) {
-                ForEach(0..<weeks.count, id: \.self) { weekIdx in
-                    VStack(spacing: cellSpacing) {
-                        ForEach(0..<7, id: \.self) { dayIdx in
-                            let date = weeks[weekIdx][dayIdx]
-                            let offset = dayOffset(for: date)
+            HStack(spacing: grid.cellSpacing) {
+                ForEach(0..<grid.columns, id: \.self) { column in
+                    VStack(spacing: grid.cellSpacing) {
+                        ForEach(0..<7, id: \.self) { day in
+                            let offset = grid.offset(column: column, day: day)
                             let count = visibleData[offset] ?? 0
-                            let isFuture = date > Date()
 
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(isFuture ? Color.clear : heatColor(count: count))
-                                .frame(width: cellSize, height: cellSize)
+                            RoundedRectangle(cornerRadius: grid.cellSize > 4 ? 2 : 1)
+                                .fill(offset > 0 ? Color.clear : heatColor(count: count))
+                                .frame(width: grid.cellSize, height: grid.cellSize)
                         }
                     }
                 }
@@ -246,14 +306,15 @@ struct HeatmapChartOptimized: View {
         }
     }
 
-    private func legendView() -> some View {
-        HStack(spacing: isCompact ? 3 : 4) {
+    private func legendView(_ grid: HeatmapGrid) -> some View {
+        let swatch: CGFloat = isCompact ? 8 : 10
+        return HStack(spacing: isCompact ? 3 : 4) {
             Spacer()
             Text("Less").ankountantFont(.micro).foregroundStyle(palette.textSecondary)
             ForEach([0.0, 0.25, 0.5, 0.75, 1.0], id: \.self) { intensity in
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color.green.opacity(max(0.1, intensity)))
-                    .frame(width: cellSize, height: cellSize)
+                    .frame(width: swatch, height: swatch)
             }
             Text("More").ankountantFont(.micro).foregroundStyle(palette.textSecondary)
         }
@@ -285,12 +346,6 @@ struct HeatmapChartOptimized: View {
         if count == 0 { return Color(.systemGray6) }
         let intensity = min(1.0, Double(count) / Double(max(maxCount, 1)))
         return .green.opacity(max(0.2, intensity))
-    }
-
-    private func dayOffset(for date: Date) -> Int {
-        let today = Calendar.current.startOfDay(for: Date())
-        let target = Calendar.current.startOfDay(for: date)
-        return Calendar.current.dateComponents([.day], from: today, to: target).day ?? 0
     }
 
     private func dateRangeLabel(_ days: Int) -> String {

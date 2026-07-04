@@ -931,6 +931,55 @@ fn a3_dto_has_no_label_field() {
     }
 }
 
+#[test]
+fn a3_all_section_queue_spans_sections() {
+    let (mut col, _) = seeded();
+    let resp = SchedulerService::build_confusion_queue(
+        &mut col,
+        BuildConfusionQueueRequest {
+            section: "ALL".into(),
+            max_items: 0,
+        },
+    )
+    .unwrap();
+    let sections: HashSet<String> = resp
+        .items
+        .iter()
+        .map(|it| {
+            let note = col.storage.get_note(NoteId(it.note_id)).unwrap().unwrap();
+            super::note_section(&note.tags)
+        })
+        .collect();
+    for section in super::SECTIONS {
+        assert!(
+            sections.contains(section),
+            "all-section queue missing {section}: {sections:?}"
+        );
+    }
+}
+
+#[test]
+fn a3_seeded_confusion_queue_has_authored_prompts() {
+    let (mut col, _) = seeded();
+    let resp = SchedulerService::build_confusion_queue(
+        &mut col,
+        BuildConfusionQueueRequest {
+            section: "FAR".into(),
+            max_items: 0,
+        },
+    )
+    .unwrap();
+    assert!(!resp.items.is_empty());
+    for item in resp.items {
+        assert!(
+            !item.prompt.starts_with("Which treatment applies?"),
+            "generic fallback prompt leaked for {}: {}",
+            item.set_id,
+            item.prompt
+        );
+    }
+}
+
 /// Seed `correct` correct + `wrong` wrong confusion attempts for a set by
 /// writing Attempt Log notes directly.
 fn seed_confusion_accuracy(col: &mut Collection, set_id: &str, correct: u32, wrong: u32) {
@@ -1110,7 +1159,7 @@ fn a4_tbs_partial_credit_moves_performance() {
 fn a5_abstain_on_insufficient_volume() {
     // A16 — < 20 sealed attempts.
     let (mut col, _) = seeded();
-    seed_sealed_attempts(&mut col, 3, 0.5); // 4 sets * 3 = 12 attempts
+    seed_sealed_attempts(&mut col, 1, 0.5); // 13 sets * 1 = 13 attempts (< 20)
     let r = readiness(&mut col).readiness.unwrap();
     assert!(r.abstain);
     assert_eq!(r.reason, "insufficient volume");
@@ -1120,7 +1169,7 @@ fn a5_abstain_on_insufficient_volume() {
 fn a5_abstain_on_insufficient_coverage() {
     // A17 — >= 20 attempts but < 60% coverage.
     let (mut col, _) = seeded();
-    // Put all 24 attempts in a single set -> coverage 1/4 = 25%.
+    // Put all 24 attempts in a single set -> coverage 1/13 ≈ 8%.
     use super::attempt_log::NewAttempt;
     use super::attempt_log::Outcome;
     col.transact(crate::ops::Op::AddNote, |col| {
@@ -1247,17 +1296,18 @@ fn f016_content_seed_has_real_recall_and_mcqs() {
         "sealed tbs notes: {}",
         sealed_tbs.len()
     );
-    // A real recall card exists for a topic that has no confusion set.
+    // Every FAR topic has real recall cards backing its Memory (e.g. taxes).
     let taxes = col.search_notes_unordered("tag:far::taxes").unwrap();
     assert!(!taxes.is_empty(), "expected far::taxes recall cards");
 }
 
 #[test]
-fn f016_demo_history_bands_with_one_undercovered_topic() {
-    // with_history=true injects fake reps + sealed attempts so readiness emits
-    // an honest band, while trading_afs_htm is deliberately left thin -> its
-    // per-topic readiness reads insufficient (the give-up rule) even though the
-    // overall band still emits (coverage 3/4 >= 60%).
+fn f016_demo_history_is_strong_on_most_topics_with_a_few_weak_spots() {
+    // with_history=true injects a lived-in profile: every FAR topic is reviewed
+    // and scored — most strongly (Memory & Performance both > 80) with a handful
+    // of genuine weak spots (both < 75). The aggregate therefore emits an honest
+    // band. (The per-topic give-up rule itself is covered by the A5 coverage
+    // test; here the demo intentionally covers every topic.)
     let mut col = Collection::new();
     col.ankountant_load_far_seed(true).unwrap();
     let resp = readiness(&mut col);
@@ -1270,37 +1320,41 @@ fn f016_demo_history_bands_with_one_undercovered_topic() {
     assert!(r.band_low < r.band_high);
     assert!(!r.confidence.is_empty());
 
-    let covered = [
-        "capitalize_vs_expense",
-        "operating_vs_finance_lease",
-        "revrec_step_selection",
-    ];
+    // Every topic is covered with a real Memory base and real Performance — no
+    // thin/insufficient topic in the lived-in profile.
     for t in &resp.topics {
-        if covered.contains(&t.set_id.as_str()) {
-            assert!(
-                t.performance > 0.0,
-                "covered set {} should have performance",
-                t.set_id
-            );
-            assert!(
-                !t.memory_insufficient,
-                "covered set {} should have memory",
-                t.set_id
-            );
-        }
+        assert!(
+            !t.memory_insufficient,
+            "topic {} should have a memory base",
+            t.set_id
+        );
+        assert!(
+            t.performance > 0.0,
+            "topic {} should have performance",
+            t.set_id
+        );
     }
-    let trading = resp
+
+    // Most topics are strong on BOTH signals...
+    let strong = resp
         .topics
         .iter()
-        .find(|t| t.set_id == "trading_afs_htm")
-        .unwrap();
-    assert_eq!(
-        trading.performance, 0.0,
-        "under-covered set must have no performance"
-    );
+        .filter(|t| t.memory > 0.80 && t.performance > 0.80)
+        .count();
     assert!(
-        trading.memory_insufficient,
-        "under-covered set must read insufficient memory (give-up rule)"
+        strong >= 8,
+        "expected most topics strong (mem & perf > 80), got {strong}"
+    );
+
+    // ...and 2-3 are weak on BOTH signals (the intended FAR pain points).
+    let weak = resp
+        .topics
+        .iter()
+        .filter(|t| t.memory < 0.75 && t.performance < 0.75)
+        .count();
+    assert!(
+        (2..=3).contains(&weak),
+        "expected 2-3 weak topics (mem & perf < 75), got {weak}"
     );
 }
 

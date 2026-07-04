@@ -2,6 +2,7 @@
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 import SwiftUI
+import Foundation
 import AnkountantTheme
 import AnkiKit
 import AnkiClients
@@ -9,16 +10,9 @@ import AnkiServices
 import Dependencies
 import Sharing
 
-/// The Ankountant Home hub — the Decks tab root. The hero stacks a days-until-exam
-/// countdown, the FAR readiness Wilson band (the headline), a topographic "range"
-/// across the CPA sections, and a per-section list; the deck list scrolls beneath.
-/// Tapping a section peak/row drills into its per-topic Memory/Performance
-/// breakdown. Saving the exam date (via `ExamConfigClient`) is what makes the live
-/// scheduler deadline-anchored (A1-live). Styled with the Ledger tokens: navy is
-/// chrome-only + the readiness band; numerals are neutral ink + tabular figures;
-/// abstain ("Not enough data yet") is first-class.
 struct HomeView: View {
     @Binding var pendingReviewDeckId: Int64?
+    @Binding var path: NavigationPath
 
     @Dependency(\.schedulerService) private var schedulerService
     @Dependency(\.examConfigClient) private var examConfigClient
@@ -28,138 +22,180 @@ struct HomeView: View {
 
     @State private var examDate = Date()
     @State private var hasExamDate = false
-    // One entry per summit section (FAR first); nil summary until loaded / on error.
     @State private var sections: [SectionReadiness] = CPASection.homeOrder.map {
         SectionReadiness(section: $0, summary: nil)
     }
     @State private var readinessLoaded = false
     @State private var farDeckId: Int64?
-    @State private var showConfusion = false
+    @State private var loadError: String?
 
-    // Bumped by the Debug "demo phases" actions after they reseed. Observed via
-    // .task(id:) below so Home reloads when the demo profile changes.
     @Shared(.appStorage(DemoSeed.versionKey)) private var demoSeedVersion = 0
 
-    // The focus section: FAR drives the countdown, headline readiness, and CTA.
     private let section = "FAR"
+
+    /// Home push destinations, driven programmatically by appending to `path`.
+    /// The hero renders as a single `List` row (DeckListView's header), and
+    /// multiple `NavigationLink`s inside one List row all activate on any tap —
+    /// which pushed every FAR topic plus the drill at once and always surfaced the
+    /// confusion screen. Buttons that append to the stack path hit-test per row.
+    private enum HomeRoute: Hashable {
+        case confusion
+    }
 
     var body: some View {
         DeckListView(
             header: AnyView(hero),
             onAdditionalRefresh: { await load() },
             reloadID: demoSeedVersion,
-            navigationTitle: "Home"
+            navigationTitle: ""
         )
         .task(id: demoSeedVersion) { await load() }
-        .navigationDestination(isPresented: $showConfusion) {
-            ConfusionDrillView()
+        .navigationDestination(for: HomeRoute.self) { route in
+            switch route {
+            case .confusion:
+                ConfusionDrillView()
+            }
         }
-        .navigationDestination(for: CPASection.self) { tapped in
-            SectionDetailView(section: tapped)
+        .navigationDestination(for: FarTopicCard.self) { topic in
+            FarTopicDetailView(
+                topic: topic,
+                canStudy: farDeckId != nil,
+                onStudy: startReview
+            )
         }
     }
-
-    // MARK: Hero
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
-            countdownCard
-            readinessCard
-            RangeHeroChart(sections: sections)
-            sectionList
+            summitHero
+            metricDeck
+            examScheduleControl
+            farTopicList
             actions
+            if let loadError {
+                AnkountantStatusMessageView(
+                    title: "Home data failed",
+                    message: loadError,
+                    systemImage: "exclamationmark.triangle",
+                    tone: .danger
+                )
+                .frame(maxWidth: .infinity)
+                .ankountantCard(elevated: true)
+            }
         }
     }
 
-    private var countdownCard: some View {
+    private var summitHero: some View {
         VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
-            HStack(alignment: .firstTextBaseline, spacing: AnkountantSpacing.sm) {
-                // The countdown is the display hero — neutral ink + tabular
-                // digits, never the brand navy (which is chrome-only).
-                Text(countdownNumeral)
-                    .ankountantFont(.displayHero)
-                    .foregroundStyle(palette.textPrimary)
-                    .monospacedDigit()
-                Text(countdownCaption)
-                    .ankountantFont(.callout)
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Ankountant")
+                        .font(.system(size: 24, weight: .semibold, design: .serif))
+                        .foregroundStyle(.white)
+                    Text("CPA FAR EXAM PREP")
+                        .ankountantFont(.micro)
+                        .foregroundStyle(Color.white.opacity(0.68))
+                }
+                Spacer()
+                Image(systemName: "bell")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 34, height: 34)
+                    .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+
+            FarTopicHeroChart(topics: farTopics)
+                .frame(height: 150)
+        }
+        .padding(AnkountantSpacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(
+                colors: [Color(red: 0.08, green: 0.19, blue: 0.33), Color(red: 0.05, green: 0.13, blue: 0.24)],
+                startPoint: .top,
+                endPoint: .bottom
+            ),
+            in: RoundedRectangle(cornerRadius: AnkountantRadius.container, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: AnkountantRadius.container, style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Ankountant CPA FAR exam prep topic mastery")
+    }
+
+    private var metricDeck: some View {
+        HStack(spacing: AnkountantSpacing.sm) {
+            HomeMetricCard(value: countdownNumeral, label: countdownCaption)
+            HomeMetricCard(value: readinessValue, label: readinessCaption, gauge: readinessFraction)
+        }
+    }
+
+    private var examScheduleControl: some View {
+        HStack(spacing: AnkountantSpacing.md) {
+            Image(systemName: "calendar")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(palette.accent)
+                .frame(width: 34, height: 34)
+                .background(palette.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Exam date")
+                    .ankountantFont(.micro)
+                    .textCase(.uppercase)
                     .foregroundStyle(palette.textSecondary)
+                Text(hasExamDate ? countdownCaption : "Set exam date")
+                    .ankountantFont(.caption)
+                    .foregroundStyle(palette.textPrimary)
             }
-            DatePicker(
-                "Exam date",
-                selection: examDateBinding,
-                displayedComponents: [.date]
-            )
-            .tint(palette.accent)
-            .ankountantFont(.body)
-            .foregroundStyle(palette.textSecondary)
+            Spacer(minLength: 0)
+            DatePicker("", selection: examDateBinding, displayedComponents: [.date])
+                .labelsHidden()
+                .datePickerStyle(.compact)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .ankountantCard(elevated: true)
+        .padding(AnkountantSpacing.md)
+        .background(palette.surfaceElevated, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
+                .stroke(palette.borderSubtle, lineWidth: 1)
+        )
     }
 
-    // Headline: the FAR exam-day projection (Constraint 3). Abstain-aware.
-    private var readinessCard: some View {
+    private var farTopicList: some View {
         VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
-            Text("FAR · Exam-day projection")
+            Text("FAR Topics")
                 .ankountantFont(.micro)
-                .foregroundStyle(palette.textSecondary)
                 .textCase(.uppercase)
-
-            if let far = farReadiness {
-                ReadinessBandView(band: far.band)
-                if !far.band.abstain {
-                    HStack(spacing: AnkountantSpacing.xl) {
-                        quickStat("\(far.topics.count)", "FAR topics")
-                        quickStat("\(far.gapsToCloseCount)", "Gaps to close")
+                .foregroundStyle(palette.textSecondary)
+            VStack(spacing: 0) {
+                ForEach(farTopics.prefix(7)) { topic in
+                    Button {
+                        path.append(topic)
+                    } label: {
+                        FarTopicRow(topic: topic)
                     }
-                    .padding(.top, AnkountantSpacing.xs)
+                    .buttonStyle(.plain)
+                    if topic.id != farTopics.prefix(7).last?.id {
+                        Rectangle().fill(palette.borderSubtle).frame(height: 1)
+                    }
                 }
-            } else if readinessLoaded {
-                AbstainView(reason: "complete a few reviews to project a score")
-            } else {
-                ProgressView()
             }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .ankountantCard(elevated: true)
-    }
-
-    // One tappable row per section, sharing the CPASection navigation destination
-    // with the range peaks above.
-    private var sectionList: some View {
-        VStack(spacing: AnkountantSpacing.sm) {
-            ForEach(sections) { readiness in
-                NavigationLink(value: readiness.section) {
-                    SectionReadinessRow(section: readiness)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .ankountantCard(elevated: true)
-                }
-                .buttonStyle(.plain)
-            }
+            .background(palette.surfaceElevated, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
+                    .stroke(palette.borderSubtle, lineWidth: 1)
+            )
         }
     }
 
     private var actions: some View {
         VStack(spacing: AnkountantSpacing.sm) {
-            // Phase-aware primary CTA: recall opens the FAR study deck; the
-            // discrimination phase opens the confusion drill.
-            Button(action: runCta) {
-                VStack(spacing: AnkountantSpacing.xxs) {
-                    Text(cta.label)
-                        .ankountantFont(.bodyEmphasis)
-                    Text(cta.subtitle)
-                        .ankountantFont(.caption)
-                        .opacity(0.85)
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(AnkountantPrimaryButtonStyle())
-            .disabled(cta.target == .recall && farDeckId == nil)
+            primaryCta
 
-            NavigationLink {
-                StatsDashboardView()
+            Button {
+                path.append(HomeRoute.confusion)
             } label: {
-                Text("View stats")
+                Text("Practice confusion sets")
                     .ankountantFont(.bodyEmphasis)
                     .foregroundStyle(palette.accent)
                     .frame(maxWidth: .infinity)
@@ -169,25 +205,42 @@ struct HomeView: View {
                             .stroke(palette.accent, lineWidth: 1)
                     )
             }
+            .buttonStyle(.plain)
         }
     }
 
-    private func quickStat(_ value: String, _ label: String) -> some View {
-        VStack(alignment: .leading, spacing: AnkountantSpacing.xxs) {
-            Text(value)
-                .ankountantFont(.cardTitle)
-                .foregroundStyle(palette.textPrimary)
-                .monospacedDigit()
-            Text(label)
+    // Recall raises the review cover via `pendingReviewDeckId` (not a push); the
+    // confusion drill is a pushed destination. Both are Buttons appending to the
+    // stack path — never NavigationLinks — because the hero is one List row, where
+    // multiple NavigationLinks would all fire on a single tap.
+    @ViewBuilder
+    private var primaryCta: some View {
+        let label = VStack(spacing: AnkountantSpacing.xxs) {
+            Text(cta.label)
+                .ankountantFont(.bodyEmphasis)
+            Text(cta.subtitle)
                 .ankountantFont(.caption)
-                .foregroundStyle(palette.textSecondary)
+                .opacity(0.85)
+        }
+        .frame(maxWidth: .infinity)
+
+        switch cta.target {
+        case .recall:
+            Button(action: startReview) { label }
+                .buttonStyle(AnkountantPrimaryButtonStyle())
+                .disabled(farDeckId == nil)
+        case .confusion:
+            Button { path.append(HomeRoute.confusion) } label: { label }
+                .buttonStyle(AnkountantPrimaryButtonStyle())
         }
     }
-
-    // MARK: Derived
 
     private var farReadiness: ReadinessSummary? {
         sections.first(where: { $0.section == .far })?.summary
+    }
+
+    private var farTopics: [FarTopicCard] {
+        FarTopicCard.build(from: farReadiness)
     }
 
     private var daysUntilExam: Int? {
@@ -204,16 +257,30 @@ struct HomeView: View {
     }
 
     private var countdownCaption: String {
-        guard let days = daysUntilExam else { return "Set your exam date" }
-        if days > 0 { return days == 1 ? "day until exam" : "days until exam" }
-        if days == 0 { return "Exam day — good luck" }
-        return abs(days) == 1 ? "day since exam" : "days since exam"
+        guard let days = daysUntilExam else { return "Set exam date" }
+        if days > 0 { return days == 1 ? "Day until exam" : "Days until exam" }
+        if days == 0 { return "Exam day" }
+        return abs(days) == 1 ? "Day since exam" : "Days since exam"
     }
 
-    // MARK: Phase-aware CTA
+    private var readinessValue: String {
+        guard let band = farReadiness?.band, !band.abstain else { return "—" }
+        return "\(Int(band.pointEstimate.rounded()))"
+    }
 
-    /// A memory base exists once at least one FAR topic has enough in-window
-    /// recall reps (i.e. is not memory-insufficient).
+    private var readinessCaption: String {
+        guard let band = farReadiness?.band else {
+            return readinessLoaded ? "Not enough data" : "Loading"
+        }
+        if band.abstain { return "Readiness withheld" }
+        return "\(Self.scoreRange(band)) · \(band.confidence)"
+    }
+
+    private var readinessFraction: Double? {
+        guard let band = farReadiness?.band, !band.abstain else { return nil }
+        return TopoScale.height(forScore: band.pointEstimate)
+    }
+
     private var memoryReady: Bool {
         farReadiness?.topics.contains { !$0.memoryInsufficient } ?? false
     }
@@ -223,15 +290,6 @@ struct HomeView: View {
     }
 
     private var cta: PhaseCta { buildPhaseCta(phase) }
-
-    private func runCta() {
-        switch cta.target {
-        case .recall: startReview()
-        case .confusion: showConfusion = true
-        }
-    }
-
-    // MARK: Actions
 
     private var examDateBinding: Binding<Date> {
         Binding(
@@ -248,7 +306,7 @@ struct HomeView: View {
         do {
             try examConfigClient.saveExamDate(section, Self.isoFormatter.string(from: date))
         } catch {
-            print("[HomeView] failed to save exam date: \(error)")
+            loadError = "Could not save exam date: \(error.localizedDescription)"
         }
     }
 
@@ -259,41 +317,39 @@ struct HomeView: View {
     }
 
     private func load() async {
-        // Exam date (FAR) — cheap config read. An empty stored string counts as
-        // "no date" (foundation phase).
-        if let iso = try? examConfigClient.loadExamDate(section),
-           !iso.isEmpty,
-           let parsed = Self.isoFormatter.date(from: iso) {
-            examDate = parsed
-            hasExamDate = true
-        } else {
-            examDate = Date()
-            hasExamDate = false
-        }
-
-        // Readiness for all summit sections, off the main actor. The backend
-        // serializes FFI under a lock, so a sequential loop is correct and
-        // simplest (a task group buys no real parallelism). FAR is first in
-        // homeOrder, so the headline paints before the rest fill in.
-        let getReadiness = schedulerService.getReadiness
-        for cpaSection in CPASection.homeOrder {
-            let code = cpaSection.code
-            let summary = await Task.detached(priority: .userInitiated) {
-                try? getReadiness(code)
-            }.value
-            guard !Task.isCancelled else { return }
-            update(cpaSection, summary: summary)
-            if cpaSection == .far { readinessLoaded = true }
-        }
-        readinessLoaded = true
-
-        // FAR study deck id for the recall CTA — also off the main actor.
-        let fetchTree = deckClient.fetchTree
-        farDeckId = await Task.detached(priority: .userInitiated) {
-            (try? fetchTree()).flatMap {
-                Self.findDeckId(in: $0, fullName: "Ankountant::Study::FAR")
+        loadError = nil
+        do {
+            if let iso = try examConfigClient.loadExamDate(section),
+               !iso.isEmpty,
+               let parsed = Self.isoFormatter.date(from: iso) {
+                examDate = parsed
+                hasExamDate = true
+            } else {
+                examDate = Date()
+                hasExamDate = false
             }
-        }.value
+
+            let getReadiness = schedulerService.getReadiness
+            for cpaSection in CPASection.homeOrder {
+                let code = cpaSection.code
+                let summary = try await Task.detached(priority: .userInitiated) {
+                    try getReadiness(code)
+                }.value
+                guard !Task.isCancelled else { return }
+                update(cpaSection, summary: summary)
+                if cpaSection == .far { readinessLoaded = true }
+            }
+            readinessLoaded = true
+
+            let fetchTree = deckClient.fetchTree
+            let tree = try await Task.detached(priority: .userInitiated) {
+                try fetchTree()
+            }.value
+            farDeckId = Self.findDeckId(in: tree, fullName: "Ankountant::Study::FAR")
+        } catch {
+            readinessLoaded = true
+            loadError = error.localizedDescription
+        }
     }
 
     private func update(_ cpaSection: CPASection, summary: ReadinessSummary?) {
@@ -318,4 +374,460 @@ struct HomeView: View {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+
+    private static func scoreRange(_ band: ReadinessBand) -> String {
+        "\(Int(band.bandLow.rounded()))-\(Int(band.bandHigh.rounded()))"
+    }
+}
+
+private struct HomeMetricCard: View {
+    let value: String
+    let label: String
+    var gauge: Double?
+
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        HStack(spacing: AnkountantSpacing.sm) {
+            Text(value)
+                .ankountantFont(.sectionHeading)
+                .monospacedDigit()
+                .foregroundStyle(palette.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(label)
+                .ankountantFont(.caption)
+                .foregroundStyle(palette.textSecondary)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: AnkountantSpacing.sm)
+            if let gauge {
+                MiniGauge(fraction: gauge)
+                    .frame(width: 40, height: 40)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 66, alignment: .leading)
+        .padding(AnkountantSpacing.md)
+        .background(palette.surfaceElevated, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
+                .stroke(palette.borderSubtle, lineWidth: 1)
+        )
+    }
+}
+
+private struct MiniGauge: View {
+    let fraction: Double
+    @Environment(\.palette) private var palette
+
+    private let lineWidth: CGFloat = 5
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(palette.surfaceInset, lineWidth: lineWidth)
+            Circle()
+                .trim(from: 0, to: min(max(fraction, 0), 1))
+                .stroke(palette.accent, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+        }
+        .padding(lineWidth / 2)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct FarTopicRow: View {
+    let topic: FarTopicCard
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        HStack(spacing: AnkountantSpacing.md) {
+            FarTopicSparkline(topic: topic)
+                .frame(width: 46, height: 28)
+            Text(topic.label)
+                .ankountantFont(.caption)
+                .foregroundStyle(palette.textPrimary)
+            Spacer()
+            Text(topic.scoreLabel)
+                .ankountantFont(.captionBold)
+                .monospacedDigit()
+                .foregroundStyle(topic.isUnproven ? palette.textTertiary : palette.textPrimary)
+        }
+        .padding(.horizontal, AnkountantSpacing.md)
+        .padding(.vertical, AnkountantSpacing.sm)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(topic.accessibilityLabel)
+    }
+}
+
+private struct FarTopicDetailView: View {
+    let topic: FarTopicCard
+    let canStudy: Bool
+    let onStudy: () -> Void
+
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
+                FarTopicPeakCard(topic: topic)
+                metricPanel
+                chipPanel
+                Button(action: onStudy) {
+                    Label("Study \(topic.label)", systemImage: "book")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(AnkountantPrimaryButtonStyle())
+                .disabled(!canStudy)
+                NavigationLink {
+                    SectionDetailView(section: .far)
+                } label: {
+                    Label("View topic notes", systemImage: "doc.text")
+                        .ankountantFont(.bodyEmphasis)
+                        .foregroundStyle(palette.accent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AnkountantSpacing.sm)
+                        .background(
+                            RoundedRectangle(cornerRadius: AnkountantRadius.control, style: .continuous)
+                                .stroke(palette.accent, lineWidth: 1)
+                        )
+                }
+            }
+            .padding(AnkountantSpacing.lg)
+        }
+        .ankountantSectionBackground()
+        .navigationTitle(topic.label)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var metricPanel: some View {
+        VStack(spacing: AnkountantSpacing.sm) {
+            metric("Memory", value: topic.memory, detail: topic.memoryRange)
+            metric("Performance", value: topic.performance, detail: topic.performanceRange)
+            metric("Gap", value: topic.gap, detail: "")
+        }
+        .ankountantCard(elevated: true)
+    }
+
+    private var chipPanel: some View {
+        VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
+            Text("Confusion sets")
+                .ankountantFont(.micro)
+                .textCase(.uppercase)
+                .foregroundStyle(palette.textSecondary)
+            FlowLayout(items: topic.tokens) { token in
+                Text(token)
+                    .ankountantFont(.micro)
+                    .foregroundStyle(palette.textSecondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(palette.surfaceInset, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .stroke(palette.borderSubtle, lineWidth: 1)
+                    )
+            }
+        }
+        .ankountantCard(elevated: true)
+    }
+
+    private func metric(_ label: String, value: Int?, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: AnkountantSpacing.xs) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(label)
+                    .ankountantFont(.caption)
+                    .foregroundStyle(palette.textSecondary)
+                Spacer()
+                Text(value.map { "\($0)%" } ?? "insufficient")
+                    .ankountantFont(.bodyEmphasis)
+                    .monospacedDigit()
+                    .foregroundStyle(value == nil ? palette.textTertiary : palette.textPrimary)
+            }
+            if !detail.isEmpty {
+                Text(detail)
+                    .ankountantFont(.micro)
+                    .foregroundStyle(palette.textTertiary)
+            }
+            PositionMeter(fraction: value.map { Double($0) / 100 })
+        }
+    }
+}
+
+private struct FarTopicPeakCard: View {
+    let topic: FarTopicCard
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
+            HStack {
+                Text(topic.label)
+                    .ankountantFont(.sectionHeading)
+                    .foregroundStyle(palette.textPrimary)
+                Spacer()
+                Image(systemName: "bookmark")
+                    .foregroundStyle(palette.textSecondary)
+            }
+            FarSinglePeakChart(topic: topic)
+                .frame(height: 180)
+        }
+        .ankountantCard(elevated: true)
+    }
+}
+
+private struct FarTopicHeroChart: View {
+    let topics: [FarTopicCard]
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        GeometryReader { geo in
+            let size = geo.size
+            let front = Array(topics.prefix(7))
+            ZStack(alignment: .topLeading) {
+                MountainRangeCanvas(topics: front)
+                passLine(size)
+                ForEach(front) { topic in
+                    let point = topic.point(in: size)
+                    VStack(spacing: 1) {
+                        Text(topic.shortLabel)
+                            .font(.system(size: 7, weight: .semibold))
+                            .foregroundStyle(Color.white.opacity(0.86))
+                        Text(topic.scoreLabel)
+                            .font(.system(size: 7, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.white.opacity(0.86))
+                        Image(systemName: "flag.fill")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(topic.isBelow ? Color.orange : Color.white)
+                    }
+                    .position(x: point.x, y: max(12, point.y - 30))
+                }
+            }
+        }
+    }
+
+    private func passLine(_ size: CGSize) -> some View {
+        Path { path in
+            let y = size.height * 0.56
+            path.move(to: CGPoint(x: 0, y: y))
+            path.addLine(to: CGPoint(x: size.width, y: y))
+        }
+        .stroke(Color.white.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+    }
+}
+
+private struct MountainRangeCanvas: View {
+    let topics: [FarTopicCard]
+
+    var body: some View {
+        Canvas { context, size in
+            let base = size.height * 0.93
+            let plot = size.height * 0.72
+            var far = Path()
+            far.move(to: CGPoint(x: 0, y: base))
+            for index in 0...80 {
+                let t = Double(index) / 80
+                let x = t * size.width
+                let y = base - (0.12 + 0.08 * sin(t * .pi * 3)) * plot
+                far.addLine(to: CGPoint(x: x, y: y))
+            }
+            far.addLine(to: CGPoint(x: size.width, y: base))
+            far.closeSubpath()
+            context.fill(far, with: .color(Color.white.opacity(0.18)))
+
+            for topic in topics {
+                let x = topic.cx * size.width
+                let peak = base - topic.height * plot
+                var path = Path()
+                path.move(to: CGPoint(x: max(0, x - 54), y: base))
+                path.addLine(to: CGPoint(x: x, y: peak))
+                path.addLine(to: CGPoint(x: min(size.width, x + 60), y: base))
+                path.closeSubpath()
+                context.fill(path, with: .color(Color.white.opacity(topic.isUnproven ? 0.2 : 0.34)))
+                context.stroke(path, with: .color(Color.white.opacity(0.36)), lineWidth: 1)
+            }
+        }
+    }
+}
+
+private struct FarSinglePeakChart: View {
+    let topic: FarTopicCard
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        GeometryReader { geo in
+            let size = geo.size
+            ZStack(alignment: .topLeading) {
+                MountainRangeCanvas(topics: [topic])
+                Path { path in
+                    let y = size.height * 0.52
+                    path.move(to: CGPoint(x: 0, y: y))
+                    path.addLine(to: CGPoint(x: size.width, y: y))
+                }
+                .stroke(palette.accent.opacity(0.55), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                Text("PASS LINE · 75")
+                    .ankountantFont(.micro)
+                    .foregroundStyle(palette.accent)
+                    .position(x: size.width - 50, y: size.height * 0.52 - 12)
+            }
+            .background(palette.surface, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
+        }
+    }
+}
+
+private struct FarTopicSparkline: View {
+    let topic: FarTopicCard
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        GeometryReader { geo in
+            let size = geo.size
+            let base = size.height - 2
+            let peak = base - size.height * 0.72
+            Path { path in
+                path.move(to: CGPoint(x: 1, y: base))
+                path.addLine(to: CGPoint(x: size.width * 0.52, y: peak))
+                path.addLine(to: CGPoint(x: size.width - 1, y: base))
+                path.closeSubpath()
+            }
+            .fill(palette.accent.opacity(topic.isUnproven ? 0.1 : 0.18))
+            Path { path in
+                path.move(to: CGPoint(x: 1, y: base))
+                path.addLine(to: CGPoint(x: size.width * 0.52, y: peak))
+                path.addLine(to: CGPoint(x: size.width - 1, y: base))
+            }
+            .stroke(palette.accent.opacity(0.6), lineWidth: 1)
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+private struct PositionMeter: View {
+    let fraction: Double?
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(palette.surfaceInset)
+                if let fraction {
+                    Capsule()
+                        .fill(palette.accent.opacity(0.75))
+                        .frame(width: max(2, min(max(fraction, 0), 1) * geo.size.width))
+                }
+            }
+        }
+        .frame(height: 5)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct FlowLayout<Data: RandomAccessCollection, Content: View>: View where Data.Element: Hashable {
+    let items: Data
+    let content: (Data.Element) -> Content
+
+    init(items: Data, @ViewBuilder content: @escaping (Data.Element) -> Content) {
+        self.items = items
+        self.content = content
+    }
+
+    var body: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 80), spacing: 6)], alignment: .leading, spacing: 6) {
+            ForEach(Array(items), id: \.self) { item in
+                content(item)
+            }
+        }
+    }
+}
+
+private struct FarTopicCard: Identifiable, Hashable {
+    let id: String
+    let setId: String
+    let label: String
+    let cx: Double
+    let height: Double
+    let memory: Int?
+    let performance: Int?
+    let gap: Int?
+    let memoryRange: String
+    let performanceRange: String
+    let isUnproven: Bool
+
+    var scoreLabel: String { performance.map(String.init) ?? "—" }
+    var isBelow: Bool { performance.map { $0 < 75 } ?? false }
+    var shortLabel: String { label.replacingOccurrences(of: " & ", with: "\n") }
+
+    var tokens: [String] {
+        setId
+            .split(separator: "_")
+            .map { $0.prefix(1).uppercased() + $0.dropFirst() }
+    }
+
+    var accessibilityLabel: String {
+        if isUnproven { return "\(label), not enough data yet" }
+        return "\(label), performance \(scoreLabel) percent"
+    }
+
+    func point(in size: CGSize) -> CGPoint {
+        let base = size.height * 0.93
+        let plot = size.height * 0.72
+        return CGPoint(x: cx * size.width, y: base - height * plot)
+    }
+
+    static func build(from summary: ReadinessSummary?) -> [FarTopicCard] {
+        let byId = Dictionary(uniqueKeysWithValues: (summary?.topics ?? []).map { ($0.setId, $0) })
+        return specs.map { spec in
+            make(spec: spec, topic: byId[spec.setId])
+        }
+    }
+
+    private static func make(spec: Spec, topic: TopicScoreModel?) -> FarTopicCard {
+        let missingPerformance = topic == nil
+            || (topic?.performance == 0 && topic?.performanceLow == 0 && topic?.performanceHigh == 0)
+        let performance = topic.flatMap { missingPerformance ? nil : pct($0.performance) }
+        let memory = topic.flatMap { $0.memoryInsufficient ? nil : pct($0.memory) }
+        let gap = topic.flatMap { t in
+            memory == nil || performance == nil ? nil : pct(t.gap)
+        }
+        return FarTopicCard(
+            id: spec.setId,
+            setId: spec.setId,
+            label: spec.label,
+            cx: spec.cx,
+            height: spec.height,
+            memory: memory,
+            performance: performance,
+            gap: gap,
+            memoryRange: topic.flatMap { $0.memoryInsufficient ? nil : range($0.memoryLow, $0.memoryHigh) } ?? "",
+            performanceRange: topic.flatMap { missingPerformance ? nil : range($0.performanceLow, $0.performanceHigh) } ?? "",
+            isUnproven: performance == nil
+        )
+    }
+
+    private static func pct(_ value: Double) -> Int {
+        Int((value * 100).rounded())
+    }
+
+    private static func range(_ low: Double, _ high: Double) -> String {
+        let lo = pct(low)
+        let hi = pct(high)
+        return hi > lo ? "\(lo)-\(hi)%" : ""
+    }
+
+    private struct Spec {
+        let setId: String
+        let label: String
+        let cx: Double
+        let height: Double
+    }
+
+    private static let specs = [
+        Spec(setId: "operating_vs_finance_lease", label: "Leases", cx: 0.12, height: 0.88),
+        Spec(setId: "revrec_step_selection", label: "Revenue", cx: 0.27, height: 0.92),
+        Spec(setId: "capitalize_vs_expense", label: "PP&E", cx: 0.42, height: 0.87),
+        Spec(setId: "inventory_valuation", label: "Inventory", cx: 0.56, height: 0.78),
+        Spec(setId: "trading_afs_htm", label: "Investments", cx: 0.69, height: 0.85),
+        Spec(setId: "tax_timing", label: "Taxes", cx: 0.82, height: 0.75),
+        Spec(setId: "debt_extinguishment", label: "Debt", cx: 0.94, height: 0.68),
+    ]
 }

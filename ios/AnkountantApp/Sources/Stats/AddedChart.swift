@@ -7,32 +7,39 @@ struct AddedChart: View {
     let added: Anki_Stats_GraphsResponse.Added
     let period: StatsPeriod
 
-    private var filteredData: [(day: Int, count: Int)] {
-        let maxDay = period.days
-        return added.added
-            .compactMap { (dayOffset, count) -> (day: Int, count: Int)? in
-                let day = Int(dayOffset)
-                guard day <= 0, abs(day) <= maxDay else { return nil }
-                return (day: day, count: Int(count))
-            }
-            .sorted(by: { $0.day < $1.day })
+    private struct Model {
+        var bars: [(day: Int, count: Int)] = []
+        var total = 0
+        var uniqueDays = 0
+        var avgPerDay: Double { uniqueDays == 0 ? 0 : Double(total) / Double(uniqueDays) }
     }
 
-    private var totalAdded: Int { filteredData.reduce(0) { $0 + $1.count } }
-    private var avgPerDay: Double {
-        guard !filteredData.isEmpty else { return 0 }
-        let days = Set(filteredData.map(\.day)).count
-        return Double(totalAdded) / Double(max(days, 1))
+    private func buildModel() -> Model {
+        let maxDay = period.days
+        var raw: [(day: Int, count: Int)] = []
+        var total = 0
+        for (dayOffset, count) in added.added {
+            let day = Int(dayOffset)
+            guard day <= 0, abs(day) <= maxDay, count > 0 else { continue }
+            raw.append((day: day, count: Int(count)))
+            total += Int(count)
+        }
+        var model = Model()
+        model.total = total
+        model.uniqueDays = raw.count
+        model.bars = StatsSeriesBinning.binned(raw)
+        return model
     }
 
     var body: some View {
+        let model = buildModel()
         VStack(alignment: .leading, spacing: 8) {
             Text("Cards Added").ankountantFont(.bodyEmphasis)
 
-            if filteredData.isEmpty {
+            if model.bars.isEmpty {
                 Text("No cards added").foregroundStyle(.secondary).frame(height: 180)
             } else {
-                Chart(filteredData, id: \.day) { item in
+                Chart(model.bars, id: \.day) { item in
                     BarMark(
                         x: .value("Day", item.day),
                         y: .value("Cards", item.count)
@@ -49,8 +56,8 @@ struct AddedChart: View {
             }
 
             HStack(spacing: 16) {
-                footerItem("Total", value: "\(totalAdded)")
-                footerItem("Avg/day", value: String(format: "%.1f", avgPerDay))
+                footerItem("Total", value: "\(model.total)")
+                footerItem("Avg/day", value: String(format: "%.1f", model.avgPerDay))
             }
             .font(.caption2)
         }

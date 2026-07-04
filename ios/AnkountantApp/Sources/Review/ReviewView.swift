@@ -43,6 +43,7 @@ struct ReviewView: View {
     @State private var editingNote: NoteRecord?
     @State private var editingTemplate: ReviewSession.TemplateTarget?
     @State private var lookupQuery: String?
+    @State private var committedConfidence: ConfidenceLevel?
 
     init(deckId: Int64, onDismiss: @escaping () -> Void) {
         self.deckId = deckId
@@ -95,10 +96,6 @@ struct ReviewView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        // Empty initial query opens the popup focused
-                        // for typing. Future enhancement: forward
-                        // CardWebView text-selection so the query is
-                        // pre-populated.
                         lookupQuery = ""
                     } label: {
                         Image(systemName: "character.book.closed")
@@ -222,18 +219,43 @@ struct ReviewView: View {
             if session.showAnswer {
                 answerButtons
             } else {
-                Button {
-                    Task { await session.revealAnswer() }
-                } label: {
-                    Text("Show Answer")
-                        .ankountantFont(.bodyEmphasis)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                }
-                .buttonStyle(.borderedProminent)
-                .padding()
+                confidencePanel
             }
         }
+        .onChange(of: session.currentCardId) { _, _ in
+            committedConfidence = nil
+        }
+    }
+
+    private var confidencePanel: some View {
+        VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
+            HStack {
+                Label("Confidence Check", systemImage: "checkmark.seal")
+                    .ankountantFont(.micro)
+                    .foregroundStyle(palette.textSecondary)
+                Spacer()
+                Text(session.currentCardId == nil ? "" : "Before reveal")
+                    .ankountantFont(.micro)
+                    .foregroundStyle(palette.textTertiary)
+            }
+            ConfidenceGateView(committed: $committedConfidence)
+            Button {
+                Task { await session.revealAnswer() }
+            } label: {
+                Text("Reveal answer")
+                    .ankountantFont(.bodyEmphasis)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(AnkountantPrimaryButtonStyle())
+            .disabled(committedConfidence == nil)
+        }
+        .padding(AnkountantSpacing.lg)
+        .background(palette.surfaceElevated, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
+                .stroke(palette.borderSubtle, lineWidth: 1)
+        )
+        .padding()
     }
 
     private var answerButtons: some View {
@@ -250,6 +272,7 @@ struct ReviewView: View {
     private func ratingButton(_ rating: Rating, color: Color) -> some View {
         Button {
             session.answer(rating: rating)
+            committedConfidence = nil
         } label: {
             VStack(spacing: 4) {
                 if showNextReviewTime {

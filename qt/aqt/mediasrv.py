@@ -430,6 +430,7 @@ def is_sveltekit_page(path: str) -> bool:
         "ankountant-doc-review",
         "ankountant-stats",
         "ankountant-workspace",
+        "ankountant-sync",
     ]
 
 
@@ -737,6 +738,7 @@ exposed_backend_list = [
     "get_custom_colours",
     # DeckService
     "get_deck_names",
+    "deck_tree",
     # I18nService
     "i18n_resources",
     # ImportExportService
@@ -748,9 +750,14 @@ exposed_backend_list = [
     "new_note",
     "add_note",
     "defaults_for_adding",
+    "field_names_for_notes",
+    "cards_of_note",
+    "remove_notes",
+    "update_notes",
     # NotetypesService
     "get_notetype_names",
     "get_change_notetype_info",
+    "get_notetype",
     # StatsService
     "card_stats",
     "get_review_logs",
@@ -759,6 +766,13 @@ exposed_backend_list = [
     "set_graph_preferences",
     # TagsService
     "complete_tag",
+    "add_note_tags",
+    "remove_note_tags",
+    "find_and_replace_tag",
+    "tag_tree",
+    # CardsService
+    "get_card",
+    "set_flag",
     # ImageOcclusionService
     "get_image_for_occlusion",
     "add_image_occlusion_note",
@@ -773,14 +787,20 @@ exposed_backend_list = [
     "get_optimal_retention_parameters",
     "simulate_fsrs_review",
     "simulate_fsrs_workload",
+    "bury_or_suspend_cards",
+    "restore_buried_and_suspended_cards",
     # SchedulerService (Ankountant)
     "build_confusion_queue",
     "get_readiness",
     "submit_performance_attempt",
     "load_far_seed",
+    "get_exam_date",
+    "set_exam_date",
     # ConfigService
     "get_config_json",
     "set_config_json",
+    "get_config_bool",
+    "set_config_bool",
     # SearchService
     "search_notes",
     "search_cards",
@@ -788,6 +808,8 @@ exposed_backend_list = [
     "browser_row_for_id",
     "set_active_browser_columns",
     "find_and_replace",
+    "build_search_string",
+    "join_search_nodes",
     # DeckConfigService
     "get_ignored_before_count",
     "get_retention_workload",

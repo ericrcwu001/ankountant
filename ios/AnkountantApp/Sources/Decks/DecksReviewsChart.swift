@@ -42,12 +42,22 @@ struct DecksReviewsChart: View {
     }
 
     private func load() async {
+        // Off the main actor: fetchGraphs is a synchronous FFI call and decoding
+        // the (2-year) response is CPU-heavy — running either on @MainActor hitches
+        // the Home screen. Capture the @Sendable closure first so swift-dependencies
+        // overrides survive the hop.
+        let fetch = statsClient.fetchGraphs
+        let days = UInt32(days)
         do {
-            let data = try statsClient.fetchGraphs("", UInt32(days))
-            let response = try Anki_Stats_GraphsResponse(serializedBytes: data)
+            let response = try await Task.detached(priority: .userInitiated) {
+                let data = try fetch("", days)
+                return try Anki_Stats_GraphsResponse(serializedBytes: data)
+            }.value
+            guard !Task.isCancelled else { return }
             reviews = response.reviews
             errorMessage = nil
         } catch {
+            guard !Task.isCancelled else { return }
             errorMessage = error.localizedDescription
             reviews = nil
         }

@@ -28,6 +28,10 @@ Topic decks hand you the category for free — open the "Leases" deck and you al
 
 Scoring readiness on cards you already drilled is just measuring recall again. Ankountant firewalls a **sealed, never-studied item bank** per topic and reports Readiness as a **calibrated score range with a confidence level** on the real 0–99 scale — and it **abstains** when the evidence is too thin to support even a range. A confident number with nothing behind it is not a prediction.
 
+## Current UI
+
+The desktop home screen is now a summit-style CPA dashboard: a navy app rail, a white countdown/readiness rail, and a FAR topographic map where each peak is a live topic score. The iOS companion mirrors the same flow natively with a FAR summit hero, topic list, topic detail drill-ins, a pre-reveal confidence check during review, and a Progress summary above the detailed stats charts. Both clients keep the existing review, sync, import, deck browsing, and scoring paths intact.
+
 ## Grounding
 
 Every design decision above traces to peer-reviewed cognitive and psychometric research — the testing effect, spacing, interleaving, cognitive load, calibration, item-response theory, and selective prediction. The full research foundation, spiky points of view, and source tree live in **[`docs_ankountant/brainlift.md`](./docs_ankountant/brainlift.md)**.

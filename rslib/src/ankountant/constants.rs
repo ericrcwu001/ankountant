@@ -71,14 +71,15 @@ pub(crate) const DEFAULT_NUMERIC_TOLERANCE: f64 = 0.01;
 /// Exam date offset (days from today) the lived-in seed writes, so the Home
 /// countdown and the deadline-anchored retention ramp (A1) have a target.
 pub(crate) const SEED_EXAM_OFFSET_DAYS: i64 = 45;
-/// How far back (days) review activity is spread for the stats heatmap/streak.
-pub(crate) const SEED_ACTIVITY_SPREAD_DAYS: i64 = 56;
 /// Spread (days) for the in-window recall reps that back the readiness Memory
 /// metric. MUST stay < MEMORY_WINDOW_DAYS so every seeded rep still counts.
-pub(crate) const SEED_MEMORY_SPREAD_DAYS: i64 = 24;
-/// Lived-in card-state mix, as parts of each `SEED_MIX_*` total of study cards:
-/// new / learning / young-review / mature-review (4+3+8+5 = 20).
-pub(crate) const SEED_MIX_NEW: u32 = 4;
-pub(crate) const SEED_MIX_LEARN: u32 = 3;
-pub(crate) const SEED_MIX_YOUNG: u32 = 8;
-pub(crate) const SEED_MIX_MATURE: u32 = 5;
+pub(crate) const SEED_MEMORY_SPREAD_DAYS: i64 = 29;
+/// Study cards per topic left untouched (New), so a lived-in profile still has a
+/// fresh pile to work through — a real user hasn't reviewed *every* card yet.
+pub(crate) const SEED_NEW_PER_TOPIC: usize = 2;
+/// First day (ago) the out-of-window backfill history starts — just past the
+/// Memory window, so the months of older activity never perturb Memory.
+pub(crate) const SEED_BACKFILL_START_DAY: i64 = 31;
+/// How many days of older review activity the backfill spreads for the stats
+/// heatmap / streak / true-retention grid (~3-4 months of study).
+pub(crate) const SEED_BACKFILL_SPREAD_DAYS: i64 = 100;

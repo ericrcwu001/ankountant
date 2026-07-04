@@ -73,11 +73,32 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
         "Purple",
     ];
 
+    function launchParams(): URLSearchParams {
+        return typeof window === "undefined"
+            ? new URLSearchParams()
+            : new URLSearchParams(window.location.search);
+    }
+
+    const initialParams = launchParams();
+    const initialMode = initialParams.get("mode");
+
+    function initialNotesModeFrom(mode: string | null): boolean | undefined {
+        if (mode === "notes") {
+            return true;
+        }
+        if (mode === "cards") {
+            return false;
+        }
+        return undefined;
+    }
+
+    const initialNotesMode = initialNotesModeFrom(initialMode);
+
     let phase: "loading" | "ready" | "error" = "loading";
     let message = "";
 
-    let query = "deck:current";
-    let notesMode = false;
+    let query = initialParams.get("search") ?? "deck:current";
+    let notesMode = initialNotesMode ?? false;
     let allColumns: BrowserColumns_Column[] = [];
     let columnByKey = new Map<string, BrowserColumns_Column>();
     let activeKeys: string[] = [];
@@ -205,11 +226,22 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
             const all = await allBrowserColumns({});
             allColumns = all.columns;
             columnByKey = new Map(all.columns.map((c) => [c.key, c]));
-            notesMode = (
+            const configuredNotesMode = (
                 await getConfigBool({
                     key: ConfigKey_Bool.BROWSER_TABLE_SHOW_NOTES_MODE,
                 })
             ).val;
+            notesMode = initialNotesMode ?? configuredNotesMode;
+            if (
+                initialNotesMode !== undefined &&
+                initialNotesMode !== configuredNotesMode
+            ) {
+                await setConfigBool({
+                    key: ConfigKey_Bool.BROWSER_TABLE_SHOW_NOTES_MODE,
+                    value: notesMode,
+                    undoable: false,
+                });
+            }
             await loadColumnsAndSort();
             phase = "ready";
             await doSearch();

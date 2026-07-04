@@ -4,9 +4,9 @@
 This is a LOAD TEST artifact, not new study material: it reads the emitted packs
 (``cpa_bank.apkg`` + ``online_bank.apkg``), then replicates every note ``ceil(
 target / base)`` times with fresh, unique GUIDs (and an invisible per-copy marker
-so first-fields are unique too), writing ``out/<run_id>/stress_bank.apkg`` with
->= ``--target`` notes. Content is intentionally identical across copies — the
-point is to see whether the app handles tens of thousands of cards.
+so first-fields are unique too), writing sharded ``out/<run_id>/stress_bank_part*.apkg``
+files with >= ``--target`` notes. Content is intentionally identical across
+copies — the point is to see whether the app handles tens of thousands of cards.
 
 Copies land under ``Ankountant::Stress::<original-deck>`` (mirroring the source
 deck tree under a Stress:: prefix) and are tagged ``stress`` + ``dup::<n>`` so the
@@ -94,7 +94,7 @@ def _to_genanki_model(genanki, m: dict):
     )
 
 
-def run(run_id: str, target: int) -> None:
+def run(run_id: str, target: int, shard_size: int) -> None:
     import genanki
 
     cfg = RunConfig(run_id=run_id)
@@ -116,6 +116,13 @@ def run(run_id: str, target: int) -> None:
 
     copies = max(1, math.ceil(target / len(base_rows)))
     decks: dict[str, "genanki.Deck"] = {}
+    shard_paths: list[Path] = []
+    shard_size = max(0, shard_size)
+    shard_idx = 1
+    shard_count = 0
+
+    for old in cfg.out_dir.glob("stress_bank*.apkg"):
+        old.unlink()
 
     def deck_for(name: str):
         d = decks.get(name)
@@ -123,6 +130,17 @@ def run(run_id: str, target: int) -> None:
             d = genanki.Deck(_deck_id(name), name)
             decks[name] = d
         return d
+
+    def flush_shard(force: bool = False) -> None:
+        nonlocal decks, shard_count, shard_idx
+        if not decks or (not force and shard_count < shard_size):
+            return
+        out_path = cfg.out_dir / f"stress_bank_part{shard_idx:03d}.apkg"
+        genanki.Package(list(decks.values())).write_to_file(str(out_path), timestamp=_EPOCH)
+        shard_paths.append(out_path)
+        decks = {}
+        shard_count = 0
+        shard_idx += 1
 
     idx = 0
     for copy in range(copies):
@@ -142,21 +160,39 @@ def run(run_id: str, target: int) -> None:
             )
             deck_for(_stress_deck(deck)).add_note(note)
             idx += 1
+            shard_count += 1
+            if shard_size:
+                flush_shard()
 
-    out_path = cfg.out_dir / "stress_bank.apkg"
-    genanki.Package(list(decks.values())).write_to_file(str(out_path), timestamp=_EPOCH)
-    print(
-        f"[stress] base={len(base_rows)} x copies={copies} -> {idx} notes "
-        f"across {len(decks)} decks -> {out_path.name} (target was {target})"
-    )
+    if shard_size:
+        flush_shard(force=True)
+        out_names = ", ".join(p.name for p in shard_paths)
+        print(
+            f"[stress] base={len(base_rows)} x copies={copies} -> {idx} notes "
+            f"across {len(shard_paths)} shard(s) of <= {shard_size}: {out_names} "
+            f"(target was {target})"
+        )
+    else:
+        out_path = cfg.out_dir / "stress_bank.apkg"
+        genanki.Package(list(decks.values())).write_to_file(str(out_path), timestamp=_EPOCH)
+        print(
+            f"[stress] base={len(base_rows)} x copies={copies} -> {idx} notes "
+            f"across {len(decks)} decks -> {out_path.name} (target was {target})"
+        )
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Replicate the CPA bank to >= --target notes for scale testing.")
     ap.add_argument("--run-id", default="tmpl4")
     ap.add_argument("--target", type=int, default=51000, help="minimum number of notes to emit")
+    ap.add_argument(
+        "--shard-size",
+        type=int,
+        default=10000,
+        help="notes per stress_bank_part*.apkg shard; use 0 to emit one stress_bank.apkg",
+    )
     args = ap.parse_args()
-    run(args.run_id, args.target)
+    run(args.run_id, args.target, args.shard_size)
 
 
 if __name__ == "__main__":

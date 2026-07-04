@@ -120,6 +120,7 @@
 		E744FA87A10E9EA7CCDCAA13 /* NoteFieldHTMLPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4AFF84F476980B81B28165F /* NoteFieldHTMLPreview.swift */; };
 		E8118ABF27683C22F3C4DDCB /* SimulationSupportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3471A28443FE0F51E50E81A5 /* SimulationSupportViews.swift */; };
 		E9830A0DD8FCBF5F21486B98 /* AnkiServices in Frameworks */ = {isa = PBXBuildFile; productRef = 028329FFBE47AA380A2BC36B /* AnkiServices */; };
+		EB19474970AE41C8005721EC /* StatsSeriesBinning.swift in Sources */ = {isa = PBXBuildFile; fileRef = E12D118F96CA7073B383214A /* StatsSeriesBinning.swift */; };
 		EB62F17A4C0C85753533739B /* RangeHeroChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9504DF3209ADA4ABDBB37F22 /* RangeHeroChart.swift */; };
 		ED611D7C9CEDA587A9FAEE61 /* ReaderSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE1F195DD99EDF77ABAA5107 /* ReaderSettingsView.swift */; };
 		ED9742E087D730F1B3C8329C /* CardWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80C103EE6A9579491EF808A8 /* CardWebView.swift */; };
@@ -186,7 +187,7 @@
 		17C9ABE3F15DEC56F0A0D5F7 /* PeriodPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodPicker.swift; sourceTree = "<group>"; };
 		1C836D6E618A0BCD6FDE130D /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		1E331A6AF279A3736BF05FC8 /* ReaderLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderLibraryView.swift; sourceTree = "<group>"; };
-		1EA1E7DB433B45BA2EC165C9 /* AnkountantApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AnkountantApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1EA1E7DB433B45BA2EC165C9 /* Ankountant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ankountant.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F32BDCF4F6BF1D221409085 /* RetentionChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetentionChart.swift; sourceTree = "<group>"; };
 		1F7DF531533DB31B567BEC32 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		23AD9325BFCF67C92CE70E87 /* mathjax */ = {isa = PBXFileReference; lastKnownFileType = folder; name = mathjax; path = Resources/mathjax; sourceTree = SOURCE_ROOT; };
@@ -250,7 +251,7 @@
 		9504DF3209ADA4ABDBB37F22 /* RangeHeroChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RangeHeroChart.swift; sourceTree = "<group>"; };
 		9B049203C0E08A2EFB509AE6 /* ReaderDictionarySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderDictionarySettingsView.swift; sourceTree = "<group>"; };
 		9C73A41D7328E29ACBB3DA36 /* MaintenanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaintenanceView.swift; sourceTree = "<group>"; };
-		9E488279CA6DA481AECC7431 /* AnkountantAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AnkountantAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E488279CA6DA481AECC7431 /* AnkountantAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnkountantAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E58808CA6B40C845E6BE2D1 /* DeckDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckDetailView.swift; sourceTree = "<group>"; };
 		9F36AA7A2AC313EB0C1BA7FB /* NanumMyeongjo-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NanumMyeongjo-Regular.ttf"; sourceTree = "<group>"; };
 		9F6EA651E618D65394037BD7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -261,7 +262,7 @@
 		A9A8DCC294F7B3ADA848B2A8 /* ConfusionDrillView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfusionDrillView.swift; sourceTree = "<group>"; };
 		AC2FABC55C742997E91D9DEB /* LookupPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LookupPopupView.swift; sourceTree = "<group>"; };
 		B19099278364E2F405DFBC23 /* ReaderLookupStructuredContentResources.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderLookupStructuredContentResources.generated.swift; sourceTree = "<group>"; };
-		B3A310D5F33B2643E076FF0A /* AnkountantWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = AnkountantWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B3A310D5F33B2643E076FF0A /* AnkountantWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AnkountantWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B682CFA95FE9F51D91462CD3 /* AddedChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddedChart.swift; sourceTree = "<group>"; };
 		BAB321909B96F8F5BC192F4E /* ReaderProgressCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderProgressCoordinator.swift; sourceTree = "<group>"; };
 		BD662C5E96C4AB803E463ADB /* ImageOcclusionWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageOcclusionWorkspaceView.swift; sourceTree = "<group>"; };
@@ -280,6 +281,7 @@
 		D61200495739A9E9B9F9969B /* HeatmapChartOptimized.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeatmapChartOptimized.swift; sourceTree = "<group>"; };
 		D61F74FC67A7241CE3174300 /* SectionReadinessRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionReadinessRow.swift; sourceTree = "<group>"; };
 		DCD3BB13367E6739C9C0F921 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		E12D118F96CA7073B383214A /* StatsSeriesBinning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSeriesBinning.swift; sourceTree = "<group>"; };
 		E1B8D8283CBFF1D7FA28CB4D /* HeatmapLoadingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeatmapLoadingManager.swift; sourceTree = "<group>"; };
 		E37D21F1CA0E3CC0FD07D068 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		E6EE749922E47469613214E3 /* SectionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionDetailView.swift; sourceTree = "<group>"; };
@@ -293,7 +295,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		4074C0233B5442E55E2E8327 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		4074C0233B5442E55E2E8327 /* Exceptions for "Sources/Widgets" folder in "AnkountantWidget" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -306,21 +308,13 @@
 		0B093B188BC839CFD6A9715E /* Sources/Widgets */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				4074C0233B5442E55E2E8327 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
+				4074C0233B5442E55E2E8327 /* Exceptions for "Sources/Widgets" folder in "AnkountantWidget" target */,
 			);
 			path = Sources/Widgets;
 			sourceTree = "<group>";
 		};
 		AA0E9444407026F7B068C388 /* Tests/AnkountantAppTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
 			path = Tests/AnkountantAppTests;
 			sourceTree = "<group>";
 		};
@@ -400,7 +394,7 @@
 		2AB87F89EA7D0E709E13C71D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1EA1E7DB433B45BA2EC165C9 /* AnkountantApp.app */,
+				1EA1E7DB433B45BA2EC165C9 /* Ankountant.app */,
 				9E488279CA6DA481AECC7431 /* AnkountantAppTests.xctest */,
 				B3A310D5F33B2643E076FF0A /* AnkountantWidget.appex */,
 			);
@@ -484,6 +478,7 @@
 				C71A30A1FCAAAACB32C3505C /* StatsChartTooltip.swift */,
 				76498456E40F8B3ABB528ED6 /* StatsDashboardView.swift */,
 				4534EAE6FA1044A00043AD6E /* StatsDualAxisSupport.swift */,
+				E12D118F96CA7073B383214A /* StatsSeriesBinning.swift */,
 				8C44B7ECA176D74353199249 /* TodayStatsCard.swift */,
 			);
 			path = Stats;
@@ -689,7 +684,7 @@
 				16BD10D6E7445311256D4913 /* Sharing */,
 			);
 			productName = AnkountantApp;
-			productReference = 1EA1E7DB433B45BA2EC165C9 /* AnkountantApp.app */;
+			productReference = 1EA1E7DB433B45BA2EC165C9 /* Ankountant.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -700,8 +695,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
-				TargetAttributes = {
-				};
 			};
 			buildConfigurationList = 312452E99A5CAC1202ECE437 /* Build configuration list for PBXProject "AnkountantApp" */;
 			developmentRegion = en;
@@ -865,6 +858,7 @@
 				73F012415CFD5E73B53FA859 /* StatsChartTooltip.swift in Sources */,
 				131C1810800A205DF9842A31 /* StatsDashboardView.swift in Sources */,
 				F22916D35B6B5A6DD606C61B /* StatsDualAxisSupport.swift in Sources */,
+				EB19474970AE41C8005721EC /* StatsSeriesBinning.swift in Sources */,
 				89C4E72568B6931F2D99ADC4 /* SyncCoordinator.swift in Sources */,
 				640F39899D4FC4A3AB49145E /* SyncCoordinatorTypes.swift in Sources */,
 				07CD76661C50006F2C618BE6 /* SyncSettingsView.swift in Sources */,
@@ -909,6 +903,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = AnkountantWidget.entitlements;
+				DEVELOPMENT_TEAM = B9BK4KBFP6;
 				INFOPLIST_FILE = Sources/Widgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -947,6 +942,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = AnkountantWidget.entitlements;
+				DEVELOPMENT_TEAM = B9BK4KBFP6;
 				INFOPLIST_FILE = Sources/Widgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -965,6 +961,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_CXX_LIBRARY = "libc++";
+				DEVELOPMENT_TEAM = B9BK4KBFP6;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1109,6 +1106,7 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				CODE_SIGN_ENTITLEMENTS = AnkountantApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = B9BK4KBFP6;
 				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1129,6 +1127,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_CXX_LIBRARY = "libc++";
+				DEVELOPMENT_TEAM = B9BK4KBFP6;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

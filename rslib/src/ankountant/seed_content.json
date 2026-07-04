@@ -1361,6 +1361,348 @@
                 "ds_tag": "ds::securities::htm",
                 "source": "ASC 320-10-25-1(b)"
             }
+        ],
+        "inventory_valuation": [
+            {
+                "prompt": "A grocery chain uses LIFO for canned goods inventory. At year-end, the replacement cost of a product line is below cost, but replacement cost is also below the net realizable value less a normal profit margin. Management needs the GAAP write-down rule for this LIFO layer.",
+                "correct_treatment": "Lower of cost or market",
+                "ds_tag": "ds::inventory::lcm",
+                "source": "ASC 330-10-35-1C (LIFO and retail inventory measured at lower of cost or market)"
+            },
+            {
+                "prompt": "A wholesaler uses FIFO for electronics inventory. A model's selling price has declined after a newer version launched, and estimated selling costs can be measured reliably. Management compares recorded cost directly with the expected selling price less completion and disposal costs.",
+                "correct_treatment": "Lower of cost and NRV",
+                "ds_tag": "ds::inventory::lcnrv",
+                "source": "ASC 330-10-35-1B (inventory other than LIFO/retail measured at lower of cost and net realizable value)"
+            },
+            {
+                "prompt": "A retailer applies the retail inventory method to seasonal apparel. Near year-end, replacement cost has fallen below historical cost, and the accounting team is applying the ceiling and floor constraints used in the traditional market test.",
+                "correct_treatment": "Lower of cost or market",
+                "ds_tag": "ds::inventory::lcm",
+                "source": "ASC 330-10-35-1C"
+            },
+            {
+                "prompt": "A manufacturer uses weighted-average cost for finished goods. Defective packaging has reduced the goods' expected selling price, and the company estimates selling costs and any completion costs directly from current sales data.",
+                "correct_treatment": "Lower of cost and NRV",
+                "ds_tag": "ds::inventory::lcnrv",
+                "source": "ASC 330-10-35-1B"
+            },
+            {
+                "prompt": "A petroleum distributor accounts for fuel inventory using LIFO. Current replacement cost has dropped sharply after a commodity-price decline, and the company is deciding whether market is limited by a ceiling and a floor rather than using NRV alone.",
+                "correct_treatment": "Lower of cost or market",
+                "ds_tag": "ds::inventory::lcm",
+                "source": "ASC 330-10-35-1C"
+            },
+            {
+                "prompt": "A furniture manufacturer uses FIFO. A product line can still be sold, but expected selling prices after normal selling costs are below the recorded inventory cost; no LIFO or retail inventory method is used.",
+                "correct_treatment": "Lower of cost and NRV",
+                "ds_tag": "ds::inventory::lcnrv",
+                "source": "ASC 330-10-35-1B"
+            }
+        ],
+        "debt_extinguishment": [
+            {
+                "prompt": "A borrower replaces an existing term loan with a new note from the same lender. The present value of the new cash flows differs from the present value of the remaining old cash flows by 14%, after including fees paid to the lender.",
+                "correct_treatment": "Extinguishment (derecognize)",
+                "ds_tag": "ds::debt::extinguish",
+                "source": "ASC 470-50-40-10 (substantially different terms are accounted for as an extinguishment)"
+            },
+            {
+                "prompt": "A borrower and lender amend a note to reset the interest rate and extend maturity by six months. The present value of revised cash flows differs from the old cash flows by 6%, and no legal defeasance or debt exchange occurs.",
+                "correct_treatment": "Modification (retain)",
+                "ds_tag": "ds::debt::modify",
+                "source": "ASC 470-50-40-10 (terms not substantially different are accounted for as a modification)"
+            },
+            {
+                "prompt": "A company legally defeases outstanding bonds by placing risk-free government securities in an irrevocable trust and is released as the primary obligor by the bondholders.",
+                "correct_treatment": "Extinguishment (derecognize)",
+                "ds_tag": "ds::debt::extinguish",
+                "source": "ASC 405-20-40-1 (liability derecognized when debtor is legally released)"
+            },
+            {
+                "prompt": "A lender waives a loan covenant violation in exchange for a small fee and a 25-basis-point rate increase. The present value effect is well below 10%, and the original debt remains outstanding.",
+                "correct_treatment": "Modification (retain)",
+                "ds_tag": "ds::debt::modify",
+                "source": "ASC 470-50-40-10"
+            },
+            {
+                "prompt": "A borrower exchanges old bonds for new bonds with the same lender. The new bonds have a substantially lower stated rate and a later maturity; the 10% cash-flow test shows a 12% present-value difference.",
+                "correct_treatment": "Extinguishment (derecognize)",
+                "ds_tag": "ds::debt::extinguish",
+                "source": "ASC 470-50-40-10"
+            },
+            {
+                "prompt": "A company amends a bank note to add collateral and defer two principal payments. The debt stays with the same lender, the borrower is not released, and the revised cash flows fail the 10% substantially-different threshold.",
+                "correct_treatment": "Modification (retain)",
+                "ds_tag": "ds::debt::modify",
+                "source": "ASC 470-50-40-10"
+            }
+        ],
+        "intangibles_impairment": [
+            {
+                "prompt": "A company buys a customer list expected to generate cash flows for five years. The list is amortized over that useful life and tested for impairment when events indicate its carrying amount may not be recoverable.",
+                "correct_treatment": "Finite-life (amortize)",
+                "ds_tag": "ds::intangible::finite",
+                "source": "ASC 350-30-35-6 and ASC 360-10-35-21"
+            },
+            {
+                "prompt": "A broadcaster holds an FCC license that can be renewed at nominal cost, has no foreseeable limit on useful life, and is not being consumed through use. The asset is not amortized but must be tested for impairment at least annually.",
+                "correct_treatment": "Indefinite-life (test only)",
+                "ds_tag": "ds::intangible::indefinite",
+                "source": "ASC 350-30-35-4 and ASC 350-30-35-18"
+            },
+            {
+                "prompt": "A software company acquires a patent with seven years of remaining legal protection and expects the patented technology to be economically useful for that full period.",
+                "correct_treatment": "Finite-life (amortize)",
+                "ds_tag": "ds::intangible::finite",
+                "source": "ASC 350-30-35-6"
+            },
+            {
+                "prompt": "A consumer-products company acquires a trademark used on a flagship brand. Management expects to renew and support the mark indefinitely, and no legal, regulatory, or competitive factor limits the period of expected cash flows.",
+                "correct_treatment": "Indefinite-life (test only)",
+                "ds_tag": "ds::intangible::indefinite",
+                "source": "ASC 350-30-35-4"
+            },
+            {
+                "prompt": "A publisher acquires a subscriber contract portfolio that is expected to run off over three years as existing contracts expire and are not renewable on similar terms.",
+                "correct_treatment": "Finite-life (amortize)",
+                "ds_tag": "ds::intangible::finite",
+                "source": "ASC 350-30-35-6"
+            },
+            {
+                "prompt": "A franchisor acquires a trade name with a long history in its market. The name can be renewed without substantial cost and management expects to use it for an unlimited period.",
+                "correct_treatment": "Indefinite-life (test only)",
+                "ds_tag": "ds::intangible::indefinite",
+                "source": "ASC 350-30-35-4"
+            }
+        ],
+        "cash_receivables": [
+            {
+                "prompt": "A retailer sells on credit to thousands of customers and can estimate expected uncollectible accounts from aging data and historical default rates before specific customers are identified.",
+                "correct_treatment": "Allowance method",
+                "ds_tag": "ds::ar::allowance",
+                "source": "ASC 326-20-30-2 (credit losses estimated on financial assets measured at amortized cost)"
+            },
+            {
+                "prompt": "A very small private entity has one immaterial receivable balance that becomes worthless after a customer bankruptcy; no earlier estimate was practical, and the write-off is immaterial to the financial statements.",
+                "correct_treatment": "Direct write-off",
+                "ds_tag": "ds::ar::writeoff",
+                "source": "ASC 326-20 (allowance model required for material receivables; direct write-off acceptable only when immaterial)"
+            },
+            {
+                "prompt": "A manufacturer prepares GAAP financial statements and has a portfolio of trade receivables with predictable loss patterns. Management records expected credit losses at the reporting date even though specific accounts are not yet known to be bad.",
+                "correct_treatment": "Allowance method",
+                "ds_tag": "ds::ar::allowance",
+                "source": "ASC 326-20-30-2"
+            },
+            {
+                "prompt": "A sole proprietor using a cash-basis tax schedule records bad debts only when a specific customer's account is determined to be uncollectible, rather than estimating losses for GAAP reporting.",
+                "correct_treatment": "Direct write-off",
+                "ds_tag": "ds::ar::writeoff",
+                "source": "Tax-basis/direct write-off treatment; not the GAAP allowance model for material receivables"
+            },
+            {
+                "prompt": "A bank holds loans measured at amortized cost and updates an allowance using current expected credit loss information before individual loans have defaulted.",
+                "correct_treatment": "Allowance method",
+                "ds_tag": "ds::ar::allowance",
+                "source": "ASC 326-20-30-2"
+            },
+            {
+                "prompt": "A company discovers one old customer balance from a discontinued side activity is uncollectible and immediately removes the receivable; the amount is trivial and the company does not maintain a recurring credit sales portfolio for that activity.",
+                "correct_treatment": "Direct write-off",
+                "ds_tag": "ds::ar::writeoff",
+                "source": "Immaterial direct write-off exception; GAAP allowance method otherwise applies"
+            }
+        ],
+        "financial_statements": [
+            {
+                "prompt": "A manufacturer collects cash from customers for product sales and pays suppliers for raw materials during the same reporting period. The cash flows arise from transactions used to determine net income.",
+                "correct_treatment": "Operating activity",
+                "ds_tag": "ds::stmt::operating",
+                "source": "ASC 230-10-45-16 through 45-17"
+            },
+            {
+                "prompt": "A corporation issues common stock for cash and later pays cash dividends to shareholders. The cash flows change the size and composition of owners' equity.",
+                "correct_treatment": "Financing activity",
+                "ds_tag": "ds::stmt::financing",
+                "source": "ASC 230-10-45-14 through 45-15"
+            },
+            {
+                "prompt": "A service company pays wages, rent, and income taxes from its checking account. These payments relate to normal revenue-producing activities.",
+                "correct_treatment": "Operating activity",
+                "ds_tag": "ds::stmt::operating",
+                "source": "ASC 230-10-45-17"
+            },
+            {
+                "prompt": "A company borrows cash by issuing long-term notes payable and later repays a portion of the principal balance. The cash flows involve creditors who provide long-term financing.",
+                "correct_treatment": "Financing activity",
+                "ds_tag": "ds::stmt::financing",
+                "source": "ASC 230-10-45-15"
+            },
+            {
+                "prompt": "A retailer receives cash refunds from suppliers for returned merchandise and pays interest on ordinary borrowings, using U.S. GAAP classification.",
+                "correct_treatment": "Operating activity",
+                "ds_tag": "ds::stmt::operating",
+                "source": "ASC 230-10-45-17 (cash effects entering net income are operating under U.S. GAAP)"
+            },
+            {
+                "prompt": "A company pays cash to reacquire its own common shares as treasury stock. The transaction changes equity capital rather than operating income.",
+                "correct_treatment": "Financing activity",
+                "ds_tag": "ds::stmt::financing",
+                "source": "ASC 230-10-45-15"
+            }
+        ],
+        "conceptual_framework": [
+            {
+                "prompt": "A disclosure helps investors predict future cash flows and confirm or revise prior expectations about the entity's performance. The information can influence decisions made by users.",
+                "correct_treatment": "Relevance",
+                "ds_tag": "ds::concept::relevance",
+                "source": "FASB Concepts Statement No. 8, Chapter 3 (relevance has predictive value, confirmatory value, or both)"
+            },
+            {
+                "prompt": "A measurement depicts the economic phenomenon completely, neutrally, and without material error, so users can rely on it as representing what it purports to represent.",
+                "correct_treatment": "Faithful representation",
+                "ds_tag": "ds::concept::faithful",
+                "source": "FASB Concepts Statement No. 8, Chapter 3 (faithful representation is complete, neutral, and free from error)"
+            },
+            {
+                "prompt": "Management is deciding whether an omitted contingency disclosure would be material because it could change a lender's decision about renewing a credit line.",
+                "correct_treatment": "Relevance",
+                "ds_tag": "ds::concept::relevance",
+                "source": "FASB Concepts Statement No. 8, Chapter 3 (materiality is an entity-specific aspect of relevance)"
+            },
+            {
+                "prompt": "An estimate includes all necessary descriptions and explanations, is not biased toward a desired outcome, and is based on the best information available at issuance.",
+                "correct_treatment": "Faithful representation",
+                "ds_tag": "ds::concept::faithful",
+                "source": "FASB Concepts Statement No. 8, Chapter 3"
+            },
+            {
+                "prompt": "A segment revenue measure is useful because it lets analysts compare actual current margins with the margins they forecasted from prior-period information.",
+                "correct_treatment": "Relevance",
+                "ds_tag": "ds::concept::relevance",
+                "source": "FASB Concepts Statement No. 8, Chapter 3"
+            },
+            {
+                "prompt": "A warranty liability estimate is described transparently, includes the full population of claims, and avoids intentionally optimistic assumptions.",
+                "correct_treatment": "Faithful representation",
+                "ds_tag": "ds::concept::faithful",
+                "source": "FASB Concepts Statement No. 8, Chapter 3"
+            }
+        ],
+        "tax_timing": [
+            {
+                "prompt": "A company uses straight-line depreciation for financial reporting and accelerated depreciation for tax reporting. The asset's tax basis and book basis will reverse as future depreciation deductions differ.",
+                "correct_treatment": "Temporary difference",
+                "ds_tag": "ds::tax::temporary",
+                "source": "ASC 740-10-25-20 (temporary differences arise from basis differences that result in taxable or deductible amounts in future years)"
+            },
+            {
+                "prompt": "A corporation earns municipal bond interest that is included in pretax accounting income but excluded from taxable income and will never be taxed in a future period.",
+                "correct_treatment": "Permanent difference",
+                "ds_tag": "ds::tax::permanent",
+                "source": "ASC 740-10-25-3 (income taxes are based on taxable income; permanent items do not reverse)"
+            },
+            {
+                "prompt": "A company accrues warranty expense for book purposes when products are sold but deducts warranty costs on its tax return only when repairs are actually paid.",
+                "correct_treatment": "Temporary difference",
+                "ds_tag": "ds::tax::temporary",
+                "source": "ASC 740-10-25-20"
+            },
+            {
+                "prompt": "A company pays nondeductible penalties for violating environmental regulations. The expense reduces book income, but the tax law never allows a deduction for the penalty.",
+                "correct_treatment": "Permanent difference",
+                "ds_tag": "ds::tax::permanent",
+                "source": "ASC 740-10-25-3"
+            },
+            {
+                "prompt": "A seller recognizes revenue currently for book purposes but defers taxable income under an installment-sale method until cash collections occur.",
+                "correct_treatment": "Temporary difference",
+                "ds_tag": "ds::tax::temporary",
+                "source": "ASC 740-10-25-20"
+            },
+            {
+                "prompt": "A corporation receives life insurance proceeds on a key-person policy. The proceeds are included in book income but are excluded from taxable income and will not reverse later.",
+                "correct_treatment": "Permanent difference",
+                "ds_tag": "ds::tax::permanent",
+                "source": "ASC 740-10-25-3"
+            }
+        ],
+        "pensions_equity": [
+            {
+                "prompt": "During the year, employees provide services that earn additional pension benefits under the plan formula. The actuary measures the present value of benefits attributed to that current-year service.",
+                "correct_treatment": "Service cost",
+                "ds_tag": "ds::pension::service",
+                "source": "ASC 715-30-35-4 (service cost is the actuarial present value of benefits attributed to employee service during the period)"
+            },
+            {
+                "prompt": "At the start of the year, a defined benefit plan has an existing projected benefit obligation. The obligation increases during the year because settlement is one year closer and the discount rate unwinds.",
+                "correct_treatment": "Interest cost",
+                "ds_tag": "ds::pension::interest",
+                "source": "ASC 715-30-35-8 (interest cost is interest on the projected benefit obligation)"
+            },
+            {
+                "prompt": "A company amends its pension estimate for benefits earned by employees working in the current period, before considering expected return on plan assets or amortization items.",
+                "correct_treatment": "Service cost",
+                "ds_tag": "ds::pension::service",
+                "source": "ASC 715-30-35-4"
+            },
+            {
+                "prompt": "A pension obligation of $10 million exists at the beginning of the year. Using the settlement discount rate, the actuary computes the cost caused by the passage of time on that beginning obligation.",
+                "correct_treatment": "Interest cost",
+                "ds_tag": "ds::pension::interest",
+                "source": "ASC 715-30-35-8"
+            },
+            {
+                "prompt": "Employees worked another year under a defined benefit plan, increasing the benefits they have earned for future retirement. The cost is attributed to the services rendered this year.",
+                "correct_treatment": "Service cost",
+                "ds_tag": "ds::pension::service",
+                "source": "ASC 715-30-35-4"
+            },
+            {
+                "prompt": "A projected benefit obligation carried from the prior year grows because payment dates are closer, even before considering new benefits earned by current service.",
+                "correct_treatment": "Interest cost",
+                "ds_tag": "ds::pension::interest",
+                "source": "ASC 715-30-35-8"
+            }
+        ],
+        "government_nfp": [
+            {
+                "prompt": "A city prepares its statement of net position, reporting capital assets and long-term bonds payable using the economic resources measurement focus and accrual basis.",
+                "correct_treatment": "Government-wide (accrual)",
+                "ds_tag": "ds::govnfp::govtwide",
+                "source": "GASB 34 (government-wide financial statements use economic resources measurement focus and accrual basis)"
+            },
+            {
+                "prompt": "A city prepares the general fund balance sheet, focusing on current financial resources and recording expenditures rather than depreciation on capital assets.",
+                "correct_treatment": "Fund (modified accrual)",
+                "ds_tag": "ds::govnfp::fund",
+                "source": "GASB 34 (governmental fund statements use current financial resources measurement focus and modified accrual basis)"
+            },
+            {
+                "prompt": "A county reports infrastructure assets and accumulated depreciation in a statement that aggregates governmental activities as a whole.",
+                "correct_treatment": "Government-wide (accrual)",
+                "ds_tag": "ds::govnfp::govtwide",
+                "source": "GASB 34"
+            },
+            {
+                "prompt": "A special revenue fund recognizes property tax revenue only when it is measurable and available to finance current-period expenditures.",
+                "correct_treatment": "Fund (modified accrual)",
+                "ds_tag": "ds::govnfp::fund",
+                "source": "GASB 33 and GASB 34 (modified accrual availability criterion for governmental funds)"
+            },
+            {
+                "prompt": "A city records depreciation expense on police vehicles and reports the related capital assets in the governmental activities column.",
+                "correct_treatment": "Government-wide (accrual)",
+                "ds_tag": "ds::govnfp::govtwide",
+                "source": "GASB 34"
+            },
+            {
+                "prompt": "A capital projects fund reports spending on a new fire station as an expenditure and focuses on spendable financial resources available for the project.",
+                "correct_treatment": "Fund (modified accrual)",
+                "ds_tag": "ds::govnfp::fund",
+                "source": "GASB 34"
+            }
         ]
     },
     "tbs": [

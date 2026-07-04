@@ -14,7 +14,7 @@ ankountant-confusion/+page.ts.
     import ConfusionMode from "../../ankountant-confusion/ConfusionMode.svelte";
     import PaneState from "./PaneState.svelte";
 
-    const SECTION = "FAR";
+    const SECTION = "ALL";
 
     let phase: "loading" | "ready" | "empty" | "error" = "loading";
     let items: ConfusionItem[] = [];
@@ -44,6 +44,6 @@ ankountant-confusion/+page.ts.
         {phase}
         {message}
         onRetry={load}
-        emptyText="No confusion items yet. Load the FAR demo content from the Ankountant menu."
+        emptyText="No confusion items yet. Load a demo profile or CPA bank from the Ankountant menu."
     />
 {/if}

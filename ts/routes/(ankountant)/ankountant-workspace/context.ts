@@ -5,7 +5,7 @@
 // ! tree) and the recursively-rendered panes/resizers. Structural edits are
 // ! addressed by path so the recursion never has to thread callbacks by hand.
 
-import type { Path, Side, SplitDir, SurfaceKind } from "./layout";
+import type { Path, Side, SplitDir, SurfaceKind } from "./workspace-layout";
 
 export const WORKSPACE_ACTIONS = Symbol("ankountant-workspace-actions");
 

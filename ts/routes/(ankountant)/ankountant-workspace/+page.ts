@@ -2,8 +2,8 @@
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 import type { PageLoad } from "./$types";
-import type { SurfaceKind } from "./layout";
-import { SURFACE_KINDS } from "./layout";
+import type { SurfaceKind } from "./workspace-layout";
+import { SURFACE_KINDS } from "./workspace-layout";
 
 // The tiling workspace loads no data itself — each pane self-loads. `?initial`
 // lets the Ankountant menu seed a fresh layout with a chosen surface.
