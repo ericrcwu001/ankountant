@@ -20,9 +20,8 @@ extension NoteClient: DependencyKey {
                 results.reserveCapacity(bounded.count)
 
                 for nid in bounded.prefix(firstPageSize) {
-                    if let note = try? notes.getNote(nid) {
-                        results.append(note)
-                    }
+                    let note = try notes.getNote(nid)
+                    results.append(note)
                 }
 
                 for nid in bounded.dropFirst(firstPageSize) {
@@ -39,14 +38,9 @@ extension NoteClient: DependencyKey {
                 let bounded = Array(ids.prefix(limit ?? Int.max))
                 var results: [NoteRecord] = []
                 results.reserveCapacity(bounded.count)
-                // No lazy placeholders — every record gets a real
-                // backend fetch. Skips IDs that fail to load (deleted
-                // or otherwise unreachable) rather than aborting the
-                // whole batch.
                 for nid in bounded {
-                    if let note = try? notes.getNote(nid) {
-                        results.append(note)
-                    }
+                    let note = try notes.getNote(nid)
+                    results.append(note)
                 }
                 return results
             },
