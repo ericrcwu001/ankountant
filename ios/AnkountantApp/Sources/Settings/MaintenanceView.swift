@@ -60,14 +60,24 @@ struct MaintenanceView: View {
     }
 
     private func resetEverything() {
-        KeychainHelper.deleteHostKey()
-        KeychainHelper.deleteUsername()
-        try? backend.closeCollection()
-        let appSupport = FileManager.default.urls(
-            for: .applicationSupportDirectory, in: .userDomainMask
-        ).first!
-        let ankiDir = appSupport.appendingPathComponent("AnkiCollection", isDirectory: true)
-        try? FileManager.default.removeItem(at: ankiDir)
-        statusMessage = "Reset complete. Please restart the app."
+        do {
+            try backend.closeCollection()
+            guard let appSupport = FileManager.default.urls(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask
+            ).first else {
+                statusMessage = "Reset failed: Application Support is unavailable."
+                return
+            }
+            let ankiDir = appSupport.appendingPathComponent("AnkiCollection", isDirectory: true)
+            if FileManager.default.fileExists(atPath: ankiDir.path) {
+                try FileManager.default.removeItem(at: ankiDir)
+            }
+            KeychainHelper.deleteHostKey()
+            KeychainHelper.deleteUsername()
+            statusMessage = "Reset complete. Please restart the app."
+        } catch {
+            statusMessage = "Reset failed: \(error.localizedDescription)"
+        }
     }
 }

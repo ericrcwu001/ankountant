@@ -4,6 +4,7 @@ import AnkiKit
 import AnkiClients
 import AnkiServices
 import Dependencies
+import Foundation
 
 struct EmptyCardsView: View {
     @Dependency(\.cardRenderingService) var cardRenderingService
@@ -194,41 +195,55 @@ struct EmptyCardsView: View {
     }
 
     private func loadEmptyCards() async {
+        isLoading = true
+        errorMessage = nil
         let cardRenderingServiceCapture = cardRenderingService
         let capturedCardClient = cardClient
         let capturedDeckClient = deckClient
+        defer { isLoading = false }
+
         do {
             let emptyReport: EmptyCardsReport = try await Task.detached {
                 try cardRenderingServiceCapture.getEmptyCardsReport()
             }.value
             report = emptyReport.report
 
-            let deckById = (try? capturedDeckClient.fetchAll())?.reduce(into: [Int64: String]()) { partial, deck in
+            let deckById = try capturedDeckClient.fetchAll().reduce(into: [Int64: String]()) { partial, deck in
                 partial[deck.id] = deck.name
-            } ?? [:]
+            }
 
-            noteEntries = emptyReport.notes.map { note in
-                let cards = (try? capturedCardClient.fetchByNote(note.noteID)) ?? []
-                let totalCards = max(cards.count, note.cardIDs.count)
-                let deckName = cards.first.flatMap { deckById[$0.did] } ?? "-"
+            noteEntries = try emptyReport.notes.map { note in
+                let cards = try capturedCardClient.fetchByNote(note.noteID)
+                guard cards.count >= note.cardIDs.count, let firstCard = cards.first else {
+                    throw emptyCardsLoadError("Card metadata changed while loading note \(note.noteID).")
+                }
+                guard let deckName = deckById[firstCard.did] else {
+                    throw emptyCardsLoadError("Deck metadata is missing for note \(note.noteID).")
+                }
                 return NoteEntry(
                     id: note.noteID,
                     cardIds: note.cardIDs,
-                    totalCards: totalCards,
+                    totalCards: cards.count,
                     emptyCards: note.cardIDs.count,
                     deckName: deckName,
                     willDeleteNote: note.willDeleteNote
                 )
             }
         } catch {
-            errorMessage = error.localizedDescription
+            noteEntries = []
+            errorMessage = "Failed to load empty cards: \(error.localizedDescription)"
             showError = true
         }
-        isLoading = false
+    }
+
+    private func emptyCardsLoadError(_ message: String) -> NSError {
+        NSError(domain: "EmptyCardsView", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
     }
 
     private func deleteAllEmpty() async {
         isDeletingAll = true
+        defer { isDeletingAll = false }
+
         let allCardIds = noteEntries.flatMap { $0.cardIds }
         let cardClientCapture = cardClient
         do {
@@ -237,18 +252,22 @@ struct EmptyCardsView: View {
             }.value
             showSuccess = true
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = "Failed to delete empty cards: \(error.localizedDescription)"
             showError = true
         }
-        isDeletingAll = false
     }
 
     private func openNoteEditor(noteId: Int64) async {
-        guard let note = try? noteClient.fetch(noteId) else {
-            errorMessage = "An unknown error occurred."
+        do {
+            guard let note = try noteClient.fetch(noteId) else {
+                errorMessage = "The selected note no longer exists."
+                showError = true
+                return
+            }
+            editingNote = note
+        } catch {
+            errorMessage = "Failed to load note: \(error.localizedDescription)"
             showError = true
-            return
         }
-        editingNote = note
     }
 }
