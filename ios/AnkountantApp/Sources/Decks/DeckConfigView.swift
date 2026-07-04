@@ -8,6 +8,56 @@ import Dependencies
 /// and an FSRS toggle with desired/historical retention. Preset management,
 /// FSRS weights/simulator, bury/timer/auto-advance, and easy-days will land in
 /// follow-up commits.
+enum DeckConfigParseError: LocalizedError, Equatable {
+    case invalidStep(String)
+    case invalidWeight(String)
+
+    var errorDescription: String? {
+        switch self {
+        case let .invalidStep(token):
+            "Invalid learning step: \(token)"
+        case let .invalidWeight(token):
+            "Invalid FSRS weight: \(token)"
+        }
+    }
+}
+
+func parseDeckConfigSteps(_ text: String) throws -> [Float] {
+    try deckConfigTokens(text).map { token in
+        let raw = String(token)
+        let lowercased = raw.lowercased()
+        if lowercased.hasSuffix("m"), let value = Float(lowercased.dropLast()) {
+            return value
+        }
+        if lowercased.hasSuffix("h"), let value = Float(lowercased.dropLast()) {
+            return value * 60
+        }
+        if lowercased.hasSuffix("d"), let value = Float(lowercased.dropLast()) {
+            return value * 1440
+        }
+        guard let value = Float(lowercased) else {
+            throw DeckConfigParseError.invalidStep(raw)
+        }
+        return value
+    }
+}
+
+func parseDeckConfigWeights(_ text: String) throws -> [Float] {
+    try deckConfigTokens(text).map { token in
+        let raw = String(token)
+        guard let value = Float(raw) else {
+            throw DeckConfigParseError.invalidWeight(raw)
+        }
+        return value
+    }
+}
+
+private func deckConfigTokens(_ text: String) -> [Substring] {
+    text.split { character in
+        character.isWhitespace || character == ","
+    }
+}
+
 struct DeckConfigView: View {
     let deckId: Int64
     let deckName: String
@@ -610,6 +660,18 @@ struct DeckConfigView: View {
 
     private func saveConfig() async {
         guard let loaded else { return }
+        let parsedLearnSteps: [Float]
+        let parsedRelearnSteps: [Float]
+        let parsedWeights: [Float]
+        do {
+            parsedLearnSteps = try parseDeckConfigSteps(learningStepsText)
+            parsedRelearnSteps = try parseDeckConfigSteps(relearningStepsText)
+            parsedWeights = try parseDeckConfigWeights(fsrsWeightsText)
+        } catch {
+            saveError = error.localizedDescription
+            return
+        }
+
         isSaving = true
         defer { isSaving = false }
 
@@ -617,8 +679,8 @@ struct DeckConfigView: View {
         var cfg = updated.config
         cfg.newPerDay = UInt32(max(0, newCardsPerDay))
         cfg.reviewsPerDay = UInt32(max(0, reviewsPerDay))
-        cfg.learnSteps = parseSteps(learningStepsText)
-        cfg.relearnSteps = parseSteps(relearningStepsText)
+        cfg.learnSteps = parsedLearnSteps
+        cfg.relearnSteps = parsedRelearnSteps
         cfg.graduatingIntervalGood = UInt32(max(0, graduatingGoodDays))
         cfg.graduatingIntervalEasy = UInt32(max(0, graduatingEasyDays))
         cfg.leechThreshold = UInt32(max(1, leechThreshold))
@@ -657,11 +719,10 @@ struct DeckConfigView: View {
         cfg.easyDaysPercentages = easyDayPercentages.map { Float(max(50, min(150, $0)) / 100) }
 
         if fsrsEnabled {
-            let parsed = parseFloats(fsrsWeightsText)
-            if !parsed.isEmpty {
+            if !parsedWeights.isEmpty {
                 // Newer FSRS revisions write to params6; clear the older slots
                 // so the backend uses the current generation.
-                cfg.fsrsParams6 = parsed
+                cfg.fsrsParams6 = parsedWeights
                 cfg.fsrsParams5 = []
                 cfg.fsrsParams4 = []
             }
@@ -691,30 +752,9 @@ struct DeckConfigView: View {
 
     // MARK: - Helpers
 
-    /// Anki stores learn/relearn steps as Float minutes. Accept "1m 10m 1h 1d"
-    /// shorthand on input and emit "1m 10m" on output (matching the FSRS
-    /// scheduler's expected unit).
-    private func parseSteps(_ text: String) -> [Float] {
-        text
-            .split(whereSeparator: { $0 == " " || $0 == "," || $0 == "\n" || $0 == "\t" })
-            .compactMap { token -> Float? in
-                let t = String(token).lowercased()
-                if t.hasSuffix("m"), let v = Float(t.dropLast()) { return v }
-                if t.hasSuffix("h"), let v = Float(t.dropLast()) { return v * 60 }
-                if t.hasSuffix("d"), let v = Float(t.dropLast()) { return v * 1440 }
-                return Float(t)
-            }
-    }
-
     private func formatSteps(_ values: [Float]) -> String {
         guard !values.isEmpty else { return "" }
         return values.map { "\(Int($0))m" }.joined(separator: " ")
-    }
-
-    private func parseFloats(_ text: String) -> [Float] {
-        text
-            .split(whereSeparator: { $0 == " " || $0 == "," || $0 == "\n" || $0 == "\t" })
-            .compactMap { Float($0) }
     }
 
     private func formatWeights(_ values: [Float]) -> String {
@@ -827,9 +867,9 @@ struct DeckConfigView: View {
             let cfg = loaded.config.config
             var req = Anki_Scheduler_ComputeFsrsParamsRequest()
             req.search = effectiveParamSearch()
-            let edited = parseFloats(fsrsWeightsText)
+            let edited = try parseDeckConfigWeights(fsrsWeightsText)
             req.currentParams = edited.isEmpty ? currentWeights(from: cfg) : edited
-            req.numOfRelearningSteps = relearningStepsInDay(parseSteps(relearningStepsText))
+            req.numOfRelearningSteps = relearningStepsInDay(try parseDeckConfigSteps(relearningStepsText))
             req.healthCheck = fsrsHealthCheck
 
             let response = try deckClient.computeFsrsParams(req)
@@ -864,7 +904,17 @@ struct DeckConfigView: View {
     private func openSimulator(mode: FsrsSimulatorMode) {
         guard let loaded else { return }
         let cfg = loaded.config.config
-        let editedWeights = parseFloats(fsrsWeightsText)
+        let editedWeights: [Float]
+        let learningSteps: [Float]
+        let relearningSteps: [Float]
+        do {
+            editedWeights = try parseDeckConfigWeights(fsrsWeightsText)
+            learningSteps = try parseDeckConfigSteps(learningStepsText)
+            relearningSteps = try parseDeckConfigSteps(relearningStepsText)
+        } catch {
+            optimizeError = error.localizedDescription
+            return
+        }
         let weights = editedWeights.isEmpty ? currentWeights(from: cfg) : editedWeights
         guard !weights.isEmpty else {
             optimizeError = "FSRS weights are empty. Run Optimize Weights first or save the preset."
@@ -882,8 +932,8 @@ struct DeckConfigView: View {
             ignoreNewLimit: newCardsIgnoreReviewLimit,
             suspendLeeches: leechAction == .suspend,
             leechThreshold: Int(max(1, leechThreshold)),
-            learningStepCount: parseSteps(learningStepsText).count,
-            relearningStepCount: parseSteps(relearningStepsText).count
+            learningStepCount: learningSteps.count,
+            relearningStepCount: relearningSteps.count
         )
     }
 }
