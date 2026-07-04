@@ -9,6 +9,8 @@ struct SimulationsHubView: View {
     @Dependency(\.performanceClient) var performanceClient
 
     @State private var tasks: [TbsTaskSummary] = []
+    @State private var confusionCounts: [CPASection: Int] = [:]
+    @State private var allConfusionCount = 0
     @State private var selectedShape: TbsShape = .journalEntry
     @State private var isLoading = true
     @State private var errorMessage: String?
@@ -24,6 +26,10 @@ struct SimulationsHubView: View {
 
     private var filteredTasks: [TbsTaskSummary] {
         tasks.filter { $0.shape == selectedShape }
+    }
+
+    private var availableSectionsWithConfusion: [CPASection] {
+        availableConfusionSections(confusionCounts, order: CPASection.practiceOrder)
     }
 
     var body: some View {
@@ -92,13 +98,15 @@ struct SimulationsHubView: View {
                 }
 
                 Section("Confusion") {
-                    NavigationLink(value: SimulationRoute.confusion(nil)) {
-                        Label("All sections", systemImage: "arrow.triangle.branch")
+                    if allConfusionCount > 0 {
+                        NavigationLink(value: SimulationRoute.confusion(nil)) {
+                            allConfusionRow(enabled: true)
+                        }
+                    } else {
+                        allConfusionRow(enabled: false)
                     }
                     ForEach(CPASection.practiceOrder) { section in
-                        NavigationLink(value: SimulationRoute.confusion(section)) {
-                            sectionRow(section)
-                        }
+                        confusionSectionRow(section)
                     }
                 }
             }
@@ -108,12 +116,49 @@ struct SimulationsHubView: View {
         .background(palette.background)
     }
 
-    private func sectionRow(_ section: CPASection) -> some View {
+    private func allConfusionRow(enabled: Bool) -> some View {
+        HStack(spacing: AnkountantSpacing.md) {
+            Image(systemName: "arrow.triangle.branch")
+                .foregroundStyle(enabled ? palette.accent : palette.textSecondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("All available sections")
+                    .ankountantFont(.body)
+                    .foregroundStyle(enabled ? palette.textPrimary : palette.textSecondary)
+                Text(allConfusionSubtitle)
+                    .ankountantFont(.caption)
+                    .foregroundStyle(palette.textSecondary)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    private var allConfusionSubtitle: String {
+        if allConfusionCount == 0 {
+            return "No confusion items available yet"
+        }
+        let sectionCount = availableSectionsWithConfusion.count
+        let sectionText = sectionCount == 1 ? "1 section" : "\(sectionCount) sections"
+        return "\(confusionCountLabel(allConfusionCount)) across \(sectionText)"
+    }
+
+    @ViewBuilder
+    private func confusionSectionRow(_ section: CPASection) -> some View {
+        let count = confusionCounts[section, default: 0]
+        if count > 0 {
+            NavigationLink(value: SimulationRoute.confusion(section)) {
+                sectionRow(section, count: count, enabled: true)
+            }
+        } else {
+            sectionRow(section, count: count, enabled: false)
+        }
+    }
+
+    private func sectionRow(_ section: CPASection, count: Int, enabled: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("\(section.code) confusion drill")
                 .ankountantFont(.body)
-                .foregroundStyle(palette.textPrimary)
-            Text(section.displayName)
+                .foregroundStyle(enabled ? palette.textPrimary : palette.textSecondary)
+            Text("\(section.displayName) · \(confusionCountLabel(count))")
                 .ankountantFont(.caption)
                 .foregroundStyle(palette.textSecondary)
         }
@@ -157,7 +202,10 @@ struct SimulationsHubView: View {
         isLoading = true
         do {
             let loaded = try performanceClient.listTbsTasks()
+            let loadedConfusionCounts = try loadConfusionCounts()
             tasks = loaded
+            confusionCounts = loadedConfusionCounts
+            allConfusionCount = loadedConfusionCounts.values.reduce(0, +)
             selectedShape = simulationShapeAfterLoad(
                 current: selectedShape,
                 tasks: loaded,
@@ -167,8 +215,18 @@ struct SimulationsHubView: View {
         } catch {
             errorMessage = error.localizedDescription
             tasks = []
+            confusionCounts = [:]
+            allConfusionCount = 0
         }
         isLoading = false
+    }
+
+    private func loadConfusionCounts() throws -> [CPASection: Int] {
+        var counts: [CPASection: Int] = [:]
+        for section in CPASection.practiceOrder {
+            counts[section] = try performanceClient.confusionQueue(section.code, 0).count
+        }
+        return counts
     }
 }
 
@@ -181,4 +239,15 @@ func simulationShapeAfterLoad(
         return current
     }
     return order.first(where: { shape in tasks.contains { $0.shape == shape } }) ?? current
+}
+
+func availableConfusionSections(
+    _ counts: [CPASection: Int],
+    order: [CPASection]
+) -> [CPASection] {
+    order.filter { counts[$0, default: 0] > 0 }
+}
+
+func confusionCountLabel(_ count: Int) -> String {
+    count == 1 ? "1 item" : "\(count) items"
 }

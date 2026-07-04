@@ -27,4 +27,21 @@ struct SimulationsHubSelectionTests {
     @Test func keepsCurrentShapeWhenNoTasksExist() {
         #expect(simulationShapeAfterLoad(current: .docReview, tasks: [], order: order) == .docReview)
     }
+
+    @Test func availableConfusionSectionsKeepsOnlySectionsWithItems() {
+        let counts: [CPASection: Int] = [
+            .aud: 0,
+            .far: 12,
+            .reg: 1,
+            .bar: 0,
+        ]
+
+        #expect(availableConfusionSections(counts, order: CPASection.practiceOrder) == [.far, .reg])
+    }
+
+    @Test func confusionCountLabelPluralizes() {
+        #expect(confusionCountLabel(0) == "0 items")
+        #expect(confusionCountLabel(1) == "1 item")
+        #expect(confusionCountLabel(2) == "2 items")
+    }
 }
