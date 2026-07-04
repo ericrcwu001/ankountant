@@ -646,6 +646,8 @@ private struct FarTopicPeakCard: View {
                 .frame(height: 180)
         }
         .ankountantCard(elevated: true)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(topic.accessibilityLabel)
     }
 }
 
