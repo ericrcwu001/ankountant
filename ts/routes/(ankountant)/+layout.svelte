@@ -128,7 +128,7 @@ tokens (--accent = Ink Navy).
                 />
             </svg>
             <div class="wordmark">Ankountant</div>
-            <div class="brand-sub">CPA FAR EXAM PREP</div>
+            <div class="brand-sub">CPA EXAM PREP</div>
         </div>
 
         <nav class="nav" aria-label="Ankountant">
@@ -172,7 +172,7 @@ tokens (--accent = Ink Navy).
                         </svg>
                         Focus
                     </span>
-                    <span class="focus-count">FAR</span>
+                    <span class="focus-count">5 sections</span>
                 </div>
             </div>
 
