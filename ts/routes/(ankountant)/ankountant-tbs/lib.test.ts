@@ -148,6 +148,12 @@ test("parseSteps fails loudly on missing, malformed, or empty step json", () => 
     expect(() => parseSteps(JSON.stringify([{ id: "a" }, { id: "a" }]))).toThrow(
         /steps_json has duplicate step id: a/,
     );
+    expect(() => parseSteps(JSON.stringify([{ id: "a", weight: -0.1 }, { id: "b", weight: 1.1 }]))).toThrow(
+        /steps_json\[0\]\.weight must be a nonnegative finite number/,
+    );
+    expect(() => parseSteps(JSON.stringify([{ id: "a", weight: 0.8 }, { id: "b", weight: 0.8 }]))).toThrow(
+        /steps_json weights must sum to 1\.0/,
+    );
     expect(() => parseSteps(JSON.stringify([{ id: "s1", options: [{ id: "o1", text: "x", kind: "maybe" }] }]))).toThrow(
         /Option o1 for s1 has unknown option kind: maybe/,
     );

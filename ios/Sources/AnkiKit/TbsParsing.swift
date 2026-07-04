@@ -163,7 +163,7 @@ public func parseSteps(_ raw: String?) throws -> [RenderStep] {
     guard !array.isEmpty else { throw TbsParseError.emptySteps }
     let defaultWeight = 1.0 / Double(array.count)
     var seenIds = Set<String>()
-    return try array.enumerated().map { index, element in
+    let steps = try array.enumerated().map { index, element in
         let fieldName = "steps_json[\(index)]"
         let object = try jsonObject(element, fieldName: fieldName)
         guard let id = object["id"] as? String,
@@ -183,7 +183,7 @@ public func parseSteps(_ raw: String?) throws -> [RenderStep] {
         return RenderStep(
             id: id,
             label: (object["label"] as? String) ?? id,
-            weight: (object["weight"] as? Double) ?? defaultWeight,
+            weight: try stepWeight(object["weight"], defaultWeight: defaultWeight, fieldName: fieldName),
             kind: kind,
             options: options ?? [],
             originalText: object["original_text"] as? String,
@@ -193,6 +193,36 @@ public func parseSteps(_ raw: String?) throws -> [RenderStep] {
             // NOT read here (retrieval integrity C11).
         )
     }
+    let totalWeight = steps.reduce(0) { $0 + $1.weight }
+    if abs(totalWeight - 1.0) > 1e-6 {
+        throw TbsParseError.invalidValue(field: "steps_json", message: "weights must sum to 1.0")
+    }
+    return steps
+}
+
+private func stepWeight(_ raw: Any?, defaultWeight: Double, fieldName: String) throws -> Double {
+    guard let raw, !(raw is NSNull) else { return defaultWeight }
+    if raw is Bool {
+        throw TbsParseError.invalidValue(
+            field: "\(fieldName).weight",
+            message: "must be a nonnegative finite number"
+        )
+    }
+    let weight: Double?
+    if let double = raw as? Double {
+        weight = double
+    } else if let number = raw as? NSNumber {
+        weight = number.doubleValue
+    } else {
+        weight = nil
+    }
+    guard let weight, weight.isFinite, weight >= 0 else {
+        throw TbsParseError.invalidValue(
+            field: "\(fieldName).weight",
+            message: "must be a nonnegative finite number"
+        )
+    }
+    return weight
 }
 
 private func validateDocReviewDocument(_ document: String?, steps: [RenderStep]) throws {

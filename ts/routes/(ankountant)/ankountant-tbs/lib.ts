@@ -325,6 +325,16 @@ function parseOptions(raw: unknown, stepId: string): RenderOption[] | undefined 
     });
 }
 
+function parseStepWeight(raw: unknown, defaultWeight: number, fieldName: string): number {
+    if (raw === undefined) {
+        return defaultWeight;
+    }
+    if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) {
+        throw new Error(`${fieldName}.weight must be a nonnegative finite number.`);
+    }
+    return raw;
+}
+
 /**
  * Parse steps_json into render steps, stripping the answer_key. Weights default
  * to 1/N (matching the Rust default_weight) so the rendered total reconciles
@@ -337,7 +347,7 @@ export function parseSteps(raw: string | undefined): RenderStep[] {
     }
     const defaultWeight = 1 / parsed.length;
     const seenIds = new Set<string>();
-    return parsed.map((s, i) => {
+    const steps = parsed.map((s, i) => {
         const obj = jsonObject(s, `steps_json[${i}]`) as RawStep;
         if (typeof obj.id !== "string" || obj.id.trim() === "") {
             throw new Error(`steps_json[${i}].id is missing.`);
@@ -348,7 +358,7 @@ export function parseSteps(raw: string | undefined): RenderStep[] {
         }
         seenIds.add(id);
         const label = typeof obj.label === "string" ? obj.label : id;
-        const weight = typeof obj.weight === "number" ? obj.weight : defaultWeight;
+        const weight = parseStepWeight(obj.weight, defaultWeight, `steps_json[${i}]`);
         const step: RenderStep = { id, label, weight };
         if (typeof obj.kind === "string") {
             step.kind = obj.kind;
@@ -369,6 +379,11 @@ export function parseSteps(raw: string | undefined): RenderStep[] {
         }
         return step;
     });
+    const totalWeight = steps.reduce((sum, step) => sum + step.weight, 0);
+    if (Math.abs(totalWeight - 1) > 1e-6) {
+        throw new Error("steps_json weights must sum to 1.0.");
+    }
+    return steps;
 }
 
 export function sectionFromTags(tags: string[] | undefined): Section {

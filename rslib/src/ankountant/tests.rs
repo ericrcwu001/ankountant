@@ -726,6 +726,68 @@ fn a8_submit_rejects_incomplete_tbs_step_before_logging() {
 }
 
 #[test]
+fn a8_submit_rejects_bad_tbs_weights_before_logging() {
+    let (mut col, _) = seeded();
+    let nid = je_note(&mut col);
+    let mut note = col.storage.get_note(nid).unwrap().unwrap();
+    note.set_field(
+        super::notetypes::tbs_fields::STEPS_JSON,
+        r#"[
+            {"id":"l1","answer_key":1,"weight":0.8},
+            {"id":"l2","answer_key":2,"weight":0.8}
+        ]"#,
+    )
+    .unwrap();
+    col.update_note(&mut note).unwrap();
+    let before = attempt_log_count(&mut col);
+
+    let err = submit_result(
+        &mut col,
+        nid,
+        "tbs",
+        json!({"steps":[{"id":"l1","value":1},{"id":"l2","value":2}]}),
+        "guess",
+    )
+    .unwrap_err();
+    assert_eq!(
+        invalid_input_message(err),
+        "TBS note step weights must sum to 1.0"
+    );
+    assert_eq!(attempt_log_count(&mut col), before);
+}
+
+#[test]
+fn a8_submit_rejects_negative_tbs_weight_before_logging() {
+    let (mut col, _) = seeded();
+    let nid = je_note(&mut col);
+    let mut note = col.storage.get_note(nid).unwrap().unwrap();
+    note.set_field(
+        super::notetypes::tbs_fields::STEPS_JSON,
+        r#"[
+            {"id":"l1","answer_key":1,"weight":-0.1},
+            {"id":"l2","answer_key":2,"weight":1.1}
+        ]"#,
+    )
+    .unwrap();
+    col.update_note(&mut note).unwrap();
+    let before = attempt_log_count(&mut col);
+
+    let err = submit_result(
+        &mut col,
+        nid,
+        "tbs",
+        json!({"steps":[{"id":"l1","value":1},{"id":"l2","value":2}]}),
+        "guess",
+    )
+    .unwrap_err();
+    assert_eq!(
+        invalid_input_message(err),
+        "TBS note has invalid weight for step l1"
+    );
+    assert_eq!(attempt_log_count(&mut col), before);
+}
+
+#[test]
 fn a8_submit_rejects_mode_item_mismatch_before_logging() {
     let (mut col, _) = seeded();
     let nid = je_note(&mut col);

@@ -107,6 +107,12 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
     expectTbsParseError("Invalid steps_json: duplicate step id: s1") {
         try parseSteps(#"[{"id":"s1"},{"id":"s1"}]"#)
     }
+    expectTbsParseError("Invalid steps_json[0].weight: must be a nonnegative finite number") {
+        try parseSteps(#"[{"id":"a","weight":-0.1},{"id":"b","weight":1.1}]"#)
+    }
+    expectTbsParseError("Invalid steps_json: weights must sum to 1.0") {
+        try parseSteps(#"[{"id":"a","weight":0.8},{"id":"b","weight":0.8}]"#)
+    }
     expectTbsParseError("Invalid steps_json[0].options: must be an array") {
         try parseSteps(#"[{"id":"s1","options":"bad"}]"#)
     }
