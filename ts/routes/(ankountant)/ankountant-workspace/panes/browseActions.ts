@@ -17,3 +17,8 @@ export function deleteNotesConfirmation(noteCount: number): string {
     }
     return `Delete ${noteCount} note${noteCount === 1 ? "" : "s"}? You can undo this.`;
 }
+
+export function normalizeTagPrompt(value: string | null): string | null {
+    const tags = value?.trim();
+    return tags ? tags : null;
+}

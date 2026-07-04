@@ -56,7 +56,11 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
         sortBackwardsKey,
         sortTypeKey,
     } from "./browseColumns";
-    import { deleteNotesConfirmation, deleteSelectionMenuLabel } from "./browseActions";
+    import {
+        deleteNotesConfirmation,
+        deleteSelectionMenuLabel,
+        normalizeTagPrompt,
+    } from "./browseActions";
     import ContextMenu, { type MenuItem } from "./ContextMenu.svelte";
     import {
         decodeConfigJson,
@@ -539,7 +543,9 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
     }
 
     async function addTagsSelected(): Promise<void> {
-        const tags = window.prompt("Tags to add (space separated):");
+        const tags = normalizeTagPrompt(
+            window.prompt("Tags to add (space separated):"),
+        );
         if (!tags) {
             return;
         }
@@ -550,7 +556,9 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
     }
 
     async function removeTagsSelected(): Promise<void> {
-        const tags = window.prompt("Tags to remove (space separated):");
+        const tags = normalizeTagPrompt(
+            window.prompt("Tags to remove (space separated):"),
+        );
         if (!tags) {
             return;
         }

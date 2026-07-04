@@ -3,7 +3,7 @@
 
 import { expect, test } from "vitest";
 
-import { deleteNotesConfirmation, deleteSelectionMenuLabel } from "./browseActions";
+import { deleteNotesConfirmation, deleteSelectionMenuLabel, normalizeTagPrompt } from "./browseActions";
 
 test("delete menu label distinguishes selected cards from selected notes", () => {
     expect(deleteSelectionMenuLabel(1, true)).toBe("Delete note");
@@ -16,4 +16,10 @@ test("delete confirmation uses resolved unique note count", () => {
     expect(deleteNotesConfirmation(1)).toBe("Delete 1 note? You can undo this.");
     expect(deleteNotesConfirmation(2)).toBe("Delete 2 notes? You can undo this.");
     expect(() => deleteNotesConfirmation(0)).toThrow(/at least one note/);
+});
+
+test("tag prompt normalization trims input and ignores blank submissions", () => {
+    expect(normalizeTagPrompt("  cpa weak-area  ")).toBe("cpa weak-area");
+    expect(normalizeTagPrompt("   ")).toBeNull();
+    expect(normalizeTagPrompt(null)).toBeNull();
 });
