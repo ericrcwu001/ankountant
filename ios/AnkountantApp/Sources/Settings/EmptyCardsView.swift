@@ -19,6 +19,7 @@ struct EmptyCardsView: View {
     @State private var noteEntries: [NoteEntry] = []
     @State private var isDeletingAll = false
     @State private var showDeleteConfirm = false
+    @State private var loadErrorMessage: String?
     @State private var errorMessage: String?
     @State private var showError = false
     @State private var showSuccess = false
@@ -111,7 +112,20 @@ struct EmptyCardsView: View {
 
     private var resultsList: some View {
         List {
-            if noteEntries.isEmpty {
+            if let loadErrorMessage {
+                Section {
+                    ContentUnavailableView {
+                        Label("Could Not Load Empty Cards", systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text(loadErrorMessage)
+                    } actions: {
+                        Button("Retry") {
+                            Task { await loadEmptyCards() }
+                        }
+                    }
+                    .listRowBackground(palette.surfaceElevated)
+                }
+            } else if noteEntries.isEmpty {
                 Section {
                     Label("No empty cards found", systemImage: "checkmark.circle")
                         .ankountantStatusText(.positive)
@@ -196,6 +210,7 @@ struct EmptyCardsView: View {
 
     private func loadEmptyCards() async {
         isLoading = true
+        loadErrorMessage = nil
         errorMessage = nil
         let cardRenderingServiceCapture = cardRenderingService
         let capturedCardClient = cardClient
@@ -231,8 +246,7 @@ struct EmptyCardsView: View {
             }
         } catch {
             noteEntries = []
-            errorMessage = "Failed to load empty cards: \(error.localizedDescription)"
-            showError = true
+            loadErrorMessage = "Failed to load empty cards: \(error.localizedDescription)"
         }
     }
 
