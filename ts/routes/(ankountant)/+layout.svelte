@@ -51,6 +51,8 @@ tokens (--accent = Ink Navy).
         command?: string;
     }
 
+    const settingsCommand = "ankountant:prefs";
+
     const nav: NavItem[] = [
         { id: "dashboard", label: "Dashboard", href: "/ankountant-home" },
         { id: "study", label: "Study", href: "/ankountant-workspace" },
@@ -63,7 +65,7 @@ tokens (--accent = Ink Navy).
             href: "/ankountant-workspace?initial=browse",
         },
         { id: "sync", label: "Sync", href: "/ankountant-sync" },
-        { id: "settings", label: "Settings", command: "ankountant:prefs" },
+        { id: "settings", label: "Settings", command: settingsCommand },
     ];
 
     let currentPath = typeof window !== "undefined" ? window.location.pathname : "";
@@ -92,6 +94,10 @@ tokens (--accent = Ink Navy).
         const [path, search = ""] = href.split("?");
         currentPath = path;
         currentSearch = search ? `?${search}` : "";
+    }
+
+    function openSettings(): void {
+        bridgeCommand(settingsCommand);
     }
 
     onMount(() => {
@@ -173,7 +179,12 @@ tokens (--accent = Ink Navy).
                 </div>
             </div>
 
-            <button type="button" class="profile" on:click={() => {}}>
+            <button
+                type="button"
+                class="profile"
+                aria-label="Open profile settings for Austin K."
+                on:click={openSettings}
+            >
                 <span class="avatar">AK</span>
                 <span class="profile-name">Austin K.</span>
                 <svg
