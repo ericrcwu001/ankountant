@@ -18,6 +18,21 @@ test("thin data shows the abstain message + reason and NO number (A55)", async (
     await expect(page.getByTestId("readiness-band")).toHaveCount(0);
 });
 
+test("sufficient data shows a readiness band with confidence and topic scores (A54)", async ({ page, seedWithHistory }) => {
+    expect(seedWithHistory.sealedItems).toBeGreaterThanOrEqual(24);
+    await page.goto("/ankountant-dashboard");
+
+    await expect(page.getByTestId("abstain")).toHaveCount(0);
+    await expect(page.getByTestId("readiness-band")).toBeVisible();
+    await expect(page.getByTestId("readiness-band")).toContainText(/\d+–\d+/);
+    await expect(page.getByTestId("confidence")).toContainText(/confidence/i);
+
+    const row = page.getByTestId("topic-row").first();
+    await expect(row.getByTestId("memory")).toContainText(/%/);
+    await expect(row.getByTestId("performance")).toContainText(/%/);
+    await expect(row.getByTestId("gap")).toContainText(/%/);
+});
+
 test("readiness is labelled the exam-day projection tied to the set exam date (A57)", async ({ page, seedWithHistory }) => {
     expect(seedWithHistory.studyRecallCards).toBeGreaterThan(0);
     await page.goto("/ankountant-dashboard");
