@@ -15,6 +15,9 @@ struct SimulationsHubView: View {
     @State private var selectedShape: TbsShape = .journalEntry
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var showImport = false
+    @State private var importMessage: String?
+    @State private var showImportAlert = false
 
     // The four TBS shapes, in the order shown by the chooser. Mirrors the
     // desktop TBS-tab chooser (TBS_SHAPES in ankountant-tbs/lib.ts).
@@ -48,11 +51,18 @@ struct SimulationsHubView: View {
                     }
                 }
             } else if !simulationsHubHasContent(tasks: tasks, allConfusionCount: allConfusionCount) {
-                ContentUnavailableView(
-                    "No Simulations",
-                    systemImage: "list.bullet.clipboard",
-                    description: Text("No sealed simulations or confusion drills were found in this profile.")
-                )
+                ContentUnavailableView {
+                    Label("No Simulations", systemImage: "list.bullet.clipboard")
+                } description: {
+                    Text("No sealed simulations or confusion drills were found in this profile.")
+                } actions: {
+                    Button("Import package", systemImage: "square.and.arrow.down") {
+                        showImport = true
+                    }
+                    Button("Retry") {
+                        Task { await loadTasks() }
+                    }
+                }
             } else {
                 loadedContent
             }
@@ -60,6 +70,14 @@ struct SimulationsHubView: View {
         .navigationTitle("Simulations")
         .task {
             await loadTasks()
+        }
+        .fileImporter(isPresented: $showImport, allowedContentTypes: [.data]) { result in
+            handleImport(result)
+        }
+        .alert("Import", isPresented: $showImportAlert) {
+            Button("OK") {}
+        } message: {
+            Text(importMessage ?? "")
         }
         .navigationDestination(for: SimulationRoute.self) { route in
             switch route {
@@ -275,6 +293,28 @@ struct SimulationsHubView: View {
             counts[section] = try performanceClient.confusionQueue(section.code, 0).count
         }
         return counts
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            let ext = url.pathExtension.lowercased()
+            guard ext == "apkg" || ext == "colpkg" else {
+                importMessage = "Unsupported file type. Please select an .apkg or .colpkg file."
+                showImportAlert = true
+                return
+            }
+            do {
+                importMessage = try ImportHelper.importPackage(from: url)
+                Task { await loadTasks() }
+            } catch {
+                importMessage = "Import failed: \(error.localizedDescription)"
+            }
+            showImportAlert = true
+        case .failure(let error):
+            importMessage = "Could not select file: \(error.localizedDescription)"
+            showImportAlert = true
+        }
     }
 }
 
