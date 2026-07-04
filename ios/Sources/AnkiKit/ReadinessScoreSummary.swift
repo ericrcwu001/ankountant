@@ -76,12 +76,13 @@ public extension ReadinessSummary {
     }
 
     private var readinessSummary: ReadinessScoreSummary {
-        guard !band.abstain else {
+        let validatedBand = checkedReadinessBand(band)
+        guard !validatedBand.abstain else {
             return ReadinessScoreSummary(
                 kind: .readiness,
                 valueText: "—",
                 rangeText: "withheld",
-                detailText: band.reason.isEmpty ? "Need more evidence" : band.reason,
+                detailText: validatedBand.reason,
                 fraction: nil,
                 available: false
             )
@@ -89,10 +90,10 @@ public extension ReadinessSummary {
 
         return ReadinessScoreSummary(
             kind: .readiness,
-            valueText: "\(Int(band.pointEstimate.rounded()))",
-            rangeText: "\(Int(band.bandLow.rounded()))–\(Int(band.bandHigh.rounded()))",
-            detailText: "\(band.confidence) confidence",
-            fraction: TopoScale.height(forScore: band.pointEstimate),
+            valueText: "\(Int(validatedBand.pointEstimate.rounded()))",
+            rangeText: "\(Int(validatedBand.bandLow.rounded()))–\(Int(validatedBand.bandHigh.rounded()))",
+            detailText: "\(validatedBand.confidence) confidence",
+            fraction: TopoScale.height(forScore: validatedBand.pointEstimate),
             available: true
         )
     }

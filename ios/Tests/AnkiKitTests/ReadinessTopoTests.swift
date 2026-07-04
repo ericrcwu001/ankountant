@@ -14,7 +14,9 @@ struct ReadinessTopoTests {
         low: Double = 0,
         high: Double = 0,
         point: Double = 0,
-        confidence: String = "Med"
+        confidence: String = "Med",
+        coverage: Double = 1,
+        reasons: [String]? = nil
     ) -> ReadinessBand {
         ReadinessBand(
             abstain: abstain,
@@ -22,8 +24,21 @@ struct ReadinessTopoTests {
             bandLow: low,
             bandHigh: high,
             pointEstimate: point,
-            confidence: confidence
+            confidence: confidence,
+            coverage: coverage,
+            reasons: abstain ? [] : (reasons ?? ["Coverage: 100% of topics; 188 sealed attempts"])
         )
+    }
+
+    private func expectValidationError(_ expected: ReadinessValidationError, _ band: ReadinessBand) {
+        do {
+            _ = try validatedReadinessBand(band)
+            Issue.record("Expected readiness validation error \(expected).")
+        } catch let error as ReadinessValidationError {
+            #expect(error == expected)
+        } catch {
+            Issue.record("Unexpected readiness validation error \(error).")
+        }
     }
 
     // MARK: Constraint 1 — ≥75 above, <75 below
@@ -89,7 +104,30 @@ struct ReadinessTopoTests {
         #expect(scoreWithRange(0.62, low: 0.62, high: 0.62) == "62%")
         #expect(scoreWithRange(nil, low: 0, high: 0) == "insufficient")
         #expect(formatPercent(0.6) == "60%")
-        #expect(readinessBandLabel(band(low: 60, high: 84)) == "60–84")
+        #expect(readinessBandLabel(band(low: 60, high: 84, point: 72)) == "60–84")
+    }
+
+    @Test func readinessValidationRequiresValidBandsAndEvidence() throws {
+        let valid = try validatedReadinessBand(
+            band(
+                low: 62,
+                high: 78,
+                point: 70,
+                confidence: " High ",
+                reasons: [" Coverage: 75% of topics; 40 sealed attempts "]
+            )
+        )
+        #expect(valid.confidence == "High")
+        #expect(valid.reasons == ["Coverage: 75% of topics; 40 sealed attempts"])
+        expectValidationError(.invalidBand, band(low: 62, high: 62, point: 62))
+        expectValidationError(.pointOutsideBand, band(low: 62, high: 78, point: 90))
+        expectValidationError(.missingConfidence, band(low: 62, high: 78, point: 70, confidence: ""))
+        expectValidationError(.missingEvidenceReasons, band(low: 62, high: 78, point: 70, reasons: []))
+        expectValidationError(.invalidCoverage, band(low: 62, high: 78, point: 70, coverage: 1.1))
+        expectValidationError(
+            .missingAbstainReason,
+            ReadinessBand(abstain: true, reason: "", bandLow: 0, bandHigh: 0, confidence: "")
+        )
     }
 
     @Test func topicExtensions() {

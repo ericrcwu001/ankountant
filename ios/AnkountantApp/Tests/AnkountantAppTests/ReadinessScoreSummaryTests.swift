@@ -11,7 +11,9 @@ struct ReadinessScoreSummaryTests {
                 bandLow: 74,
                 bandHigh: 85,
                 pointEstimate: 80,
-                confidence: "High"
+                confidence: "High",
+                coverage: 1,
+                reasons: ["Coverage: 100% of topics; 188 sealed attempts"]
             ),
             topics: [
                 TopicScoreModel(

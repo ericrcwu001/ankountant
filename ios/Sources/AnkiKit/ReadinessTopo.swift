@@ -1,7 +1,7 @@
 // Copyright: Ankitects Pty Ltd and contributors
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
-import Foundation
+public import Foundation
 
 /// Pure, render-free readiness→topography model + formatters for the summit Home.
 ///
@@ -39,8 +39,9 @@ public enum TopoScale {
 
 /// Authoritative above/below classifier. Gate on `abstain` FIRST.
 public func passStanding(_ band: ReadinessBand) -> PassStanding {
-    guard !band.abstain else { return .unproven }
-    return band.pointEstimate >= TopoScale.passScore ? .above : .below
+    let validatedBand = checkedReadinessBand(band)
+    guard !validatedBand.abstain else { return .unproven }
+    return validatedBand.pointEstimate >= TopoScale.passScore ? .above : .below
 }
 
 /// Near-pass display rule: classify on the raw point, but clamp the *displayed*
@@ -75,8 +76,9 @@ public struct SectionReadiness: Sendable, Equatable, Identifiable {
     /// CPA point for plotting; nil when abstaining (render as an unproven ghost at
     /// the base, never a height).
     public var heightPoint: Double? {
-        guard let band, !band.abstain else { return nil }
-        return band.pointEstimate
+        let validatedBand = band.map(checkedReadinessBand)
+        guard let validatedBand, !validatedBand.abstain else { return nil }
+        return validatedBand.pointEstimate
     }
 }
 
@@ -86,6 +88,105 @@ public struct SectionReadiness: Sendable, Equatable, Identifiable {
 public let topicGapWarningThreshold = 0.25
 public let readinessMinimumSealedAttempts = 20
 public let readinessMinimumCoverage = 0.60
+
+public enum ReadinessValidationError: Error, Equatable, LocalizedError {
+    case missingAbstainReason
+    case invalidCoverage
+    case nonFiniteScaleValue(String)
+    case outOfRangeScaleValue(String)
+    case invalidBand
+    case pointOutsideBand
+    case missingConfidence
+    case missingEvidenceReasons
+
+    public var errorDescription: String? {
+        switch self {
+        case .missingAbstainReason:
+            "Readiness abstained without a reason."
+        case .invalidCoverage:
+            "Readiness coverage must be between 0 and 1."
+        case let .nonFiniteScaleValue(label):
+            "Readiness \(label) must be a finite number."
+        case let .outOfRangeScaleValue(label):
+            "Readiness \(label) must be between 0 and \(Int(TopoScale.domainMax))."
+        case .invalidBand:
+            "Readiness band must have a low value below the high value."
+        case .pointOutsideBand:
+            "Readiness point estimate must be inside the reported band."
+        case .missingConfidence:
+            "Readiness confidence is required for an emitted range."
+        case .missingEvidenceReasons:
+            "Readiness evidence reasons are required for an emitted range."
+        }
+    }
+}
+
+public func validatedReadinessBand(_ band: ReadinessBand) throws -> ReadinessBand {
+    try validateCoverage(band.coverage)
+    let reason = band.reason.trimmingCharacters(in: .whitespacesAndNewlines)
+    let confidence = band.confidence.trimmingCharacters(in: .whitespacesAndNewlines)
+    let reasons = band.reasons.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    if band.abstain {
+        guard !reason.isEmpty else { throw ReadinessValidationError.missingAbstainReason }
+        return ReadinessBand(
+            abstain: true,
+            reason: reason,
+            bandLow: band.bandLow,
+            bandHigh: band.bandHigh,
+            pointEstimate: band.pointEstimate,
+            confidence: confidence,
+            coverage: band.coverage,
+            generatedAt: band.generatedAt,
+            reasons: reasons
+        )
+    }
+
+    try validateScaleValue("band low", band.bandLow)
+    try validateScaleValue("band high", band.bandHigh)
+    try validateScaleValue("point estimate", band.pointEstimate)
+    guard band.bandLow < band.bandHigh else { throw ReadinessValidationError.invalidBand }
+    guard band.pointEstimate >= band.bandLow && band.pointEstimate <= band.bandHigh else {
+        throw ReadinessValidationError.pointOutsideBand
+    }
+    guard !confidence.isEmpty else { throw ReadinessValidationError.missingConfidence }
+    guard !reasons.isEmpty && !reasons.contains(where: \.isEmpty) else {
+        throw ReadinessValidationError.missingEvidenceReasons
+    }
+
+    return ReadinessBand(
+        abstain: false,
+        reason: reason,
+        bandLow: band.bandLow,
+        bandHigh: band.bandHigh,
+        pointEstimate: band.pointEstimate,
+        confidence: confidence,
+        coverage: band.coverage,
+        generatedAt: band.generatedAt,
+        reasons: reasons
+    )
+}
+
+func checkedReadinessBand(_ band: ReadinessBand) -> ReadinessBand {
+    do {
+        return try validatedReadinessBand(band)
+    } catch {
+        preconditionFailure(error.localizedDescription)
+    }
+}
+
+private func validateCoverage(_ coverage: Double) throws {
+    guard coverage.isFinite && coverage >= 0 && coverage <= 1 else {
+        throw ReadinessValidationError.invalidCoverage
+    }
+}
+
+private func validateScaleValue(_ label: String, _ value: Double) throws {
+    guard value.isFinite else { throw ReadinessValidationError.nonFiniteScaleValue(label) }
+    guard value >= 0 && value <= TopoScale.domainMax else {
+        throw ReadinessValidationError.outOfRangeScaleValue(label)
+    }
+}
 
 public struct ReadinessEvidence: Sendable, Equatable {
     public let evidenceLines: [String]
@@ -126,16 +227,18 @@ public func formatPercent(_ fraction: Double) -> String {
 
 /// The CPA scaled-score band label ("60–84"); the score, not a percentage.
 public func readinessBandLabel(_ band: ReadinessBand) -> String {
-    "\(Int(band.bandLow.rounded()))–\(Int(band.bandHigh.rounded()))"
+    let validatedBand = checkedReadinessBand(band)
+    return "\(Int(validatedBand.bandLow.rounded()))–\(Int(validatedBand.bandHigh.rounded()))"
 }
 
 public func readinessEvidence(band: ReadinessBand, topics: [TopicScoreModel]) -> ReadinessEvidence {
+    let validatedBand = checkedReadinessBand(band)
     var missingData: [String] = []
-    if band.abstain && band.reason.localizedCaseInsensitiveContains("volume") {
+    if validatedBand.abstain && validatedBand.reason.localizedCaseInsensitiveContains("volume") {
         missingData.append("Need at least \(readinessMinimumSealedAttempts) sealed attempts before a readiness range can be shown.")
     }
-    if band.coverage < readinessMinimumCoverage {
-        missingData.append("Need sealed evidence across \(formatPercent(readinessMinimumCoverage)) of topics; current coverage is \(formatPercent(band.coverage)).")
+    if validatedBand.coverage < readinessMinimumCoverage {
+        missingData.append("Need sealed evidence across \(formatPercent(readinessMinimumCoverage)) of topics; current coverage is \(formatPercent(validatedBand.coverage)).")
     }
 
     let thinMemory = topics.filter(\.memoryInsufficient).prefix(3).map(\.displayName)
@@ -147,10 +250,10 @@ public func readinessEvidence(band: ReadinessBand, topics: [TopicScoreModel]) ->
     }
 
     return ReadinessEvidence(
-        evidenceLines: band.reasons.isEmpty ? [band.abstain ? band.reason : "Readiness drivers were not recorded for this range."] : band.reasons,
+        evidenceLines: validatedBand.reasons.isEmpty ? [validatedBand.reason] : validatedBand.reasons,
         missingData: missingData,
         calibrationStatus: "No past score-verification history is available yet; treat this as an uncalibrated projection until held-out outcomes are logged.",
-        nextAction: bestNextReadinessAction(band: band, topics: topics),
+        nextAction: bestNextReadinessAction(band: validatedBand, topics: topics),
         giveUpRule: "No readiness range until there are at least \(readinessMinimumSealedAttempts) sealed attempts and \(formatPercent(readinessMinimumCoverage)) topic coverage."
     )
 }

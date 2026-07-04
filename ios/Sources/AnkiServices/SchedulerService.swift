@@ -158,7 +158,7 @@ extension SchedulerService: DependencyKey {
                 // render as a fake real "0" peak. Treat "no readiness" as abstain.
                 let r = resp.readiness
                 let hasReadiness = resp.hasReadiness
-                let band = ReadinessBand(
+                let band = try validatedReadinessBand(ReadinessBand(
                     abstain: hasReadiness ? r.abstain : true,
                     reason: hasReadiness ? r.reason : "no readiness data",
                     bandLow: r.bandLow,
@@ -168,7 +168,7 @@ extension SchedulerService: DependencyKey {
                     coverage: r.coverage,
                     generatedAt: r.generatedAt,
                     reasons: r.reasons
-                )
+                ))
                 let topics = resp.topics.map {
                     TopicScoreModel(
                         setId: $0.setID,
