@@ -16,6 +16,12 @@ test("thin data shows the abstain message + reason and NO number (A55)", async (
     await expect(abstain).toContainText("insufficient");
     // No readiness band / number rendered.
     await expect(page.getByTestId("readiness-band")).toHaveCount(0);
+
+    const row = page.getByTestId("topic-row").first();
+    await expect(row.getByTestId("performance")).toContainText("insufficient");
+    await expect(row.getByTestId("performance")).not.toContainText("0%");
+    await expect(row.getByTestId("gap")).toContainText("insufficient");
+    await expect(row).not.toHaveClass(/gap-warning/);
 });
 
 test("sufficient data shows a readiness band with confidence and topic scores (A54)", async ({ page, seedWithHistory }) => {
