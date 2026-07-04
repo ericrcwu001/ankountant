@@ -40,7 +40,14 @@ desktop sync flow (login prompt, direction choice, progress, error dialogs).
 <div class="sync-screen" data-testid="sync">
     <div class="panel">
         <div class="badge" class:spin={triggered} aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            >
                 <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-7.4-3.9" />
                 <path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 7.4 3.9" />
                 <path d="M21 4v4h-4" />
@@ -54,7 +61,14 @@ desktop sync flow (login prompt, direction choice, progress, error dialogs).
         </p>
 
         <button type="button" class="sync-cta" onclick={syncNow}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            >
                 <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-7.4-3.9" />
                 <path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 7.4 3.9" />
                 <path d="M21 4v4h-4" />
@@ -105,7 +119,12 @@ desktop sync flow (login prompt, direction choice, progress, error dialogs).
         min-height: 100vh;
         padding: var(--space-xl);
         overflow: auto;
-        background: radial-gradient(120% 80% at 70% 0%, #eef4fb 0%, #eef0f4 55%, #eef0f4 100%);
+        background: radial-gradient(
+            120% 80% at 70% 0%,
+            #eef4fb 0%,
+            #eef0f4 55%,
+            #eef0f4 100%
+        );
         color: var(--fg);
     }
 
