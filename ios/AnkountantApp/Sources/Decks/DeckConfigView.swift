@@ -532,7 +532,7 @@ struct DeckConfigView: View {
         loadError = nil
         do {
             let config = try deckClient.getDeckConfig(deckId)
-            let context = (try? deckClient.fetchDeckConfigContext(deckId)) ?? fallbackContext(from: config)
+            let context = try deckClient.fetchDeckConfigContext(deckId)
             await MainActor.run {
                 apply(config: config, context: context)
                 isLoading = false
@@ -690,22 +690,6 @@ struct DeckConfigView: View {
     }
 
     // MARK: - Helpers
-
-    private func fallbackContext(from config: Anki_DeckConfig_DeckConfig) -> Anki_DeckConfig_DeckConfigsForUpdate {
-        var context = Anki_DeckConfig_DeckConfigsForUpdate()
-        var withExtra = Anki_DeckConfig_DeckConfigsForUpdate.ConfigWithExtra()
-        withExtra.config = config
-        withExtra.useCount = 0
-        context.allConfig = [withExtra]
-        context.defaults = config
-        var current = Anki_DeckConfig_DeckConfigsForUpdate.CurrentDeck()
-        current.name = deckName
-        current.configID = config.id
-        context.currentDeck = current
-        let cfg = config.config
-        context.fsrs = !cfg.fsrsParams6.isEmpty || !cfg.fsrsParams5.isEmpty || !cfg.fsrsParams4.isEmpty
-        return context
-    }
 
     /// Anki stores learn/relearn steps as Float minutes. Accept "1m 10m 1h 1d"
     /// shorthand on input and emit "1m 10m" on output (matching the FSRS
