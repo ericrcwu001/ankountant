@@ -76,6 +76,38 @@ final class CardWebViewTests: XCTestCase {
         )
     }
 
+    @MainActor
+    func testResolvedCardLinkRejectsScriptURLs() {
+        XCTAssertNil(CardWebViewCoordinator.resolvedCardLink(from: "javascript:alert(1)", baseURL: nil))
+        XCTAssertNil(CardWebViewCoordinator.resolvedCardLink(from: " JaVaScRiPt:alert(1) ", baseURL: nil))
+    }
+
+    @MainActor
+    func testResolvedCardLinkKeepsCustomAppLinks() {
+        let url = CardWebViewCoordinator.resolvedCardLink(from: "anki://x-callback-url/search", baseURL: nil)
+
+        XCTAssertEqual(url?.scheme, "anki")
+    }
+
+    @MainActor
+    func testResolvedCardLinkResolvesRelativeLinks() throws {
+        let baseURL = try XCTUnwrap(URL(string: "https://cards.example/review/card.html"))
+        let url = CardWebViewCoordinator.resolvedCardLink(from: "media/image.png", baseURL: baseURL)
+
+        XCTAssertEqual(url?.absoluteString, "https://cards.example/review/media/image.png")
+    }
+
+    @MainActor
+    func testIsWebLinkRequiresHTTPOrHTTPS() throws {
+        let https = try XCTUnwrap(URL(string: "https://example.com"))
+        let http = try XCTUnwrap(URL(string: "HTTP://example.com"))
+        let custom = try XCTUnwrap(URL(string: "anki://x-callback-url/search"))
+
+        XCTAssertTrue(CardWebViewCoordinator.isWebLink(https))
+        XCTAssertTrue(CardWebViewCoordinator.isWebLink(http))
+        XCTAssertFalse(CardWebViewCoordinator.isWebLink(custom))
+    }
+
     private func assertColor(
         _ color: UIColor?,
         red expectedRed: CGFloat,

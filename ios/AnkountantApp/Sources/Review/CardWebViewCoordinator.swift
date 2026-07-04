@@ -205,25 +205,38 @@ final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMess
     // MARK: - Link handling
 
     private func openLink(_ href: String) {
-        let resolvedURL = URL(string: href, relativeTo: currentWebView?.url)?.absoluteURL
-            ?? URL(string: href)
+        guard let url = Self.resolvedCardLink(from: href, baseURL: currentWebView?.url) else { return }
 
-        guard let url = resolvedURL else { return }
-
-        let scheme = url.scheme?.lowercased()
-        let isWebLink = scheme == "http" || scheme == "https"
-
-        if isWebLink, !openLinksExternally {
+        if Self.isWebLink(url), !openLinksExternally {
             currentWebView?.load(URLRequest(url: url))
             return
         }
 
-        DispatchQueue.main.async {
-            if url.scheme == "http" || url.scheme == "https" {
-                self.presentSafariView(url: url)
-            } else {
-                UIApplication.shared.open(url, options: [:], completionHandler: nil)
-            }
+        Task { @MainActor [weak self] in
+            self?.openExternalURL(url)
+        }
+    }
+
+    static func resolvedCardLink(from href: String, baseURL: URL?) -> URL? {
+        let trimmed = href.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              let url = URL(string: trimmed, relativeTo: baseURL)?.absoluteURL ?? URL(string: trimmed),
+              url.scheme?.lowercased() != "javascript" else {
+            return nil
+        }
+        return url
+    }
+
+    static func isWebLink(_ url: URL) -> Bool {
+        let scheme = url.scheme?.lowercased()
+        return scheme == "http" || scheme == "https"
+    }
+
+    private func openExternalURL(_ url: URL) {
+        if Self.isWebLink(url) {
+            presentSafariView(url: url)
+        } else {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
         }
     }
 
@@ -262,15 +275,11 @@ final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMess
         }
 
         // Custom app links should always go to the system.
-        let isWebLink = scheme == "http" || scheme == "https"
+        let isWebLink = Self.isWebLink(url)
         if !isWebLink || openLinksExternally {
             decisionHandler(.cancel)
-            DispatchQueue.main.async {
-                if url.scheme == "http" || url.scheme == "https" {
-                    self.presentSafariView(url: url)
-                } else {
-                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
-                }
+            Task { @MainActor [weak self] in
+                self?.openExternalURL(url)
             }
         } else {
             // Keep http/https inside WKWebView when external opening is disabled.
