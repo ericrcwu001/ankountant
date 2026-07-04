@@ -186,6 +186,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                 <button
                     type="button"
                     class:active={scope === "deck"}
+                    aria-pressed={scope === "deck"}
                     on:click={() => setScope("deck")}
                 >
                     Deck
@@ -193,6 +194,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                 <button
                     type="button"
                     class:active={scope === "collection"}
+                    aria-pressed={scope === "collection"}
                     on:click={() => setScope("collection")}
                 >
                     Collection
@@ -213,6 +215,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                 <button
                     type="button"
                     class:active={history === "year"}
+                    aria-pressed={history === "year"}
                     on:click={() => setHistory("year")}
                 >
                     12 months
@@ -220,6 +223,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                 <button
                     type="button"
                     class:active={history === "all"}
+                    aria-pressed={history === "all"}
                     on:click={() => setHistory("all")}
                 >
                     All history
