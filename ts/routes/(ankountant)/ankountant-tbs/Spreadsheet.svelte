@@ -26,6 +26,38 @@ it shows the computed value. Nothing here is ever submitted or graded.
         raw = { ...raw, [key]: target.value };
     }
 
+    function displayValue(cells: Record<string, string>, key: string): string {
+        return displayCell(cells[key] ?? "", (ref) => cells[ref] ?? "");
+    }
+
+    function onFocus(key: string, event: FocusEvent): void {
+        editing = key;
+        const target = event.currentTarget as HTMLInputElement;
+        target.value = raw[key] ?? "";
+    }
+
+    function onBlur(key: string, event: FocusEvent): void {
+        const target = event.currentTarget as HTMLInputElement;
+        const nextRaw = { ...raw, [key]: target.value };
+        raw = nextRaw;
+        editing = null;
+        target.value = displayValue(nextRaw, key);
+    }
+
+    function onKeydown(key: string, event: KeyboardEvent): void {
+        if (event.key !== "Enter") {
+            return;
+        }
+
+        event.preventDefault();
+        const target = event.currentTarget as HTMLInputElement;
+        const nextRaw = { ...raw, [key]: target.value };
+        raw = nextRaw;
+        editing = null;
+        target.blur();
+        target.value = displayValue(nextRaw, key);
+    }
+
     function shown(key: string): string {
         return editing === key
             ? (raw[key] ?? "")
@@ -71,9 +103,10 @@ it shows the computed value. Nothing here is ever submitted or graded.
                                     data-cell={key}
                                     aria-label={key}
                                     value={shown(key)}
-                                    on:focus={() => (editing = key)}
-                                    on:blur={() => (editing = null)}
+                                    on:focus={(e) => onFocus(key, e)}
+                                    on:blur={(e) => onBlur(key, e)}
                                     on:input={(e) => onInput(key, e)}
+                                    on:keydown={(e) => onKeydown(key, e)}
                                 />
                             </td>
                         {/each}

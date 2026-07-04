@@ -99,3 +99,19 @@ test("research: literature citations scroll inside the tool panel", async ({ pag
         .poll(() => results.evaluate((el) => el.scrollTop))
         .toBeGreaterThan(0);
 });
+
+test("research: scratchpad formulas commit on Enter", async ({ page }) => {
+    await page.goto("/ankountant-research");
+    await page.getByTestId("tool-tab-scratch").click();
+
+    await page.locator("input[data-cell=\"A1\"]").fill("10");
+    await page.locator("input[data-cell=\"A2\"]").fill("15");
+
+    const formulaCell = page.locator("input[data-cell=\"A3\"]");
+    await formulaCell.fill("=SUM(A1:A2)");
+    await formulaCell.press("Enter");
+    await expect(formulaCell).toHaveValue("25");
+
+    await formulaCell.focus();
+    await expect(formulaCell).toHaveValue("=SUM(A1:A2)");
+});
