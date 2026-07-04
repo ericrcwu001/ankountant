@@ -146,12 +146,12 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         hoveredTopicKey = null;
     }
 
-    function topicValue(value: number | null): string {
-        return value === null ? "—" : String(value);
-    }
-
     function topicPercent(value: number | null): string {
         return value === null ? "insufficient" : `${value}%`;
+    }
+
+    function gapValue(value: number): string {
+        return `${value} pt${value === 1 ? "" : "s"}`;
     }
 
     function topicAria(topic: FarTopic): string {
@@ -328,7 +328,9 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                 {#each strongTopics as topic (topic.label)}
                     <li>
                         <span class="stat-name">{topic.label}</span>
-                        <span class="stat-val tabular">{topic.value}</span>
+                        <span class="stat-val tabular">
+                            {topicPercent(topic.value)}
+                        </span>
                     </li>
                 {/each}
             </ul>
@@ -339,7 +341,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     <li>
                         <span class="stat-name">{topic.label}</span>
                         <span class="stat-val tabular" class:warn={topic.warn}>
-                            {topic.value}
+                            {gapValue(topic.value)}
                         </span>
                     </li>
                 {/each}
@@ -438,7 +440,9 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                         on:click={() => nav(`/ankountant-dashboard?section=${section}`)}
                     >
                         <span>{topic.label}</span>
-                        <strong class="tabular">{topicValue(topic.performance)}</strong>
+                        <strong class="tabular">
+                            {topic.performance === null ? "—" : `${topic.performance}%`}
+                        </strong>
                     </button>
                 {/each}
             </div>
