@@ -18,7 +18,6 @@ struct NoteEditorView: View {
     @State private var showSavedConfirmation = false
     @State private var loadErrorMessage: String?
     @State private var saveErrorMessage: String?
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Form {
@@ -144,12 +143,12 @@ struct NoteEditorView: View {
         }
 
         withAnimation { showSavedConfirmation = true }
+        onSave()
         do {
             try await Task.sleep(for: .seconds(1.5))
         } catch {
             return
         }
         withAnimation { showSavedConfirmation = false }
-        onSave()
     }
 }
