@@ -43,6 +43,16 @@ test("buildTbsModel parses a JE note without leaking answer keys", () => {
     expect(JSON.stringify(model.steps)).not.toContain("Cash");
 });
 
+test("buildTbsModel fails loudly on missing prompt", () => {
+    const stepsJson = JSON.stringify([{ id: "l1", answer_key: 1 }]);
+    expect(() => buildTbsModel(["journal_entry", "", "[]", stepsJson, "ds::lease"])).toThrow(
+        /prompt is missing/,
+    );
+    expect(() => buildTbsModel(["journal_entry", " ", "[]", stepsJson, "ds::lease"])).toThrow(
+        /prompt is missing/,
+    );
+});
+
 test("tbsSearch pins both task shape and section", () => {
     expect(tbsSearch("journal_entry", "FAR")).toBe(
         `"note:Ankountant TBS" "tbs_type:journal_entry" deck:Ankountant::Sealed::FAR::*`,

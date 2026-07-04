@@ -385,12 +385,16 @@ export function buildTbsModel(fields: string[], tags?: string[]): TbsModel {
         throw new Error(`Unsupported tbs_type: ${shapeRaw ?? ""}`);
     }
     const shape = shapeRaw as TbsShape;
+    const prompt = fields[TBS_FIELD.prompt];
+    if (prompt === undefined || prompt.trim() === "") {
+        throw new Error("prompt is missing.");
+    }
     const exhibits = parseExhibits(fields[TBS_FIELD.exhibitsJson]);
     const doc = exhibits.find((e) => e.role === "document");
     return {
         shape,
         section: sectionFromTags(tags),
-        prompt: fields[TBS_FIELD.prompt] ?? "",
+        prompt,
         exhibits,
         steps: parseSteps(fields[TBS_FIELD.stepsJson]),
         document: doc?.body,
