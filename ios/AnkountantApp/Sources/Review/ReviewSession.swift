@@ -32,6 +32,7 @@ final class ReviewSession {
     private(set) var currentNote: NoteRecord?
     private(set) var cardChromeColor: Color = .clear
     private(set) var cardChromeIsDark: Bool = false
+    private(set) var errorMessage: String?
 
     private var reviewStartTime: Date = .now
     private var cardQueue: [QueuedReviewCard] = []
@@ -88,7 +89,13 @@ final class ReviewSession {
 
     // MARK: - Public interface
 
+    func clearError() {
+        errorMessage = nil
+    }
+
     func start() {
+        errorMessage = nil
+
         do {
             try decks.setCurrentDeck(deckId)
 
@@ -99,10 +106,9 @@ final class ReviewSession {
                 learnCount: result.learningCount,
                 reviewCount: result.reviewCount
             )
-            print("[ReviewSession] Started with \(cardQueue.count) cards, counts: new=\(result.newCount) learn=\(result.learningCount) review=\(result.reviewCount)")
             advanceToNextCard()
         } catch {
-            print("[ReviewSession] Start failed: \(error)")
+            errorMessage = "Failed to start review: \(error.localizedDescription)"
             isFinished = true
         }
     }
@@ -154,9 +160,7 @@ final class ReviewSession {
             )
             advanceToNextCard()
         } catch {
-            print("[ReviewSession] Answer failed: \(error)")
-            if !cardQueue.isEmpty { cardQueue.removeFirst() }
-            advanceToNextCard()
+            errorMessage = "Failed to answer card: \(error.localizedDescription)"
         }
     }
 
@@ -184,7 +188,7 @@ final class ReviewSession {
             )
             advanceToNextCard()
         } catch {
-            print("[ReviewSession] Undo failed: \(error)")
+            errorMessage = "Failed to undo review: \(error.localizedDescription)"
         }
     }
 
@@ -211,7 +215,7 @@ final class ReviewSession {
         do {
             currentNote = try notes.getNote(queued.card.nid)
         } catch {
-            print("[ReviewSession] refreshAfterEdit getNote failed: \(error)")
+            errorMessage = "Failed to reload note after edit: \(error.localizedDescription)"
         }
 
         do {
@@ -231,7 +235,7 @@ final class ReviewSession {
                 backHTML = renderedBackHTML
             }
         } catch {
-            print("[ReviewSession] refreshAfterEdit render failed: \(error)")
+            errorMessage = "Failed to render edited card: \(error.localizedDescription)"
         }
     }
 
@@ -255,7 +259,7 @@ final class ReviewSession {
         do {
             currentNote = try notes.getNote(next.card.nid)
         } catch {
-            print("[ReviewSession] getNote failed: \(error)")
+            errorMessage = "Failed to load note: \(error.localizedDescription)"
             currentNote = nil
         }
 
@@ -269,9 +273,9 @@ final class ReviewSession {
             frontHTML = makeTypedAnswerFrontHTML(state: typedAnswerState, raw: renderedFrontHTML)
             backHTML = renderedBackHTML  // back substitution happens at reveal
         } catch {
-            print("[ReviewSession] Render failed for card \(next.card.id): \(error)")
-            renderedFrontHTML = "<p>Error rendering card</p>"
-            renderedBackHTML = "<p>Error rendering card</p>"
+            errorMessage = "Failed to render card: \(error.localizedDescription)"
+            renderedFrontHTML = "<p>Unable to render this card.</p>"
+            renderedBackHTML = "<p>Unable to render this card.</p>"
             cardCSS = ""
             frontHTML = renderedFrontHTML
             backHTML = renderedBackHTML
@@ -326,7 +330,7 @@ final class ReviewSession {
                 fontSize: field.fontSize
             )
         } catch {
-            print("[ReviewSession] Typed answer resolution failed for card \(queued.card.id): \(error)")
+            errorMessage = "Failed to prepare typed answer: \(error.localizedDescription)"
             return nil
         }
     }
@@ -360,7 +364,7 @@ final class ReviewSession {
             let wrapped = "<div style=\"font-family: '\(state.fontName)'; font-size: \(state.fontSize)px\">\(diff)</div>"
             return renderedBackHTML.replacingOccurrences(of: state.placeholder, with: wrapped)
         } catch {
-            print("[ReviewSession] compareAnswer failed: \(error)")
+            errorMessage = "Failed to compare typed answer: \(error.localizedDescription)"
             return renderedBackHTML.replacingOccurrences(of: state.placeholder, with: "")
         }
     }

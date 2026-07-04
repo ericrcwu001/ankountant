@@ -6,6 +6,14 @@ import AnkiKit
 import AnkiServices
 @testable import AnkountantApp
 
+private enum ReviewSessionFixtureError: LocalizedError {
+    case failed
+
+    var errorDescription: String? {
+        "fixture failure"
+    }
+}
+
 // MARK: - ReviewSessionTests
 // Lifted from ~/Clones/ankountant/AnkiApp/Sources/Review/ReviewSessionTests.swift (82 LOC)
 // Adapted to our architecture: @MainActor class, async revealAnswer(), swift-dependencies mocking.
@@ -116,6 +124,46 @@ final class ReviewSessionTests: XCTestCase {
             XCTAssertTrue(s.isFinished,
                           "Session with empty queue should be finished after start()")
             XCTAssertEqual(s.remainingCounts, .zero)
+        }
+    }
+
+    func testStartFailureSurfacesError() {
+        withDependencies {
+            $0.decksService.setCurrentDeck = { _ in throw ReviewSessionFixtureError.failed }
+        } operation: {
+            let session = ReviewSession(deckId: 1)
+            session.start()
+            XCTAssertTrue(session.isFinished)
+            XCTAssertTrue(session.errorMessage?.contains("fixture failure") == true)
+        }
+    }
+
+    func testAnswerFailureKeepsCurrentCardAndReportsError() {
+        let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
+        let stubResult = QueuedCardsResult(
+            cards: [stubCard], newCount: 1, learningCount: 0, reviewCount: 0
+        )
+        let stubNote = NoteRecord(id: 100, guid: "g", mid: 200, mod: 0, flds: "", sfld: "", csum: 0)
+
+        withDependencies {
+            $0.decksService.setCurrentDeck = { _ in }
+            $0.schedulerService.getQueuedCards = { _ in stubResult }
+            $0.schedulerService.answerReviewCard = { _, _, _, _ in throw ReviewSessionFixtureError.failed }
+            $0.notesService.getNote = { _ in stubNote }
+            $0.cardRenderingService.renderCard = { _ in
+                RenderedCard(frontHTML: "front", backHTML: "back", cardCSS: "")
+            }
+        } operation: {
+            let session = ReviewSession(deckId: 1)
+            session.start()
+            XCTAssertEqual(session.currentCardId, 1)
+
+            session.answer(rating: .good)
+
+            XCTAssertEqual(session.currentCardId, 1)
+            XCTAssertEqual(session.sessionStats.reviewed, 0)
+            XCTAssertFalse(session.isFinished)
+            XCTAssertTrue(session.errorMessage?.contains("fixture failure") == true)
         }
     }
 

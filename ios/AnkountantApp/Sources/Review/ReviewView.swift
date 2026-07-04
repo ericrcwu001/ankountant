@@ -67,7 +67,11 @@ struct ReviewView: View {
                 }
 
                 if session.isFinished {
-                    finishedView
+                    if let errorMessage = session.errorMessage {
+                        failedView(errorMessage)
+                    } else {
+                        finishedView
+                    }
                 } else {
                     cardView
                 }
@@ -177,6 +181,18 @@ struct ReviewView: View {
                 LookupPopupView(initialQuery: wrapped.text) {
                     lookupQuery = nil
                 }
+            }
+            .alert(
+                "Review error",
+                isPresented: Binding(
+                    get: { session.errorMessage != nil && !session.isFinished },
+                    set: { if !$0 { session.clearError() } }
+                ),
+                presenting: session.errorMessage
+            ) { _ in
+                Button("OK", role: .cancel) {}
+            } message: { message in
+                Text(message)
             }
         }
         .task {
@@ -316,6 +332,27 @@ struct ReviewView: View {
         if days < 30 { return "\(days)d" }
         if days < 365 { return "\(days / 30)mo" }
         return String(format: "%.1fy", Double(days) / 365.0)
+    }
+
+    private func failedView(_ message: String) -> some View {
+        VStack(spacing: AnkountantSpacing.lg) {
+            Spacer()
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 56))
+                .foregroundStyle(palette.warning)
+            Text("Review unavailable")
+                .ankountantFont(.sectionHeading)
+                .foregroundStyle(palette.textPrimary)
+            Text(message)
+                .ankountantFont(.body)
+                .foregroundStyle(palette.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            Spacer()
+            Button("Done") { onDismiss() }
+                .buttonStyle(AnkountantPrimaryButtonStyle())
+                .padding()
+        }
     }
 
     private var finishedView: some View {
