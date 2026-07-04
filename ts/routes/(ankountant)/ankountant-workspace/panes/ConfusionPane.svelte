@@ -44,6 +44,6 @@ ankountant-confusion/+page.ts.
         {phase}
         {message}
         onRetry={load}
-        emptyText="No confusion items yet. Load a demo profile or CPA bank from the Ankountant menu."
+        emptyText="No confusion items yet. Load or import CPA practice to build the drill queue."
     />
 {/if}

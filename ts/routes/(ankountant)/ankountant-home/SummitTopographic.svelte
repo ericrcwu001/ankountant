@@ -4,6 +4,7 @@
     import { buildTopoRange, type TopoFlag, type TopoTopic } from "./topo";
 
     export let topics: TopoTopic[] = [];
+    export let sectionLabel = "FAR";
 
     const NAVY = "#1f3a5f";
     const AMBER = "#e08a2e";
@@ -41,7 +42,7 @@
     viewBox="0 0 {range.width} {range.height}"
     preserveAspectRatio="xMidYMax meet"
     role="img"
-    aria-label="Topographic range of FAR topics; each peak is a topic, pass line at CPA 75."
+    aria-label="Topographic range of {sectionLabel} topics; each peak is a topic, pass line at CPA 75."
 >
     <defs>
         <linearGradient id="topo-far" x1="0" y1="0" x2="0" y2="1">

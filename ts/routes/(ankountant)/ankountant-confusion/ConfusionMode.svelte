@@ -35,7 +35,7 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
             : `/ankountant-dashboard?section=${section}`;
     $: emptyDetail =
         section === "ALL"
-            ? "Load a CPA bank or demo profile from the Ankountant menu to build the drill queue."
+            ? "Load or import CPA practice to build the drill queue."
             : `No ${section} confusion items are available yet. Load or import section practice to build the drill queue.`;
 
     // Confusion review is label-stripped (B2-D1): drop any trailing dev slug

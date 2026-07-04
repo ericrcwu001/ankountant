@@ -424,6 +424,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
             <SummitTopographic
                 topics={sectionTopics}
+                sectionLabel={activeSectionName}
                 on:flagenter={showTopicTip}
                 on:flagleave={hideTopicTip}
             />

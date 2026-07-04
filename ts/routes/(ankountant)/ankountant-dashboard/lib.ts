@@ -258,7 +258,7 @@ function assertFiniteNumber(label: string, value: number): void {
 
 function bestNextAction(view: ReadinessView, rows: TopicRow[]): string {
     if (!rows.length) {
-        return "Load a CPA bank or demo profile, then start sealed practice.";
+        return "Load or import CPA practice, then start sealed practice.";
     }
     if (view.coveragePct < READINESS_MIN_COVERAGE_PCT) {
         return "Add sealed exam-style attempts in uncovered topics before trusting the readiness range.";
