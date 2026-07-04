@@ -96,23 +96,46 @@ test("parseSteps fails loudly on missing, malformed, or empty step json", () => 
 
 test("buildJeSubmission shapes account/side/amount per step", () => {
     const json = buildJeSubmission([
-        { id: "l1", account: "Cash", side: "dr", amount: "1000" },
+        { id: "l1", account: "Cash", side: "dr", amount: " 1000.50 " },
+        { id: "l2", account: "Interest Expense", side: "dr", amount: "" },
+        { id: "l3", account: "Cash", side: "cr", amount: "invalid", noEntry: true },
     ]);
     const parsed = JSON.parse(json);
     expect(parsed.steps[0]).toEqual({
         id: "l1",
-        value: { account: "Cash", side: "dr", amount: 1000 },
+        value: { account: "Cash", side: "dr", amount: 1000.5 },
     });
+    expect(parsed.steps[1].value.amount).toBe("");
+    expect(parsed.steps[2].value).toEqual({ account: "", side: "", amount: "" });
+});
+
+test("buildJeSubmission rejects malformed decimal amounts", () => {
+    expect(() =>
+        buildJeSubmission([
+            { id: "l1", account: "Cash", side: "dr", amount: "1,000" },
+        ])
+    ).toThrow(/Amount for l1 must be a decimal number/);
 });
 
 test("buildNumericSubmission coerces numbers per cell", () => {
     const json = buildNumericSubmission([
-        { id: "c1", value: "250000" },
-        { id: "c2", value: "" },
+        { id: "c1", value: "-250000.75" },
+        { id: "c2", value: "   " },
+        { id: "c3", value: ".25" },
     ]);
     const parsed = JSON.parse(json);
-    expect(parsed.steps[0].value).toBe(250000);
+    expect(parsed.steps[0].value).toBe(-250000.75);
     expect(parsed.steps[1].value).toBe("");
+    expect(parsed.steps[2].value).toBe(0.25);
+});
+
+test("buildNumericSubmission rejects non-finite or malformed cell values", () => {
+    expect(() => buildNumericSubmission([{ id: "c1", value: "NaN" }])).toThrow(
+        /Value for c1 must be a decimal number/,
+    );
+    expect(() => buildNumericSubmission([{ id: "c2", value: "9".repeat(400) }])).toThrow(
+        /Value for c2 must be a finite number/,
+    );
 });
 
 // --- Workstream B: section-agnostic surfaces ---------------------------------

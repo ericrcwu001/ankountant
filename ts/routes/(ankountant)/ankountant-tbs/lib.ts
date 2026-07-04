@@ -366,6 +366,23 @@ export interface JeLineInput {
     noEntry?: boolean;
 }
 
+const DECIMAL_NUMBER_RE = /^[+-]?(?:\d+\.?\d*|\.\d+)$/;
+
+function submissionNumber(raw: string, fieldName: string): number | "" {
+    const trimmed = raw.trim();
+    if (trimmed === "") {
+        return "";
+    }
+    if (!DECIMAL_NUMBER_RE.test(trimmed)) {
+        throw new Error(`${fieldName} must be a decimal number.`);
+    }
+    const value = Number(trimmed);
+    if (!Number.isFinite(value)) {
+        throw new Error(`${fieldName} must be a finite number.`);
+    }
+    return value;
+}
+
 /** Shape the submission_json for a journal-entry TBS. A "no entry" line submits
  *  empty values (graded incorrect if the line was required — the exam shows
  *  spare rows, so not every row must be used). */
@@ -378,7 +395,7 @@ export function buildJeSubmission(lines: JeLineInput[]): string {
                 : {
                     account: l.account,
                     side: l.side,
-                    amount: l.amount === "" ? "" : Number(l.amount),
+                    amount: submissionNumber(l.amount, `Amount for ${l.id}`),
                 },
         })),
     });
@@ -395,7 +412,7 @@ export function buildNumericSubmission(cells: NumericCellInput[]): string {
     return JSON.stringify({
         steps: cells.map((c) => ({
             id: c.id,
-            value: c.value === "" ? "" : Number(c.value),
+            value: submissionNumber(c.value, `Value for ${c.id}`),
         })),
     });
 }
