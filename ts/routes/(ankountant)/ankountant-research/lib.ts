@@ -9,9 +9,13 @@ import { CORPUS } from "./corpus";
 
 export type { CorpusEntry } from "./corpus";
 
-/** The bundled corpus passages for a section (empty for an unseeded section). */
 export function corpusForSection(section: string): CorpusEntry[] {
-    return CORPUS[section] ?? [];
+    const code = section.trim().toUpperCase();
+    const entries = CORPUS[code];
+    if (!entries) {
+        throw new Error(`Unknown CPA section: ${code}`);
+    }
+    return entries;
 }
 
 /**

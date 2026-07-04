@@ -8,6 +8,7 @@ import { corpusForSection, searchCorpus } from "./lib";
 test("corpusForSection returns per-section passages (both licensing kinds)", () => {
     const far = corpusForSection("FAR");
     expect(far.length).toBeGreaterThan(0);
+    expect(corpusForSection(" far ")).toEqual(far);
     // FASB ASC (FAR) is cite-only: paraphrase + deep link, never verbatim.
     expect(far.every((e) => e.verbatim === false)).toBe(true);
     expect(far.every((e) => (e.deepLink ?? "").includes("asc.fasb.org"))).toBe(true);
@@ -16,7 +17,7 @@ test("corpusForSection returns per-section passages (both licensing kinds)", () 
     const reg = corpusForSection("REG");
     expect(reg.some((e) => e.verbatim && e.citation.includes("162"))).toBe(true);
 
-    expect(corpusForSection("NOPE")).toEqual([]);
+    expect(() => corpusForSection("NOPE")).toThrow(/Unknown CPA section: NOPE/);
 });
 
 test("searchCorpus does a client-side substring/keyword match over the section", () => {
