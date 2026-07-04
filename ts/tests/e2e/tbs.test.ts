@@ -4,7 +4,22 @@
 // ! B4 (F014) desktop TBS surface specs — contract A50–A53. Deep-links the
 // ! surface at the sealed TBS notes produced by the FAR seed.
 
+import type { Locator } from "@playwright/test";
+
 import { expect, test } from "./fixtures";
+
+async function fillSeedJournalEntryRows(rows: Locator): Promise<void> {
+    const fill = async (idx: number, account: string, side: string, amount: string) => {
+        const row = rows.nth(idx);
+        await row.getByTestId("je-account").selectOption(account);
+        await row.getByTestId("je-side").selectOption(side);
+        await row.getByTestId("je-amount").fill(amount);
+    };
+    await fill(0, "ROU Asset", "dr", "10000");
+    await fill(1, "Lease Liability", "cr", "10000");
+    await fill(2, "Interest Expense", "dr", "500");
+    await fill(3, "Cash", "cr", "99999");
+}
 
 test("a JE TBS renders an editable grid and shows per-line + partial-credit total (A50/B4-D1)", async ({ page, seed }) => {
     expect(seed.sealedJeTbs).toBeGreaterThanOrEqual(3);
@@ -26,22 +41,14 @@ test("a JE TBS renders an editable grid and shows per-line + partial-credit tota
     await expect(page.getByRole("combobox", { name: "Spare account 1" })).toBeVisible();
     await expect(page.getByTestId("tbs-submit")).toBeDisabled();
     await page.getByTestId("confidence-unsure").click();
-    await expect(page.getByTestId("tbs-submit")).toBeEnabled();
+    await expect(page.getByTestId("tbs-submit")).toBeDisabled();
+    await expect(page.getByText("Complete every line or mark No entry.")).toBeVisible();
 
     // Fill three lines correctly (matching the seed's JE answer key) and one
     // wrong amount -> expect [ok,ok,ok,wrong] and 75% (reconciles with A35).
-    const fill = async (idx: number, account: string, side: string, amount: string) => {
-        const row = rows.nth(idx);
-        // Account is now a controlled picker (agent 07), not a free-text input.
-        await row.getByTestId("je-account").selectOption(account);
-        await row.getByTestId("je-side").selectOption(side);
-        await row.getByTestId("je-amount").fill(amount);
-    };
-    await fill(0, "ROU Asset", "dr", "10000");
-    await fill(1, "Lease Liability", "cr", "10000");
-    await fill(2, "Interest Expense", "dr", "500");
-    await fill(3, "Cash", "cr", "99999"); // wrong amount only on line 4
+    await fillSeedJournalEntryRows(rows);
 
+    await expect(page.getByTestId("tbs-submit")).toBeEnabled();
     await page.getByTestId("tbs-submit").click();
     await expect(page.getByTestId("tbs-total")).toContainText("75%");
     await expect(page.getByTestId("results-layer")).toBeVisible();
@@ -89,6 +96,7 @@ test("a TBS submit failure stays in the surface", async ({ page, seed }) => {
     });
     await page.goto(`/ankountant-tbs?note=${seed.sealedTbsNoteIds[0]}`);
     await page.getByTestId("confidence-guess").click();
+    await fillSeedJournalEntryRows(page.getByTestId("je-row"));
     await page.getByTestId("tbs-submit").click();
     await expect(page.getByTestId("tbs-submit-error")).toContainText(
         "500: forced submit failure",

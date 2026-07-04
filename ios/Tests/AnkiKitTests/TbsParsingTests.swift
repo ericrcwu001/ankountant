@@ -268,10 +268,11 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
 @Test func buildJeSubmissionShapesAmounts() throws {
     let json = try buildJeSubmission([
         JeLineInput(id: "l1", account: "ROU Asset", side: "dr", amount: " 10000.50 "),
-        JeLineInput(id: "l2", account: "Cash", side: "cr", amount: ""),
+        JeLineInput(id: "l2", account: "Cash", side: "cr", amount: "0"),
+        JeLineInput(id: "l3", account: "Cash", side: "cr", amount: "not-a-number", noEntry: true),
     ])
     let steps = try #require(try parseObject(json)["steps"] as? [[String: Any]])
-    #expect(steps.count == 2)
+    #expect(steps.count == 3)
 
     let first = try #require(steps[0]["value"] as? [String: Any])
     #expect(steps[0]["id"] as? String == "l1")
@@ -284,9 +285,31 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
     let second = try #require(steps[1]["value"] as? [String: Any])
     #expect(second["account"] as? String == "Cash")
     #expect(second["side"] as? String == "cr")
-    // An empty amount is the empty string, never a number.
-    #expect(second["amount"] as? String == "")
-    #expect(second["amount"] as? Double == nil)
+    #expect(second["amount"] as? Double == 0)
+
+    let third = try #require(steps[2]["value"] as? [String: Any])
+    #expect(third["account"] as? String == "")
+    #expect(third["side"] as? String == "")
+    #expect(third["amount"] as? String == "")
+}
+
+@Test func journalEntryLinesCompleteRequiresNoEntryOrCompleteLine() {
+    #expect(journalEntryLinesComplete([
+        JeLineInput(id: "l1", account: "ROU Asset", side: "dr", amount: "100"),
+        JeLineInput(id: "l2", noEntry: true),
+    ]))
+    #expect(!journalEntryLinesComplete([
+        JeLineInput(id: "l1", account: "ROU Asset", side: "dr", amount: ""),
+    ]))
+    #expect(!journalEntryLinesComplete([]))
+}
+
+@Test func buildJeSubmissionRejectsIncompleteLines() {
+    expectTbsSubmissionError("Line 1 needs account, debit/credit, and amount, or mark No entry.") {
+        try buildJeSubmission([
+            JeLineInput(id: "l1", label: "Line 1", account: "ROU Asset", side: "dr", amount: ""),
+        ])
+    }
 }
 
 @Test func buildJeSubmissionRejectsMalformedAmounts() {
@@ -300,7 +323,7 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
 @Test func buildNumericSubmissionShapesValues() throws {
     let json = try buildNumericSubmission([
         NumericCellInput(id: "c1", value: "-42.5"),
-        NumericCellInput(id: "c2", value: "   "),
+        NumericCellInput(id: "c2", value: "0"),
         NumericCellInput(id: "c3", value: ".25"),
     ])
     let steps = try #require(try parseObject(json)["steps"] as? [[String: Any]])
@@ -311,11 +334,25 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
     #expect(steps[0]["value"] as? String == nil)
 
     #expect(steps[1]["id"] as? String == "c2")
-    #expect(steps[1]["value"] as? String == "")
-    #expect(steps[1]["value"] as? Double == nil)
+    #expect(steps[1]["value"] as? Double == 0)
 
     #expect(steps[2]["id"] as? String == "c3")
     #expect(steps[2]["value"] as? Double == 0.25)
+}
+
+@Test func numericCellsCompleteRequiresEveryValue() {
+    #expect(numericCellsComplete([
+        NumericCellInput(id: "c1", value: "1"),
+        NumericCellInput(id: "c2", value: "0"),
+    ]))
+    #expect(!numericCellsComplete([NumericCellInput(id: "c1", value: " ")]))
+    #expect(!numericCellsComplete([]))
+}
+
+@Test func buildNumericSubmissionRejectsMissingValues() {
+    expectTbsSubmissionError("Value for Cell 1 needs a value before submission.") {
+        try buildNumericSubmission([NumericCellInput(id: "c1", label: "Cell 1", value: " ")])
+    }
 }
 
 @Test func buildNumericSubmissionRejectsMalformedValues() {

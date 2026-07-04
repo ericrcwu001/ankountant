@@ -248,10 +248,14 @@ struct TbsTaskView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(AnkountantPrimaryButtonStyle())
-            .disabled(submitting || confidence == nil || results != nil)
+            .disabled(submitting || confidence == nil || results != nil || !answersComplete(for: model))
 
             if confidence == nil {
                 Text("Commit a confidence level first.")
+                    .ankountantFont(.caption)
+                    .foregroundStyle(palette.textSecondary)
+            } else if let requirement = answerRequirementMessage(for: model) {
+                Text(requirement)
                     .ankountantFont(.caption)
                     .foregroundStyle(palette.textSecondary)
             }
@@ -303,6 +307,31 @@ struct TbsTaskView: View {
         model.steps.first(where: { $0.id == id })?.label ?? id
     }
 
+    private func answersComplete(for model: TbsModel) -> Bool {
+        switch model.shape {
+        case .numeric:
+            numericCellsComplete(numericCells)
+        case .journalEntry:
+            journalEntryLinesComplete(jeLines)
+        case .research, .docReview:
+            preconditionFailure("JE/numeric completion requested for \(model.shape.rawValue)")
+        }
+    }
+
+    private func answerRequirementMessage(for model: TbsModel) -> String? {
+        guard !answersComplete(for: model) else {
+            return nil
+        }
+        switch model.shape {
+        case .numeric:
+            return "Enter a value for every cell."
+        case .journalEntry:
+            return "Complete every line or mark No entry."
+        case .research, .docReview:
+            preconditionFailure("JE/numeric requirement requested for \(model.shape.rawValue)")
+        }
+    }
+
     // MARK: - Data
 
     private func load() async {
@@ -326,7 +355,7 @@ struct TbsTaskView: View {
     }
 
     private func submit(_ model: TbsModel) async {
-        guard let confidence, !submitting, results == nil else { return }
+        guard let confidence, !submitting, results == nil, answersComplete(for: model) else { return }
         submitting = true
         submitError = nil
         revealError = nil

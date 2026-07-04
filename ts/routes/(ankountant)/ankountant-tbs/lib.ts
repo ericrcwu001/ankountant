@@ -550,24 +550,42 @@ function submissionNumber(raw: string, fieldName: string): number | "" {
     return value;
 }
 
+export function journalEntryLinesComplete(lines: JeLineInput[]): boolean {
+    return lines.length > 0 && lines.every((line) =>
+        Boolean(line.noEntry)
+        || (line.account.trim() !== "" && line.side.trim() !== "" && line.amount.trim() !== "")
+    );
+}
+
+function requireJournalEntryLineComplete(line: JeLineInput): void {
+    if (!journalEntryLinesComplete([line])) {
+        throw new Error(
+            `${line.label ?? defaultStepLabel(line.id)} needs account, debit/credit, and amount, or mark No entry.`,
+        );
+    }
+}
+
 /** Shape the submission_json for a journal-entry TBS. A "no entry" line submits
  *  empty values (graded incorrect if the line was required — the exam shows
  *  spare rows, so not every row must be used). */
 export function buildJeSubmission(lines: JeLineInput[]): string {
     return JSON.stringify({
-        steps: lines.map((l) => ({
-            id: l.id,
-            value: l.noEntry
-                ? { account: "", side: "", amount: "" }
-                : {
-                    account: l.account,
-                    side: l.side,
-                    amount: submissionNumber(
-                        l.amount,
-                        `Amount for ${l.label ?? defaultStepLabel(l.id)}`,
-                    ),
-                },
-        })),
+        steps: lines.map((l) => {
+            requireJournalEntryLineComplete(l);
+            return {
+                id: l.id,
+                value: l.noEntry
+                    ? { account: "", side: "", amount: "" }
+                    : {
+                        account: l.account.trim(),
+                        side: l.side.trim(),
+                        amount: submissionNumber(
+                            l.amount,
+                            `Amount for ${l.label ?? defaultStepLabel(l.id)}`,
+                        ),
+                    },
+            };
+        }),
     });
 }
 
@@ -578,13 +596,23 @@ export interface NumericCellInput {
     value: string;
 }
 
+export function numericCellsComplete(cells: NumericCellInput[]): boolean {
+    return cells.length > 0 && cells.every((cell) => cell.value.trim() !== "");
+}
+
 /** Shape the submission_json for a numeric TBS. */
 export function buildNumericSubmission(cells: NumericCellInput[]): string {
     return JSON.stringify({
-        steps: cells.map((c) => ({
-            id: c.id,
-            value: submissionNumber(c.value, `Value for ${c.label ?? defaultStepLabel(c.id)}`),
-        })),
+        steps: cells.map((c) => {
+            const label = `Value for ${c.label ?? defaultStepLabel(c.id)}`;
+            if (c.value.trim() === "") {
+                throw new Error(`${label} needs a value before submission.`);
+            }
+            return {
+                id: c.id,
+                value: submissionNumber(c.value, label),
+            };
+        }),
     });
 }
 

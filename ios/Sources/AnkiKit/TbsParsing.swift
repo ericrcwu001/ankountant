@@ -62,6 +62,8 @@ public enum TbsParseError: Error, Equatable, LocalizedError, Sendable {
 public enum TbsSubmissionError: Error, Equatable, LocalizedError, Sendable {
     case invalidDecimal(field: String)
     case nonFiniteNumber(field: String)
+    case missingNumericValue(field: String)
+    case incompleteJournalEntryLine(field: String)
     case missingCitation
     case missingStepSelection
 
@@ -71,6 +73,10 @@ public enum TbsSubmissionError: Error, Equatable, LocalizedError, Sendable {
             "\(field) must be a decimal number."
         case let .nonFiniteNumber(field):
             "\(field) must be a finite number."
+        case let .missingNumericValue(field):
+            "\(field) needs a value before submission."
+        case let .incompleteJournalEntryLine(field):
+            "\(field) needs account, debit/credit, and amount, or mark No entry."
         case .missingCitation:
             "Research submission requires a governing citation."
         case .missingStepSelection:
@@ -405,13 +411,17 @@ public func segmentDocument(_ body: String?) -> [DocSegment] {
 /// Shape the submission_json for a journal-entry TBS.
 public func buildJeSubmission(_ lines: [JeLineInput]) throws -> String {
     let steps = try lines.map { line -> [String: Any] in
+        let label = line.label ?? defaultStepLabel(line.id)
+        guard journalEntryLineComplete(line) else {
+            throw TbsSubmissionError.incompleteJournalEntryLine(field: label)
+        }
         let value: [String: Any] = if line.noEntry {
             ["account": "", "side": "", "amount": ""]
         } else {
             [
-                "account": line.account,
-                "side": line.side,
-                "amount": try submissionNumber(line.amount, fieldName: "Amount for \(line.label ?? defaultStepLabel(line.id))"),
+                "account": line.account.trimmingCharacters(in: .whitespacesAndNewlines),
+                "side": line.side.trimmingCharacters(in: .whitespacesAndNewlines),
+                "amount": try submissionNumber(line.amount, fieldName: "Amount for \(label)"),
             ]
         }
         return [
@@ -422,12 +432,33 @@ public func buildJeSubmission(_ lines: [JeLineInput]) throws -> String {
     return jsonString(["steps": steps])
 }
 
+public func journalEntryLinesComplete(_ lines: [JeLineInput]) -> Bool {
+    !lines.isEmpty && lines.allSatisfy(journalEntryLineComplete)
+}
+
+private func journalEntryLineComplete(_ line: JeLineInput) -> Bool {
+    line.noEntry
+        || (!line.account.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !line.side.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !line.amount.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+}
+
 /// Shape the submission_json for a numeric TBS.
 public func buildNumericSubmission(_ cells: [NumericCellInput]) throws -> String {
     let steps = try cells.map { cell -> [String: Any] in
-        ["id": cell.id, "value": try submissionNumber(cell.value, fieldName: "Value for \(cell.label ?? defaultStepLabel(cell.id))")]
+        let label = cell.label ?? defaultStepLabel(cell.id)
+        guard !cell.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw TbsSubmissionError.missingNumericValue(field: "Value for \(label)")
+        }
+        return ["id": cell.id, "value": try submissionNumber(cell.value, fieldName: "Value for \(label)")]
     }
     return jsonString(["steps": steps])
+}
+
+public func numericCellsComplete(_ cells: [NumericCellInput]) -> Bool {
+    !cells.isEmpty && cells.allSatisfy {
+        !$0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 }
 
 /// Shape submission_json for a which-treatment (discrimination) choice.

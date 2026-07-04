@@ -13,6 +13,8 @@ import {
     buildTbsModel,
     defaultStepLabel,
     docReviewAnswersComplete,
+    journalEntryLinesComplete,
+    numericCellsComplete,
     paneExhibits,
     parseExhibits,
     parseSteps,
@@ -191,7 +193,7 @@ test("parseSteps fails loudly on missing, malformed, or empty step json", () => 
 test("buildJeSubmission shapes account/side/amount per step", () => {
     const json = buildJeSubmission([
         { id: "l1", account: "Cash", side: "dr", amount: " 1000.50 " },
-        { id: "l2", account: "Interest Expense", side: "dr", amount: "" },
+        { id: "l2", account: "Interest Expense", side: "dr", amount: "0" },
         { id: "l3", account: "Cash", side: "cr", amount: "invalid", noEntry: true },
     ]);
     const parsed = JSON.parse(json);
@@ -199,8 +201,25 @@ test("buildJeSubmission shapes account/side/amount per step", () => {
         id: "l1",
         value: { account: "Cash", side: "dr", amount: 1000.5 },
     });
-    expect(parsed.steps[1].value.amount).toBe("");
+    expect(parsed.steps[1].value.amount).toBe(0);
     expect(parsed.steps[2].value).toEqual({ account: "", side: "", amount: "" });
+});
+
+test("journalEntryLinesComplete requires no-entry or a complete line", () => {
+    expect(journalEntryLinesComplete([
+        { id: "l1", account: "Cash", side: "dr", amount: "100" },
+        { id: "l2", account: "", side: "", amount: "", noEntry: true },
+    ])).toBe(true);
+    expect(journalEntryLinesComplete([{ id: "l1", account: "Cash", side: "dr", amount: "" }])).toBe(false);
+    expect(journalEntryLinesComplete([])).toBe(false);
+});
+
+test("buildJeSubmission rejects incomplete lines", () => {
+    expect(() =>
+        buildJeSubmission([
+            { id: "l1", label: "Line 1", account: "Cash", side: "dr", amount: "" },
+        ])
+    ).toThrow(/Line 1 needs account, debit\/credit, and amount, or mark No entry/);
 });
 
 test("buildJeSubmission rejects malformed decimal amounts", () => {
@@ -214,13 +233,28 @@ test("buildJeSubmission rejects malformed decimal amounts", () => {
 test("buildNumericSubmission coerces numbers per cell", () => {
     const json = buildNumericSubmission([
         { id: "c1", value: "-250000.75" },
-        { id: "c2", value: "   " },
+        { id: "c2", value: "0" },
         { id: "c3", value: ".25" },
     ]);
     const parsed = JSON.parse(json);
     expect(parsed.steps[0].value).toBe(-250000.75);
-    expect(parsed.steps[1].value).toBe("");
+    expect(parsed.steps[1].value).toBe(0);
     expect(parsed.steps[2].value).toBe(0.25);
+});
+
+test("numericCellsComplete requires every gradable cell", () => {
+    expect(numericCellsComplete([
+        { id: "c1", value: "1" },
+        { id: "c2", value: "0" },
+    ])).toBe(true);
+    expect(numericCellsComplete([{ id: "c1", value: " " }])).toBe(false);
+    expect(numericCellsComplete([])).toBe(false);
+});
+
+test("buildNumericSubmission rejects missing cell values", () => {
+    expect(() => buildNumericSubmission([{ id: "c1", label: "Cell 1", value: " " }])).toThrow(
+        /Value for Cell 1 needs a value before submission/,
+    );
 });
 
 test("buildNumericSubmission rejects non-finite or malformed cell values", () => {

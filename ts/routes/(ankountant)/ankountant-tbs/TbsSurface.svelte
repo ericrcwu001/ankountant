@@ -15,6 +15,8 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         buildJeSubmission,
         buildNumericSubmission,
         JE_ACCOUNTS,
+        journalEntryLinesComplete,
+        numericCellsComplete,
         paneExhibits,
         renderableTbsShape,
         tbsSurfaceTitle,
@@ -77,9 +79,17 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     $: resultById = new Map((results ?? []).map((r) => [r.id, r]));
     $: answerInputsLocked = submitting || results !== null;
+    $: answersComplete =
+        shape === "numeric"
+            ? numericCellsComplete(numericCells)
+            : journalEntryLinesComplete(jeLines);
+    $: answerRequirementMessage =
+        shape === "numeric"
+            ? "Enter a value for every cell."
+            : "Complete every line or mark No entry.";
 
     async function submit(): Promise<void> {
-        if (confidence === null || submitting || results !== null) {
+        if (confidence === null || submitting || results !== null || !answersComplete) {
             return;
         }
         submitting = true;
@@ -320,7 +330,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                 <button
                     class="submit"
                     data-testid="tbs-submit"
-                    disabled={submitting || confidence === null || results !== null}
+                    disabled={submitting ||
+                        confidence === null ||
+                        results !== null ||
+                        !answersComplete}
                     on:click={submit}
                 >
                     {submitting ? "Submitting…" : "Submit"}
@@ -328,6 +341,8 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
                 {#if confidence === null}
                     <span class="gate-hint">Commit a confidence level first.</span>
+                {:else if !answersComplete}
+                    <span class="gate-hint">{answerRequirementMessage}</span>
                 {/if}
 
                 {#if total !== null}
