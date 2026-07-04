@@ -160,6 +160,7 @@ sync — the cross-pane version is impossible without a shared store).
     }
 
     .results {
+        flex: 1;
         list-style: none;
         margin: 0;
         padding: 0;

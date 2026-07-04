@@ -256,7 +256,9 @@ chooser opens on that note's shape and section.
     .tbs-tab {
         display: flex;
         flex-direction: column;
+        height: 100%;
         min-height: 0;
+        overflow: hidden;
     }
 
     .section-chooser,
@@ -340,6 +342,7 @@ chooser opens on that note's shape and section.
     .tbs-tab-body {
         flex: 1;
         min-height: 0;
+        overflow: auto;
     }
 
     .tbs-state {

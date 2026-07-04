@@ -83,3 +83,19 @@ test("research: exposes NO Again/Hard/Good/Easy buttons (parity with tbs.test.ts
         await expect(page.getByRole("button", { name: label, exact: true })).toHaveCount(0);
     }
 });
+
+test("research: literature citations scroll inside the tool panel", async ({ page }) => {
+    await page.setViewportSize({ width: 900, height: 420 });
+    await page.goto("/ankountant-research");
+    const results = page.getByTestId("lit-results");
+    await expect(results).toBeVisible();
+    await expect
+        .poll(() => results.evaluate((el) => el.scrollHeight > el.clientHeight))
+        .toBe(true);
+
+    await results.hover();
+    await page.mouse.wheel(0, 500);
+    await expect
+        .poll(() => results.evaluate((el) => el.scrollTop))
+        .toBeGreaterThan(0);
+});

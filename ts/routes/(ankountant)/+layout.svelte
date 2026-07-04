@@ -10,7 +10,7 @@ hidden and this loads full-window (qt/aqt/main.py). Styled with the Ledger desig
 tokens (--accent = Ink Navy).
 -->
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onDestroy, onMount } from "svelte";
 
     import { afterNavigate, goto } from "$app/navigation";
     import { bridgeCommand } from "@tslib/bridgecommand";
@@ -24,6 +24,7 @@ tokens (--accent = Ink Navy).
     if (typeof document !== "undefined") {
         document.documentElement.classList.remove("night-mode");
         document.documentElement.dataset.bsTheme = "light";
+        document.body.classList.add("ankountant-shell-page");
     }
 
     // Line-icon paths (24x24, stroke=currentColor). Kept inline so the sidebar
@@ -104,6 +105,10 @@ tokens (--accent = Ink Navy).
         (window as unknown as { __ankGoto?: (href: string) => void }).__ankGoto = (
             href: string,
         ) => goto(href);
+    });
+
+    onDestroy(() => {
+        document.body.classList.remove("ankountant-shell-page");
     });
 </script>
 
@@ -204,9 +209,21 @@ tokens (--accent = Ink Navy).
 </div>
 
 <style lang="scss">
+    :global(html body.ankountant-shell-page) {
+        margin: 0;
+        overflow: hidden;
+    }
+
+    :global(html body.ankountant-shell-page .ank-shell),
+    :global(html body.ankountant-shell-page .ank-shell *) {
+        box-sizing: border-box;
+    }
+
     .ank-shell {
         display: flex;
-        min-height: 100vh;
+        height: 100vh;
+        min-height: 0;
+        overflow: hidden;
         background: var(--canvas);
         color: var(--fg);
     }
@@ -215,13 +232,15 @@ tokens (--accent = Ink Navy).
     .ank-sidebar {
         flex: none;
         width: 248px;
-        min-height: 100vh;
+        height: 100vh;
+        min-height: 0;
         display: flex;
         flex-direction: column;
         padding: var(--space-xl) var(--space-lg) var(--space-lg);
         color: #fff;
         background: linear-gradient(180deg, #1b3a63 0%, #143255 42%, #0e2748 100%);
         border-right: 1px solid rgba(0, 0, 0, 0.25);
+        overflow-y: auto;
     }
 
     .brand {
@@ -397,6 +416,8 @@ tokens (--accent = Ink Navy).
     .ank-shell-body {
         flex: 1;
         min-width: 0;
+        height: 100vh;
         min-height: 0;
+        overflow: auto;
     }
 </style>
