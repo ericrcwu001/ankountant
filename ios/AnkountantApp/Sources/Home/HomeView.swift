@@ -56,6 +56,9 @@ struct HomeView: View {
                 ConfusionDrillView()
             }
         }
+        .navigationDestination(for: CPASection.self) { section in
+            SectionDetailView(section: section)
+        }
         .navigationDestination(for: FarTopicCard.self) { topic in
             FarTopicDetailView(
                 topic: topic,
@@ -69,6 +72,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
             summitHero
             metricDeck
+            sectionReadinessOverview
             if let farReadiness {
                 ReadinessEvidencePanel(
                     evidence: readinessEvidence(band: farReadiness.band, topics: farReadiness.topics),
@@ -94,6 +98,32 @@ struct HomeView: View {
                 .frame(maxWidth: .infinity)
                 .ankountantCard(elevated: true)
             }
+        }
+    }
+
+    private var sectionReadinessOverview: some View {
+        VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
+            RangeHeroChart(sections: sections)
+            VStack(spacing: 0) {
+                ForEach(sections) { section in
+                    Button {
+                        path.append(section.section)
+                    } label: {
+                        SectionReadinessRow(section: section)
+                            .padding(.horizontal, AnkountantSpacing.md)
+                            .padding(.vertical, AnkountantSpacing.sm)
+                    }
+                    .buttonStyle(.plain)
+                    if section.id != sections.last?.id {
+                        Rectangle().fill(palette.borderSubtle).frame(height: 1)
+                    }
+                }
+            }
+            .background(palette.surfaceElevated, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
+                    .stroke(palette.borderSubtle, lineWidth: 1)
+            )
         }
     }
 
