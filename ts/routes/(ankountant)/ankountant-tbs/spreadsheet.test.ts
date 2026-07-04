@@ -28,6 +28,17 @@ test("plain numeric cells and arithmetic evaluate", () => {
     expect(evalCell("=-A1", g)).toEqual({ ok: true, value: -10 });
 });
 
+test("percentage cells and formula literals evaluate as fractions", () => {
+    const g = grid({ A1: "5%", A2: "2.5 %", B1: "$1,200" });
+    expect(evalCell("5%", g)).toEqual({ ok: true, value: 0.05 });
+    expect(evalCell("=A1*B1", g)).toEqual({ ok: true, value: 60 });
+    expect(evalCell("=A1+A2", g)).toEqual({ ok: true, value: 0.075 });
+    expect(evalCell("=5%*200", g)).toEqual({ ok: true, value: 10 });
+    expect(evalCell("5%%", g)).toEqual({ ok: false, error: "#VALUE" });
+    expect(evalCell("5%2", g)).toEqual({ ok: false, error: "#VALUE" });
+    expect(evalCell("=5%%", g)).toEqual({ ok: false, error: "#SYNTAX" });
+});
+
 test("SUM / AVERAGE over ranges, and ROUND", () => {
     const g = grid({ A1: "1", A2: "2", A3: "3", B1: "10" });
     expect(evalCell("=SUM(A1:A3)", g)).toEqual({ ok: true, value: 6 });

@@ -47,12 +47,21 @@ type Tok =
     | { t: "colon" };
 
 function parseFormattedNumber(raw: string): number | null {
-    const cleaned = raw.replace(/[$,%\s]/g, "");
+    const trimmed = raw.trim();
+    const percentCount = (trimmed.match(/%/g) ?? []).length;
+    if (percentCount > 1 || (percentCount === 1 && !trimmed.endsWith("%"))) {
+        return null;
+    }
+    const numberPart = percentCount === 1 ? trimmed.slice(0, -1) : trimmed;
+    const cleaned = numberPart.replace(/[$,\s]/g, "");
     if (!/[0-9]/.test(cleaned)) {
         return null;
     }
     const value = Number(cleaned);
-    return Number.isFinite(value) ? value : null;
+    if (!Number.isFinite(value)) {
+        return null;
+    }
+    return percentCount === 1 ? value / 100 : value;
 }
 
 function tokenize(input: string): Tok[] | null {
@@ -84,9 +93,13 @@ function tokenize(input: string): Tok[] | null {
             while (j < input.length && /[0-9.]/.test(input[j])) {
                 j += 1;
             }
-            const v = Number(input.slice(i, j));
+            let v = Number(input.slice(i, j));
             if (!Number.isFinite(v)) {
                 return null;
+            }
+            if (input[j] === "%") {
+                v /= 100;
+                j += 1;
             }
             toks.push({ t: "num", v });
             i = j;
