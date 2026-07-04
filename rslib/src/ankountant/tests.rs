@@ -139,22 +139,46 @@ fn a1_exam_date_from_col_config_changes_ramp() {
 }
 
 #[test]
-fn a1_compute_exam_schedule_rejects_malformed_section() {
+fn a1_compute_exam_schedule_propagates_malformed_search() {
     let mut col = Collection::new();
 
-    let err = SchedulerService::compute_exam_schedule(
-        &mut col,
-        ComputeExamScheduleRequest {
-            section: "\"".into(),
-            exam_date: String::new(),
-        },
-    )
-    .unwrap_err();
+    let err = col.ankountant_compute_exam_schedule("\"", "").unwrap_err();
 
     assert!(
         matches!(err, AnkiError::SearchError { .. }),
         "expected malformed section to surface a search error, got {err:?}"
     );
+}
+
+#[test]
+fn ankountant_rpc_sections_are_normalized_and_validated() {
+    let mut col = Collection::new();
+
+    let expected = compute_schedule(&mut col, "");
+    let got = SchedulerService::compute_exam_schedule(
+        &mut col,
+        ComputeExamScheduleRequest {
+            section: " far ".into(),
+            exam_date: String::new(),
+        },
+    )
+    .unwrap()
+    .desired_retention;
+    assert!((got - expected).abs() < 1e-6);
+
+    let err = SchedulerService::get_readiness(
+        &mut col,
+        GetReadinessRequest {
+            section: "NOPE".into(),
+        },
+    )
+    .unwrap_err();
+    match err {
+        AnkiError::InvalidInput { source } => {
+            assert_eq!(source.message(), "Unknown CPA section: NOPE");
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
 }
 
 // --- A1-live + A2 latency-defunding ------------------------------------------
@@ -974,7 +998,7 @@ fn a3_all_section_queue_spans_sections() {
     let resp = SchedulerService::build_confusion_queue(
         &mut col,
         BuildConfusionQueueRequest {
-            section: "ALL".into(),
+            section: " all ".into(),
             max_items: 0,
         },
     )

@@ -389,7 +389,7 @@ impl crate::services::SchedulerService for Collection {
         &mut self,
         input: scheduler::ComputeExamScheduleRequest,
     ) -> Result<scheduler::ComputeExamScheduleResponse> {
-        let section = ankountant_section(&input.section);
+        let section = ankountant_section(&input.section)?;
         self.ankountant_compute_exam_schedule(&section, &input.exam_date)
     }
 
@@ -397,7 +397,7 @@ impl crate::services::SchedulerService for Collection {
         &mut self,
         input: scheduler::BuildConfusionQueueRequest,
     ) -> Result<scheduler::BuildConfusionQueueResponse> {
-        let section = ankountant_section(&input.section);
+        let section = ankountant_confusion_section(&input.section)?;
         self.ankountant_build_confusion_queue(&section, input.max_items)
     }
 
@@ -405,7 +405,7 @@ impl crate::services::SchedulerService for Collection {
         &mut self,
         input: scheduler::GetReadinessRequest,
     ) -> Result<scheduler::GetReadinessResponse> {
-        let section = ankountant_section(&input.section);
+        let section = ankountant_section(&input.section)?;
         self.ankountant_get_readiness(&section)
     }
 
@@ -424,7 +424,7 @@ impl crate::services::SchedulerService for Collection {
     }
 
     fn set_exam_date(&mut self, input: scheduler::SetExamDateRequest) -> Result<()> {
-        let section = ankountant_section(&input.section);
+        let section = ankountant_section(&input.section)?;
         self.ankountant_set_exam_date(&section, &input.date)?;
         Ok(())
     }
@@ -433,20 +433,36 @@ impl crate::services::SchedulerService for Collection {
         &mut self,
         input: scheduler::GetExamDateRequest,
     ) -> Result<scheduler::GetExamDateResponse> {
-        let section = ankountant_section(&input.section);
+        let section = ankountant_section(&input.section)?;
         Ok(scheduler::GetExamDateResponse {
             date: self.ankountant_exam_date(&section)?.unwrap_or_default(),
         })
     }
 }
 
-/// Default the section to the MVP's FAR when the caller leaves it blank.
-fn ankountant_section(section: &str) -> String {
-    if section.trim().is_empty() {
-        crate::ankountant::DEFAULT_SECTION.to_string()
-    } else {
-        section.to_string()
+fn ankountant_section(section: &str) -> Result<String> {
+    let section = section.trim();
+    if section.is_empty() {
+        return Ok(crate::ankountant::DEFAULT_SECTION.to_string());
     }
+
+    let section = section.to_ascii_uppercase();
+    if crate::ankountant::SECTIONS.contains(&section.as_str()) {
+        Ok(section)
+    } else {
+        invalid_input!("Unknown CPA section: {section}")
+    }
+}
+
+fn ankountant_confusion_section(section: &str) -> Result<String> {
+    let section = section.trim();
+    if section == "*" {
+        return Ok(section.to_string());
+    }
+    if section.eq_ignore_ascii_case("ALL") {
+        return Ok("ALL".to_string());
+    }
+    ankountant_section(section)
 }
 
 impl crate::services::BackendSchedulerService for Backend {
