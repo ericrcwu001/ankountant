@@ -255,6 +255,66 @@ final class ReviewSessionTests: XCTestCase {
                       "showAnswer should be true after revealAnswer() with no typed-answer state")
     }
 
+    @MainActor
+    func testRevealAnswerIgnoresOverlappingTypedAnswerReveal() async {
+        let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
+        let stubResult = QueuedCardsResult(
+            cards: [stubCard], newCount: 1, learningCount: 0, reviewCount: 0
+        )
+        let stubNote = NoteRecord(
+            id: 100,
+            guid: "g",
+            mid: 200,
+            mod: 0,
+            flds: "Front value\u{1f}Back value",
+            sfld: "",
+            csum: 0
+        )
+
+        await withDependencies {
+            $0.decksService.setCurrentDeck = { _ in }
+            $0.schedulerService.getQueuedCards = { _ in stubResult }
+            $0.notesService.getNote = { _ in stubNote }
+            $0.notetypesService.getNotetypeFields = { _ in [
+                NotetypeFieldInfo(name: "Front", ordinal: 0, fontName: "-apple-system", fontSize: 18),
+                NotetypeFieldInfo(name: "Back", ordinal: 1, fontName: "-apple-system", fontSize: 18),
+            ] }
+            $0.cardRenderingService.renderCard = { _ in
+                RenderedCard(frontHTML: "<p>Prompt [[type:Back]]</p>", backHTML: "<p>Back [[type:Back]]</p>", cardCSS: "")
+            }
+            $0.cardRenderingService.compareAnswer = { _, typed, _ in
+                "<span>\(typed)</span>"
+            }
+        } operation: {
+            let session = ReviewSession(deckId: 1)
+            session.start()
+            XCTAssertTrue(session.requiresTypedAnswerInput)
+
+            let firstReveal = Task { @MainActor in
+                await session.revealAnswer()
+            }
+            while session.typedAnswerRequestID == 0 {
+                await Task.yield()
+            }
+
+            let secondReveal = Task { @MainActor in
+                await session.revealAnswer()
+            }
+            await Task.yield()
+
+            XCTAssertEqual(session.typedAnswerRequestID, 1)
+            XCTAssertTrue(session.isRevealingAnswer)
+
+            session.submitTypedAnswer("typed")
+            await firstReveal.value
+            await secondReveal.value
+
+            XCTAssertTrue(session.showAnswer)
+            XCTAssertFalse(session.isRevealingAnswer)
+            XCTAssertEqual(session.typedAnswerRequestID, 1)
+        }
+    }
+
     // MARK: - Audio / Chrome state (Task 2)
 
     @MainActor

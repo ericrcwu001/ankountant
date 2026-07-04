@@ -26,6 +26,7 @@ final class ReviewSession {
     private(set) var canUndo: Bool = false
     private(set) var nextIntervals: [Rating: String] = [:]
     private(set) var typedAnswerRequestID: Int = 0
+    private(set) var isRevealingAnswer: Bool = false
     private(set) var replayRequestID: Int = 0       // plumbed; consumer is PR 1b
     private(set) var stopAudioRequestID: Int = 0    // plumbed; consumer is PR 1b
     private(set) var isAudioPlaying: Bool = false
@@ -118,6 +119,10 @@ final class ReviewSession {
     }
 
     func revealAnswer() async {
+        guard !showAnswer, !isRevealingAnswer else { return }
+        isRevealingAnswer = true
+        defer { isRevealingAnswer = false }
+
         if typedAnswerState == nil {
             backHTML = strippingTypedAnswerPlaceholders(from: renderedBackHTML)
             showAnswer = true

@@ -266,7 +266,7 @@ struct ReviewView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(AnkountantPrimaryButtonStyle())
-            .disabled(committedConfidence == nil)
+            .disabled(committedConfidence == nil || session.isRevealingAnswer)
         }
         .padding(AnkountantSpacing.lg)
         .background(palette.surfaceElevated, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
