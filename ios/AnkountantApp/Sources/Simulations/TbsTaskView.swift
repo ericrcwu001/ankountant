@@ -4,6 +4,12 @@ import AnkiKit
 import AnkiClients
 import Dependencies
 
+let journalEntrySpareLineCount = 2
+
+func spareJournalEntryLines(count: Int = journalEntrySpareLineCount) -> [JeLineInput] {
+    (0..<count).map { JeLineInput(id: "spare-\($0 + 1)") }
+}
+
 struct TbsTaskView: View {
     let noteId: Int64
 
@@ -12,6 +18,7 @@ struct TbsTaskView: View {
 
     @State private var model: TbsModel?
     @State private var jeLines: [JeLineInput] = []
+    @State private var spareJeLines: [JeLineInput] = spareJournalEntryLines()
     @State private var numericCells: [NumericCellInput] = []
     @State private var confidence: ConfidenceLevel?
     @State private var results: [PerformanceStepResult]?
@@ -191,6 +198,44 @@ struct TbsTaskView: View {
                         .stroke(palette.border, lineWidth: 1)
                 )
             }
+            ForEach($spareJeLines) { $line in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Spare line")
+                        .ankountantFont(.captionBold)
+                        .foregroundStyle(palette.textSecondary)
+                    Picker("Spare account", selection: $line.account) {
+                        Text("Spare account").tag("")
+                        ForEach(journalEntryAccounts, id: \.self) { account in
+                            Text(account).tag(account)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .disabled(answerInputsLocked)
+                    HStack(spacing: 12) {
+                        Picker("Spare debit / credit", selection: $line.side) {
+                            Text("Select").tag("")
+                            Text("Debit").tag("dr")
+                            Text("Credit").tag("cr")
+                        }
+                        .pickerStyle(.menu)
+                        .disabled(answerInputsLocked)
+                        Spacer()
+                        TextField("Spare amount", text: $line.amount)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .ankountantFont(.mono)
+                            .frame(width: 120)
+                            .textFieldStyle(.roundedBorder)
+                            .disabled(answerInputsLocked)
+                    }
+                }
+                .padding(12)
+                .background(palette.surface.opacity(0.72), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(palette.border, lineWidth: 1)
+                )
+            }
         }
     }
 
@@ -268,6 +313,7 @@ struct TbsTaskView: View {
             let m = try performanceClient.loadTbs(noteId)
             model = m
             jeLines = m.steps.map { JeLineInput(id: $0.id) }
+            spareJeLines = spareJournalEntryLines()
             numericCells = m.steps.map { NumericCellInput(id: $0.id) }
             confidence = nil
             results = nil

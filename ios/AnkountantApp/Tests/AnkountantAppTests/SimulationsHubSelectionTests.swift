@@ -125,4 +125,14 @@ struct SimulationsHubSelectionTests {
             ])
         }
     }
+
+    @Test func spareJournalEntryLinesAreStableAndBlank() {
+        let lines = spareJournalEntryLines()
+
+        #expect(lines.map(\.id) == ["spare-1", "spare-2"])
+        #expect(lines.allSatisfy { $0.account.isEmpty })
+        #expect(lines.allSatisfy { $0.side.isEmpty })
+        #expect(lines.allSatisfy { $0.amount.isEmpty })
+        #expect(lines.allSatisfy { !$0.noEntry })
+    }
 }
