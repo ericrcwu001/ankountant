@@ -4,6 +4,7 @@ import AnkiProto
 import AnkiServices
 public import Dependencies
 import DependenciesMacros
+import Foundation
 import Logging
 
 private let logger = Logger(label: "com.ankiapp.card.client")
@@ -59,11 +60,22 @@ extension CardClient: DependencyKey {
                     return mapCardRecord(card)
                 }
             },
-            save: { _ in },
+            save: { card in
+                var req = Anki_Cards_UpdateCardsRequest()
+                req.cards = [try mapBackendCard(card)]
+                req.skipUndoEntry = false
+                try backend.callVoid(
+                    service: AnkiBackend.Service.cards,
+                    method: AnkiBackend.CardsMethod.updateCards,
+                    request: req
+                )
+            },
             answer: { cardId, rating, timeSpent in
                 try scheduler.answerCard(cardId, rating, timeSpent)
             },
-            undo: { _ in },
+            undo: { cardId in
+                throw cardClientError("Per-card undo is not supported for card \(cardId). Use undoLast instead.")
+            },
             suspend: { cardId in
                 try buryOrSuspendCards([cardId], mode: .suspend, backend: backend)
             },
@@ -155,4 +167,38 @@ private func mapCardRecord(_ c: Anki_Cards_Card) -> CardRecord {
         odid: c.originalDeckID, flags: Int32(c.flags),
         data: c.customData
     )
+}
+
+private func mapBackendCard(_ c: CardRecord) throws -> Anki_Cards_Card {
+    var card = Anki_Cards_Card()
+    card.id = c.id
+    card.noteID = c.nid
+    card.deckID = c.did
+    card.templateIdx = try unsigned(c.ord, field: "template index")
+    card.mtimeSecs = c.mod
+    card.usn = c.usn
+    card.ctype = try unsigned(Int32(c.type), field: "card type")
+    card.queue = Int32(c.queue)
+    card.due = c.due
+    card.interval = try unsigned(c.ivl, field: "interval")
+    card.easeFactor = try unsigned(c.factor, field: "ease factor")
+    card.reps = try unsigned(c.reps, field: "reps")
+    card.lapses = try unsigned(c.lapses, field: "lapses")
+    card.remainingSteps = try unsigned(c.left, field: "remaining steps")
+    card.originalDue = c.odue
+    card.originalDeckID = c.odid
+    card.flags = try unsigned(c.flags, field: "flags")
+    card.customData = c.data
+    return card
+}
+
+private func unsigned(_ value: Int32, field: String) throws -> UInt32 {
+    guard value >= 0 else {
+        throw cardClientError("Card \(field) cannot be negative.")
+    }
+    return UInt32(value)
+}
+
+private func cardClientError(_ message: String) -> NSError {
+    NSError(domain: "CardClient", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
 }

@@ -444,6 +444,7 @@ extension AnkiBackend {
 
     package enum CardsMethod {
         package static let getCard: UInt32 = 0
+        package static let updateCards: UInt32 = 1
         package static let removeCards: UInt32 = 2
         package static let setFlag: UInt32 = 4
     }
