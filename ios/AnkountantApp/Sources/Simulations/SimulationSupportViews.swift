@@ -10,7 +10,13 @@ import AnkountantTheme
 /// The bundled per-section literature corpus, decoded once. A top-level `let`
 /// is lazily initialised a single time, so the JSON is read/parsed only once
 /// regardless of how many times the panes re-render.
-private let bundledCorpus: [String: [CorpusEntry]] = loadLiteratureCorpus()
+private let bundledCorpus: [String: [CorpusEntry]] = {
+    do {
+        return try loadLiteratureCorpus()
+    } catch {
+        fatalError("Could not load bundled literature corpus: \(error.localizedDescription)")
+    }
+}()
 
 /// Prompt + section chip header shared by the research / doc-review surfaces
 /// (parity with the desktop `ExamShell` head).

@@ -347,8 +347,8 @@ private func expectTbsParseError<T>(_ expected: String, _ body: () throws -> T) 
     #expect(searchCorpus(entries, query: "nonexistent").isEmpty)
 }
 
-@Test func loadLiteratureCorpusDecodesBundledResource() {
-    let corpus = loadLiteratureCorpus()
+@Test func loadLiteratureCorpusDecodesBundledResource() throws {
+    let corpus = try loadLiteratureCorpus()
 
     #expect(!corpus.isEmpty)
     // FAR ships ASC paraphrase (cite-only); REG ships verbatim IRC text.
@@ -357,4 +357,14 @@ private func expectTbsParseError<T>(_ expected: String, _ body: () throws -> T) 
     // The ASC deep link is mapped from the JSON `deep_link` snake_case key.
     let asc = corpusForSection(corpus, "FAR").first { $0.citation == "ASC 842-20-25-1" }
     #expect(asc?.deepLink?.contains("asc.fasb.org") == true)
+}
+
+@Test func corpusEntryRejectsMalformedOptionalMetadata() {
+    let json = #"{"id":"x","citation":"C","title":"T","body":"B","verbatim":"yes"}"#
+    do {
+        _ = try JSONDecoder().decode(CorpusEntry.self, from: Data(json.utf8))
+        Issue.record("Expected malformed corpus entry metadata to throw")
+    } catch {
+        #expect(!error.localizedDescription.isEmpty)
+    }
 }

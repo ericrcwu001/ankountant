@@ -1,4 +1,4 @@
-import Foundation
+public import Foundation
 
 // The client-bundled, per-section authoritative-literature corpus (T2 / OQ-3:
 // search is client-side over this bundled data). This decodes the app resource
@@ -34,8 +34,8 @@ public struct CorpusEntry: Sendable, Identifiable, Equatable, Decodable {
         title = try container.decode(String.self, forKey: .title)
         body = try container.decode(String.self, forKey: .body)
         deepLink = try container.decodeIfPresent(String.self, forKey: .deepLink)
-        verbatim = (try? container.decode(Bool.self, forKey: .verbatim)) ?? false
-        tags = (try? container.decode([String].self, forKey: .tags)) ?? []
+        verbatim = try container.decodeIfPresent(Bool.self, forKey: .verbatim) ?? false
+        tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
     }
 
     public init(
@@ -57,16 +57,44 @@ public struct CorpusEntry: Sendable, Identifiable, Equatable, Decodable {
     }
 }
 
-/// Decode the bundled per-section corpus from the AnkiKit resource. Returns an
-/// empty map if the resource is missing or malformed (the pane then reads as
-/// "no literature bundled" rather than crashing).
-public func loadLiteratureCorpus() -> [String: [CorpusEntry]] {
-    guard let url = Bundle.module.url(forResource: "seed_literature", withExtension: "json"),
-          let data = try? Data(contentsOf: url),
-          let decoded = try? JSONDecoder().decode([String: [CorpusEntry]].self, from: data)
-    else {
-        return [:]
+public enum LiteratureCorpusError: Error, Equatable, LocalizedError, Sendable {
+    case missingResource
+    case unreadableResource(String)
+    case malformedResource(String)
+    case emptyCorpus
+
+    public var errorDescription: String? {
+        switch self {
+        case .missingResource:
+            "Bundled literature corpus resource is missing."
+        case let .unreadableResource(message):
+            "Bundled literature corpus could not be read: \(message)"
+        case let .malformedResource(message):
+            "Bundled literature corpus is malformed: \(message)"
+        case .emptyCorpus:
+            "Bundled literature corpus must contain at least one section."
+        }
     }
+}
+
+/// Decode the bundled per-section corpus from the AnkiKit resource.
+public func loadLiteratureCorpus() throws -> [String: [CorpusEntry]] {
+    guard let url = Bundle.module.url(forResource: "seed_literature", withExtension: "json") else {
+        throw LiteratureCorpusError.missingResource
+    }
+    let data: Data
+    do {
+        data = try Data(contentsOf: url)
+    } catch {
+        throw LiteratureCorpusError.unreadableResource(error.localizedDescription)
+    }
+    let decoded: [String: [CorpusEntry]]
+    do {
+        decoded = try JSONDecoder().decode([String: [CorpusEntry]].self, from: data)
+    } catch {
+        throw LiteratureCorpusError.malformedResource(error.localizedDescription)
+    }
+    guard !decoded.isEmpty else { throw LiteratureCorpusError.emptyCorpus }
     return decoded
 }
 
@@ -80,12 +108,11 @@ public func corpusForSection(_ corpus: [String: [CorpusEntry]], _ section: Strin
 /// reads as a browsable reference, not a blank box. Mirrors the desktop
 /// `searchCorpus`.
 public func searchCorpus(_ entries: [CorpusEntry], query: String) -> [CorpusEntry] {
-    let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
     if q.isEmpty { return entries }
     let terms = q.split(whereSeparator: { $0.isWhitespace }).map(String.init)
     return entries.filter { entry in
         let hay = "\(entry.citation) \(entry.title) \(entry.body) \(entry.tags.joined(separator: " "))"
-            .lowercased()
-        return terms.allSatisfy { hay.contains($0) }
+        return terms.allSatisfy { hay.localizedStandardContains($0) }
     }
 }
