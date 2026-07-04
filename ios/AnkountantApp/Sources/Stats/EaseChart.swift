@@ -28,7 +28,7 @@ struct EaseChart: View {
             }
 
             if chartData.isEmpty {
-                Text("No ease data").foregroundStyle(.secondary).frame(height: 180)
+                StatsEmptyChartView(title: "No ease data", systemImage: "gauge")
             } else {
                 Chart(chartData, id: \.ease) { item in
                     BarMark(

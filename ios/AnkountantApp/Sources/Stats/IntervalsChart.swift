@@ -41,7 +41,7 @@ struct IntervalsChart: View {
             Text("Review Intervals").ankountantFont(.bodyEmphasis)
 
             if buckets.isEmpty {
-                Text("No interval data").foregroundStyle(.secondary).frame(height: 180)
+                StatsEmptyChartView(title: "No interval data", systemImage: "calendar")
             } else {
                 Chart(buckets) { bucket in
                     BarMark(

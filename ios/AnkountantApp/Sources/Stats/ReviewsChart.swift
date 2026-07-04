@@ -84,7 +84,7 @@ struct ReviewsChart: View {
             Text("Reviews").ankountantFont(.bodyEmphasis)
 
             if model.series.isEmpty {
-                Text("No review data").foregroundStyle(.secondary).frame(height: 180)
+                StatsEmptyChartView(title: "No review data", systemImage: "chart.bar")
             } else {
                 Chart(model.series) { entry in
                     BarMark(

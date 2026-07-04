@@ -17,6 +17,7 @@
 		0F8CA23DCF071863543FA4A7 /* ReaderLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E331A6AF279A3736BF05FC8 /* ReaderLibraryView.swift */; };
 		0FA3547FA28995E36E75B555 /* AnkiKit in Frameworks */ = {isa = PBXBuildFile; productRef = A31979100547E8AD80B8471A /* AnkiKit */; };
 		131C1810800A205DF9842A31 /* StatsDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76498456E40F8B3ABB528ED6 /* StatsDashboardView.swift */; };
+		BE545AAA10894C109DA42184 /* StatsEmptyChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16AC071C21154CF78FF0C8E3 /* StatsEmptyChartView.swift */; };
 		13ABB44911FC4667E3A63E2B /* DeckDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E58808CA6B40C845E6BE2D1 /* DeckDetailView.swift */; };
 		15C7E19151438EEEDF961C6E /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7DF531533DB31B567BEC32 /* ShareSheet.swift */; };
 		15CEDD789CF7F9CF82EDD896 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCD3BB13367E6739C9C0F921 /* HomeView.swift */; };
@@ -247,6 +248,7 @@
 		74C29A901B298671B42B8A86 /* NanumGothic-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NanumGothic-Regular.ttf"; sourceTree = "<group>"; };
 		76079A8685F3EB8515D880F3 /* CardWebViewCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardWebViewCoordinator.swift; sourceTree = "<group>"; };
 		76498456E40F8B3ABB528ED6 /* StatsDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsDashboardView.swift; sourceTree = "<group>"; };
+		16AC071C21154CF78FF0C8E3 /* StatsEmptyChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsEmptyChartView.swift; sourceTree = "<group>"; };
 		765F582FAEA948A5D7684D9E /* NoteEditingDestinationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEditingDestinationView.swift; sourceTree = "<group>"; };
 		7868782C499FDC3C0EE74124 /* RichNoteFieldEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichNoteFieldEditor.swift; sourceTree = "<group>"; };
 		7D3E70F9F38DD3E611A01ABC /* ProfilePickerMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePickerMenu.swift; sourceTree = "<group>"; };
@@ -500,6 +502,7 @@
 				3648F706A4B00C12E555D205 /* ReviewsChart.swift */,
 				C71A30A1FCAAAACB32C3505C /* StatsChartTooltip.swift */,
 				76498456E40F8B3ABB528ED6 /* StatsDashboardView.swift */,
+				16AC071C21154CF78FF0C8E3 /* StatsEmptyChartView.swift */,
 				4534EAE6FA1044A00043AD6E /* StatsDualAxisSupport.swift */,
 				E12D118F96CA7073B383214A /* StatsSeriesBinning.swift */,
 				8C44B7ECA176D74353199249 /* TodayStatsCard.swift */,
@@ -897,6 +900,7 @@
 				0DCE693CE6028ECB6501763E /* SimulationsHubView.swift in Sources */,
 				73F012415CFD5E73B53FA859 /* StatsChartTooltip.swift in Sources */,
 				131C1810800A205DF9842A31 /* StatsDashboardView.swift in Sources */,
+				BE545AAA10894C109DA42184 /* StatsEmptyChartView.swift in Sources */,
 				F22916D35B6B5A6DD606C61B /* StatsDualAxisSupport.swift in Sources */,
 				EB19474970AE41C8005721EC /* StatsSeriesBinning.swift in Sources */,
 				89C4E72568B6931F2D99ADC4 /* SyncCoordinator.swift in Sources */,

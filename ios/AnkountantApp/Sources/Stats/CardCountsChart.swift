@@ -30,7 +30,7 @@ struct CardCountsChart: View {
             }
 
             if chartData.isEmpty {
-                Text("No cards").foregroundStyle(.secondary).frame(height: 180)
+                StatsEmptyChartView(title: "No cards", systemImage: "rectangle.stack")
             } else {
                 Chart(chartData, id: \.name) { item in
                     SectorMark(

@@ -53,7 +53,7 @@ struct ButtonsChart: View {
             Text("Answer Buttons").ankountantFont(.bodyEmphasis)
 
             if entries.isEmpty {
-                Text("No button data").foregroundStyle(.secondary).frame(height: 180)
+                StatsEmptyChartView(title: "No answer data", systemImage: "hand.tap")
             } else {
                 Chart(entries) { entry in
                     BarMark(

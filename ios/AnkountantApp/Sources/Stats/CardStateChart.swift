@@ -20,7 +20,7 @@ struct CardStateChart: View {
             Text("Card States").ankountantFont(.bodyEmphasis)
 
             if chartData.isEmpty {
-                Text("No cards").foregroundStyle(.secondary).frame(height: 150)
+                StatsEmptyChartView(title: "No cards", systemImage: "rectangle.stack", height: 150)
             } else {
                 Chart(chartData, id: \.0) { item in
                     SectorMark(angle: .value("Count", item.1), innerRadius: .ratio(0.5))

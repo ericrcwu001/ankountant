@@ -38,7 +38,7 @@ struct HourlyChart: View {
             Text("Hourly Breakdown").ankountantFont(.bodyEmphasis)
 
             if entries.allSatisfy({ $0.total == 0 }) {
-                Text("No review data").foregroundStyle(.secondary).frame(height: 180)
+                StatsEmptyChartView(title: "No review data", systemImage: "clock")
             } else {
                 Chart(entries) { entry in
                     BarMark(
