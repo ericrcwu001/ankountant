@@ -15,6 +15,7 @@ import {
     parseSteps,
     sectionFromTags,
     segmentDocument,
+    tbsSearch,
 } from "./lib";
 
 test("buildTbsModel parses a JE note without leaking answer keys", () => {
@@ -30,6 +31,14 @@ test("buildTbsModel parses a JE note without leaking answer keys", () => {
     // answer_key must not survive into the render model
     expect(JSON.stringify(model.steps)).not.toContain("answer_key");
     expect(JSON.stringify(model.steps)).not.toContain("Cash");
+});
+
+test("tbsSearch pins both task shape and section", () => {
+    expect(tbsSearch("journal_entry", "FAR")).toBe(
+        `"note:Ankountant TBS" "tbs_type:journal_entry" deck:Ankountant::Sealed::FAR::*`,
+    );
+    expect(tbsSearch("numeric", "REG")).toContain(`"tbs_type:numeric"`);
+    expect(tbsSearch("numeric", "REG")).toContain("Ankountant::Sealed::REG::*");
 });
 
 test("parseSteps defaults weights to 1/N so totals reconcile with A10", () => {

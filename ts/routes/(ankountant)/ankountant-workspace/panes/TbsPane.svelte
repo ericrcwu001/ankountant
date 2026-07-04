@@ -3,22 +3,20 @@ Copyright: Ankitects Pty Ltd and contributors
 License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 Workspace-pane wrapper around the TBS task surface. Mirrors the data load of
-ankountant-tbs/+page.ts: find the first sealed TBS note in the section (there is
-no deep-link inside the workspace) and build its render model.
+ankountant-tbs/TbsTab.svelte for the JE/numeric task types this pane can render.
 -->
 <script lang="ts">
     import { onMount } from "svelte";
 
     import { getNote, searchNotes } from "@generated/backend";
 
-    import type { TbsModel } from "../../ankountant-tbs/lib";
-    import { buildTbsModel } from "../../ankountant-tbs/lib";
+    import type { TbsModel, TbsShape } from "../../ankountant-tbs/lib";
+    import { buildTbsModel, tbsSearch } from "../../ankountant-tbs/lib";
     import TbsSurface from "../../ankountant-tbs/TbsSurface.svelte";
     import PaneState from "./PaneState.svelte";
 
     const SECTION = "FAR";
-    // Mirrors rslib TBS_NOTETYPE + the sealed-bank deck layout (confusion.rs).
-    const FIRST_TBS_SEARCH = `"note:Ankountant TBS" deck:Ankountant::Sealed::${SECTION}::*`;
+    const WORKSPACE_TBS_SHAPES: readonly TbsShape[] = ["journal_entry", "numeric"];
 
     let phase: "loading" | "ready" | "empty" | "error" = "loading";
     let noteId = 0n;
@@ -28,8 +26,7 @@ no deep-link inside the workspace) and build its render model.
     async function load(): Promise<void> {
         phase = "loading";
         try {
-            const found = await searchNotes({ search: FIRST_TBS_SEARCH });
-            noteId = found.ids.length > 0 ? found.ids[0] : 0n;
+            noteId = await firstWorkspaceTbsNote();
             if (noteId === 0n) {
                 phase = "empty";
                 return;
@@ -46,6 +43,16 @@ no deep-link inside the workspace) and build its render model.
     onMount(() => {
         void load();
     });
+
+    async function firstWorkspaceTbsNote(): Promise<bigint> {
+        for (const shape of WORKSPACE_TBS_SHAPES) {
+            const found = await searchNotes({ search: tbsSearch(shape, SECTION) });
+            if (found.ids.length > 0) {
+                return found.ids[0];
+            }
+        }
+        return 0n;
+    }
 </script>
 
 {#if phase === "ready" && model}
