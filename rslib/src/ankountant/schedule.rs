@@ -73,9 +73,7 @@ impl Collection {
 
         // Preview intervals for the section's non-suspended review cards.
         let search = format!("deck:Ankountant::Study::{section}::* -is:suspended");
-        let cids = self
-            .search_cards(search.as_str(), SortMode::NoOrder)
-            .unwrap_or_default();
+        let cids = self.search_cards(search.as_str(), SortMode::NoOrder)?;
 
         let mut previews = Vec::new();
         for cid in cids {

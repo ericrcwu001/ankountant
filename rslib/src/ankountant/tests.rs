@@ -138,6 +138,25 @@ fn a1_exam_date_from_col_config_changes_ramp() {
     assert!(near > far);
 }
 
+#[test]
+fn a1_compute_exam_schedule_rejects_malformed_section() {
+    let mut col = Collection::new();
+
+    let err = SchedulerService::compute_exam_schedule(
+        &mut col,
+        ComputeExamScheduleRequest {
+            section: "\"".into(),
+            exam_date: String::new(),
+        },
+    )
+    .unwrap_err();
+
+    assert!(
+        matches!(err, AnkiError::SearchError { .. }),
+        "expected malformed section to surface a search error, got {err:?}"
+    );
+}
+
 // --- A1-live + A2 latency-defunding ------------------------------------------
 
 /// Enable FSRS and turn the first study card tagged `tag` into a mature review
