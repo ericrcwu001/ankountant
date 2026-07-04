@@ -201,8 +201,8 @@ public func parseSteps(_ raw: String?) throws -> [RenderStep] {
 }
 
 private func stepWeight(_ raw: Any?, defaultWeight: Double, fieldName: String) throws -> Double {
-    guard let raw, !(raw is NSNull) else { return defaultWeight }
-    if raw is Bool {
+    guard let raw else { return defaultWeight }
+    if raw is NSNull || raw is Bool {
         throw TbsParseError.invalidValue(
             field: "\(fieldName).weight",
             message: "must be a nonnegative finite number"

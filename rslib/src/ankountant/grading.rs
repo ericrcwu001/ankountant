@@ -9,6 +9,7 @@
 //! so a single wrong amount fails only its own step (method-vs-slip).
 
 use serde::Deserialize;
+use serde::Deserializer;
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashSet;
@@ -21,10 +22,10 @@ use super::logic;
 pub(crate) struct GradableStep {
     pub(crate) id: String,
     pub(crate) answer_key: Value,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_optional_f64_field")]
     pub(crate) weight: Option<f64>,
     /// Optional per-step numeric tolerance.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_optional_f64_field")]
     pub(crate) tolerance: Option<f64>,
 }
 
@@ -40,6 +41,16 @@ pub(crate) struct StepOutcome {
 pub(crate) fn parse_steps(steps_json: &str) -> Result<Vec<GradableStep>, serde_json::Error> {
     let steps: Vec<GradableStep> = serde_json::from_str(steps_json)?;
     Ok(steps)
+}
+
+fn deserialize_optional_f64_field<'de, D>(deserializer: D) -> Result<Option<f64>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    match Option::<f64>::deserialize(deserializer)? {
+        Some(value) => Ok(Some(value)),
+        None => Err(serde::de::Error::custom("expected a number, got null")),
+    }
 }
 
 /// Effective weight for each step: explicit weight when present, else 1/N.
@@ -369,5 +380,11 @@ mod tests {
         sub.insert("b".into(), serde_json::json!(999));
         let (_, total) = grade(&steps, &sub);
         assert!((total - 0.7).abs() < 1e-9);
+    }
+
+    #[test]
+    fn explicit_null_numeric_fields_are_invalid() {
+        assert!(parse_steps(r#"[{"id":"a","answer_key":1,"weight":null}]"#).is_err());
+        assert!(parse_steps(r#"[{"id":"a","answer_key":1,"tolerance":null}]"#).is_err());
     }
 }

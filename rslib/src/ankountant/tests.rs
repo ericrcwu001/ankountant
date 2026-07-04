@@ -818,6 +818,33 @@ fn a8_submit_rejects_missing_tbs_answer_key_before_logging() {
 }
 
 #[test]
+fn a8_submit_rejects_null_tbs_weight_before_logging() {
+    let (mut col, _) = seeded();
+    let nid = je_note(&mut col);
+    let mut note = col.storage.get_note(nid).unwrap().unwrap();
+    note.set_field(
+        super::notetypes::tbs_fields::STEPS_JSON,
+        r#"[
+            {"id":"l1","answer_key":1,"weight":null}
+        ]"#,
+    )
+    .unwrap();
+    col.update_note(&mut note).unwrap();
+    let before = attempt_log_count(&mut col);
+
+    let err = submit_result(
+        &mut col,
+        nid,
+        "tbs",
+        json!({"steps":[{"id":"l1","value":1}]}),
+        "guess",
+    )
+    .unwrap_err();
+    assert_eq!(invalid_input_message(err), "invalid steps_json");
+    assert_eq!(attempt_log_count(&mut col), before);
+}
+
+#[test]
 fn a8_submit_rejects_mode_item_mismatch_before_logging() {
     let (mut col, _) = seeded();
     let nid = je_note(&mut col);
@@ -2187,10 +2214,14 @@ fn typed_section_item_schema_is_validated_at_seed_time() {
         r#"[{"section":"REG","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"citation","accepted":["IRC 162"],"weight":1.5}]}]"#,
         // step weights must be nonnegative
         r#"[{"section":"REG","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"citation","accepted":["IRC 162"],"weight":-0.1}]}]"#,
+        // null weight is not the same as omitted weight
+        r#"[{"section":"REG","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"citation","accepted":["IRC 162"],"weight":null}]}]"#,
         // duplicate step ids
         r#"[{"section":"FAR","tbs_type":"numeric","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"numeric","id":"c1","answer_key":1},{"kind":"numeric","id":"c1","answer_key":2}]}]"#,
         // negative numeric tolerance
         r#"[{"section":"FAR","tbs_type":"numeric","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"numeric","id":"c1","answer_key":1,"tolerance":-0.5}]}]"#,
+        // null tolerance is not the same as omitted tolerance
+        r#"[{"section":"FAR","tbs_type":"numeric","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"numeric","id":"c1","answer_key":1,"tolerance":null}]}]"#,
         // doc_review blank answer_key is not one of the option ids
         r#"[{"section":"FAR","tbs_type":"doc_review","set_id":"s","prompt":"p","source":"s","exhibits":[{"title":"d","kind":"document","role":"document","body":"x <blank step=\"b1\">y</blank>"}],"steps":[{"kind":"blank","id":"b1","answer_key":"o9","options":[{"id":"o1","text":"a"},{"id":"o2","text":"b"}]}]}]"#,
         // doc_review exhibit kind is not renderable by clients

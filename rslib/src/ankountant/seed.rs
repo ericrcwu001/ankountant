@@ -18,6 +18,7 @@
 
 use anki_proto::scheduler::bury_or_suspend_cards_request::Mode as BuryOrSuspendMode;
 use serde::Deserialize;
+use serde::Deserializer;
 use serde_json::json;
 use serde_json::Map;
 use serde_json::Value;
@@ -237,7 +238,7 @@ enum SeedStep {
         id: String,
         #[serde(default)]
         label: String,
-        #[serde(default)]
+        #[serde(default, deserialize_with = "deserialize_optional_f64_field")]
         weight: Option<f64>,
         accepted: Vec<String>,
         #[serde(default)]
@@ -250,7 +251,7 @@ enum SeedStep {
         id: String,
         #[serde(default)]
         label: String,
-        #[serde(default)]
+        #[serde(default, deserialize_with = "deserialize_optional_f64_field")]
         weight: Option<f64>,
         answer_key: String,
         options: Vec<SeedOption>,
@@ -264,7 +265,7 @@ enum SeedStep {
     /// journal-entry line.
     Je {
         id: String,
-        #[serde(default)]
+        #[serde(default, deserialize_with = "deserialize_optional_f64_field")]
         weight: Option<f64>,
         account: String,
         side: String,
@@ -275,12 +276,24 @@ enum SeedStep {
         id: String,
         #[serde(default)]
         label: String,
-        #[serde(default)]
+        #[serde(default, deserialize_with = "deserialize_optional_f64_field")]
         weight: Option<f64>,
         answer_key: f64,
-        #[serde(default)]
+        #[serde(default, deserialize_with = "deserialize_optional_f64_field")]
         tolerance: Option<f64>,
     },
+}
+
+fn deserialize_optional_f64_field<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<f64>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    match Option::<f64>::deserialize(deserializer)? {
+        Some(value) => Ok(Some(value)),
+        None => Err(serde::de::Error::custom("expected a number, got null")),
+    }
 }
 
 /// A section-agnostic TBS item (ADR 0008). `section` + `tbs_type` together
