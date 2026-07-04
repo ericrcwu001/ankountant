@@ -375,13 +375,18 @@ public func segmentDocument(_ body: String?) -> [DocSegment] {
 /// Shape the submission_json for a journal-entry TBS.
 public func buildJeSubmission(_ lines: [JeLineInput]) throws -> String {
     let steps = try lines.map { line -> [String: Any] in
-        [
-            "id": line.id,
-            "value": [
+        let value: [String: Any] = if line.noEntry {
+            ["account": "", "side": "", "amount": ""]
+        } else {
+            [
                 "account": line.account,
                 "side": line.side,
                 "amount": try submissionNumber(line.amount, fieldName: "Amount for \(line.id)"),
-            ] as [String: Any],
+            ]
+        }
+        return [
+            "id": line.id,
+            "value": value,
         ]
     }
     return jsonString(["steps": steps])

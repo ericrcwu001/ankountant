@@ -156,7 +156,7 @@ struct TbsTaskView: View {
                         }
                     }
                     .pickerStyle(.menu)
-                    .disabled(answerInputsLocked)
+                    .disabled(answerInputsLocked || line.noEntry)
                     HStack(spacing: 12) {
                         Picker("Debit / Credit", selection: $line.side) {
                             Text("Select").tag("")
@@ -164,7 +164,7 @@ struct TbsTaskView: View {
                             Text("Credit").tag("cr")
                         }
                         .pickerStyle(.menu)
-                        .disabled(answerInputsLocked)
+                        .disabled(answerInputsLocked || line.noEntry)
                         Spacer()
                         TextField("Amount", text: $line.amount)
                             .keyboardType(.decimalPad)
@@ -172,8 +172,17 @@ struct TbsTaskView: View {
                             .ankountantFont(.mono)
                             .frame(width: 120)
                             .textFieldStyle(.roundedBorder)
-                            .disabled(answerInputsLocked)
+                            .disabled(answerInputsLocked || line.noEntry)
                     }
+                    Toggle("No entry", isOn: $line.noEntry)
+                        .disabled(answerInputsLocked)
+                        .onChange(of: line.noEntry) { _, noEntry in
+                            if noEntry {
+                                line.account = ""
+                                line.side = ""
+                                line.amount = ""
+                            }
+                        }
                 }
                 .padding(12)
                 .background(palette.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))

@@ -162,12 +162,14 @@ public struct JeLineInput: Sendable, Identifiable, Equatable {
     public var account: String
     public var side: String
     public var amount: String
+    public var noEntry: Bool
 
-    public init(id: String, account: String = "", side: String = "", amount: String = "") {
+    public init(id: String, account: String = "", side: String = "", amount: String = "", noEntry: Bool = false) {
         self.id = id
         self.account = account
         self.side = side
         self.amount = amount
+        self.noEntry = noEntry
     }
 }
 

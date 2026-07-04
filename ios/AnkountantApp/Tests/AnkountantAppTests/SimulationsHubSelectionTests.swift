@@ -1,4 +1,5 @@
 import Testing
+import Foundation
 import AnkiKit
 @testable import AnkountantApp
 
@@ -102,5 +103,26 @@ struct SimulationsHubSelectionTests {
 
         #expect(paneExhibits(model) == [table])
         #expect(paneExhibits(model).first?.rows == [["Revenue", "100"]])
+    }
+
+    @Test func journalEntryNoEntrySubmitsBlankValuesWithoutParsingAmount() throws {
+        let json = try buildJeSubmission([
+            JeLineInput(id: "l1", account: "Cash", side: "dr", amount: "not-a-number", noEntry: true),
+        ])
+        let object = try #require(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+        let steps = try #require(object["steps"] as? [[String: Any]])
+        let value = try #require(steps.first?["value"] as? [String: Any])
+
+        #expect(value["account"] as? String == "")
+        #expect(value["side"] as? String == "")
+        #expect(value["amount"] as? String == "")
+    }
+
+    @Test func journalEntryAmountStillFailsFastWhenLineIsNotNoEntry() {
+        #expect(throws: TbsSubmissionError.invalidDecimal(field: "Amount for l1")) {
+            try buildJeSubmission([
+                JeLineInput(id: "l1", account: "Cash", side: "dr", amount: "not-a-number"),
+            ])
+        }
     }
 }
