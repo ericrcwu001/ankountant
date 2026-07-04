@@ -82,6 +82,7 @@
 		807086E7437C8D78D4BD6F0A /* DeckTemplateListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 827944E7BB39D4C900F6DA1F /* DeckTemplateListView.swift */; };
 		8092B7DAF33958C8177DF42D /* DocReviewTaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ACF8DFCF989075838D4422F /* DocReviewTaskView.swift */; };
 		82373AD0960F0E0C34F791F7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 069DDC4FBCE1C0A18D93B37E /* ContentView.swift */; };
+		8820FE6C977E4B23ABFCC580 /* NotetypeFieldManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ABAB40D6B0E456E9B3A80E9 /* NotetypeFieldManagerView.swift */; };
 		88FC5801726216311340FABE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72C525E06448AC10D61B7EE3 /* Assets.xcassets */; };
 		88FCD5D100F433590BCF2002 /* AnkountantTheme in Frameworks */ = {isa = PBXBuildFile; productRef = CE4198C6668FD2A767B47DF1 /* AnkountantTheme */; };
 		89C4E72568B6931F2D99ADC4 /* SyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355AFAC0971C1584E5479E53 /* SyncCoordinator.swift */; };
@@ -231,6 +232,7 @@
 		65C7EE7066EFCB9753653726 /* ReaderConfigurationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderConfigurationView.swift; sourceTree = "<group>"; };
 		67DDE196C3D244E15CD2994B /* ReadinessComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadinessComponents.swift; sourceTree = "<group>"; };
 		69AFD3ADCCD1C9EF4862EA24 /* TbsTaskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TbsTaskView.swift; sourceTree = "<group>"; };
+		6ABAB40D6B0E456E9B3A80E9 /* NotetypeFieldManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotetypeFieldManagerView.swift; sourceTree = "<group>"; };
 		6AB81777259D50D47791C082 /* SyncSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncSettingsView.swift; sourceTree = "<group>"; };
 		6B60FF87B0316C78F96489B8 /* DebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugView.swift; sourceTree = "<group>"; };
 		6E215BDA5D01FE0E670E2AEB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -463,6 +465,7 @@
 				CD4E24076B14FC2B56965852 /* DeckListView.swift */,
 				45BBC9F257075940FFE68C11 /* DecksReviewsChart.swift */,
 				827944E7BB39D4C900F6DA1F /* DeckTemplateListView.swift */,
+				6ABAB40D6B0E456E9B3A80E9 /* NotetypeFieldManagerView.swift */,
 				7D3E70F9F38DD3E611A01ABC /* ProfilePickerMenu.swift */,
 				A3B922320D7DA522F843AE9C /* TemplateSourceEditor.swift */,
 			);
@@ -840,6 +843,7 @@
 				E4AF222FC7B21940C3F33F05 /* NoteEditorView.swift in Sources */,
 				37D7F56FC49A3BE66E6D2FE1 /* NoteFormRules.swift in Sources */,
 				E744FA87A10E9EA7CCDCAA13 /* NoteFieldHTMLPreview.swift in Sources */,
+				8820FE6C977E4B23ABFCC580 /* NotetypeFieldManagerView.swift in Sources */,
 				E35B1B00CAF72E00268EA049 /* OnboardingView.swift in Sources */,
 				3523C44227BF41C6FF4F9A36 /* PeriodPicker.swift in Sources */,
 				93A9837AD81489784E8FD0B5 /* ProfilePickerMenu.swift in Sources */,

@@ -821,28 +821,6 @@ func makeEmptyCardPreviewNote(notetypeId: Int64, fieldCount: Int) -> Anki_Notes_
     return preview
 }
 
-// MARK: - NotetypeFieldManagerView (stub — full implementation in separate file)
-
-/// Placeholder view for the notetype field manager.
-/// Full implementation (add/remove/reorder fields) is a future port.
-struct NotetypeFieldManagerView: View {
-    let notetypeId: Int64
-    let preferredName: String
-    var onSaved: (@Sendable () async -> Void)? = nil
-
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("Field editor coming soon.")
-                .foregroundStyle(.secondary)
-            Button("Done") { dismiss() }
-        }
-        .navigationTitle(preferredName)
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
 // MARK: - TemplatePreviewSheet
 
 /// Preview sheet for uncommitted (unsaved) card templates, using CardRenderingService.
