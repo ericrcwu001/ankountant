@@ -72,6 +72,13 @@ _ANKOUNTANT_STUDY_DECK = "Ankountant::Study::FAR"
 _DOCK_AREA = Qt.DockWidgetArea.TopDockWidgetArea
 
 
+def ankountant_route_for_page(page: str) -> str:
+    try:
+        return _ANKOUNTANT_ROUTES[page]
+    except KeyError:
+        raise ValueError(f"unknown Ankountant page: {page}") from None
+
+
 class WorkspaceDock(QDockWidget):
     """Dock hosting one workspace surface.
 
@@ -328,7 +335,7 @@ class Workspace:
     ######################################################################
 
     def open_ankountant(self, page: str = "home") -> None:
-        route = _ANKOUNTANT_ROUTES.get(page, "ankountant-home")
+        route = ankountant_route_for_page(page)
         if self._shell_web is not None:
             # Already open: client-side navigate (SPA, no reload) + raise.
             self._shell_web.eval(f"window.__ankGoto && window.__ankGoto('/{route}')")

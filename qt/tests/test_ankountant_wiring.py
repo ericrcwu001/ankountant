@@ -11,8 +11,11 @@ must exist (and be granted backend API access in webview.py)."""
 
 from aqt.mediasrv import is_sveltekit_page
 from aqt.webview import AnkiWebViewKind
+from aqt.workspace import ankountant_route_for_page
 
 ANKOUNTANT_PAGES = (
+    "ankountant-home",
+    "ankountant-workspace",
     "ankountant-dashboard",
     "ankountant-confusion",
     "ankountant-tbs",
@@ -26,6 +29,17 @@ ANKOUNTANT_PAGES = (
     # dedicated dialog, so it has a route but no separate webview kind.
     "ankountant-stats",
 )
+
+ANKOUNTANT_PAGE_ROUTES = {
+    "home": "ankountant-home",
+    "workspace": "ankountant-workspace",
+    "dashboard": "ankountant-dashboard",
+    "confusion": "ankountant-confusion",
+    "tbs": "ankountant-tbs",
+    "research": "ankountant-research",
+    "doc_review": "ankountant-doc-review",
+    "stats": "ankountant-stats",
+}
 
 ANKOUNTANT_KINDS = (
     "ANKOUNTANT_DASHBOARD",
@@ -42,3 +56,15 @@ def test_ankountant_pages_are_registered_sveltekit_routes() -> None:
 def test_ankountant_webview_kinds_exist() -> None:
     for name in ANKOUNTANT_KINDS:
         assert hasattr(AnkiWebViewKind, name), f"missing AnkiWebViewKind.{name}"
+
+
+def test_ankountant_route_lookup_rejects_unknown_pages() -> None:
+    for page, route in ANKOUNTANT_PAGE_ROUTES.items():
+        assert ankountant_route_for_page(page) == route
+
+    try:
+        ankountant_route_for_page("dasboard")
+    except ValueError as exc:
+        assert "unknown Ankountant page: dasboard" in str(exc)
+    else:
+        raise AssertionError("expected route lookup to reject typo")
