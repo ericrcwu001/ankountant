@@ -13,6 +13,8 @@ struct BatchTagSheet: View {
     @State private var checkedTags: Set<String> = []
     @State private var newTagName: String = ""
     @State private var isApplying = false
+    @State private var loadErrorMessage: String?
+    @State private var applyErrorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -58,6 +60,22 @@ struct BatchTagSheet: View {
                         }
                     }
                 }
+
+                if let loadErrorMessage {
+                    Section {
+                        Text(loadErrorMessage)
+                            .foregroundStyle(.red)
+                            .font(.caption)
+                    }
+                }
+
+                if let applyErrorMessage {
+                    Section {
+                        Text(applyErrorMessage)
+                            .foregroundStyle(.red)
+                            .font(.caption)
+                    }
+                }
             }
             .navigationTitle("Add tags to \(noteIDs.count) note\(noteIDs.count == 1 ? "" : "s")")
             .navigationBarTitleDisplayMode(.inline)
@@ -66,31 +84,41 @@ struct BatchTagSheet: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Apply") { apply() }
+                    Button("Apply") {
+                        Task { await apply() }
+                    }
                         .disabled(checkedTags.isEmpty || isApplying)
                 }
             }
             .task {
-                if let tags = try? tagClient.getAllTags() {
+                do {
+                    loadErrorMessage = nil
+                    let tags = try tagClient.getAllTags()
                     allTags = tags.sorted()
+                } catch {
+                    allTags = []
+                    loadErrorMessage = "Failed to load tags: \(error.localizedDescription)"
                 }
             }
         }
     }
 
-    private func apply() {
+    private func apply() async {
         isApplying = true
+        applyErrorMessage = nil
+        defer { isApplying = false }
+
         let ids = Array(noteIDs)
         let tags = checkedTags
-        Task {
+
+        do {
             for tag in tags {
-                try? tagClient.addTagToNotes(tag, ids)
+                try tagClient.addTagToNotes(tag, ids)
             }
-            await MainActor.run {
-                isApplying = false
-                onApplied()
-                dismiss()
-            }
+            onApplied()
+            dismiss()
+        } catch {
+            applyErrorMessage = "Failed to apply tags: \(error.localizedDescription)"
         }
     }
 }
