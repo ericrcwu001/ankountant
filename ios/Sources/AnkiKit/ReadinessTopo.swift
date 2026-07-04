@@ -44,19 +44,6 @@ public func passStanding(_ band: ReadinessBand) -> PassStanding {
     return validatedBand.pointEstimate >= TopoScale.passScore ? .above : .below
 }
 
-/// Near-pass display rule: classify on the raw point, but clamp the *displayed*
-/// integer so it never crosses the line versus the true standing — a below-pass
-/// score never renders as an unqualified "75" beside the pass line.
-public func passDisplayScore(_ point: Double, standing: PassStanding) -> Int {
-    let rounded = Int(point.rounded())
-    let pass = Int(TopoScale.passScore)
-    switch standing {
-    case .above: return max(rounded, pass)       // >= 75
-    case .below: return min(rounded, pass - 1)   // <= 74
-    case .unproven: return rounded
-    }
-}
-
 /// One section's readiness for the summit range + list. Reuses the existing
 /// `ReadinessSummary` (no parallel snapshot type). `summary == nil` means the
 /// per-section load failed → treated as unproven.

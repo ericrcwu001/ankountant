@@ -9,7 +9,7 @@ import AnkiKit
 /// The summit "range": each CPA section as a faded-navy Wilson band on a pinned
 /// 0–99 CPA scale with a dashed pass line at 75. Above/below is read from the
 /// point's position relative to the labeled line, reinforced by a neutral
-/// triangle glyph + tabular score (never a semantic hue on the mountain).
+/// triangle glyph (never a semantic hue on the mountain).
 /// Abstaining sections are simply absent from the plot (no faked height); the
 /// section list below spells out their "Not enough data yet" state and owns
 /// navigation + VoiceOver, so the chart is decorative.

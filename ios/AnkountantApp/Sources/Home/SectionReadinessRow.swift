@@ -6,9 +6,9 @@ import AnkountantTheme
 import AnkiKit
 
 /// One section row under the summit range: code + name, above/below-pass standing
-/// (position + neutral glyph + text — never color alone), and the projected score
-/// (or a dash when unproven). Wrapped by a `NavigationLink(value: CPASection)` in
-/// HomeView, so tapping drills into the section detail.
+/// (position + neutral glyph + text — never color alone), and the projected CPA
+/// range (or a dash when unproven). Wrapped by a `NavigationLink(value:
+/// CPASection)` in HomeView, so tapping drills into the section detail.
 struct SectionReadinessRow: View {
     let section: SectionReadiness
     @Environment(\.palette) private var palette

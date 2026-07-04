@@ -5,8 +5,8 @@ import Testing
 @testable import AnkiKit
 
 /// Pure-logic tests for the summit Home: the ≥75 invariant (Constraint 1), the
-/// abstain gate, the near-pass display clamp, the section enum, and the shared
-/// formatters. No UI / simulator needed.
+/// abstain gate, the section enum, and the shared formatters. No UI / simulator
+/// needed.
 @Suite("Readiness topography")
 struct ReadinessTopoTests {
     private func band(
@@ -75,16 +75,6 @@ struct ReadinessTopoTests {
             let higher = TopoScale.height(forScore: s) >= TopoScale.passHeight
             #expect(above == higher)
         }
-    }
-
-    // MARK: Near-pass display clamp
-
-    @Test func nearPassScoreNeverShowsMisleading75() {
-        #expect(passDisplayScore(74.6, standing: .below) == 74) // rounds to 75, clamped to 74
-        #expect(passDisplayScore(75.4, standing: .above) == 75)
-        #expect(passDisplayScore(90, standing: .above) == 90)
-        #expect(passDisplayScore(60, standing: .below) == 60)
-        #expect(passDisplayScore(0, standing: .unproven) == 0)
     }
 
     // MARK: CPASection
@@ -255,9 +245,11 @@ struct ReadinessTopoTests {
         #expect(scores[1].valueText == "60%")
         #expect(scores[1].rangeText == "50–70%")
         #expect(scores[1].detailText == "Sealed tasks")
-        #expect(scores[2].valueText == "80")
-        #expect(scores[2].rangeText == "74–85")
+        #expect(scores[2].valueText == "74–85")
+        #expect(scores[2].rangeText == "CPA range")
         #expect(scores[2].detailText == "High confidence")
+        #expect(scores[2].fraction == nil)
+        #expect(scores[2].rangeFraction == TopoScale.height(forScore: 74)...TopoScale.height(forScore: 85))
         #expect(scores.allSatisfy { $0.available })
     }
 
