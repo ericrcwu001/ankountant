@@ -39,6 +39,7 @@ struct BrowseView: View {
     @State private var sortOrder: BrowseSortOrder = .dateDesc
     @State private var notetypeNames: [Int64: String] = [:]
     @State private var actionErrorMessage: String?
+    @State private var searchGeneration = 0
 
     private let pageSize = 50
 
@@ -450,16 +451,24 @@ struct BrowseView: View {
     }
 
     private func performSearch() async {
+        searchGeneration += 1
+        let generation = searchGeneration
         isLoading = true
-        defer { isLoading = false }
+        defer {
+            if generation == searchGeneration {
+                isLoading = false
+            }
+        }
 
         let query = buildQuery()
         do {
             let results = try noteClient.search(query, nil)
+            guard generation == searchGeneration else { return }
             allNotes = results
             notes = Array(results.prefix(pageSize))
             hasMorePages = results.count > pageSize
         } catch {
+            guard generation == searchGeneration else { return }
             allNotes = []
             notes = []
             hasMorePages = false
