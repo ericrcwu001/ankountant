@@ -82,4 +82,25 @@ struct SimulationsHubSelectionTests {
         #expect(journalEntryAccounts.contains("Interest Expense"))
         #expect(journalEntryAccounts.contains("COGS"))
     }
+
+    @Test func paneExhibitsKeepTypedTablesButSkipDocReviewDocument() {
+        let table = Exhibit(
+            id: 0,
+            title: "Schedule",
+            body: "",
+            kind: "table",
+            columns: ["Item", "Amount"],
+            rows: [["Revenue", "100"]]
+        )
+        let document = Exhibit(id: 1, title: "Document", body: "Body", role: "document")
+        let model = TbsModel(
+            shape: .numeric,
+            prompt: "Compute it.",
+            exhibits: [table, document],
+            steps: []
+        )
+
+        #expect(paneExhibits(model) == [table])
+        #expect(paneExhibits(model).first?.rows == [["Revenue", "100"]])
+    }
 }

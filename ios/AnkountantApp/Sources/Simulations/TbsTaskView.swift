@@ -90,8 +90,9 @@ struct TbsTaskView: View {
                     EmptyView()
                 }
 
-                if !model.exhibits.isEmpty {
-                    exhibitsSection(model)
+                let exhibits = paneExhibits(model)
+                if !exhibits.isEmpty {
+                    SimulationExhibitsView(exhibits: exhibits)
                 }
             }
             .padding()
@@ -228,37 +229,6 @@ struct TbsTaskView: View {
             }
         }
         .padding(.top, 4)
-    }
-
-    // MARK: - Exhibits
-
-    @ViewBuilder
-    private func exhibitsSection(_ model: TbsModel) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Exhibits")
-                .ankountantFont(.micro)
-                .foregroundStyle(palette.textSecondary)
-                .textCase(.uppercase)
-            ForEach(model.exhibits) { exhibit in
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(exhibit.title)
-                        .ankountantFont(.bodyEmphasis)
-                        .foregroundStyle(palette.textPrimary)
-                    Text(exhibit.body)
-                        .ankountantFont(.mono)
-                        .foregroundStyle(palette.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .textSelection(.enabled)
-                }
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(palette.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(palette.border, lineWidth: 1)
-                )
-            }
-        }
     }
 
     // MARK: - Step mark
