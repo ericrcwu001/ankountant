@@ -137,14 +137,25 @@ export interface TbsModel {
     document?: string;
 }
 
-function safeParse<T>(raw: string | undefined, fallback: T): T {
-    if (!raw) {
-        return fallback;
+function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
+
+function parseJsonArray(fieldName: string, raw: string | undefined): unknown[] {
+    if (raw === undefined || raw.trim() === "") {
+        throw new Error(`${fieldName} is missing.`);
     }
     try {
-        return JSON.parse(raw) as T;
-    } catch {
-        return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) {
+            throw new Error(`${fieldName} must be an array.`);
+        }
+        return parsed;
+    } catch (error) {
+        if (error instanceof SyntaxError) {
+            throw new Error(`Invalid ${fieldName}: ${errorMessage(error)}`);
+        }
+        throw error;
     }
 }
 
@@ -168,10 +179,7 @@ function asStringArray(v: unknown): string[] | undefined {
 
 /** Parse exhibits_json into typed exhibits. */
 export function parseExhibits(raw: string | undefined): Exhibit[] {
-    const parsed = safeParse<unknown>(raw, []);
-    if (!Array.isArray(parsed)) {
-        return [];
-    }
+    const parsed = parseJsonArray("exhibits_json", raw);
     return parsed.map((e, i) => {
         const obj = (e ?? {}) as Record<string, unknown>;
         const kindRaw = typeof obj.kind === "string" ? obj.kind : "text";
@@ -230,9 +238,9 @@ function parseOptions(raw: unknown): RenderOption[] | undefined {
  * with the A10 grading.
  */
 export function parseSteps(raw: string | undefined): RenderStep[] {
-    const parsed = safeParse<RawStep[]>(raw, []);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-        return [];
+    const parsed = parseJsonArray("steps_json", raw) as RawStep[];
+    if (parsed.length === 0) {
+        throw new Error("steps_json must contain at least one step.");
     }
     const defaultWeight = 1 / parsed.length;
     return parsed.map((s, i) => {
@@ -267,10 +275,14 @@ export function sectionFromTags(tags: string[] | undefined): string {
 
 /** Build the full TBS render model from a note's raw fields (+ tags for section). */
 export function buildTbsModel(fields: string[], tags?: string[]): TbsModel {
-    const shapeRaw = fields[TBS_FIELD.tbsType] ?? "journal_entry";
-    const shape = (["journal_entry", "numeric", "research", "doc_review"].includes(shapeRaw)
-        ? shapeRaw
-        : "journal_entry") as TbsShape;
+    const shapeRaw = fields[TBS_FIELD.tbsType];
+    if (
+        !shapeRaw
+        || !["journal_entry", "numeric", "research", "doc_review"].includes(shapeRaw)
+    ) {
+        throw new Error(`Unsupported tbs_type: ${shapeRaw ?? ""}`);
+    }
+    const shape = shapeRaw as TbsShape;
     const exhibits = parseExhibits(fields[TBS_FIELD.exhibitsJson]);
     const doc = exhibits.find((e) => e.role === "document");
     return {
@@ -448,10 +460,13 @@ function revealCorrect(step: RawRevealStep): string {
 
 /** Build the post-submit reveal model from the raw note fields. */
 export function buildRevealModel(fields: string[], tags?: string[]): RevealModel {
-    const rawSteps = safeParse<RawRevealStep[]>(fields[TBS_FIELD.stepsJson], []);
+    const rawSteps = parseJsonArray(
+        "steps_json",
+        fields[TBS_FIELD.stepsJson],
+    ) as RawRevealStep[];
     const rendered = parseSteps(fields[TBS_FIELD.stepsJson]);
     const labelById = new Map(rendered.map((s) => [s.id, s.label]));
-    const steps: StepReveal[] = (Array.isArray(rawSteps) ? rawSteps : []).map((s, i) => {
+    const steps: StepReveal[] = rawSteps.map((s, i) => {
         const id = typeof s.id === "string" ? s.id : `s${i + 1}`;
         return {
             id,

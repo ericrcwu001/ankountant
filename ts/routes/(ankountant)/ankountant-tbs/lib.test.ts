@@ -45,11 +45,20 @@ test("parseSteps defaults weights to 1/N so totals reconcile with A10", () => {
     }
 });
 
-test("parseExhibits tolerates missing / malformed json", () => {
-    expect(parseExhibits(undefined)).toEqual([]);
-    expect(parseExhibits("not json")).toEqual([]);
+test("parseExhibits fails loudly on missing or malformed json", () => {
+    expect(parseExhibits("[]")).toEqual([]);
+    expect(() => parseExhibits(undefined)).toThrow(/exhibits_json is missing/);
+    expect(() => parseExhibits("not json")).toThrow(/Invalid exhibits_json/);
+    expect(() => parseExhibits("{}")).toThrow(/exhibits_json must be an array/);
     const ex = parseExhibits(JSON.stringify([{ title: "Ex 1", body: "text" }]));
     expect(ex[0].title).toBe("Ex 1");
+});
+
+test("parseSteps fails loudly on missing, malformed, or empty step json", () => {
+    expect(() => parseSteps(undefined)).toThrow(/steps_json is missing/);
+    expect(() => parseSteps("not json")).toThrow(/Invalid steps_json/);
+    expect(() => parseSteps("{}")).toThrow(/steps_json must be an array/);
+    expect(() => parseSteps("[]")).toThrow(/steps_json must contain at least one step/);
 });
 
 test("buildJeSubmission shapes account/side/amount per step", () => {
@@ -107,7 +116,15 @@ test("paneExhibits excludes the doc-review primary document", () => {
                 { title: "Exhibit 1", body: "facts" },
                 { title: "Doc", kind: "document", role: "document", body: "the <blank step=\"b1\">x</blank>" },
             ]),
-            "[]",
+            JSON.stringify([
+                {
+                    id: "b1",
+                    kind: "blank",
+                    label: "Blank 1",
+                    answer_key: "o1",
+                    options: [{ id: "o1", text: "Answer" }],
+                },
+            ]),
             "ds::reg::deduct",
         ],
         ["sec::REG"],
