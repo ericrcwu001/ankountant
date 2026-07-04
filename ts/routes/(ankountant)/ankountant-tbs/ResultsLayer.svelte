@@ -84,9 +84,10 @@ once results are in, so nothing is revealed before the learner commits.
 
     .reveal-row {
         display: grid;
-        grid-template-columns: 1.5rem 1fr auto;
-        align-items: baseline;
-        gap: var(--space-sm);
+        grid-template-columns: 1.5rem minmax(9rem, 14rem) minmax(0, 1fr);
+        align-items: start;
+        column-gap: var(--space-sm);
+        row-gap: var(--space-xs);
     }
 
     .mark {
@@ -107,15 +108,19 @@ once results are in, so nothing is revealed before the learner commits.
     }
 
     .label {
+        min-width: 0;
         color: var(--fg);
     }
 
     .correct-value {
+        min-width: 0;
         font-family: var(--font-mono);
         font-variant-numeric: tabular-nums lining-nums;
         font-weight: 600;
         color: var(--accent);
-        text-align: right;
+        line-height: 1.45;
+        text-align: left;
+        overflow-wrap: anywhere;
     }
 
     .basis {
@@ -141,5 +146,15 @@ once results are in, so nothing is revealed before the learner commits.
         line-height: 1.5;
         color: var(--fg-subtle);
         max-width: 66ch;
+    }
+
+    @media (max-width: 720px) {
+        .reveal-row {
+            grid-template-columns: 1.5rem minmax(0, 1fr);
+        }
+
+        .correct-value {
+            grid-column: 2;
+        }
     }
 </style>
