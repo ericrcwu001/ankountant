@@ -76,9 +76,15 @@ struct AddNoteView: View {
 
                 if let loadErrorMessage {
                     Section {
-                        Text(loadErrorMessage)
-                            .foregroundStyle(.red)
-                            .font(.caption)
+                        ContentUnavailableView {
+                            Label("Could Not Load Note Form", systemImage: "exclamationmark.triangle")
+                        } description: {
+                            Text(loadErrorMessage)
+                        } actions: {
+                            Button("Retry") {
+                                Task { await loadData() }
+                            }
+                        }
                     }
                 }
 

@@ -68,9 +68,15 @@ struct BatchTagSheet: View {
 
                 if let loadErrorMessage {
                     Section {
-                        Text(loadErrorMessage)
-                            .foregroundStyle(.red)
-                            .font(.caption)
+                        ContentUnavailableView {
+                            Label("Could Not Load Tags", systemImage: "exclamationmark.triangle")
+                        } description: {
+                            Text(loadErrorMessage)
+                        } actions: {
+                            Button("Retry") {
+                                Task { await loadTags() }
+                            }
+                        }
                     }
                 }
 
@@ -103,15 +109,19 @@ struct BatchTagSheet: View {
                 }
             }
             .task {
-                do {
-                    loadErrorMessage = nil
-                    let tags = try tagClient.getAllTags()
-                    allTags = tags.sorted()
-                } catch {
-                    allTags = []
-                    loadErrorMessage = "Failed to load tags: \(error.localizedDescription)"
-                }
+                await loadTags()
             }
+        }
+    }
+
+    private func loadTags() async {
+        loadErrorMessage = nil
+        do {
+            let tags = try tagClient.getAllTags()
+            allTags = tags.sorted()
+        } catch {
+            allTags = []
+            loadErrorMessage = "Failed to load tags: \(error.localizedDescription)"
         }
     }
 

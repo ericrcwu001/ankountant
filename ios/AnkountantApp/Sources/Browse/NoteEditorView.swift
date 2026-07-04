@@ -40,9 +40,15 @@ struct NoteEditorView: View {
 
             if let loadErrorMessage {
                 Section {
-                    Text(loadErrorMessage)
-                        .foregroundStyle(.red)
-                        .font(.caption)
+                    ContentUnavailableView {
+                        Label("Could Not Load Note Fields", systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text(loadErrorMessage)
+                    } actions: {
+                        Button("Retry") {
+                            loadNote()
+                        }
+                    }
                 }
             }
 

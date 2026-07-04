@@ -16,11 +16,15 @@ struct BrowseNoteDestinationView: View {
             if let resolvedNote {
                 NoteEditingDestinationView(note: resolvedNote, onSave: onSave)
             } else if let loadErrorMessage {
-                ContentUnavailableView(
-                    "Could Not Load Note",
-                    systemImage: "exclamationmark.triangle",
-                    description: Text(loadErrorMessage)
-                )
+                ContentUnavailableView {
+                    Label("Could Not Load Note", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(loadErrorMessage)
+                } actions: {
+                    Button("Retry") {
+                        Task { await loadNote() }
+                    }
+                }
             } else {
                 ProgressView()
             }
@@ -33,6 +37,7 @@ struct BrowseNoteDestinationView: View {
     @MainActor
     private func loadNote() async {
         loadErrorMessage = nil
+        resolvedNote = nil
 
         guard note.sfld == "Loading..." else {
             resolvedNote = note
