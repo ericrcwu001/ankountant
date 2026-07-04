@@ -224,10 +224,8 @@ pub(crate) fn text_matches(answer_key: &str, submitted: &str) -> bool {
 }
 
 /// A4 — modes whose stored `credit` is fractional partial credit (averaged into
-/// Performance) rather than pass/fail. Keeping the set of fractional modes in
-/// one place lets `readiness.rs` bucket consistently. `research` is NOT here:
-/// it is binary (correctness-only), so it lands in the pass/fail bucket
-/// alongside `confusion`/MCQ.
+/// Performance) rather than pass/fail. `research` is not here because it is
+/// correctness-only; readiness still scores it on the TBS side of the 50/50 mix.
 pub(crate) fn is_partial_credit_mode(mode: &str) -> bool {
     matches!(mode, "tbs" | "doc_review")
 }

@@ -1451,6 +1451,53 @@ fn a4_slow_correct_attempt_lowers_performance() {
     assert!((topic.performance - 0.5).abs() < 1e-9);
 }
 
+#[test]
+fn a4_research_counts_as_tbs_performance_without_timing_penalty() {
+    let (mut col, _) = seeded();
+    use super::attempt_log::NewAttempt;
+    use super::attempt_log::Outcome;
+    col.transact(crate::ops::Op::AddNote, |col| {
+        for _ in 0..10 {
+            col.ankountant_write_attempt(&NewAttempt {
+                item_ref: NoteId(1),
+                confusion_set_id: "capitalize_vs_expense".into(),
+                mode: "confusion".into(),
+                confidence: "guess".into(),
+                latency_ms: 1000,
+                outcome: Outcome {
+                    credit: 0.0,
+                    steps: vec![],
+                    elapsed_ms: None,
+                },
+                section: "FAR".into(),
+                sealed: true,
+            })?;
+        }
+        col.ankountant_write_attempt(&NewAttempt {
+            item_ref: NoteId(1),
+            confusion_set_id: "capitalize_vs_expense".into(),
+            mode: "research".into(),
+            confidence: "confident".into(),
+            latency_ms: super::constants::PERFORMANCE_CONFUSION_TARGET_MS * 10,
+            outcome: Outcome {
+                credit: 1.0,
+                steps: vec![],
+                elapsed_ms: Some(super::constants::PERFORMANCE_CONFUSION_TARGET_MS * 10),
+            },
+            section: "FAR".into(),
+            sealed: true,
+        })
+    })
+    .unwrap();
+    let resp = readiness(&mut col);
+    let topic = resp
+        .topics
+        .iter()
+        .find(|t| t.set_id == "capitalize_vs_expense")
+        .unwrap();
+    assert!((topic.performance - 0.5).abs() < 1e-9);
+}
+
 // --- A5 (A16–A19) ------------------------------------------------------------
 
 #[test]

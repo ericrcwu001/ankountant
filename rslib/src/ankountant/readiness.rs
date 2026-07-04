@@ -59,6 +59,11 @@ enum PerformanceMode {
     DocReview,
 }
 
+enum PerformanceBucket {
+    Mcq,
+    Tbs,
+}
+
 impl PerformanceMode {
     fn parse(mode: &str) -> Result<Self> {
         match mode {
@@ -75,6 +80,13 @@ impl PerformanceMode {
             Self::Confusion => Some(constants::PERFORMANCE_CONFUSION_TARGET_MS),
             Self::Tbs | Self::DocReview => Some(constants::PERFORMANCE_TBS_TARGET_MS),
             Self::Research => None,
+        }
+    }
+
+    fn bucket(self) -> PerformanceBucket {
+        match self {
+            Self::Confusion => PerformanceBucket::Mcq,
+            Self::Research | Self::Tbs | Self::DocReview => PerformanceBucket::Tbs,
         }
     }
 }
@@ -151,24 +163,28 @@ impl Collection {
             let acc = perf.entry(a.confusion_set_id.clone()).or_default();
             let mode = PerformanceMode::parse(a.mode.as_str())?;
             let raw_credit = valid_attempt_credit(a.outcome.credit)?;
-            if logic::is_partial_credit_mode(a.mode.as_str()) {
-                // tbs / doc_review: fractional per-step (per-blank) partial credit.
-                let (credit, penalty) = timed_credit(mode, raw_credit, a.latency_ms);
-                acc.tbs_credit += credit;
-                acc.tbs_total += 1.0;
-                acc.tbs_time_penalty += penalty;
-                sealed_correct += credit;
-                sealed_total += 1.0;
+            let scored_credit = if logic::is_partial_credit_mode(a.mode.as_str()) {
+                raw_credit
+            } else if raw_credit >= 0.5 {
+                1.0
             } else {
-                // confusion / research / MCQ: pass/fail on credit >= 0.5.
-                let c = if raw_credit >= 0.5 { 1.0 } else { 0.0 };
-                let (credit, penalty) = timed_credit(mode, c, a.latency_ms);
-                acc.mcq_correct += credit;
-                acc.mcq_total += 1.0;
-                acc.mcq_time_penalty += penalty;
-                sealed_correct += credit;
-                sealed_total += 1.0;
+                0.0
+            };
+            let (credit, penalty) = timed_credit(mode, scored_credit, a.latency_ms);
+            match mode.bucket() {
+                PerformanceBucket::Mcq => {
+                    acc.mcq_correct += credit;
+                    acc.mcq_total += 1.0;
+                    acc.mcq_time_penalty += penalty;
+                }
+                PerformanceBucket::Tbs => {
+                    acc.tbs_credit += credit;
+                    acc.tbs_total += 1.0;
+                    acc.tbs_time_penalty += penalty;
+                }
             }
+            sealed_correct += credit;
+            sealed_total += 1.0;
         }
 
         // --- Memory per set from trailing-30d study-pile recall reps. ---
