@@ -31,12 +31,19 @@ struct SectionDetailView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .ankountantCard(elevated: true)
                 } else if loaded {
-                    AnkountantStatusMessageView(
-                        title: "Readiness unavailable",
-                        message: loadErrorMessage ?? "Couldn't load \(section.code) readiness.",
-                        systemImage: "exclamationmark.triangle",
-                        tone: .warning
-                    )
+                    VStack(spacing: AnkountantSpacing.md) {
+                        AnkountantStatusMessageView(
+                            title: "Readiness unavailable",
+                            message: loadErrorMessage ?? "Couldn't load \(section.code) readiness.",
+                            systemImage: "exclamationmark.triangle",
+                            tone: .warning
+                        )
+
+                        Button("Retry") {
+                            Task { await load() }
+                        }
+                        .buttonStyle(AnkountantPrimaryButtonStyle())
+                    }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, AnkountantSpacing.xl)
                 } else {
@@ -67,6 +74,10 @@ struct SectionDetailView: View {
     }
 
     private func load() async {
+        loaded = false
+        summary = nil
+        loadErrorMessage = nil
+
         let getReadiness = schedulerService.getReadiness
         let code = section.code
         let result = await Task.detached(priority: .userInitiated) {
