@@ -17,9 +17,19 @@ import {
     yForScore,
 } from "./summit";
 
-// passStanding/buildSectionPeak only read `abstain`/`pointEstimate`/band fields,
-// so a duck-typed partial is enough for these pure checks.
 const rd = (o: Partial<Readiness>): Readiness => o as unknown as Readiness;
+const provenReadiness = (o: Partial<Readiness>): Readiness =>
+    rd({
+        abstain: false,
+        bandLow: 62,
+        bandHigh: 78,
+        pointEstimate: 70,
+        confidence: "High",
+        coverage: 0.75,
+        generatedAt: 1_704_067_200n,
+        reasons: ["Coverage: 75% of topics; 40 sealed attempts"],
+        ...o,
+    });
 
 test("heightForScore maps the CPA 0-99 axis to 0..1 and clamps", () => {
     expect(heightForScore(0)).toBe(0);
@@ -71,7 +81,7 @@ test("selectedSummitSection defaults, normalizes, and rejects unknown sections",
 test("buildSectionPeak fills proven peaks and blanks unproven ones", () => {
     const proven = buildSectionPeak(
         { code: "FAR", name: "Financial Accounting and Reporting" },
-        rd({ abstain: false, pointEstimate: 61, bandLow: 44, bandHigh: 75, confidence: "Med" }),
+        provenReadiness({ pointEstimate: 61, bandLow: 44, bandHigh: 75, confidence: "Med" }),
     );
     expect(proven).toMatchObject({
         standing: "below",
@@ -83,7 +93,7 @@ test("buildSectionPeak fills proven peaks and blanks unproven ones", () => {
 
     const unproven = buildSectionPeak(
         { code: "AUD", name: "Auditing and Attestation" },
-        rd({ abstain: true, pointEstimate: 0 }),
+        rd({ abstain: true, reason: "insufficient volume", pointEstimate: 0, coverage: 0 }),
     );
     expect(unproven).toMatchObject({
         standing: "unproven",
@@ -91,4 +101,13 @@ test("buildSectionPeak fills proven peaks and blanks unproven ones", () => {
         bandLow: null,
         bandHigh: null,
     });
+});
+
+test("buildSectionPeak rejects invalid emitted readiness instead of plotting it", () => {
+    expect(() =>
+        buildSectionPeak(
+            { code: "FAR", name: "Financial Accounting and Reporting" },
+            provenReadiness({ pointEstimate: 90, bandLow: 62, bandHigh: 78 }),
+        )
+    ).toThrow(/inside the reported band/);
 });

@@ -9,7 +9,7 @@
 
 import type { GetReadinessResponse, Readiness } from "@generated/anki/scheduler_pb";
 
-import { CPA_MAX_SCORE, CPA_PASS_SCORE } from "../ankountant-dashboard/lib";
+import { buildReadinessView, CPA_MAX_SCORE, CPA_PASS_SCORE } from "../ankountant-dashboard/lib";
 
 /** A CPA exam section shown as a summit peak. */
 export interface CpaSection {
@@ -97,8 +97,8 @@ export function buildSectionPeak(
     section: CpaSection,
     readiness: Readiness | undefined,
 ): SectionPeak {
-    const standing = passStanding(readiness);
-    if (standing === "unproven" || !readiness) {
+    const view = buildReadinessView(readiness);
+    if (view.abstain) {
         return {
             code: section.code,
             name: section.name,
@@ -112,11 +112,11 @@ export function buildSectionPeak(
     return {
         code: section.code,
         name: section.name,
-        standing,
-        point: readiness.pointEstimate,
-        bandLow: readiness.bandLow,
-        bandHigh: readiness.bandHigh,
-        confidence: readiness.confidence,
+        standing: view.pointEstimate >= CPA_PASS_SCORE ? "above" : "below",
+        point: view.pointEstimate,
+        bandLow: view.bandLow,
+        bandHigh: view.bandHigh,
+        confidence: view.confidence,
     };
 }
 
