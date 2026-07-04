@@ -731,6 +731,32 @@ fn a8_submit_rejects_unknown_mode_before_logging() {
 }
 
 #[test]
+fn a8_submit_rejects_unmapped_item_before_logging() {
+    let (mut col, _) = seeded();
+    let nid = first_sealed_mcq(&mut col);
+    let mut note = col.storage.get_note(nid).unwrap().unwrap();
+    note.set_field(super::notetypes::tbs_fields::SCHEMA_TAG, "")
+        .unwrap();
+    note.tags.clear();
+    col.update_note(&mut note).unwrap();
+    let before = attempt_log_count(&mut col);
+
+    let err = submit_result(
+        &mut col,
+        nid,
+        "confusion",
+        json!({"choice":"Capitalize"}),
+        "guess",
+    )
+    .unwrap_err();
+    assert_eq!(
+        invalid_input_message(err),
+        "Performance item missing confusion set"
+    );
+    assert_eq!(attempt_log_count(&mut col), before);
+}
+
+#[test]
 fn a8_attempt_notes_never_in_study_queue() {
     // A29.
     let (mut col, _) = seeded();

@@ -64,7 +64,7 @@ impl Collection {
                     .iter()
                     .find_map(|t| Collection::ankountant_set_for_tag(&map, t))
             })
-            .unwrap_or_default();
+            .or_invalid("Performance item missing confusion set")?;
 
         // Is this item in the sealed firewall bank? (Determines Performance.)
         let sealed = self.ankountant_note_is_sealed(item_note_id, &section)?;
