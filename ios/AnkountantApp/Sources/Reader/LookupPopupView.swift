@@ -21,6 +21,7 @@ struct LookupPopupView: View {
     @State private var lookupError: String?
     @State private var actionError: String?
     @State private var pendingNoteDraft: NoteDraft?
+    @State private var showDictionarySettings = false
 
     /// JSON-encoded `ReaderLookupNoteTemplate` stored in user prefs.
     /// Default is `.empty`, which makes `makeDraft` fall back to common
@@ -136,6 +137,11 @@ struct LookupPopupView: View {
         }
         .presentationDetents(detents)
         .presentationDragIndicator(popupSwipeToDismiss ? .visible : .hidden)
+        .sheet(isPresented: $showDictionarySettings) {
+            NavigationStack {
+                ReaderDictionarySettingsView()
+            }
+        }
         .alert(
             "Reader lookup",
             isPresented: Binding(
@@ -232,7 +238,9 @@ struct LookupPopupView: View {
                 }
             }
         } else if result?.isPlaceholder == true {
-            dictionaryUnavailableView()
+            dictionaryUnavailableView {
+                showDictionarySettings = true
+            }
         } else {
             ContentUnavailableView.search(text: query)
         }
@@ -385,6 +393,7 @@ private struct LookupChildPane: View {
     @State private var result: DictionaryLookupResult?
     @State private var isLoading = false
     @State private var lookupError: String?
+    @State private var showDictionarySettings = false
 
     var body: some View {
         Group {
@@ -415,7 +424,9 @@ private struct LookupChildPane: View {
                 }
                 .listStyle(.plain)
             } else if result?.isPlaceholder == true {
-                dictionaryUnavailableView()
+                dictionaryUnavailableView {
+                    showDictionarySettings = true
+                }
             } else {
                 ContentUnavailableView.search(text: query)
             }
@@ -423,6 +434,11 @@ private struct LookupChildPane: View {
         .navigationTitle(query)
         .navigationBarTitleDisplayMode(.inline)
         .task { await runLookup() }
+        .sheet(isPresented: $showDictionarySettings) {
+            NavigationStack {
+                ReaderDictionarySettingsView()
+            }
+        }
     }
 
     private func runLookup() async {
@@ -439,12 +455,18 @@ private struct LookupChildPane: View {
     }
 }
 
+@MainActor
 @ViewBuilder
-private func dictionaryUnavailableView() -> some View {
+private func dictionaryUnavailableView(onOpenSettings: @escaping @MainActor () -> Void) -> some View {
     ContentUnavailableView {
         Label("No term dictionaries enabled", systemImage: "book.closed")
     } description: {
         Text("Import or enable a term dictionary in Reader Settings before looking up words.")
+    } actions: {
+        Button("Reader Dictionaries", systemImage: "books.vertical") {
+            onOpenSettings()
+        }
+        .buttonStyle(.borderedProminent)
     }
 }
 
