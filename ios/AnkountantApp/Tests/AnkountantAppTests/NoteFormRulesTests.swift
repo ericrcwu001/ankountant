@@ -145,3 +145,21 @@ struct ImageOcclusionParserTests {
         #expect(masks.isEmpty)
     }
 }
+
+@MainActor
+@Suite("Rich note field editor")
+struct RichNoteFieldEditorTests {
+    @Test func normalizesInlineMathJaxToAnkiSyntax() {
+        #expect(
+            RichNoteFieldEditor.normalizedStoredHTML(#"<anki-mathjax>x<br />y</anki-mathjax>"#)
+                == "\\(x\ny\\)"
+        )
+    }
+
+    @Test func normalizesBlockMathJaxToAnkiSyntax() {
+        #expect(
+            RichNoteFieldEditor.normalizedStoredHTML(#"<anki-mathjax block="true"><br />x<br /></anki-mathjax>"#)
+                == "\\[x\\]"
+        )
+    }
+}

@@ -342,12 +342,10 @@ struct RichNoteFieldEditor: UIViewRepresentable {
         static func normalizedStoredHTML(from text: String) -> String {
             guard text.localizedCaseInsensitiveContains("anki-mathjax") else { return text }
             let pattern = #"<anki-mathjax(?:[^>]*?block=\"(.*?)\")?[^>]*?>(.*?)</anki-mathjax>"#
-            guard let regex = try? NSRegularExpression(
+            let regex = regularExpression(
                 pattern: pattern,
                 options: [.caseInsensitive, .dotMatchesLineSeparators]
-            ) else {
-                return text
-            }
+            )
 
             let source = text as NSString
             var output = ""
@@ -381,6 +379,17 @@ struct RichNoteFieldEditor: UIViewRepresentable {
 
             output += source.substring(from: currentLocation)
             return output
+        }
+
+        private static func regularExpression(
+            pattern: String,
+            options: NSRegularExpression.Options = []
+        ) -> NSRegularExpression {
+            do {
+                return try NSRegularExpression(pattern: pattern, options: options)
+            } catch {
+                preconditionFailure("Invalid rich note field editor regex: \(error)")
+            }
         }
 
         private static func isLikelyHTML(_ text: String) -> Bool {
