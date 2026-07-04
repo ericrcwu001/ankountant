@@ -41,6 +41,26 @@ test("readiness is labelled the exam-day projection tied to the set exam date (A
     await expect(heading).not.toContainText("today");
 });
 
+test("section switcher reloads the dashboard for the selected CPA section", async ({ page, seed }) => {
+    expect(seed.confusionSets).toBeGreaterThanOrEqual(4);
+    await page.goto("/ankountant-dashboard");
+
+    await expect(page.getByRole("button", { name: "FAR" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+    );
+    await page.getByRole("button", { name: "AUD" }).click();
+
+    await expect(page).toHaveURL(/section=AUD/);
+    await expect(page.locator(".page-head .eyebrow")).toHaveText(
+        "Auditing and Attestation",
+    );
+    await expect(page.getByRole("button", { name: "AUD" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+    );
+});
+
 test("gap >= 0.25 renders the gap row with the gap-warning class (A56)", async ({ page, seedWithHistory }) => {
     expect(seedWithHistory.confusionSets).toBeGreaterThanOrEqual(4);
     await page.goto("/ankountant-dashboard");

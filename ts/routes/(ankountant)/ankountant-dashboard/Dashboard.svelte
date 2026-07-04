@@ -5,7 +5,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 <script lang="ts">
     import type { GetReadinessResponse } from "@generated/anki/scheduler_pb";
 
-    import { sectionName } from "../ankountant-home/summit";
+    import { sectionName, SUMMIT_SECTIONS } from "../ankountant-home/summit";
     import {
         buildReadinessEvidence,
         buildReadinessView,
@@ -17,6 +17,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     export let readiness: GetReadinessResponse;
     export let examDate = "";
     export let section = "FAR";
+    export let onSelectSection: ((section: string) => void) | undefined = undefined;
 
     $: rows = buildTopicRows(readiness.topics);
     $: view = buildReadinessView(readiness.readiness);
@@ -25,12 +26,34 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     $: examLabel = examDate
         ? `Exam-day projection (${examDate})`
         : "Exam-day projection";
+
+    function selectSection(nextSection: string): void {
+        if (nextSection !== section) {
+            onSelectSection?.(nextSection);
+        }
+    }
 </script>
 
 <div class="ankountant-dashboard" data-testid="dashboard">
     <header class="page-head">
-        <p class="eyebrow">{sectionName(section)}</p>
-        <h1>Readiness</h1>
+        <div>
+            <p class="eyebrow">{sectionName(section)}</p>
+            <h1>Readiness</h1>
+        </div>
+        <div class="section-switch" role="group" aria-label="Dashboard section">
+            {#each SUMMIT_SECTIONS as s (s.code)}
+                <button
+                    type="button"
+                    class:active={s.code === section}
+                    aria-pressed={s.code === section}
+                    title={s.name}
+                    data-testid="dashboard-section"
+                    on:click={() => selectSection(s.code)}
+                >
+                    {s.code}
+                </button>
+            {/each}
+        </div>
     </header>
 
     <section class="card readiness" data-testid="readiness">
@@ -208,6 +231,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     }
 
     .page-head {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: var(--space-md);
         margin-bottom: var(--space-lg);
 
         .eyebrow {
@@ -225,6 +252,44 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             letter-spacing: var(--type-section-heading-tracking);
             line-height: var(--type-section-heading-line);
             margin: 0;
+        }
+    }
+
+    .section-switch {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 4px;
+
+        button {
+            min-width: 2.6rem;
+            min-height: 2rem;
+            padding: 0 var(--space-sm);
+            font: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0;
+            color: var(--fg-subtle);
+            background: var(--canvas-inset);
+            border: 1px solid var(--border-control);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+
+            &:hover {
+                color: var(--fg);
+                border-color: var(--accent);
+            }
+
+            &:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 1px;
+            }
+        }
+
+        .active {
+            color: var(--accent);
+            background: var(--accent-tint);
+            border-color: var(--accent);
         }
     }
 
