@@ -7,7 +7,6 @@
     export let sectionLabel = "FAR";
 
     const NAVY = "#1f3a5f";
-    const AMBER = "#e08a2e";
     const MUTED = "#7f8da2";
     const POLE = 40;
     const dispatch = createEventDispatcher<{
@@ -21,11 +20,12 @@
         return `M${x} ${topY} L${x + 19} ${topY + 6.5} L${x} ${topY + 13} Z`;
     }
 
-    function flagColor(below: boolean, unproven: boolean): string {
-        if (unproven) {
-            return MUTED;
-        }
-        return below ? AMBER : NAVY;
+    function flagColor(unproven: boolean): string {
+        return unproven ? MUTED : NAVY;
+    }
+
+    function performanceLabel(score: number | null): string {
+        return score === null ? "not enough data yet" : `${score}% sealed performance`;
     }
 
     function showFlag(flag: TopoFlag): void {
@@ -42,7 +42,7 @@
     viewBox="0 0 {range.width} {range.height}"
     preserveAspectRatio="xMidYMax meet"
     role="img"
-    aria-label="Topographic range of {sectionLabel} topics; each peak is a topic, pass line at CPA 75."
+    aria-label="Topographic range of {sectionLabel} topics; each peak is sealed Performance."
 >
     <defs>
         <linearGradient id="topo-far" x1="0" y1="0" x2="0" y2="1">
@@ -149,32 +149,18 @@
         vector-effect="non-scaling-stroke"
     />
 
-    <line
-        class="pass-line"
-        x1="0"
-        x2={range.width}
-        y1={range.passY}
-        y2={range.passY}
-        vector-effect="non-scaling-stroke"
-    />
-    <text class="pass-label" x={range.width - 6} y={range.passY - 8} text-anchor="end">
-        PASS LINE · 75
-    </text>
-
     {#each range.flags as f (f.key)}
         {@const top = f.y - POLE}
-        {@const color = flagColor(f.below, f.unproven)}
+        {@const color = flagColor(f.unproven)}
         <g
             class="flag"
             role="img"
-            aria-label={`${f.label}, ${f.score === null ? "not enough data yet" : `${f.score} performance`}`}
+            aria-label={`${f.label}, ${performanceLabel(f.score)}`}
             on:mouseenter={() => showFlag(f)}
             on:mouseleave={hideFlag}
         >
             <title>
-                {f.label}, {f.score === null
-                    ? "not enough data yet"
-                    : `${f.score} performance`}
+                {f.label}, {performanceLabel(f.score)}
             </title>
             <text class="flag-name" x={f.x} y={top - 22} text-anchor="middle">
                 {f.label}
@@ -186,7 +172,7 @@
                 y={top - 4}
                 text-anchor="middle"
             >
-                {f.score === null ? "—" : f.score}
+                {f.score === null ? "—" : `${f.score}%`}
             </text>
             <line
                 x1={f.x}
@@ -220,20 +206,6 @@
         display: block;
         width: 100%;
         height: 100%;
-    }
-
-    .pass-line {
-        stroke: var(--accent);
-        stroke-width: 1.4;
-        stroke-dasharray: 7 6;
-        opacity: 0.75;
-    }
-
-    .pass-label {
-        fill: var(--accent);
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.06em;
     }
 
     .slope-light {

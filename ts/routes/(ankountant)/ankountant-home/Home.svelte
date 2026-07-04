@@ -449,18 +449,18 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                         <path d="M4 2v12" stroke="#1f3a5f" stroke-width="1.6" />
                         <path d="M4 2.5l7 2.5-7 2.5z" fill="#1f3a5f" />
                     </svg>
-                    At or Above Pass Line (>= 75)
+                    Sealed performance peak
                 </span>
                 <span class="leg-item">
                     <svg viewBox="0 0 16 16" class="leg-flag">
-                        <path d="M4 2v12" stroke="#e08a2e" stroke-width="1.6" />
-                        <path d="M4 2.5l7 2.5-7 2.5z" fill="#e08a2e" />
+                        <path d="M4 2v12" stroke="#7f8da2" stroke-width="1.6" />
+                        <path d="M4 2.5l7 2.5-7 2.5z" fill="#7f8da2" opacity="0.58" />
                     </svg>
-                    Below Pass Line (&lt; 75)
+                    Insufficient evidence
                 </span>
                 <span class="leg-item">
                     <span class="leg-dot"></span>
-                    Your Current Mastery
+                    Memory / Performance detail
                 </span>
             </div>
         </div>

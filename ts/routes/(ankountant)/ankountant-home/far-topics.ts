@@ -194,7 +194,6 @@ function buildTopic(input: {
         gap,
         memoryRange,
         performanceRange,
-        below: performance !== null && performance < 75,
         unproven: performance === null,
         cx: 0,
         height: UNPROVEN_HEIGHT,

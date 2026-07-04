@@ -5,7 +5,6 @@ export interface TopoTopic {
     key: string;
     label: string;
     score: number | null;
-    below: boolean;
     cx: number;
     height: number;
     tier: "front" | "back";
@@ -24,7 +23,6 @@ export interface TopoFlag {
     key: string;
     label: string;
     score: number | null;
-    below: boolean;
     tier: "front" | "back";
     x: number;
     y: number;
@@ -35,16 +33,14 @@ export interface TopoRange {
     width: number;
     height: number;
     baseY: number;
-    passY: number;
     layers: TopoLayer[];
     flags: TopoFlag[];
 }
 
-export const TOPIC_PASS_SCORE = 75;
 export const TOPIC_MAX_SCORE = 100;
 const TOPIC_SCORE_CURVE = 1.35;
-const FRONT_ABOVE_PASS_SCALE = 0.24;
-const FRONT_BELOW_PASS_CURVE = 1.4;
+const FRONT_HEIGHT_SCALE = 0.82;
+const FRONT_HEIGHT_CURVE = 1.12;
 
 function mulberry32(seed: number): () => number {
     let a = seed >>> 0;
@@ -111,11 +107,7 @@ export function heightForTopicScore(
         return height;
     }
 
-    const passHeight = rawHeightForTopicScore(TOPIC_PASS_SCORE);
-    if (height >= passHeight) {
-        return passHeight + (height - passHeight) * FRONT_ABOVE_PASS_SCALE;
-    }
-    return passHeight * Math.pow(height / passHeight, FRONT_BELOW_PASS_CURVE);
+    return Math.pow(height, FRONT_HEIGHT_CURVE) * FRONT_HEIGHT_SCALE;
 }
 
 export function yForTopicScore(
@@ -391,7 +383,6 @@ export function buildTopoRange(
             key: t.key,
             label: t.label,
             score: t.score,
-            below: t.below,
             tier: t.tier,
             x,
             y: yForTopicScore(t.score ?? 0, baseY, plotH, t.tier),
@@ -399,13 +390,10 @@ export function buildTopoRange(
         };
     });
 
-    const passY = yForTopicScore(TOPIC_PASS_SCORE, baseY, plotH);
-
     return {
         width: W,
         height: H,
         baseY,
-        passY,
         layers: [farLayer, backLayer, frontLayer],
         flags,
     };

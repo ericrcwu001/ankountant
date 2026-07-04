@@ -3,14 +3,7 @@
 
 import { expect, test } from "vitest";
 
-import {
-    buildTopoRange,
-    heightForTopicScore,
-    TOPIC_MAX_SCORE,
-    TOPIC_PASS_SCORE,
-    type TopoTopic,
-    yForTopicScore,
-} from "./topo";
+import { buildTopoRange, heightForTopicScore, TOPIC_MAX_SCORE, type TopoTopic, yForTopicScore } from "./topo";
 
 test("heightForTopicScore maps topic score percentages onto 0..1", () => {
     expect(heightForTopicScore(0)).toBe(0);
@@ -22,50 +15,45 @@ test("heightForTopicScore maps topic score percentages onto 0..1", () => {
     expect(heightForTopicScore(90) - heightForTopicScore(80)).toBeGreaterThan(0.1);
 });
 
-test("foreground topic heights compress around the pass line", () => {
-    const passHeight = heightForTopicScore(TOPIC_PASS_SCORE);
-
+test("foreground topic heights are compressed for visual layering", () => {
     expect(heightForTopicScore(0, "front")).toBe(0);
-    expect(heightForTopicScore(TOPIC_PASS_SCORE, "front")).toBeCloseTo(passHeight);
-    expect(heightForTopicScore(82, "front")).toBeGreaterThan(passHeight);
+    expect(heightForTopicScore(82, "front")).toBeGreaterThan(heightForTopicScore(60, "front"));
+    expect(heightForTopicScore(82, "front")).toBeLessThan(heightForTopicScore(82, "back"));
+    expect(heightForTopicScore(TOPIC_MAX_SCORE, "front")).toBeLessThan(1);
     expect(heightForTopicScore(85, "back") - heightForTopicScore(82, "front"))
         .toBeGreaterThan(0.1);
 });
 
-test("topo flags and pass line share the same topic score y-axis", () => {
+test("topo flags use the topic performance y-axis without a pass line", () => {
     const topics: TopoTopic[] = [
         {
             key: "back-above",
             label: "Back Above",
             score: 90,
-            below: false,
             cx: 0.2,
             height: 0.9,
             tier: "back",
         },
         {
-            key: "back-pass",
-            label: "Back Pass",
-            score: TOPIC_PASS_SCORE,
-            below: false,
+            key: "back-mid",
+            label: "Back Mid",
+            score: 75,
             cx: 0.5,
             height: 0.75,
             tier: "back",
         },
         {
-            key: "front-pass",
-            label: "Front Pass",
-            score: TOPIC_PASS_SCORE,
-            below: false,
+            key: "front-mid",
+            label: "Front Mid",
+            score: 75,
             cx: 0.6,
             height: 0.75,
             tier: "front",
         },
         {
-            key: "front-below",
-            label: "Front Below",
+            key: "front-lower",
+            label: "Front Lower",
             score: 60,
-            below: true,
             cx: 0.8,
             height: 0.6,
             tier: "front",
@@ -74,23 +62,18 @@ test("topo flags and pass line share the same topic score y-axis", () => {
     const range = buildTopoRange(topics, { width: 1000, height: 680 });
     const plotH = range.height * 0.86;
 
+    expect("passY" in range).toBe(false);
     expect(yForTopicScore(0, range.baseY, plotH)).toBe(range.height);
-    expect(range.passY).toBeCloseTo(
-        yForTopicScore(TOPIC_PASS_SCORE, range.baseY, plotH),
-    );
-    expect(range.flags.find((f) => f.key === "back-pass")?.y).toBeCloseTo(
-        range.passY,
-    );
-    expect(range.flags.find((f) => f.key === "front-pass")?.y).toBeCloseTo(
-        range.passY,
-    );
-    expect(range.flags.find((f) => f.key === "front-below")?.y).toBeGreaterThan(
-        yForTopicScore(60, range.baseY, plotH),
+    expect(range.flags.find((f) => f.key === "back-mid")?.y).toBeCloseTo(
+        yForTopicScore(75, range.baseY, plotH, "back"),
     );
     expect(range.flags.find((f) => f.key === "back-above")?.y).toBeLessThan(
-        range.passY,
+        yForTopicScore(75, range.baseY, plotH, "back"),
     );
-    expect(range.flags.find((f) => f.key === "front-below")?.y).toBeGreaterThan(
-        range.passY,
+    expect(range.flags.find((f) => f.key === "front-lower")?.y).toBeCloseTo(
+        yForTopicScore(60, range.baseY, plotH, "front"),
+    );
+    expect(range.flags.find((f) => f.key === "front-lower")?.y).toBeGreaterThan(
+        yForTopicScore(60, range.baseY, plotH, "back"),
     );
 });
