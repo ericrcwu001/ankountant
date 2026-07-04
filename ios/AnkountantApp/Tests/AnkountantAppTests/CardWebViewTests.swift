@@ -28,6 +28,54 @@ final class CardWebViewTests: XCTestCase {
         XCTAssertNil(CardWebViewCoordinator.parseCSSColor("rgb(10, 20, 30) trailing"))
     }
 
+    @MainActor
+    func testExpandSoundTagsBuildsAudioElement() {
+        let html = CardWebView.expandSoundTags(
+            "<p>[sound:clip one.mp3]</p>",
+            isDarkMode: false,
+            showReplayButtons: false
+        )
+
+        XCTAssertTrue(html.contains("<audio"))
+        XCTAssertTrue(html.contains("src=\"clip%20one.mp3\""))
+        XCTAssertFalse(html.contains("[sound:"))
+    }
+
+    @MainActor
+    func testExpandTTSTagsBuildsEscapedReplayButton() {
+        let html = CardWebView.expandTTSTags(
+            in: #"[anki:tts lang=ja_JP voices=Kyoko speed=1.25]5 < 6 & "quote"[/anki:tts]"#,
+            isDarkMode: false,
+            showReplayButtons: true
+        )
+
+        XCTAssertTrue(html.contains("data-tts-text=\"5 &lt; 6 &amp; &quot;quote&quot;\""))
+        XCTAssertTrue(html.contains("data-tts-lang=\"ja_JP\""))
+        XCTAssertTrue(html.contains("data-tts-voices=\"Kyoko\""))
+        XCTAssertTrue(html.contains("data-tts-speed=\"1.25\""))
+        XCTAssertFalse(html.contains("[anki:tts"))
+    }
+
+    @MainActor
+    func testDeferCardScriptsDisablesExecutionAndPreservesAttributes() {
+        let html = CardWebView.deferCardScripts(
+            in: #"<script type="text/javascript" async data-card="front">run()</script>"#
+        )
+
+        XCTAssertTrue(html.contains(#"type="application/x-ankountant-card-script""#))
+        XCTAssertTrue(html.contains(#"data-ankountant-card-script="1""#))
+        XCTAssertTrue(html.contains(#"async data-card="front""#))
+        XCTAssertFalse(html.contains(#"type="text/javascript""#))
+    }
+
+    @MainActor
+    func testParseTTSAttributesLowercasesKeys() {
+        XCTAssertEqual(
+            CardWebView.parseTTSAttributes("LANG=ja_JP voices=Kyoko speed=1.25"),
+            ["lang": "ja_JP", "voices": "Kyoko", "speed": "1.25"]
+        )
+    }
+
     private func assertColor(
         _ color: UIColor?,
         red expectedRed: CGFloat,

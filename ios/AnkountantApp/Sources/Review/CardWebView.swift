@@ -361,15 +361,13 @@ struct CardWebView: UIViewRepresentable {
     }
 
     /// Converts Anki `[sound:filename.ext]` markers to a hidden `<audio>` + styled play button.
-    private static func expandSoundTags(
+    static func expandSoundTags(
         _ html: String,
         isDarkMode: Bool,
         showReplayButtons: Bool
     ) -> String {
         // Pattern: [sound:anything_without_closing_bracket]
-        guard let regex = try? NSRegularExpression(
-            pattern: #"\[sound:([^\]]+)\]"#, options: []
-        ) else { return html }
+        let regex = cardHTMLRegex(pattern: #"\[sound:([^\]]+)\]"#)
         let range = NSRange(html.startIndex..., in: html)
         let matches = regex.matches(in: html, range: range)
         var result = html
@@ -391,15 +389,15 @@ struct CardWebView: UIViewRepresentable {
         return result
     }
 
-    private static func expandTTSTags(
+    static func expandTTSTags(
         in html: String,
         isDarkMode: Bool,
         showReplayButtons: Bool
     ) -> String {
-        guard let regex = try? NSRegularExpression(
+        let regex = cardHTMLRegex(
             pattern: #"\[anki:tts([^\]]*)\](.*?)\[/anki:tts\]"#,
             options: [.dotMatchesLineSeparators, .caseInsensitive]
-        ) else { return html }
+        )
 
         let range = NSRange(html.startIndex..., in: html)
         let matches = regex.matches(in: html, range: range)
@@ -430,11 +428,11 @@ struct CardWebView: UIViewRepresentable {
         return result
     }
 
-    private static func deferCardScripts(in html: String) -> String {
-        guard let regex = try? NSRegularExpression(
+    static func deferCardScripts(in html: String) -> String {
+        let regex = cardHTMLRegex(
             pattern: #"<script\b([^>]*)>"#,
             options: [.caseInsensitive]
-        ) else { return html }
+        )
 
         let range = NSRange(html.startIndex..., in: html)
         let matches = regex.matches(in: html, range: range)
@@ -463,11 +461,8 @@ struct CardWebView: UIViewRepresentable {
         return result
     }
 
-    private static func parseTTSAttributes(_ raw: String) -> [String: String] {
-        guard let regex = try? NSRegularExpression(
-            pattern: #"([A-Za-z_]+)=([^\s\]]+)"#,
-            options: []
-        ) else { return [:] }
+    static func parseTTSAttributes(_ raw: String) -> [String: String] {
+        let regex = cardHTMLRegex(pattern: #"([A-Za-z_]+)=([^\s\]]+)"#)
 
         let range = NSRange(raw.startIndex..., in: raw)
         let matches = regex.matches(in: raw, range: range)
@@ -478,6 +473,17 @@ struct CardWebView: UIViewRepresentable {
             result[String(raw[keyRange]).lowercased()] = String(raw[valueRange])
         }
         return result
+    }
+
+    private static func cardHTMLRegex(
+        pattern: String,
+        options: NSRegularExpression.Options = []
+    ) -> NSRegularExpression {
+        do {
+            return try NSRegularExpression(pattern: pattern, options: options)
+        } catch {
+            preconditionFailure("Invalid card HTML regex: \(error)")
+        }
     }
 
     private static func htmlAttributeEscaped(_ value: String) -> String {
