@@ -47,20 +47,42 @@ media bridge lands.
     let deckId = 0n;
     let note: Note | null = null;
     let adding = false;
+    let loadingNote = false;
     let addedCount = 0;
+    let noteLoadSeq = 0;
 
     // Seed the editor with a fresh blank note for the current notetype. The
     // notetype carries the per-field fonts/descriptions the editor needs to
     // mount without erroring — see editorInit.loadNoteIntoEditor.
     async function loadNote(): Promise<void> {
-        const [freshNote, notetype] = await Promise.all([
-            newNote({ ntid: notetypeId }),
-            getNotetype({ ntid: notetypeId }),
-        ]);
-        note = freshNote;
-        await tick();
-        if (editor) {
-            loadNoteIntoEditor(editor, notetype, freshNote, { focus: true });
+        const requestId = ++noteLoadSeq;
+        const selectedNotetypeId = notetypeId;
+        loadingNote = true;
+        note = null;
+        try {
+            const [freshNote, notetype] = await Promise.all([
+                newNote({ ntid: selectedNotetypeId }),
+                getNotetype({ ntid: selectedNotetypeId }),
+            ]);
+            if (requestId !== noteLoadSeq || selectedNotetypeId !== notetypeId) {
+                return;
+            }
+            note = freshNote;
+            await tick();
+            if (requestId !== noteLoadSeq || selectedNotetypeId !== notetypeId) {
+                return;
+            }
+            if (editor) {
+                loadNoteIntoEditor(editor, notetype, freshNote, { focus: true });
+            }
+        } catch (err) {
+            if (requestId === noteLoadSeq) {
+                throw err;
+            }
+        } finally {
+            if (requestId === noteLoadSeq) {
+                loadingNote = false;
+            }
         }
     }
 
@@ -88,6 +110,7 @@ media bridge lands.
     }
 
     async function onNotetypeChange(): Promise<void> {
+        message = "";
         try {
             await loadNote();
         } catch (err) {
@@ -96,7 +119,7 @@ media bridge lands.
     }
 
     async function submit(): Promise<void> {
-        if (adding || !editor || !note) {
+        if (adding || loadingNote || !editor || !note) {
             return;
         }
         adding = true;
@@ -161,7 +184,7 @@ media bridge lands.
                     type="button"
                     class="add-btn"
                     on:click={submit}
-                    disabled={adding || phase !== "ready"}
+                    disabled={adding || loadingNote || phase !== "ready"}
                     data-testid="add-note"
                 >
                     Add
