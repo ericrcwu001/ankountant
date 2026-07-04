@@ -1287,6 +1287,64 @@ fn a5_band_widens_when_volume_halves() {
     );
 }
 
+#[test]
+fn a5_band_reasons_do_not_infer_gap_without_performance() {
+    let (mut col, _) = seeded();
+    seed_memory_reps(&mut col, "ds::securities::trading", 8, 8);
+
+    use super::attempt_log::NewAttempt;
+    use super::attempt_log::Outcome;
+    let covered_sets: Vec<String> = col
+        .ankountant_confusable_map("FAR")
+        .keys()
+        .filter(|set_id| set_id.as_str() != "trading_afs_htm")
+        .take(8)
+        .cloned()
+        .collect();
+    assert_eq!(covered_sets.len(), 8);
+
+    col.transact(crate::ops::Op::AddNote, |col| {
+        for set_id in &covered_sets {
+            for i in 0..3 {
+                col.ankountant_write_attempt(&NewAttempt {
+                    item_ref: NoteId(1),
+                    confusion_set_id: set_id.clone(),
+                    mode: "confusion".into(),
+                    confidence: "confident".into(),
+                    latency_ms: 1000,
+                    outcome: Outcome {
+                        credit: if i == 0 { 0.0 } else { 1.0 },
+                        steps: vec![],
+                        elapsed_ms: None,
+                    },
+                    section: "FAR".into(),
+                    sealed: true,
+                })?;
+            }
+        }
+        Ok(())
+    })
+    .unwrap();
+
+    let resp = readiness(&mut col);
+    let r = resp.readiness.unwrap();
+    assert!(!r.abstain, "expected readiness band, got {}", r.reason);
+    let trading = resp
+        .topics
+        .iter()
+        .find(|t| t.set_id == "trading_afs_htm")
+        .unwrap();
+    assert!(!trading.memory_insufficient);
+    assert_eq!(trading.performance_high, 0.0);
+    assert!(
+        !r.reasons
+            .iter()
+            .any(|reason| reason.contains("Largest gap: trading afs htm")),
+        "gap reason should not cite a topic without performance evidence: {:?}",
+        r.reasons
+    );
+}
+
 // --- F016 seed (A40) ---------------------------------------------------------
 
 #[test]

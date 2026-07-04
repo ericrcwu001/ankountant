@@ -280,10 +280,13 @@ fn band_reasons(
         ));
     }
 
-    // Largest memory-minus-performance gap ("recall it, can't apply it").
+    // Largest memory-minus-performance gap among topics with both signals.
     let widest = topics
         .iter()
-        .filter(|t| !t.memory_insufficient)
+        .filter(|t| {
+            !t.memory_insufficient
+                && perf.get(&t.set_id).map(|p| p.effective_n()).unwrap_or(0.0) > 0.0
+        })
         .max_by(|a, b| a.gap.partial_cmp(&b.gap).unwrap());
     if let Some(t) = widest {
         if t.gap > 0.0 {
