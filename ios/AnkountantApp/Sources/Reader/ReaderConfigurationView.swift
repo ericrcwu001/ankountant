@@ -1,8 +1,15 @@
 import AnkiClients
 import AnkiKit
+import AnkiServices
 import Dependencies
 import Sharing
 import SwiftUI
+
+private struct ReaderNotetypeOption: Identifiable, Equatable {
+    let id: Int64
+    let name: String
+    let fieldNames: [String]
+}
 
 /// Picks the deck that holds books and maps notetype field names onto the
 /// book/chapter shape the reader expects. Persists each value via
@@ -11,8 +18,10 @@ struct ReaderConfigurationView: View {
     let onDismiss: () -> Void
 
     @Dependency(\.deckClient) var deckClient
+    @Dependency(\.notetypesService) var notetypesService
 
     @Shared(.appStorage(ReaderPreferenceKey.deckName)) private var deckName: String = ""
+    @Shared(.appStorage(ReaderPreferenceKey.notetypeID)) private var selectedNotetypeID: Int64 = 0
     @Shared(.appStorage(ReaderPreferenceKey.bookIDField)) private var bookIDField: String = ""
     @Shared(.appStorage(ReaderPreferenceKey.bookTitleField)) private var bookTitleField: String = ""
     @Shared(.appStorage(ReaderPreferenceKey.bookCoverField)) private var bookCoverField: String = ""
@@ -22,8 +31,11 @@ struct ReaderConfigurationView: View {
     @Shared(.appStorage(ReaderPreferenceKey.languageField)) private var languageField: String = ""
 
     @State private var decks: [DeckInfo] = []
+    @State private var notetypeOptions: [ReaderNotetypeOption] = []
     @State private var isLoadingDecks = true
+    @State private var isLoadingNotetypes = true
     @State private var loadError: String?
+    @State private var notetypeLoadError: String?
 
     var body: some View {
         Form {
@@ -62,34 +74,50 @@ struct ReaderConfigurationView: View {
             }
 
             Section {
-                LabeledContent("Book ID") {
-                    TextField("Book ID field", text: Binding($bookIDField))
-                        .multilineTextAlignment(.trailing)
+                if isLoadingNotetypes {
+                    HStack {
+                        Spacer()
+                        ProgressView("Loading note types…")
+                        Spacer()
+                    }
+                    .foregroundStyle(.secondary)
+                } else if let notetypeLoadError {
+                    ContentUnavailableView {
+                        Label("Could Not Load Note Types", systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text(notetypeLoadError)
+                    } actions: {
+                        Button("Retry") {
+                            Task { await loadNotetypes() }
+                        }
+                    }
+                } else if notetypeOptions.isEmpty {
+                    ContentUnavailableView(
+                        "No Note Types",
+                        systemImage: "rectangle.stack",
+                        description: Text("Create or import a notetype before mapping reader fields.")
+                    )
+                } else {
+                    Picker("Note type", selection: Binding($selectedNotetypeID)) {
+                        ForEach(notetypeOptions) { option in
+                            Text(option.name).tag(option.id)
+                        }
+                    }
                 }
-                LabeledContent("Book title") {
-                    TextField("Book title field", text: Binding($bookTitleField))
-                        .multilineTextAlignment(.trailing)
-                }
-                LabeledContent("Book cover") {
-                    TextField("Optional", text: Binding($bookCoverField))
-                        .multilineTextAlignment(.trailing)
-                }
-                LabeledContent("Chapter title") {
-                    TextField("Chapter title field", text: Binding($chapterTitleField))
-                        .multilineTextAlignment(.trailing)
-                }
-                LabeledContent("Chapter order") {
-                    TextField("Chapter order field", text: Binding($chapterOrderField))
-                        .multilineTextAlignment(.trailing)
-                }
-                LabeledContent("Content") {
-                    TextField("Content field", text: Binding($contentField))
-                        .multilineTextAlignment(.trailing)
-                }
-                LabeledContent("Language") {
-                    TextField("Optional", text: Binding($languageField))
-                        .multilineTextAlignment(.trailing)
-                }
+            } header: {
+                Text("Note Type")
+            } footer: {
+                Text("Reader uses this note type when loading chapters, so field mappings stay unambiguous.")
+            }
+
+            Section {
+                fieldPicker("Book ID", selection: Binding($bookIDField))
+                fieldPicker("Book title", selection: Binding($bookTitleField))
+                fieldPicker("Book cover", selection: Binding($bookCoverField), optional: true)
+                fieldPicker("Chapter title", selection: Binding($chapterTitleField))
+                fieldPicker("Chapter order", selection: Binding($chapterOrderField))
+                fieldPicker("Content", selection: Binding($contentField))
+                fieldPicker("Language", selection: Binding($languageField), optional: true)
             } header: {
                 Text("Field mapping")
             } footer: {
@@ -104,7 +132,33 @@ struct ReaderConfigurationView: View {
                 Button("Done") { onDismiss() }
             }
         }
-        .task { await loadDecks() }
+        .task { await loadData() }
+    }
+
+    private var selectedFieldNames: [String] {
+        notetypeOptions.first { $0.id == selectedNotetypeID }?.fieldNames ?? []
+    }
+
+    private func fieldPicker(_ title: String, selection: Binding<String>, optional: Bool = false) -> some View {
+        LabeledContent(title) {
+            Picker(title, selection: selection) {
+                Text(optional ? "None" : "Select field").tag("")
+                if !selection.wrappedValue.isEmpty,
+                   !selectedFieldNames.contains(selection.wrappedValue) {
+                    Text("Current: \(selection.wrappedValue)").tag(selection.wrappedValue)
+                }
+                ForEach(selectedFieldNames, id: \.self) { fieldName in
+                    Text(fieldName).tag(fieldName)
+                }
+            }
+            .labelsHidden()
+            .disabled(selectedFieldNames.isEmpty)
+        }
+    }
+
+    private func loadData() async {
+        await loadDecks()
+        await loadNotetypes()
     }
 
     private func loadDecks() async {
@@ -118,5 +172,62 @@ struct ReaderConfigurationView: View {
             decks = []
             loadError = "Failed to load decks: \(error.localizedDescription)"
         }
+    }
+
+    private func loadNotetypes() async {
+        isLoadingNotetypes = true
+        notetypeLoadError = nil
+        defer { isLoadingNotetypes = false }
+
+        do {
+            let entries = try notetypesService.getNotetypeNames()
+            var options: [ReaderNotetypeOption] = []
+            options.reserveCapacity(entries.count)
+            for entry in entries {
+                let notetype = try notetypesService.getNotetype(entry.id)
+                options.append(
+                    ReaderNotetypeOption(
+                        id: entry.id,
+                        name: entry.name,
+                        fieldNames: notetype.fieldNames
+                    )
+                )
+            }
+
+            notetypeOptions = options.sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+            $selectedNotetypeID.withLock {
+                $0 = resolvedSelectedNotetypeID(from: notetypeOptions) ?? 0
+            }
+        } catch {
+            notetypeOptions = []
+            $selectedNotetypeID.withLock { $0 = 0 }
+            notetypeLoadError = "Failed to load note types: \(error.localizedDescription)"
+        }
+    }
+
+    private func resolvedSelectedNotetypeID(from options: [ReaderNotetypeOption]) -> Int64? {
+        if selectedNotetypeID != 0,
+           options.contains(where: { $0.id == selectedNotetypeID }) {
+            return selectedNotetypeID
+        }
+
+        let configuredRequiredFields = [
+            bookIDField,
+            bookTitleField,
+            chapterTitleField,
+            chapterOrderField,
+            contentField,
+        ].filter { !$0.isEmpty }
+
+        if !configuredRequiredFields.isEmpty,
+           let matchingOption = options.first(where: { option in
+               Set(option.fieldNames).isSuperset(of: configuredRequiredFields)
+           }) {
+            return matchingOption.id
+        }
+
+        return options.first?.id
     }
 }

@@ -35,7 +35,8 @@ enum ReaderConfigurationLoader {
         let cover = defaults.string(forKey: ReaderPreferenceKey.bookCoverField).flatMap { $0.isEmpty ? nil : $0 }
         let language = defaults.string(forKey: ReaderPreferenceKey.languageField).flatMap { $0.isEmpty ? nil : $0 }
 
-        let notetypeID = defaults.object(forKey: ReaderPreferenceKey.notetypeID) as? Int64
+        let storedNotetypeID = (defaults.object(forKey: ReaderPreferenceKey.notetypeID) as? NSNumber)?.int64Value
+        let notetypeID = storedNotetypeID.flatMap { $0 == 0 ? nil : $0 }
 
         return ReaderLibraryConfiguration(
             deckName: deckName,
