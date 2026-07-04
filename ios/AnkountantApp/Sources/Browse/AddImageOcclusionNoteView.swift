@@ -3,16 +3,12 @@ import PhotosUI
 import AnkountantTheme
 import AnkiKit
 import AnkiClients
-import AnkiServices
 import Dependencies
-
-// MARK: - AddImageOcclusionNoteView
 
 struct AddImageOcclusionNoteView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.palette) private var palette
     @Dependency(\.deckClient) private var deckClient
-    @Dependency(\.decksService) private var decksService
     @Dependency(\.imageOcclusionClient) private var client
 
     @State private var decks: [DeckInfo] = []
@@ -24,7 +20,8 @@ struct AddImageOcclusionNoteView: View {
     @State private var backExtra: String = ""
     @State private var tagsText: String = ""
     @State private var isSaving = false
-    @State private var errorMessage: String?
+    @State private var loadErrorMessage: String?
+    @State private var saveErrorMessage: String?
     @State private var imageURL: URL?
     @State private var showOcclusionEditor = false
 
@@ -110,10 +107,16 @@ struct AddImageOcclusionNoteView: View {
                         .foregroundStyle(palette.textSecondary)
                 }
 
-                // MARK: Error
-                if let err = errorMessage {
+                if let loadErrorMessage {
                     Section {
-                        Text(err)
+                        Text(loadErrorMessage)
+                            .ankountantStatusText(.danger, font: .caption)
+                    }
+                }
+
+                if let saveErrorMessage {
+                    Section {
+                        Text(saveErrorMessage)
                             .ankountantStatusText(.danger, font: .caption)
                     }
                 }
@@ -158,84 +161,111 @@ struct AddImageOcclusionNoteView: View {
         }
     }
 
-    // In Anki's IO notetype, occlusions are the first required field; header is a later optional field.
     private var canSave: Bool {
-        selectedDeckId != 0 && selectedImage != nil && imageURL != nil && !masks.isEmpty
+        loadErrorMessage == nil
+            && decks.contains { $0.id == selectedDeckId }
+            && selectedImage != nil
+            && imageURL != nil
+            && !masks.isEmpty
     }
 
     @MainActor
     private func loadDecks() async {
-        decks = (try? deckClient.fetchAll()) ?? []
+        loadErrorMessage = nil
+        saveErrorMessage = nil
+
+        do {
+            decks = try deckClient.fetchAll()
+        } catch {
+            decks = []
+            selectedDeckId = 0
+            loadErrorMessage = "Failed to load decks: \(error.localizedDescription)"
+            return
+        }
+
+        guard !decks.isEmpty else {
+            selectedDeckId = 0
+            loadErrorMessage = "No decks are available."
+            return
+        }
 
         if let preselectedDeckId, decks.contains(where: { $0.id == preselectedDeckId }) {
             selectedDeckId = preselectedDeckId
             return
         }
 
-        if let currentDeckId = try? currentDeckID(), decks.contains(where: { $0.id == currentDeckId }) {
-            selectedDeckId = currentDeckId
-            return
-        }
-
-        if let firstDeck = decks.first {
-            selectedDeckId = firstDeck.id
-        }
-    }
-
-    private func currentDeckID() throws -> Int64 {
-        let currentDeck = try decksService.getCurrentDeck()
-        return currentDeck.id
+        selectedDeckId = decks[0].id
     }
 
     @MainActor
     private func loadImage(from item: PhotosPickerItem?) async {
         guard let item else { return }
-        self.masks = []
+        masks = []
+        selectedImage = nil
+        imageURL = nil
+        loadErrorMessage = nil
+        saveErrorMessage = nil
 
-        // Load as UIImage
-        if let data = try? await item.loadTransferable(type: Data.self),
-           let img = UIImage(data: data) {
-            selectedImage = img
-
-            // Write a temporary file for the upload path
-            let tempDir = FileManager.default.temporaryDirectory
-            let filename = "io_pick_\(Int(Date().timeIntervalSince1970)).jpg"
-            let url = tempDir.appendingPathComponent(filename)
-            if let jpegData = img.jpegData(compressionQuality: 0.92) {
-                try? jpegData.write(to: url)
-                imageURL = url
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else {
+                loadErrorMessage = "The selected image could not be loaded."
+                return
             }
+
+            guard let img = UIImage(data: data) else {
+                loadErrorMessage = "The selected file is not a readable image."
+                return
+            }
+
+            guard let jpegData = img.jpegData(compressionQuality: 0.92) else {
+                loadErrorMessage = "The selected image could not be prepared for saving."
+                return
+            }
+
+            let filename = "io_pick_\(Int(Date.now.timeIntervalSince1970)).jpg"
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+            try jpegData.write(to: url, options: .atomic)
+            selectedImage = img
+            imageURL = url
+        } catch {
+            loadErrorMessage = "Failed to load image: \(error.localizedDescription)"
         }
     }
 
     @MainActor
     private func save() async {
-        guard selectedDeckId != 0 else {
+        guard decks.contains(where: { $0.id == selectedDeckId }) else {
+            saveErrorMessage = "Choose a deck before saving."
+            return
+        }
+        guard selectedImage != nil else {
+            saveErrorMessage = "Pick an image before saving."
             return
         }
         guard let url = imageURL else {
-            errorMessage = "Image is missing."
+            saveErrorMessage = "Image is missing."
             return
         }
         guard !masks.isEmpty else {
-            errorMessage = "Add at least one mask before saving."
+            saveErrorMessage = "Add at least one mask before saving."
             return
         }
+
         isSaving = true
-        errorMessage = nil
+        saveErrorMessage = nil
+        defer { isSaving = false }
 
         let occlusions = masks.enumerated().map { idx, mask in
             mask.occlusionText(index: idx)
         }.joined(separator: "\n")
-        let tags = tagsText.split(separator: " ").map(String.init).filter { !$0.isEmpty }
+        let tags = NoteFormRules.normalizedTags(from: tagsText)
 
         do {
             try client.addNote(url, occlusions, header, backExtra, tags, selectedDeckId, 0)
             onSave()
             dismiss()
         } catch {
-            errorMessage = error.localizedDescription
+            saveErrorMessage = "Failed to save image occlusion: \(error.localizedDescription)"
         }
-        isSaving = false
     }
 }

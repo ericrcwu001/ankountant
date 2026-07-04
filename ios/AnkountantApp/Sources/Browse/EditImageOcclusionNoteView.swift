@@ -3,8 +3,6 @@ import AnkiClients
 import AnkountantTheme
 import Dependencies
 
-// MARK: - EditImageOcclusionNoteView
-
 struct EditImageOcclusionNoteView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.palette) private var palette
@@ -74,7 +72,6 @@ struct EditImageOcclusionNoteView: View {
                             }
                         }
 
-                        // MARK: Text fields
                         Section("Content") {
                             TextField("Header", text: $header)
                             TextField("Extra info shown on the back", text: $backExtra)
@@ -117,7 +114,7 @@ struct EditImageOcclusionNoteView: View {
                     Task { await save() }
                 }
                 .ankountantToolbarTextButton()
-                .disabled(isLoading || masks.isEmpty || isSaving)
+                .disabled(isLoading || loadError != nil || masks.isEmpty || isSaving)
                 .overlay { if isSaving { ProgressView().scaleEffect(0.7) } }
             }
         }
@@ -140,45 +137,54 @@ struct EditImageOcclusionNoteView: View {
     @MainActor
     private func loadNote() async {
         isLoading = true
+        defer { isLoading = false }
+
         loadError = nil
+        saveError = nil
+
         do {
             let data = try client.getNote(noteId)
 
-            // Decode image
-            if let img = UIImage(data: data.imageData) {
-                uiImage = img
+            guard let img = UIImage(data: data.imageData) else {
+                uiImage = nil
+                masks = []
+                loadError = "The saved image data could not be decoded."
+                return
             }
 
-            // Parse header/backExtra/tags
+            uiImage = img
             header = data.header
             backExtra = data.backExtra
             tagsText = data.tags.joined(separator: " ")
-
-            // Parse occlusion string back to IOMask array
             masks = parseMasks(from: data.occlusions)
         } catch {
             loadError = error.localizedDescription
         }
-        isLoading = false
     }
 
     @MainActor
     private func save() async {
-        guard !masks.isEmpty else { return }
+        guard !masks.isEmpty else {
+            saveError = "Add at least one mask before saving."
+            return
+        }
+
         isSaving = true
         saveError = nil
+        defer { isSaving = false }
+
         let occlusions = masks.enumerated().map { idx, mask in
             mask.occlusionText(index: idx)
         }.joined(separator: "\n")
-        let tags = tagsText.split(separator: " ").map(String.init).filter { !$0.isEmpty }
+        let tags = NoteFormRules.normalizedTags(from: tagsText)
+
         do {
             try client.updateNote(noteId, occlusions, header, backExtra, tags)
             onSave()
             dismiss()
         } catch {
-            saveError = error.localizedDescription
+            saveError = "Failed to save image occlusion: \(error.localizedDescription)"
         }
-        isSaving = false
     }
 }
 
