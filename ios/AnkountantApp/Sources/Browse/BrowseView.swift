@@ -52,6 +52,27 @@ struct BrowseView: View {
         return "Delete \(count) note\(suffix)?"
     }
 
+    private var hasActiveFilter: Bool {
+        activeDeck != nil || activeTag != nil
+    }
+
+    private var trimmedSearchText: String {
+        searchText.trimmingCharacters(in: .whitespaces)
+    }
+
+    private var activeFilterDescription: String {
+        switch (activeDeck?.name, activeTag) {
+        case (.some(let deck), .some(let tag)):
+            return "No notes match deck \"\(deck)\" and tag \"\(tag)\"."
+        case (.some(let deck), .none):
+            return "No notes are in \"\(deck)\" yet."
+        case (.none, .some(let tag)):
+            return "No notes are tagged \"\(tag)\" yet."
+        case (.none, .none):
+            return "No notes match the current filters."
+        }
+    }
+
     var body: some View {
         content
         .navigationTitle("Browse")
@@ -249,8 +270,10 @@ struct BrowseView: View {
 
     @ViewBuilder
     private var content: some View {
-        if notes.isEmpty && !isLoading && searchText.isEmpty && activeDeck == nil {
+        if notes.isEmpty && !isLoading && trimmedSearchText.isEmpty && !hasActiveFilter {
             emptyCollectionState
+        } else if notes.isEmpty && !isLoading && trimmedSearchText.isEmpty && hasActiveFilter {
+            filteredEmptyState
         } else if notes.isEmpty && !isLoading {
             ContentUnavailableView.search(text: searchText)
         } else {
@@ -268,6 +291,29 @@ struct BrowseView: View {
                 showAddNote = true
             }
             .buttonStyle(.borderedProminent)
+
+            Button("Import package", systemImage: "square.and.arrow.down") {
+                showImport = true
+            }
+        }
+    }
+
+    private var filteredEmptyState: some View {
+        ContentUnavailableView {
+            Label("No notes in this filter", systemImage: "line.3.horizontal.decrease.circle")
+        } description: {
+            Text(activeFilterDescription)
+        } actions: {
+            Button("Clear Filters") {
+                parentDeck = nil
+                activeDeck = nil
+                activeTag = nil
+            }
+            .buttonStyle(.borderedProminent)
+
+            Button("Add Note", systemImage: "plus") {
+                showAddNote = true
+            }
 
             Button("Import package", systemImage: "square.and.arrow.down") {
                 showImport = true
@@ -638,9 +684,8 @@ struct BrowseView: View {
         if let tag = activeTag {
             parts.append("tag:\"\(tag)\"")
         }
-        let trimmed = searchText.trimmingCharacters(in: .whitespaces)
-        if !trimmed.isEmpty {
-            parts.append(trimmed)
+        if !trimmedSearchText.isEmpty {
+            parts.append(trimmedSearchText)
         }
         return parts.joined(separator: " ")
     }
