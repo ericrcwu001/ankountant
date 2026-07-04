@@ -51,7 +51,7 @@ impl Collection {
         // back to the default for pre-section-dimension notes. The section drives
         // both the confusable map and the sealed-bank lookup below, so an AUD
         // attempt resolves against AUD sets + the AUD sealed deck, not FAR.
-        let section = super::note_section(&note.tags);
+        let section = super::note_section(&note.tags)?;
         let map = self.ankountant_confusable_map(&section);
         let schema_tag = note.fields().get(tbs_fields::SCHEMA_TAG).cloned();
         // Also consider the note's ordinary tags for a ds:: match.

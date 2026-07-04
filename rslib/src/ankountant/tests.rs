@@ -932,6 +932,24 @@ fn a3_dto_has_no_label_field() {
 }
 
 #[test]
+fn note_section_validates_explicit_tag() {
+    let tags = vec!["ds::x".to_string(), "sec:: reg ".to_string()];
+    assert_eq!(super::note_section(&tags).unwrap(), "REG");
+
+    let empty: Vec<String> = Vec::new();
+    assert_eq!(super::note_section(&empty).unwrap(), super::DEFAULT_SECTION);
+
+    let bad = vec!["sec::NOPE".to_string()];
+    let err = super::note_section(&bad).unwrap_err();
+    match err {
+        AnkiError::InvalidInput { source } => {
+            assert_eq!(source.message(), "Unknown CPA section tag: sec::NOPE");
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
+}
+
+#[test]
 fn a3_all_section_queue_spans_sections() {
     let (mut col, _) = seeded();
     let resp = SchedulerService::build_confusion_queue(
@@ -947,7 +965,7 @@ fn a3_all_section_queue_spans_sections() {
         .iter()
         .map(|it| {
             let note = col.storage.get_note(NoteId(it.note_id)).unwrap().unwrap();
-            super::note_section(&note.tags)
+            super::note_section(&note.tags).unwrap()
         })
         .collect();
     for section in super::SECTIONS {
@@ -1722,7 +1740,7 @@ fn every_research_item_citation_exists_in_its_section_corpus() {
     let mut checked = 0;
     for nid in tbs_notes_of_type(&mut col, "research") {
         let note = col.storage.get_note(nid).unwrap().unwrap();
-        let section = super::note_section(&note.tags);
+        let section = super::note_section(&note.tags).unwrap();
         let corpus = super::literature::committed_corpus_for_section(&section);
         let steps =
             super::grading::parse_steps(&note.fields()[super::notetypes::tbs_fields::STEPS_JSON])

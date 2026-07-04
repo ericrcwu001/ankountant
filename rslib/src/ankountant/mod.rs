@@ -52,12 +52,19 @@ pub(crate) const SEC_TAG_PREFIX: &str = "sec::";
 
 /// Resolve a TBS note's section from its `sec::<SECTION>` tag, falling back to
 /// [`DEFAULT_SECTION`] for pre-section-dimension notes.
-pub(crate) fn note_section(tags: &[String]) -> String {
-    tags.iter()
-        .find_map(|t| t.strip_prefix(SEC_TAG_PREFIX))
-        .filter(|s| SECTIONS.contains(s))
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| DEFAULT_SECTION.to_string())
+pub(crate) fn note_section(tags: &[String]) -> crate::error::Result<String> {
+    let Some((tag, raw_section)) = tags.iter().find_map(|tag| {
+        tag.strip_prefix(SEC_TAG_PREFIX)
+            .map(|section| (tag, section))
+    }) else {
+        return Ok(DEFAULT_SECTION.to_string());
+    };
+    let section = raw_section.trim().to_ascii_uppercase();
+    if SECTIONS.contains(&section.as_str()) {
+        Ok(section)
+    } else {
+        crate::invalid_input!("Unknown CPA section tag: {tag}")
+    }
 }
 
 /// Cognitive-demand tags (A6). Stored as native Anki tags.
