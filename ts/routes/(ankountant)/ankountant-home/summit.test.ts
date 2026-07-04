@@ -7,10 +7,12 @@ import { expect, test } from "vitest";
 import { CPA_PASS_SCORE } from "../ankountant-dashboard/lib";
 import {
     buildSectionPeak,
+    DEFAULT_SUMMIT_SECTION,
     heightForScore,
     PASS_HEIGHT,
     passStanding,
     sectionName,
+    selectedSummitSection,
     SUMMIT_SECTIONS,
     yForScore,
 } from "./summit";
@@ -57,6 +59,12 @@ test("summit sections are the five, FAR first, BAR excluded", () => {
     expect(SUMMIT_SECTIONS.map((s) => s.code)).toEqual(["FAR", "AUD", "REG", "TCP", "ISC"]);
     expect(sectionName("TCP")).toBe("Tax Compliance and Planning");
     expect(sectionName("BAR")).toBe("BAR"); // unknown → code fallback
+});
+
+test("selectedSummitSection defaults, normalizes, and rejects unknown sections", () => {
+    expect(selectedSummitSection(null)).toBe(DEFAULT_SUMMIT_SECTION);
+    expect(selectedSummitSection(" aud ")).toBe("AUD");
+    expect(() => selectedSummitSection("BAR")).toThrow(/Unknown CPA section/);
 });
 
 test("buildSectionPeak fills proven peaks and blanks unproven ones", () => {

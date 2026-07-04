@@ -4,7 +4,7 @@
 import type { GetReadinessResponse, TopicScore } from "@generated/anki/scheduler_pb";
 import { expect, test } from "vitest";
 
-import { buildFarTopics } from "./far-topics";
+import { buildFarTopics, buildSectionTopics } from "./far-topics";
 import { heightForTopicScore } from "./topo";
 
 const rounded = (value: number): number => Number(value.toFixed(3));
@@ -87,4 +87,25 @@ test("FAR topic mountains are ranked by preparedness, row-major", () => {
     expect(topics.map((t) => t.height)).toEqual(
         topics.map((topic) => heightForTopicScore(topic.performance ?? 0, topic.tier)),
     );
+});
+
+test("non-FAR sections use emitted topics without FAR placeholders", () => {
+    const readiness = {
+        topics: [
+            topic("aud_evidence_sufficiency", 0.72),
+            topic("aud_request_relevance", 0.81),
+        ],
+    } as unknown as GetReadinessResponse;
+
+    const topics = buildSectionTopics(readiness, "AUD");
+
+    expect(topics.map((t) => t.setId)).toEqual([
+        "aud_request_relevance",
+        "aud_evidence_sufficiency",
+    ]);
+    expect(topics.map((t) => t.label)).toEqual([
+        "Request Relevance",
+        "Evidence Sufficiency",
+    ]);
+    expect(topics.every((t) => !t.setId.includes("lease"))).toBe(true);
 });

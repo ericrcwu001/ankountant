@@ -5,11 +5,10 @@ import type { GetReadinessResponse } from "@generated/anki/scheduler_pb";
 import { getExamDate, getReadiness } from "@generated/backend";
 
 import type { PageLoad } from "./$types";
-import { SUMMIT_SECTIONS } from "./summit";
+import { selectedSummitSection, SUMMIT_SECTIONS } from "./summit";
 
-const SECTION = "FAR";
-
-export const load = (async () => {
+export const load = (async ({ url }) => {
+    const section = selectedSummitSection(url.searchParams.get("section"));
     const entries = await Promise.all(
         SUMMIT_SECTIONS.map(async (s) => [s.code, await getReadiness({ section: s.code })] as const),
     );
@@ -17,8 +16,8 @@ export const load = (async () => {
     for (const [code, response] of entries) {
         sections[code] = response;
     }
-    const readiness = sections[SECTION];
+    const readiness = sections[section];
 
-    const examDate = (await getExamDate({ section: SECTION })).date;
-    return { readiness, section: SECTION, examDate, sections };
+    const examDate = (await getExamDate({ section })).date;
+    return { readiness, section, examDate, sections };
 }) satisfies PageLoad;

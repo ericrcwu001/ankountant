@@ -103,11 +103,19 @@ const FRONT_ROW_X = [0.045, 0.175, 0.305, 0.435, 0.565, 0.695, 0.825, 0.955];
 export function buildFarTopics(
     readiness: GetReadinessResponse | undefined,
 ): FarTopic[] {
+    return buildSectionTopics(readiness, "FAR");
+}
+
+export function buildSectionTopics(
+    readiness: GetReadinessResponse | undefined,
+    section: string,
+): FarTopic[] {
+    const specs = topicSpecs(section);
     const bySetId = new Map(
         (readiness?.topics ?? []).map((topic) => [topic.setId, topic]),
     );
-    const used = new Set(FAR_TOPIC_SPECS.map((spec) => spec.setId));
-    const known = FAR_TOPIC_SPECS.map((spec) => buildFarTopic(spec, bySetId));
+    const used = new Set(specs.map((spec) => spec.setId));
+    const known = specs.map((spec) => buildFarTopic(spec, bySetId));
     const unknown = (readiness?.topics ?? [])
         .filter((topic) => !used.has(topic.setId))
         .map((topic) => buildUnknownTopic(topic));
@@ -258,6 +266,10 @@ function provenTopics(topics: FarTopic[]): FarTopic[] {
     return topics.filter((topic) => !topic.unproven);
 }
 
+function topicSpecs(section: string): FarTopicSpec[] {
+    return section === "FAR" ? FAR_TOPIC_SPECS : [];
+}
+
 function pct(value: number): number {
     return Math.round(value * 100);
 }
@@ -270,7 +282,7 @@ function rangeLabel(low: number, high: number): string {
 
 function prettyTopic(setId: string): string {
     return setId
-        .replace(/^far_/, "")
+        .replace(/^(far|aud|reg|tcp|isc)_/, "")
         .replace(/_/g, " ")
         .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

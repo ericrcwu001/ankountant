@@ -16,6 +16,7 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
     import { buildChoiceSubmission, confusionQueuePhase } from "./lib";
 
     export let items: ConfusionItem[];
+    export let section = "ALL";
 
     let index = 0;
     let confidence: ConfidenceLevel | null = null;
@@ -28,6 +29,14 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
     $: phase = confusionQueuePhase(index, items.length);
     $: empty = phase === "empty";
     $: done = phase === "finished";
+    $: dashboardHref =
+        section === "ALL"
+            ? "/ankountant-dashboard"
+            : `/ankountant-dashboard?section=${section}`;
+    $: emptyDetail =
+        section === "ALL"
+            ? "Load a CPA bank or demo profile from the Ankountant menu to build the drill queue."
+            : `No ${section} confusion items are available yet. Load or import section practice to build the drill queue.`;
 
     // Confusion review is label-stripped (B2-D1): drop any trailing dev slug
     // like " (capitalize_vs_expense q0)" so the stem never leaks the category.
@@ -79,10 +88,7 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
         <div class="card state-card empty-card" data-testid="confusion-empty">
             <span class="state-icon empty-icon" aria-hidden="true">?</span>
             <p class="finished">No confusion items yet.</p>
-            <p class="state-note">
-                Load a demo profile or CPA bank from the Ankountant menu to build the
-                drill queue.
-            </p>
+            <p class="state-note">{emptyDetail}</p>
         </div>
     {:else if done}
         <div class="card state-card finished-card">
@@ -90,11 +96,7 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
             <p class="finished" data-testid="confusion-finished">
                 Queue complete — {items.length} items reviewed.
             </p>
-            <a
-                class="primary-link"
-                href="/ankountant-dashboard"
-                data-testid="to-dashboard"
-            >
+            <a class="primary-link" href={dashboardHref} data-testid="to-dashboard">
                 View readiness
             </a>
         </div>

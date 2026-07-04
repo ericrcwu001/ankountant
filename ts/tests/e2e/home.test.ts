@@ -32,6 +32,22 @@ test("home readiness rail explains the score and links to full evidence", async 
     await expect(page.getByTestId("readiness-evidence")).toBeVisible();
 });
 
+test("home section switcher reloads topic mastery and keeps evidence scoped", async ({ page, seed }) => {
+    expect(seed.confusionSets).toBeGreaterThan(0);
+    await page.goto("/ankountant-home");
+
+    const aud = page.getByTestId("home-section").filter({ hasText: "AUD" });
+    await aud.click();
+
+    await expect(page).toHaveURL(/ankountant-home\?section=AUD/);
+    await expect(page.getByText("AUD TOPIC MASTERY")).toBeVisible();
+    await expect(aud).toHaveAttribute("aria-pressed", "true");
+
+    await page.getByRole("button", { name: "See readiness evidence" }).click();
+    await expect(page).toHaveURL(/ankountant-dashboard\?section=AUD/);
+    await expect(page.getByText("Auditing and Attestation")).toBeVisible();
+});
+
 test("entering an exam date drives the countdown and persists across reloads", async ({ page }) => {
     await page.goto("/ankountant-home");
 

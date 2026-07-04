@@ -9,4 +9,4 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     export let data: PageData;
 </script>
 
-<ConfusionMode items={data.items} />
+<ConfusionMode items={data.items} section={data.section} />

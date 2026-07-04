@@ -16,12 +16,19 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         GAP_WARNING_THRESHOLD,
     } from "../ankountant-dashboard/lib";
     import {
-        buildFarTopics,
+        buildSectionTopics,
         needsAttention,
         topStrongTopics,
         type FarTopic,
     } from "./far-topics";
     import { buildCountdown, buildPhaseCta, choosePhase } from "./lib";
+    import {
+        buildSummit,
+        sectionName,
+        SUMMIT_SECTIONS,
+        type SectionPeak,
+    } from "./summit";
+    import SummitRange from "./SummitRange.svelte";
     import SummitTopographic from "./SummitTopographic.svelte";
 
     export let readiness: GetReadinessResponse | undefined = undefined;
@@ -34,6 +41,8 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     let savedDate = examDate;
     let savingDate = "";
     let saveError = "";
+    let loadedSection = section;
+    let loadedExamDate = examDate;
 
     const R = 46;
     const C = 2 * Math.PI * R;
@@ -50,24 +59,36 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     $: view = buildReadinessView(readiness?.readiness);
     $: topicRows = buildTopicRows(readiness?.topics ?? []);
     $: evidence = buildReadinessEvidence(view, topicRows);
-    $: farTopics = buildFarTopics(readiness);
-    $: strongTopics = topStrongTopics(farTopics);
-    $: attentionTopics = needsAttention(farTopics);
-    $: provenCount = farTopics.filter((topic) => !topic.unproven).length;
-    $: gapCount = farTopics.filter(
+    $: sectionPeaks = buildSummit(sections);
+    $: sectionTopics = buildSectionTopics(readiness, section);
+    $: activeSectionName = sectionName(section);
+    $: strongTopics = topStrongTopics(sectionTopics);
+    $: attentionTopics = needsAttention(sectionTopics);
+    $: provenCount = sectionTopics.filter((topic) => !topic.unproven).length;
+    $: gapCount = sectionTopics.filter(
         (topic) => (topic.gap ?? 0) >= GAP_WARNING_THRESHOLD * 100,
     ).length;
     $: gaugeArc = C * SWEEP;
     $: gaugeRangeStart = view.abstain ? 0 : gaugeArc * (view.trackLeftPct / 100);
     $: gaugeRangeFill = view.abstain ? 0 : gaugeArc * (view.trackWidthPct / 100);
     $: hoveredTopic = hoveredTopicKey
-        ? farTopics.find((topic) => topic.key === hoveredTopicKey)
+        ? sectionTopics.find((topic) => topic.key === hoveredTopicKey)
         : undefined;
     $: memoryReady = (readiness?.topics ?? []).some(
         (topic) => !topic.memoryInsufficient,
     );
     $: phase = choosePhase({ days: countdown.days, memoryReady });
     $: cta = buildPhaseCta(phase);
+    $: if (section !== loadedSection || examDate !== loadedExamDate) {
+        date = examDate;
+        savedDate = examDate;
+        savingDate = "";
+        saveError = "";
+        saveState = "idle";
+        hoveredTopicKey = null;
+        loadedSection = section;
+        loadedExamDate = examDate;
+    }
 
     async function onDateChange(): Promise<void> {
         const nextDate = date;
@@ -97,9 +118,15 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     function runCta(): void {
         if (cta.target === "confusion") {
-            nav("/ankountant-confusion");
+            nav(`/ankountant-confusion?section=${section}`);
         } else {
             bridgeCommand("ankountant:review");
+        }
+    }
+
+    function selectSection(nextSection: string): void {
+        if (nextSection !== section) {
+            nav(`/ankountant-home?section=${nextSection}`);
         }
     }
 
@@ -132,6 +159,13 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             return `${topic.label}, not enough data yet`;
         }
         return `${topic.label}, memory ${topicPercent(topic.memory)}, performance ${topicPercent(topic.performance)}, gap ${topicPercent(topic.gap)}`;
+    }
+
+    function peakRange(peak: SectionPeak): string {
+        if (peak.point === null) {
+            return "No range";
+        }
+        return `${Math.round(peak.bandLow ?? peak.point)}-${Math.round(peak.bandHigh ?? peak.point)}`;
     }
 </script>
 
@@ -284,6 +318,11 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
             <hr class="rail-div" />
 
+            <div class="rail-label">CPA SECTIONS</div>
+            <div class="range-card" data-testid="home-section-range">
+                <SummitRange peaks={sectionPeaks} />
+            </div>
+
             <div class="rail-label">TOP STRONG TOPICS</div>
             <ul class="stat-list">
                 {#each strongTopics as topic (topic.label)}
@@ -336,29 +375,23 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         <header class="mastery-head">
             <div class="mastery-title">
                 <p>{section} TOPIC MASTERY</p>
-                <h1>Each peak is a topic. Climb higher. Master more.</h1>
+                <h1>{activeSectionName}</h1>
             </div>
-            <div class="controls">
-                <button type="button" class="seg-solo active">All Topics</button>
-                <div class="seg-group">
-                    <button type="button">3M</button>
-                    <button type="button">1M</button>
-                    <button type="button">1W</button>
-                </div>
-                <button type="button" class="icon-btn" aria-label="Filter">
-                    <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
+            <div class="section-switch" role="group" aria-label="Home section">
+                {#each SUMMIT_SECTIONS as s (s.code)}
+                    {@const peak = sectionPeaks.find((p) => p.code === s.code)}
+                    <button
+                        type="button"
+                        class:active={s.code === section}
+                        aria-pressed={s.code === section}
+                        title={s.name}
+                        data-testid="home-section"
+                        on:click={() => selectSection(s.code)}
                     >
-                        <path d="M4 6h11M4 12h7M4 18h13" />
-                        <circle cx="18" cy="6" r="2.2" />
-                        <circle cx="14" cy="12" r="2.2" />
-                        <circle cx="20" cy="18" r="2.2" />
-                    </svg>
-                </button>
+                        <span>{s.code}</span>
+                        <small>{peak ? peakRange(peak) : "No range"}</small>
+                    </button>
+                {/each}
             </div>
         </header>
 
@@ -390,13 +423,13 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             {/if}
 
             <SummitTopographic
-                topics={farTopics}
+                topics={sectionTopics}
                 on:flagenter={showTopicTip}
                 on:flagleave={hideTopicTip}
             />
 
-            <div class="topic-strip" aria-label="FAR topics">
-                {#each farTopics as topic (topic.key)}
+            <div class="topic-strip" aria-label="{section} topics">
+                {#each sectionTopics as topic (topic.key)}
                     <button
                         type="button"
                         class:unproven={topic.unproven}
@@ -647,6 +680,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         margin: var(--space-lg) 0;
     }
 
+    .range-card {
+        margin-bottom: var(--space-lg);
+    }
+
     .gauge {
         display: flex;
         flex-direction: column;
@@ -840,69 +877,59 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         }
     }
 
-    .controls {
+    .section-switch {
         display: flex;
         align-items: center;
-        gap: var(--space-sm);
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 6px;
         flex: none;
-    }
-
-    .seg-solo,
-    .seg-group button,
-    .icon-btn {
-        min-height: 36px;
-        border-radius: 9px;
-    }
-
-    .seg-solo {
-        padding: 8px 14px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #fff;
-        background: var(--accent);
-        border: 1px solid var(--accent);
-    }
-
-    .seg-group {
-        display: flex;
-        border: 1px solid var(--border);
-        border-radius: 9px;
-        overflow: hidden;
 
         button {
-            padding: 8px 14px;
+            display: grid;
+            gap: 1px;
+            min-width: 54px;
+            min-height: 42px;
+            padding: 5px 9px;
             font-size: 13px;
-            font-weight: 500;
             color: var(--fg-subtle);
             background: var(--canvas-elevated);
-            border: 0;
-            border-right: 1px solid var(--border-subtle);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            cursor: pointer;
 
-            &:last-child {
-                border-right: 0;
+            span {
+                font-weight: 800;
+                line-height: 1.1;
+            }
+
+            small {
+                font-size: 10.5px;
+                font-weight: 600;
+                line-height: 1.1;
+                color: var(--fg-faint);
             }
 
             &:hover {
+                color: var(--fg);
+                border-color: var(--accent);
                 background: var(--canvas);
             }
-        }
-    }
 
-    .icon-btn {
-        display: grid;
-        place-items: center;
-        width: 36px;
-        color: var(--fg-subtle);
-        background: var(--canvas-elevated);
-        border: 1px solid var(--border);
-
-        svg {
-            width: 18px;
-            height: 18px;
+            &:focus-visible {
+                outline: 2px solid #7ea6d6;
+                outline-offset: 2px;
+            }
         }
 
-        &:hover {
-            background: var(--canvas);
+        .active {
+            color: #fff;
+            background: var(--accent);
+            border-color: var(--accent);
+
+            small {
+                color: rgba(255, 255, 255, 0.78);
+            }
         }
     }
 
@@ -1074,7 +1101,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             align-items: stretch;
         }
 
-        .controls,
+        .section-switch,
         .legend {
             display: none;
         }

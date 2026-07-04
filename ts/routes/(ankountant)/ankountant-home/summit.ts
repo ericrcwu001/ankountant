@@ -29,9 +29,19 @@ export const SUMMIT_SECTIONS: CpaSection[] = [
     { code: "ISC", name: "Information Systems and Controls" },
 ];
 
+export const DEFAULT_SUMMIT_SECTION = "FAR";
+
 /** Human name for a section code (falls back to the code itself). */
 export function sectionName(code: string): string {
     return SUMMIT_SECTIONS.find((s) => s.code === code)?.name ?? code;
+}
+
+export function selectedSummitSection(raw: string | null): string {
+    const section = (raw ?? DEFAULT_SUMMIT_SECTION).trim().toUpperCase();
+    if (!SUMMIT_SECTIONS.some((s) => s.code === section)) {
+        throw new Error(`Unknown CPA section: ${section}`);
+    }
+    return section;
 }
 
 export type PassStanding = "unproven" | "below" | "above";
