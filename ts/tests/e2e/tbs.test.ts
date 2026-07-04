@@ -36,6 +36,9 @@ test("a JE TBS renders an editable grid and shows per-line + partial-credit tota
 
     await page.getByTestId("tbs-submit").click();
     await expect(page.getByTestId("tbs-total")).toContainText("75%");
+    await expect(page.getByTestId("results-layer")).toBeVisible();
+    await expect(page.getByTestId("reveal-correct")).toHaveCount(4);
+    await expect(page.getByTestId("reveal-correct").first()).not.toHaveText("");
     await expect(rows.nth(0).getByTestId("je-account")).toBeDisabled();
     await expect(rows.nth(0).getByTestId("je-side")).toBeDisabled();
     await expect(rows.nth(0).getByTestId("je-amount")).toBeDisabled();
@@ -63,6 +66,8 @@ test("a numeric TBS renders input cells graded per cell (A51/B4-D2)", async ({ p
     await cells.nth(1).fill("12500");
     await page.getByTestId("tbs-submit").click();
     await expect(page.getByTestId("tbs-total")).toContainText("100%");
+    await expect(page.getByTestId("results-layer")).toBeVisible();
+    await expect(page.getByTestId("reveal-correct")).toHaveCount(2);
     await expect(cells.first()).toBeDisabled();
 });
 

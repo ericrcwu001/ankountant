@@ -225,7 +225,7 @@ chooser opens on that note's shape and section.
                 {:else if m.shape === "doc_review"}
                     <DocReviewSurface {noteId} model={m} {fields} {tags} />
                 {:else}
-                    <TbsSurface {noteId} model={m} />
+                    <TbsSurface {noteId} model={m} {fields} {tags} />
                 {/if}
             {/key}
         {:else if phase === "loading"}

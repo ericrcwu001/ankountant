@@ -11,16 +11,21 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     import type { JeLineInput, NumericCellInput, TbsModel } from "./lib";
     import {
+        buildRevealModel,
         buildJeSubmission,
         buildNumericSubmission,
         JE_ACCOUNTS,
         renderableTbsShape,
     } from "./lib";
+    import ResultsLayer from "./ResultsLayer.svelte";
 
     export let noteId: bigint;
     export let model: TbsModel;
+    export let fields: string[];
+    export let tags: string[];
 
     $: shape = renderableTbsShape(model.shape);
+    $: reveal = results ? buildRevealModel(fields, tags) : null;
 
     const startedAt = Date.now();
 
@@ -317,6 +322,9 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                 <p class="submit-error" data-testid="tbs-submit-error" role="alert">
                     Could not submit attempt: {submitError}
                 </p>
+            {/if}
+            {#if results && reveal}
+                <ResultsLayer {reveal} {results} />
             {/if}
         </div>
 
