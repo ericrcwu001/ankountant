@@ -232,15 +232,27 @@ interface RawStep {
     // NOTE: `answer_key` is deliberately NOT read here (retrieval integrity C11).
 }
 
-function parseOptions(raw: unknown): RenderOption[] | undefined {
-    if (!Array.isArray(raw)) {
+function parseOptions(raw: unknown, stepId: string): RenderOption[] | undefined {
+    if (raw === undefined) {
         return undefined;
+    }
+    if (!Array.isArray(raw)) {
+        throw new Error(`Options for ${stepId} must be an array.`);
+    }
+    if (raw.length === 0) {
+        throw new Error(`Options for ${stepId} must contain at least one option.`);
     }
     return raw.map((o, i) => {
         const obj = (o ?? {}) as RawOption;
+        if (typeof obj.id !== "string" || obj.id.trim() === "") {
+            throw new Error(`Option ${i + 1} for ${stepId} is missing an id.`);
+        }
+        if (typeof obj.text !== "string" || obj.text.trim() === "") {
+            throw new Error(`Option ${obj.id} for ${stepId} is missing text.`);
+        }
         return {
-            id: typeof obj.id === "string" ? obj.id : `o${i + 1}`,
-            text: typeof obj.text === "string" ? obj.text : "",
+            id: obj.id,
+            text: obj.text,
             kind: typeof obj.kind === "string" ? obj.kind : "replace",
         };
     });
@@ -265,7 +277,10 @@ export function parseSteps(raw: string | undefined): RenderStep[] {
         if (typeof s.kind === "string") {
             step.kind = s.kind;
         }
-        const options = parseOptions(s.options);
+        const options = parseOptions(s.options, id);
+        if (step.kind === "blank" && !options) {
+            throw new Error(`Options for ${id} must be an array.`);
+        }
         if (options) {
             step.options = options;
         }

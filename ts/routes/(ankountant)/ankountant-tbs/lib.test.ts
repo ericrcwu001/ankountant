@@ -216,6 +216,51 @@ test("parseSteps surfaces doc-review options but NEVER the answer key", () => {
     expect(steps[0]).not.toHaveProperty("answer_key");
 });
 
+test("parseSteps rejects malformed doc-review blank options", () => {
+    expect(() =>
+        parseSteps(JSON.stringify([
+            {
+                id: "b1",
+                kind: "blank",
+                label: "Blank 1",
+                options: [],
+            },
+        ]))
+    ).toThrow(/Options for b1 must contain at least one option/);
+
+    expect(() =>
+        parseSteps(JSON.stringify([
+            {
+                id: "b1",
+                kind: "blank",
+                label: "Blank 1",
+            },
+        ]))
+    ).toThrow(/Options for b1 must be an array/);
+
+    expect(() =>
+        parseSteps(JSON.stringify([
+            {
+                id: "b1",
+                kind: "blank",
+                label: "Blank 1",
+                options: [{ id: "", text: "Choice" }],
+            },
+        ]))
+    ).toThrow(/Option 1 for b1 is missing an id/);
+
+    expect(() =>
+        parseSteps(JSON.stringify([
+            {
+                id: "b1",
+                kind: "blank",
+                label: "Blank 1",
+                options: [{ id: "o1", text: "" }],
+            },
+        ]))
+    ).toThrow(/Option o1 for b1 is missing text/);
+});
+
 test("segmentDocument splits text and <blank> markers in order", () => {
     const body = "Freight is [pre]<blank step=\"b1\">capitalized</blank>[mid]<blank step=\"b2\">expensed</blank>[end]";
     const segs = segmentDocument(body);
