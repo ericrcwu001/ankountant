@@ -18,7 +18,8 @@ struct AddNoteView: View {
     @State private var fieldValues: [String] = []
     @State private var tags: String = ""
     @State private var isSaving = false
-    @State private var errorMessage: String?
+    @State private var loadErrorMessage: String?
+    @State private var saveErrorMessage: String?
 
     let preselectedDeckId: Int64?
     let initialDraft: AddNoteDraft?
@@ -73,9 +74,17 @@ struct AddNoteView: View {
                         .textInputAutocapitalization(.never)
                 }
 
-                if let errorMessage {
+                if let loadErrorMessage {
                     Section {
-                        Text(errorMessage)
+                        Text(loadErrorMessage)
+                            .foregroundStyle(.red)
+                            .font(.caption)
+                    }
+                }
+
+                if let saveErrorMessage {
+                    Section {
+                        Text(saveErrorMessage)
                             .foregroundStyle(.red)
                             .font(.caption)
                     }
@@ -91,7 +100,7 @@ struct AddNoteView: View {
                     Button("Add") {
                         Task { await save() }
                     }
-                    .disabled(isSaving || fieldValues.allSatisfy(\.isEmpty))
+                    .disabled(!canAddNote)
                 }
             }
             .task {
@@ -109,65 +118,95 @@ struct AddNoteView: View {
         )
     }
 
-    private func loadData() async {
-        decks = (try? deckClient.fetchAll()) ?? []
-        if let preselectedDeckId, decks.contains(where: { $0.id == preselectedDeckId }) {
-            selectedDeckId = preselectedDeckId
-        } else if let first = decks.first {
-            selectedDeckId = first.id
-        }
+    private var canAddNote: Bool {
+        NoteFormRules.canAddNote(
+            isSaving: isSaving,
+            decks: decks,
+            selectedDeckId: selectedDeckId,
+            selectedNotetypeId: selectedNotetypeId,
+            fieldValues: fieldValues,
+            loadErrorMessage: loadErrorMessage
+        )
+    }
 
-        do {
-            notetypeNames = try notetypesService.getNotetypeNames()
-            // Honour an incoming draft's preferred notetype when it
-            // matches one the user actually has; otherwise fall back to
-            // the first available.
-            let chosen = initialDraft?.notetypeID
-                .flatMap { id in notetypeNames.first(where: { $0.id == id }) }
-                ?? notetypeNames.first
-            if let chosen {
-                selectedNotetypeId = chosen.id
-                loadFields()
-            }
-        } catch {
-            print("[AddNote] Error loading notetypes: \(error)")
-        }
+    private func loadData() async {
+        loadErrorMessage = nil
+        saveErrorMessage = nil
 
         if let initialDraft, !initialDraft.tags.isEmpty {
             tags = initialDraft.tags.joined(separator: " ")
+        }
+
+        do {
+            decks = try deckClient.fetchAll()
+            guard !decks.isEmpty else {
+                loadErrorMessage = "No decks are available."
+                return
+            }
+
+            if let preselectedDeckId, decks.contains(where: { $0.id == preselectedDeckId }) {
+                selectedDeckId = preselectedDeckId
+            } else if let first = decks.first {
+                selectedDeckId = first.id
+            }
+
+            notetypeNames = try notetypesService.getNotetypeNames()
+
+            let chosen = initialDraft?.notetypeID
+                .flatMap { id in notetypeNames.first(where: { $0.id == id }) }
+                ?? notetypeNames.first
+
+            guard let chosen else {
+                loadErrorMessage = "No note types are available."
+                return
+            }
+
+            selectedNotetypeId = chosen.id
+            try loadFields(for: chosen.id)
+        } catch {
+            fieldNames = []
+            fieldValues = []
+            loadErrorMessage = "Failed to load note form: \(error.localizedDescription)"
         }
     }
 
     private func loadFields() {
         guard selectedNotetypeId != 0 else { return }
         do {
-            let notetype = try notetypesService.getNotetype(selectedNotetypeId)
-            fieldNames = notetype.fieldNames
-            // Pre-fill from the incoming draft by mapping
-            // `fieldValues[name] → fieldValues[positionalIndex]` against
-            // the notetype's actual field-name list. Names not present
-            // on this notetype are silently dropped.
-            fieldValues = fieldNames.map { name in
-                initialDraft?.fieldValues[name] ?? ""
-            }
+            try loadFields(for: selectedNotetypeId)
+            loadErrorMessage = nil
         } catch {
-            print("[AddNote] Error loading fields: \(error)")
+            fieldNames = []
+            fieldValues = []
+            loadErrorMessage = "Failed to load note fields: \(error.localizedDescription)"
         }
     }
 
+    private func loadFields(for notetypeId: Int64) throws {
+        let notetype = try notetypesService.getNotetype(notetypeId)
+        fieldNames = notetype.fieldNames
+        fieldValues = NoteFormRules.fieldValues(for: fieldNames, draft: initialDraft)
+    }
+
     private func save() async {
+        guard canAddNote else {
+            saveErrorMessage = loadErrorMessage ?? "Enter at least one field before adding."
+            return
+        }
+
         isSaving = true
-        errorMessage = nil
+        saveErrorMessage = nil
+        defer { isSaving = false }
+
         do {
             var template = try notesService.newNote(selectedNotetypeId)
             template.fields = fieldValues
-            template.tags = tags.split(separator: " ").map(String.init)
+            template.tags = NoteFormRules.normalizedTags(from: tags)
             try notesService.addNote(template, selectedDeckId)
             onSave()
             dismiss()
         } catch {
-            errorMessage = "Failed to add note: \(error.localizedDescription)"
+            saveErrorMessage = "Failed to add note: \(error.localizedDescription)"
         }
-        isSaving = false
     }
 }

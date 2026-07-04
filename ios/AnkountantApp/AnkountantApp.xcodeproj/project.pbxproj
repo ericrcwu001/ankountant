@@ -42,6 +42,7 @@
 		3523C44227BF41C6FF4F9A36 /* PeriodPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17C9ABE3F15DEC56F0A0D5F7 /* PeriodPicker.swift */; };
 		3647426F74984A0CC1DC7851 /* RetentionChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F32BDCF4F6BF1D221409085 /* RetentionChart.swift */; };
 		36B3A3E99655C65E7F0A85E1 /* BrowseSelectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC0795F3D34382B40944EEC /* BrowseSelectionState.swift */; };
+		37D7F56FC49A3BE66E6D2FE1 /* NoteFormRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51BF2494E77C8DE09703AE0D /* NoteFormRules.swift */; };
 		37EFBAD41ABD3D60DD2277CB /* TodayStatsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C44B7ECA176D74353199249 /* TodayStatsCard.swift */; };
 		3937C058C36CFC07479C9394 /* CardAssetScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00409FD1743F643E1EC8B54 /* CardAssetScheme.swift */; };
 		3C66B1BB568B406E80660F0B /* SarasaMonoK-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9371B81F0533F71A2B5F1CD5 /* SarasaMonoK-Regular.ttf */; };
@@ -212,6 +213,7 @@
 		48D2976618B93D7B0DB049F3 /* SyncSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncSheet.swift; sourceTree = "<group>"; };
 		4ACF8DFCF989075838D4422F /* DocReviewTaskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocReviewTaskView.swift; sourceTree = "<group>"; };
 		4D1C1349AF41D95B47EA995A /* NoteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEditorView.swift; sourceTree = "<group>"; };
+		51BF2494E77C8DE09703AE0D /* NoteFormRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteFormRules.swift; sourceTree = "<group>"; };
 		51D6AC192B3B47A938776C1E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		56FC2AF1E8CDF872D5D0EB63 /* ReaderTTS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderTTS.swift; sourceTree = "<group>"; };
 		596D02B88393034839026103 /* FutureDueChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FutureDueChart.swift; sourceTree = "<group>"; };
@@ -583,6 +585,7 @@
 				BD662C5E96C4AB803E463ADB /* ImageOcclusionWorkspaceView.swift */,
 				765F582FAEA948A5D7684D9E /* NoteEditingDestinationView.swift */,
 				4D1C1349AF41D95B47EA995A /* NoteEditorView.swift */,
+				51BF2494E77C8DE09703AE0D /* NoteFormRules.swift */,
 				F4AFF84F476980B81B28165F /* NoteFieldHTMLPreview.swift */,
 				7868782C499FDC3C0EE74124 /* RichNoteFieldEditor.swift */,
 			);
@@ -827,6 +830,7 @@
 				FD934EA79C5905A43165AC3F /* MediaCheckResultView.swift in Sources */,
 				BCA928A108319B6FE96705B9 /* NoteEditingDestinationView.swift in Sources */,
 				E4AF222FC7B21940C3F33F05 /* NoteEditorView.swift in Sources */,
+				37D7F56FC49A3BE66E6D2FE1 /* NoteFormRules.swift in Sources */,
 				E744FA87A10E9EA7CCDCAA13 /* NoteFieldHTMLPreview.swift in Sources */,
 				E35B1B00CAF72E00268EA049 /* OnboardingView.swift in Sources */,
 				3523C44227BF41C6FF4F9A36 /* PeriodPicker.swift in Sources */,

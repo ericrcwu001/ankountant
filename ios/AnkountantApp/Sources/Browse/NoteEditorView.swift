@@ -16,6 +16,8 @@ struct NoteEditorView: View {
     @State private var tags: String = ""
     @State private var isSaving = false
     @State private var showSavedConfirmation = false
+    @State private var loadErrorMessage: String?
+    @State private var saveErrorMessage: String?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -36,6 +38,22 @@ struct NoteEditorView: View {
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
             }
+
+            if let loadErrorMessage {
+                Section {
+                    Text(loadErrorMessage)
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                }
+            }
+
+            if let saveErrorMessage {
+                Section {
+                    Text(saveErrorMessage)
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                }
+            }
         }
         .navigationTitle("Edit Note")
         .navigationBarTitleDisplayMode(.inline)
@@ -44,7 +62,7 @@ struct NoteEditorView: View {
                 Button("Save") {
                     Task { await save() }
                 }
-                .disabled(isSaving)
+                .disabled(!canSaveNote)
             }
         }
         .overlay {
@@ -73,23 +91,41 @@ struct NoteEditorView: View {
         )
     }
 
+    private var canSaveNote: Bool {
+        NoteFormRules.canSaveEditedNote(
+            isSaving: isSaving,
+            fieldNames: fieldNames,
+            fieldValues: fieldValues,
+            loadErrorMessage: loadErrorMessage
+        )
+    }
+
     private func loadNote() {
+        loadErrorMessage = nil
+        saveErrorMessage = nil
+
         do {
             let notetype = try notetypesService.getNotetype(note.mid)
             fieldNames = notetype.fieldNames
+            fieldValues = NoteFormRules.splitFields(note.flds, minimumCount: fieldNames.count)
+            tags = note.tags.trimmingCharacters(in: .whitespaces)
         } catch {
-            print("[NoteEditorView] Error loading notetype: \(error)")
+            fieldNames = []
+            fieldValues = []
+            loadErrorMessage = "Failed to load note fields: \(error.localizedDescription)"
         }
-
-        fieldValues = note.flds
-            .split(separator: "\u{1f}", omittingEmptySubsequences: false)
-            .map(String.init)
-        while fieldValues.count < fieldNames.count { fieldValues.append("") }
-        tags = note.tags.trimmingCharacters(in: .whitespaces)
     }
 
     private func save() async {
+        guard canSaveNote else {
+            saveErrorMessage = loadErrorMessage ?? "Note fields are still loading."
+            return
+        }
+
         isSaving = true
+        saveErrorMessage = nil
+        defer { isSaving = false }
+
         let newFlds = fieldValues.joined(separator: "\u{1f}")
         let newSfld = fieldValues.first ?? ""
         let newCsum = Int64(newSfld.hashValue & 0xFFFFFFFF)
@@ -98,15 +134,22 @@ struct NoteEditorView: View {
         updatedNote.flds = newFlds
         updatedNote.sfld = newSfld
         updatedNote.csum = newCsum
-        updatedNote.tags = " \(tags) "
+        updatedNote.tags = NoteFormRules.spacedTags(from: tags)
 
         do {
             try noteClient.save(updatedNote)
-            withAnimation { showSavedConfirmation = true }
-            try? await Task.sleep(for: .seconds(1.5))
-            withAnimation { showSavedConfirmation = false }
-            onSave()
-        } catch {}
-        isSaving = false
+        } catch {
+            saveErrorMessage = "Failed to save note: \(error.localizedDescription)"
+            return
+        }
+
+        withAnimation { showSavedConfirmation = true }
+        do {
+            try await Task.sleep(for: .seconds(1.5))
+        } catch {
+            return
+        }
+        withAnimation { showSavedConfirmation = false }
+        onSave()
     }
 }
