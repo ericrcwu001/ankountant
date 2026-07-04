@@ -186,32 +186,40 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                                 {/if}
                             </td>
                             <td class="performance num" data-testid="performance">
-                                <span class="pct">{row.performancePct}%</span>
-                                {#if row.performanceRange}
-                                    <span
-                                        class="range-sub"
-                                        data-testid="performance-range"
-                                    >
-                                        {row.performanceRange}
+                                {#if row.performancePct === null}
+                                    <span class="insufficient">insufficient</span>
+                                {:else}
+                                    <span class="pct">{row.performancePct}%</span>
+                                    {#if row.performanceRange}
+                                        <span
+                                            class="range-sub"
+                                            data-testid="performance-range"
+                                        >
+                                            {row.performanceRange}
+                                        </span>
+                                    {/if}
+                                    <span class="meter" aria-hidden="true">
+                                        <span
+                                            class="meter-fill"
+                                            style="width:{row.performancePct}%"
+                                        ></span>
                                     </span>
                                 {/if}
-                                <span class="meter" aria-hidden="true">
-                                    <span
-                                        class="meter-fill"
-                                        style="width:{row.performancePct}%"
-                                    ></span>
-                                </span>
                             </td>
                             <td class="gap num" data-testid="gap">
-                                {#if row.gapWarning}
-                                    <span
-                                        class="gap-flag"
-                                        role="img"
-                                        aria-label="Large gap"
-                                    >
-                                        &#9650;
-                                    </span>
-                                {/if}{row.gapPct}%
+                                {#if row.gapPct === null}
+                                    <span class="insufficient">insufficient</span>
+                                {:else}
+                                    {#if row.gapWarning}
+                                        <span
+                                            class="gap-flag"
+                                            role="img"
+                                            aria-label="Large gap"
+                                        >
+                                            &#9650;
+                                        </span>
+                                    {/if}{row.gapPct}%
+                                {/if}
                             </td>
                         </tr>
                     {/each}

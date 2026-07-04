@@ -22,12 +22,12 @@ export interface TopicRow {
     setId: string;
     /** 0..100, or null when memory is insufficient. */
     memoryPct: number | null;
-    performancePct: number;
+    performancePct: number | null;
     /** Confidence-range labels ("64–80%"), null when there is no band. */
     memoryRange: string | null;
     performanceRange: string | null;
-    gap: number;
-    gapPct: number;
+    gap: number | null;
+    gapPct: number | null;
     /** True when the gap crosses GAP_WARNING_THRESHOLD (B5-D3). */
     gapWarning: boolean;
 }
@@ -70,16 +70,30 @@ export function rangeLabel(low: number, high: number): string | null {
 
 /** Build the per-topic dashboard rows from the GetReadiness topics. */
 export function buildTopicRows(topics: TopicScore[]): TopicRow[] {
-    return topics.map((t) => ({
-        setId: t.setId,
-        memoryPct: t.memoryInsufficient ? null : fractionToPct(t.memory),
-        performancePct: fractionToPct(t.performance),
-        memoryRange: t.memoryInsufficient ? null : rangeLabel(t.memoryLow, t.memoryHigh),
-        performanceRange: rangeLabel(t.performanceLow, t.performanceHigh),
-        gap: t.gap,
-        gapPct: fractionToPct(t.gap),
-        gapWarning: isGapWarning(t.gap),
-    }));
+    return topics.map((t) => {
+        const memoryPct = t.memoryInsufficient ? null : fractionToPct(t.memory);
+        const hasPerformanceEvidence = hasSealedPerformanceEvidence(t);
+        const performancePct = hasPerformanceEvidence ? fractionToPct(t.performance) : null;
+        const gap = memoryPct === null || performancePct === null ? null : t.gap;
+        return {
+            setId: t.setId,
+            memoryPct,
+            performancePct,
+            memoryRange: t.memoryInsufficient ? null : rangeLabel(t.memoryLow, t.memoryHigh),
+            performanceRange: hasPerformanceEvidence ? rangeLabel(t.performanceLow, t.performanceHigh) : null,
+            gap,
+            gapPct: gap === null ? null : fractionToPct(gap),
+            gapWarning: gap !== null && isGapWarning(gap),
+        };
+    });
+}
+
+function hasSealedPerformanceEvidence(topic: TopicScore): boolean {
+    const hasConfidenceBand = topic.performanceLow !== 0 || topic.performanceHigh !== 0;
+    if (!hasConfidenceBand && topic.performance !== 0) {
+        throw new Error("Topic performance cannot be non-zero without a confidence band.");
+    }
+    return hasConfidenceBand;
 }
 
 /**
@@ -181,6 +195,14 @@ export function buildReadinessEvidence(
             `Memory is still thin for ${thinMemory.map((row) => prettySetId(row.setId)).join(", ")}.`,
         );
     }
+    const missingPerformance = rows.filter((row) => row.performancePct === null).slice(0, 3);
+    if (missingPerformance.length) {
+        missingData.push(
+            `Performance has no sealed evidence for ${
+                missingPerformance.map((row) => prettySetId(row.setId)).join(", ")
+            }.`,
+        );
+    }
     if (!missingData.length) {
         missingData.push("No hard blockers for the current range; more sealed attempts will narrow uncertainty.");
     }
@@ -265,18 +287,51 @@ function bestNextAction(view: ReadinessView, rows: TopicRow[]): string {
     }
 
     const gap = [...rows]
-        .filter((row) => row.gapWarning && row.memoryPct !== null)
-        .sort((a, b) => b.gap - a.gap)[0];
+        .filter((row) => row.gapWarning && row.memoryPct !== null && row.performancePct !== null)
+        .sort((a, b) => requiredGap(b) - requiredGap(a))[0];
     if (gap) {
-        return `Run a confusion-set drill for ${
-            prettySetId(gap.setId)
-        }; memory is ${gap.memoryPct}% and performance is ${gap.performancePct}%.`;
+        return `Run a confusion-set drill for ${prettySetId(gap.setId)}; memory is ${
+            requiredMemoryPct(gap)
+        }% and performance is ${requiredPerformancePct(gap)}%.`;
     }
 
-    const weakest = [...rows].sort((a, b) => a.performancePct - b.performancePct)[0];
-    return `Do sealed exam-style practice for ${
-        prettySetId(weakest.setId)
-    }; current performance is ${weakest.performancePct}%.`;
+    const missingPerformance = rows.find((row) => row.performancePct === null);
+    if (missingPerformance) {
+        return `Do sealed exam-style practice for ${
+            prettySetId(missingPerformance.setId)
+        }; performance has no sealed evidence yet.`;
+    }
+
+    const weakest = [...rows]
+        .filter((row) => row.performancePct !== null)
+        .sort((a, b) => requiredPerformancePct(a) - requiredPerformancePct(b))[0];
+    if (!weakest) {
+        throw new Error("Readiness topics require at least one performance value.");
+    }
+    return `Do sealed exam-style practice for ${prettySetId(weakest.setId)}; current performance is ${
+        requiredPerformancePct(weakest)
+    }%.`;
+}
+
+function requiredGap(row: TopicRow): number {
+    if (row.gap === null) {
+        throw new Error("Topic gap is required for gap ranking.");
+    }
+    return row.gap;
+}
+
+function requiredMemoryPct(row: TopicRow): number {
+    if (row.memoryPct === null) {
+        throw new Error("Topic memory is required for gap messaging.");
+    }
+    return row.memoryPct;
+}
+
+function requiredPerformancePct(row: TopicRow): number {
+    if (row.performancePct === null) {
+        throw new Error("Topic performance is required for performance messaging.");
+    }
+    return row.performancePct;
 }
 
 /** Short "Updated 3:04 PM" style label from Unix seconds (empty when unknown). */

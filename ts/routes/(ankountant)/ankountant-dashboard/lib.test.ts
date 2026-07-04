@@ -29,6 +29,8 @@ test("topic rows carry memory/performance/gap + gapWarning (A54/A56)", () => {
             performance: 0.65,
             gap: 0.25,
             memoryInsufficient: false,
+            performanceLow: 0.55,
+            performanceHigh: 0.75,
         }),
     ]);
     expect(rows[0].memoryPct).toBe(90);
@@ -39,9 +41,73 @@ test("topic rows carry memory/performance/gap + gapWarning (A54/A56)", () => {
 
 test("insufficient memory renders no number", () => {
     const rows = buildTopicRows([
-        new TopicScore({ setId: "s", memory: 0, performance: 0.5, gap: 0, memoryInsufficient: true }),
+        new TopicScore({
+            setId: "s",
+            memory: 0,
+            performance: 0.5,
+            gap: 0,
+            memoryInsufficient: true,
+            performanceLow: 0.4,
+            performanceHigh: 0.6,
+        }),
     ]);
     expect(rows[0].memoryPct).toBe(null);
+});
+
+test("insufficient performance renders no number or gap", () => {
+    const rows = buildTopicRows([
+        new TopicScore({
+            setId: "s",
+            memory: 0.8,
+            performance: 0,
+            gap: 0.8,
+            memoryInsufficient: false,
+            memoryLow: 0.7,
+            memoryHigh: 0.9,
+            performanceLow: 0,
+            performanceHigh: 0,
+        }),
+    ]);
+    expect(rows[0].performancePct).toBe(null);
+    expect(rows[0].performanceRange).toBe(null);
+    expect(rows[0].gapPct).toBe(null);
+    expect(rows[0].gapWarning).toBe(false);
+});
+
+test("zero performance with evidence renders as zero", () => {
+    const rows = buildTopicRows([
+        new TopicScore({
+            setId: "s",
+            memory: 0.8,
+            performance: 0,
+            gap: 0.8,
+            memoryInsufficient: false,
+            memoryLow: 0.7,
+            memoryHigh: 0.9,
+            performanceLow: 0,
+            performanceHigh: 0.3,
+        }),
+    ]);
+    expect(rows[0].performancePct).toBe(0);
+    expect(rows[0].performanceRange).toBe("0–30%");
+    expect(rows[0].gapPct).toBe(80);
+    expect(rows[0].gapWarning).toBe(true);
+});
+
+test("nonzero performance without a confidence band is rejected", () => {
+    expect(() =>
+        buildTopicRows([
+            new TopicScore({
+                setId: "s",
+                memory: 0.8,
+                performance: 0.7,
+                gap: 0.1,
+                memoryInsufficient: false,
+                performanceLow: 0,
+                performanceHigh: 0,
+            }),
+        ])
+    ).toThrow(/without a confidence band/);
 });
 
 test("topic rows carry memory/performance confidence ranges (#3)", () => {
@@ -153,6 +219,8 @@ test("evidence view names missing data and the give-up rule", () => {
             performance: 0.42,
             gap: 0,
             memoryInsufficient: true,
+            performanceLow: 0.32,
+            performanceHigh: 0.52,
         }),
     ]);
     const evidence = buildReadinessEvidence(view, rows);
@@ -183,6 +251,8 @@ test("evidence view chooses the largest memory-performance gap as next action", 
             performance: 0.52,
             gap: 0.38,
             memoryInsufficient: false,
+            performanceLow: 0.42,
+            performanceHigh: 0.62,
         }),
         new TopicScore({
             setId: "tax_timing",
@@ -190,6 +260,8 @@ test("evidence view chooses the largest memory-performance gap as next action", 
             performance: 0.51,
             gap: 0.19,
             memoryInsufficient: false,
+            performanceLow: 0.41,
+            performanceHigh: 0.61,
         }),
     ]);
     const evidence = buildReadinessEvidence(view, rows);
@@ -220,11 +292,45 @@ test("evidence view does not invent a memory value for thin-memory gaps", () => 
             performance: 0.42,
             gap: 0.38,
             memoryInsufficient: true,
+            performanceLow: 0.32,
+            performanceHigh: 0.52,
         }),
     ]);
     const evidence = buildReadinessEvidence(view, rows);
     expect(evidence.nextAction).toContain("sealed exam-style practice");
     expect(evidence.nextAction).not.toContain("memory is 0%");
+});
+
+test("evidence view does not invent a performance value without sealed evidence", () => {
+    const view = buildReadinessView(
+        new Readiness({
+            abstain: false,
+            bandLow: 74,
+            bandHigh: 85,
+            pointEstimate: 80,
+            confidence: "High",
+            coverage: 1,
+            generatedAt: 1_704_067_200n,
+            reasons: ["Coverage: 100% of topics; 188 sealed attempts"],
+        }),
+    );
+    const rows = buildTopicRows([
+        new TopicScore({
+            setId: "leases",
+            memory: 0.82,
+            performance: 0,
+            gap: 0.82,
+            memoryInsufficient: false,
+            memoryLow: 0.75,
+            memoryHigh: 0.9,
+            performanceLow: 0,
+            performanceHigh: 0,
+        }),
+    ]);
+    const evidence = buildReadinessEvidence(view, rows);
+    expect(evidence.missingData.join(" ")).toContain("Performance has no sealed evidence for leases");
+    expect(evidence.nextAction).toContain("performance has no sealed evidence yet");
+    expect(evidence.nextAction).not.toContain("performance is 0%");
 });
 
 test("fractionToPct rounds", () => {
