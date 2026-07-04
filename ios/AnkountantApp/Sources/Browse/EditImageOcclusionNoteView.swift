@@ -191,7 +191,7 @@ struct EditImageOcclusionNoteView: View {
 // MARK: - Occlusion string parser
 
 /// Parses "{{c1::image-occlusion:rect:left=X:top=Y:width=W:height=H}}" etc. → [IOMask]
-private func parseMasks(from occlusions: String) -> [IOMask] {
+func parseMasks(from occlusions: String) -> [IOMask] {
     let lines = occlusions.components(separatedBy: "\n")
     var result: [IOMask] = []
     for line in lines {
@@ -218,21 +218,11 @@ private func parseMasks(from occlusions: String) -> [IOMask] {
                 )
             }
         case "polygon":
-            if let raw = stringProps["points"] {
-                let coords = raw.components(separatedBy: CharacterSet(charactersIn: ", "))
-                    .compactMap { Double($0) }
-                var pts: [CGPoint] = []
-                var i = 0
-                while i + 1 < coords.count {
-                    pts.append(CGPoint(x: coords[i], y: coords[i + 1]))
-                    i += 2
-                }
-                if pts.count >= 3 {
-                    result.append(
-                        .polygon(points: pts, extras: ioExtras(from: stringProps, excluding: ["points"]))
-                            .applyingSerializationOrdinal(payload.ordinal)
-                    )
-                }
+            if let raw = stringProps["points"], let pts = parseIOPoints(from: raw) {
+                result.append(
+                    .polygon(points: pts, extras: ioExtras(from: stringProps, excluding: ["points"]))
+                        .applyingSerializationOrdinal(payload.ordinal)
+                )
             }
         case "text":
             if let l = ioCGFloat(stringProps["left"]),
@@ -261,9 +251,14 @@ private func parseMasks(from occlusions: String) -> [IOMask] {
 }
 
 private func parseIOProperties(from source: String) -> [String: String] {
-    guard !source.isEmpty,
-          let regex = try? NSRegularExpression(pattern: "([A-Za-z]+)=") else {
+    guard !source.isEmpty else {
         return [:]
+    }
+    let regex: NSRegularExpression
+    do {
+        regex = try NSRegularExpression(pattern: "(?:^|:)([A-Za-z][A-Za-z0-9_]*)=")
+    } catch {
+        preconditionFailure("Invalid image occlusion property regex: \(error)")
     }
 
     let nsSource = source as NSString
@@ -274,12 +269,32 @@ private func parseIOProperties(from source: String) -> [String: String] {
     for (index, match) in matches.enumerated() {
         let key = nsSource.substring(with: match.range(at: 1))
         let valueStart = match.range.location + match.range.length
-        let valueEnd = index + 1 < matches.count ? matches[index + 1].range.location - 1 : nsSource.length
+        let valueEnd = index + 1 < matches.count ? matches[index + 1].range.location : nsSource.length
         guard valueEnd >= valueStart else { continue }
         let value = nsSource.substring(with: NSRange(location: valueStart, length: valueEnd - valueStart))
         properties[key] = value
     }
     return properties
+}
+
+private func parseIOPoints(from raw: String) -> [CGPoint]? {
+    let parts = raw.components(separatedBy: CharacterSet(charactersIn: ", "))
+        .filter { !$0.isEmpty }
+    guard parts.count >= 6, parts.count.isMultiple(of: 2) else { return nil }
+
+    var values: [Double] = []
+    values.reserveCapacity(parts.count)
+    for part in parts {
+        guard let value = Double(part) else { return nil }
+        values.append(value)
+    }
+
+    var points: [CGPoint] = []
+    points.reserveCapacity(values.count / 2)
+    for index in stride(from: 0, to: values.count, by: 2) {
+        points.append(CGPoint(x: values[index], y: values[index + 1]))
+    }
+    return points
 }
 
 private func ioCGFloat(_ value: String?) -> CGFloat? {
