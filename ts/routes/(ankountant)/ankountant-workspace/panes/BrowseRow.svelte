@@ -29,26 +29,31 @@ event so the pane can do range/multi-select and show the context menu.
 
     let row: BrowserRow | null = null;
     let rowError = "";
+    let fetchToken = 0;
 
-    async function fetchRow(rowId: bigint, _version: number): Promise<void> {
+    async function fetchRow(rowId: bigint, requestVersion: number): Promise<void> {
+        const token = ++fetchToken;
+        const requestCache = cache;
         const key = rowId.toString();
-        const cached = cache.get(key);
+        const cached = requestCache.get(key);
         if (cached) {
-            row = cached;
-            rowError = "";
+            if (token === fetchToken && rowId === id && requestVersion === version) {
+                row = cached;
+                rowError = "";
+            }
             return;
         }
         row = null;
         rowError = "";
         try {
             const fetched = await browserRowForId({ val: rowId });
-            cache.set(key, fetched);
-            if (rowId === id) {
+            if (token === fetchToken && rowId === id && requestVersion === version) {
+                requestCache.set(key, fetched);
                 row = fetched;
                 rowError = "";
             }
         } catch (error) {
-            if (rowId === id) {
+            if (token === fetchToken && rowId === id && requestVersion === version) {
                 row = null;
                 rowError = errorMessage(error);
             }
