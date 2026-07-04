@@ -4,7 +4,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 The unified TBS tab. All four TBS shapes (journal-entry, numeric, research,
 doc-review) live here behind a single chooser: the learner clicks a type and the
-first sealed task of that shape (FAR) is loaded into the matching surface. A
+first sealed task of that shape is loaded into the matching surface. A
 concrete task can still be deep-linked via ?note=<id> (the e2e does this), in
 which case the chooser opens on that note's shape.
 -->
@@ -16,7 +16,13 @@ which case the chooser opens on that note's shape.
     import DocReviewSurface from "../ankountant-doc-review/DocReviewSurface.svelte";
     import ResearchSurface from "../ankountant-research/ResearchSurface.svelte";
     import type { TbsModel, TbsShape } from "./lib";
-    import { buildTbsModel, TBS_SHAPES, tbsSearch, tbsShapeSearchOrder } from "./lib";
+    import {
+        buildTbsModel,
+        SECTIONS,
+        TBS_SHAPES,
+        tbsSearch,
+        tbsShapeSearchOrder,
+    } from "./lib";
     import TbsSurface from "./TbsSurface.svelte";
 
     export let initialNoteId: bigint = 0n;
@@ -24,7 +30,10 @@ which case the chooser opens on that note's shape.
     export let initialFields: string[] = [];
     export let initialTags: string[] = [];
 
-    const SECTION = "FAR";
+    const SECTION_SEARCH_ORDER = [
+        "FAR",
+        ...SECTIONS.filter((section) => section !== "FAR"),
+    ];
     const deepLinked = initialNoteId !== 0n && initialModel !== null;
 
     type Phase = "loading" | "ready" | "empty" | "error";
@@ -50,18 +59,20 @@ which case the chooser opens on that note's shape.
     }
 
     async function fetchShape(shape: TbsShape): Promise<LoadedShape | null> {
-        const found = await searchNotes({ search: tbsSearch(shape, SECTION) });
-        const foundNoteId = found.ids.length > 0 ? found.ids[0] : 0n;
-        if (foundNoteId === 0n) {
-            return null;
+        for (const section of SECTION_SEARCH_ORDER) {
+            const found = await searchNotes({ search: tbsSearch(shape, section) });
+            const foundNoteId = found.ids.length > 0 ? found.ids[0] : 0n;
+            if (foundNoteId !== 0n) {
+                const note = await getNote({ nid: foundNoteId });
+                return {
+                    noteId: foundNoteId,
+                    model: buildTbsModel(note.fields, note.tags),
+                    fields: note.fields,
+                    tags: note.tags,
+                };
+            }
         }
-        const note = await getNote({ nid: foundNoteId });
-        return {
-            noteId: foundNoteId,
-            model: buildTbsModel(note.fields, note.tags),
-            fields: note.fields,
-            tags: note.tags,
-        };
+        return null;
     }
 
     function applyLoadedShape(shape: TbsShape, loaded: LoadedShape): void {
@@ -182,8 +193,7 @@ which case the chooser opens on that note's shape.
             <p class="tbs-state" data-testid="tbs-loading">Loading…</p>
         {:else if phase === "empty"}
             <p class="tbs-state" data-testid="tbs-empty">
-                No {selectedLabel} task available yet. Load the FAR demo content from the
-                Ankountant menu.
+                No {selectedLabel} simulation was found in this profile.
             </p>
         {:else}
             <div class="tbs-state" data-testid="tbs-error">
