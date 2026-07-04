@@ -82,22 +82,23 @@ extension DecksService: DependencyKey {
             },
             countsForDeck: { deckId in
                 var treeReq = Anki_Decks_DeckTreeRequest()
-                treeReq.now = Int64(Date().timeIntervalSince1970)
-                do {
-                    let tree: Anki_Decks_DeckTreeNode = try backend.invoke(
-                        service: AnkiBackend.Service.decks,
-                        method: AnkiBackend.DecksMethod.getDeckTree,
-                        request: treeReq
+                treeReq.now = Int64(Date.now.timeIntervalSince1970)
+                let tree: Anki_Decks_DeckTreeNode = try backend.invoke(
+                    service: AnkiBackend.Service.decks,
+                    method: AnkiBackend.DecksMethod.getDeckTree,
+                    request: treeReq
+                )
+                guard let node = findNode(in: tree, deckId: deckId) else {
+                    throw BackendError(
+                        kind: .notFoundError,
+                        message: "Deck \(deckId) was not found in the deck tree."
                     )
-                    if let node = findNode(in: tree, deckId: deckId) {
-                        return DeckCounts(
-                            newCount: Int(node.newCount),
-                            learnCount: Int(node.learnCount),
-                            reviewCount: Int(node.reviewCount)
-                        )
-                    }
-                } catch {}
-                return .zero
+                }
+                return DeckCounts(
+                    newCount: Int(node.newCount),
+                    learnCount: Int(node.learnCount),
+                    reviewCount: Int(node.reviewCount)
+                )
             },
             setCurrentDeck: { deckId in
                 var req = Anki_Decks_DeckId()
@@ -457,4 +458,3 @@ private func mapDeckTreeNode(_ node: Anki_Decks_DeckTreeNode, parentPath: String
         children: node.children.map { mapDeckTreeNode($0, parentPath: fullPath) }
     )
 }
-
