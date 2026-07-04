@@ -102,20 +102,16 @@ struct ChapterReaderView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
+                Button("Make note from selection", systemImage: "plus.circle") {
                     requestSelectionForNote()
-                } label: {
-                    Image(systemName: "plus.circle")
                 }
-                .accessibilityLabel("Make note from selection")
+                .labelStyle(.iconOnly)
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
+                Button("Look up word", systemImage: "character.book.closed") {
                     lookupQuery = ""
-                } label: {
-                    Image(systemName: "character.book.closed")
                 }
-                .accessibilityLabel("Look up word")
+                .labelStyle(.iconOnly)
             }
             if showPercentage {
                 ToolbarItem(placement: .topBarTrailing) {
