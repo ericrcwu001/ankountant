@@ -44,4 +44,12 @@ struct SimulationsHubSelectionTests {
         #expect(confusionCountLabel(1) == "1 item")
         #expect(confusionCountLabel(2) == "2 items")
     }
+
+    @Test func hubHasContentWhenEitherTbsOrConfusionExists() {
+        let task = TbsTaskSummary(noteId: 1, shape: .journalEntry, prompt: "Journal")
+
+        #expect(simulationsHubHasContent(tasks: [task], allConfusionCount: 0))
+        #expect(simulationsHubHasContent(tasks: [], allConfusionCount: 1))
+        #expect(!simulationsHubHasContent(tasks: [], allConfusionCount: 0))
+    }
 }

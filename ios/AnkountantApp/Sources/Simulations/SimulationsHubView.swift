@@ -42,11 +42,11 @@ struct SimulationsHubView: View {
                     systemImage: "exclamationmark.triangle",
                     description: Text(errorMessage)
                 )
-            } else if tasks.isEmpty {
+            } else if !simulationsHubHasContent(tasks: tasks, allConfusionCount: allConfusionCount) {
                 ContentUnavailableView(
                     "No Simulations",
                     systemImage: "list.bullet.clipboard",
-                    description: Text("No sealed Task-Based Simulations were found in this profile.")
+                    description: Text("No sealed simulations or confusion drills were found in this profile.")
                 )
             } else {
                 loadedContent
@@ -250,4 +250,8 @@ func availableConfusionSections(
 
 func confusionCountLabel(_ count: Int) -> String {
     count == 1 ? "1 item" : "\(count) items"
+}
+
+func simulationsHubHasContent(tasks: [TbsTaskSummary], allConfusionCount: Int) -> Bool {
+    !tasks.isEmpty || allConfusionCount > 0
 }
