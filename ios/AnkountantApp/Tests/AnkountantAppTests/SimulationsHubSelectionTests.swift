@@ -52,4 +52,26 @@ struct SimulationsHubSelectionTests {
         #expect(simulationsHubHasContent(tasks: [], allConfusionCount: 1))
         #expect(!simulationsHubHasContent(tasks: [], allConfusionCount: 0))
     }
+
+    @Test func revealResultStateUsesBackendResult() {
+        let step = StepReveal(id: "line-1", label: "Line 1", correctText: "Dr Cash 100")
+
+        #expect(simulationRevealResultState(
+            for: step,
+            results: [PerformanceStepResult(id: "line-1", correct: true, weight: 1)]
+        ) == .correct)
+        #expect(simulationRevealResultState(
+            for: step,
+            results: [PerformanceStepResult(id: "line-1", correct: false, weight: 1)]
+        ) == .incorrect)
+    }
+
+    @Test func revealResultStateKeepsMissingRowsUngraded() {
+        let step = StepReveal(id: "line-2", label: "Line 2", correctText: "Cr Cash 100")
+
+        #expect(simulationRevealResultState(
+            for: step,
+            results: [PerformanceStepResult(id: "line-1", correct: false, weight: 1)]
+        ) == .ungraded)
+    }
 }

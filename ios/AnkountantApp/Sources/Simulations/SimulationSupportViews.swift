@@ -163,15 +163,40 @@ struct SimulationRevealErrorView: View {
     }
 }
 
+enum SimulationRevealResultState: Equatable {
+    case correct
+    case incorrect
+    case ungraded
+
+    var systemImage: String {
+        switch self {
+        case .correct: "checkmark.circle.fill"
+        case .incorrect: "xmark.circle.fill"
+        case .ungraded: "minus.circle"
+        }
+    }
+
+    var accessibilityLabel: String {
+        switch self {
+        case .correct: "You were correct"
+        case .incorrect: "You were incorrect"
+        case .ungraded: "Not graded"
+        }
+    }
+}
+
+func simulationRevealResultState(for step: StepReveal, results: [PerformanceStepResult]) -> SimulationRevealResultState {
+    guard let result = results.first(where: { $0.id == step.id }) else {
+        return .ungraded
+    }
+    return result.correct ? .correct : .incorrect
+}
+
 struct SimulationResultsRevealView: View {
     let reveal: TbsRevealModel
     let results: [PerformanceStepResult]
 
     @Environment(\.palette) private var palette
-
-    private var correctById: [String: Bool] {
-        Dictionary(uniqueKeysWithValues: results.map { ($0.id, $0.correct) })
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
@@ -213,11 +238,11 @@ struct SimulationResultsRevealView: View {
     }
 
     private func revealRow(_ step: StepReveal) -> some View {
-        let correct = correctById[step.id] ?? false
+        let state = simulationRevealResultState(for: step, results: results)
         return HStack(alignment: .top, spacing: AnkountantSpacing.sm) {
-            Image(systemName: correct ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .foregroundStyle(correct ? palette.positive : palette.danger)
-                .accessibilityLabel(correct ? "You were correct" : "You were incorrect")
+            Image(systemName: state.systemImage)
+                .foregroundStyle(color(for: state))
+                .accessibilityLabel(state.accessibilityLabel)
             VStack(alignment: .leading, spacing: AnkountantSpacing.xxs) {
                 Text(step.label)
                     .ankountantFont(.caption)
@@ -229,6 +254,14 @@ struct SimulationResultsRevealView: View {
                     .textSelection(.enabled)
             }
                 .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func color(for state: SimulationRevealResultState) -> Color {
+        switch state {
+        case .correct: palette.positive
+        case .incorrect: palette.danger
+        case .ungraded: palette.textSecondary
         }
     }
 }
