@@ -59,3 +59,27 @@ test("workspace find and replace shows apply failures in the dialog", async ({ p
     );
     await expect(dialog).toBeVisible();
 });
+
+test("workspace TBS pane reveals the answer key after submit", async ({ page, seed }) => {
+    expect(seed.sealedTbsNoteIds.length).toBeGreaterThan(0);
+    await page.goto("/ankountant-workspace?initial=tbs");
+    await expect(page.getByTestId("tbs-surface")).toBeVisible();
+
+    const rows = page.getByTestId("je-row");
+    await expect(rows).toHaveCount(4);
+    const fill = async (idx: number, account: string, side: string, amount: string) => {
+        const row = rows.nth(idx);
+        await row.getByTestId("je-account").selectOption(account);
+        await row.getByTestId("je-side").selectOption(side);
+        await row.getByTestId("je-amount").fill(amount);
+    };
+    await fill(0, "ROU Asset", "dr", "10000");
+    await fill(1, "Lease Liability", "cr", "10000");
+    await fill(2, "Interest Expense", "dr", "500");
+    await fill(3, "Cash", "cr", "500");
+
+    await page.getByTestId("confidence-confident").click();
+    await page.getByTestId("tbs-submit").click();
+    await expect(page.getByTestId("results-layer")).toBeVisible();
+    await expect(page.getByTestId("reveal-correct")).toHaveCount(4);
+});

@@ -24,6 +24,8 @@ ankountant-tbs/TbsTab.svelte for the JE/numeric task types this pane can render.
     let phase: "loading" | "ready" | "empty" | "error" = "loading";
     let noteId = 0n;
     let model: TbsModel | null = null;
+    let fields: string[] = [];
+    let tags: string[] = [];
     let message = "";
 
     async function load(): Promise<void> {
@@ -36,6 +38,8 @@ ankountant-tbs/TbsTab.svelte for the JE/numeric task types this pane can render.
             }
             const note = await getNote({ nid: noteId });
             model = buildTbsModel(note.fields, note.tags);
+            fields = note.fields;
+            tags = note.tags;
             phase = "ready";
         } catch (err) {
             message = err instanceof Error ? err.message : String(err);
@@ -62,7 +66,7 @@ ankountant-tbs/TbsTab.svelte for the JE/numeric task types this pane can render.
 
 {#if phase === "ready" && model}
     {#key noteId}
-        <TbsSurface {noteId} {model} />
+        <TbsSurface {noteId} {model} {fields} {tags} />
     {/key}
 {:else if phase !== "ready"}
     <PaneState
