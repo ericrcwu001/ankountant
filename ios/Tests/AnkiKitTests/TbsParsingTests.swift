@@ -396,8 +396,16 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
 }
 
 @Test func buildResearchSubmissionTrimsCitation() throws {
-    let citation = try parseObject(buildResearchSubmission("  ASC 842-20-25-1  "))["citation"] as? String
+    let citation = try parseObject(try buildResearchSubmission("  ASC 842-20-25-1  "))["citation"] as? String
     #expect(citation == "ASC 842-20-25-1")
+}
+
+@Test func buildResearchSubmissionRequiresCitation() {
+    #expect(researchCitationComplete("ASC 842-20-25-1"))
+    #expect(!researchCitationComplete("   "))
+    expectTbsSubmissionError("Research submission requires a governing citation.") {
+        try buildResearchSubmission("   ")
+    }
 }
 
 // MARK: - Doc-review shape

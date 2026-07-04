@@ -54,7 +54,8 @@ extension PerformanceClient: DependencyKey {
                 try scheduler.submitPerformanceAttempt(noteId, "tbs", submissionJson, confidence, latencyMs)
             },
             submitResearch: { noteId, citation, confidence, latencyMs in
-                try scheduler.submitPerformanceAttempt(noteId, "research", buildResearchSubmission(citation), confidence, latencyMs)
+                let submissionJson = try buildResearchSubmission(citation)
+                return try scheduler.submitPerformanceAttempt(noteId, "research", submissionJson, confidence, latencyMs)
             },
             submitDocReview: { noteId, submissionJson, confidence, latencyMs in
                 try scheduler.submitPerformanceAttempt(noteId, "doc_review", submissionJson, confidence, latencyMs)

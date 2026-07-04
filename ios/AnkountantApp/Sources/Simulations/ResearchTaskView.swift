@@ -37,6 +37,10 @@ struct ResearchTaskView: View {
         citation.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var citationEntered: Bool {
+        researchCitationComplete(citation)
+    }
+
     private var responseLocked: Bool {
         submitting || correct != nil
     }
@@ -94,10 +98,14 @@ struct ResearchTaskView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(AnkountantPrimaryButtonStyle())
-            .disabled(submitting || confidence == nil || trimmedCitation.isEmpty || correct != nil)
+            .disabled(submitting || confidence == nil || !citationEntered || correct != nil)
 
             if confidence == nil {
                 Text("Commit a confidence level first.")
+                    .ankountantFont(.caption)
+                    .foregroundStyle(palette.textSecondary)
+            } else if !citationEntered {
+                Text("Enter a governing citation.")
                     .ankountantFont(.caption)
                     .foregroundStyle(palette.textSecondary)
             }
@@ -149,7 +157,7 @@ struct ResearchTaskView: View {
     }
 
     private func submit() async {
-        guard let confidence, !submitting, correct == nil, !trimmedCitation.isEmpty else { return }
+        guard let confidence, !submitting, correct == nil, citationEntered else { return }
         submitting = true
         submitError = nil
         revealError = nil

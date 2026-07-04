@@ -590,7 +590,14 @@ export function buildNumericSubmission(cells: NumericCellInput[]): string {
 
 /** Shape the submission_json for a research TBS (one citation; the backend
  *  research arm reads `citation`). */
+export function researchCitationComplete(citation: string): boolean {
+    return citation.trim() !== "";
+}
+
 export function buildResearchSubmission(citation: string): string {
+    if (!researchCitationComplete(citation)) {
+        throw new Error("Research submission requires a governing citation.");
+    }
     return JSON.stringify({ citation: citation.trim() });
 }
 

@@ -62,6 +62,7 @@ public enum TbsParseError: Error, Equatable, LocalizedError, Sendable {
 public enum TbsSubmissionError: Error, Equatable, LocalizedError, Sendable {
     case invalidDecimal(field: String)
     case nonFiniteNumber(field: String)
+    case missingCitation
     case missingStepSelection
 
     public var errorDescription: String? {
@@ -70,6 +71,8 @@ public enum TbsSubmissionError: Error, Equatable, LocalizedError, Sendable {
             "\(field) must be a decimal number."
         case let .nonFiniteNumber(field):
             "\(field) must be a finite number."
+        case .missingCitation:
+            "Research submission requires a governing citation."
         case .missingStepSelection:
             "Doc-review submission requires a selected option for every blank."
         }
@@ -451,8 +454,15 @@ public func buildStepsSubmission(_ pairs: [(id: String, value: String)]) throws 
 
 /// Shape submission_json for a research TBS (one citation; the backend research
 /// arm reads `citation`). Mirrors the desktop `buildResearchSubmission`.
-public func buildResearchSubmission(_ citation: String) -> String {
-    jsonString(["citation": citation.trimmingCharacters(in: .whitespacesAndNewlines)])
+public func researchCitationComplete(_ citation: String) -> Bool {
+    !citation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+}
+
+public func buildResearchSubmission(_ citation: String) throws -> String {
+    guard researchCitationComplete(citation) else {
+        throw TbsSubmissionError.missingCitation
+    }
+    return jsonString(["citation": citation.trimmingCharacters(in: .whitespacesAndNewlines)])
 }
 
 private func revealCorrectText(_ object: [String: Any]) -> String {

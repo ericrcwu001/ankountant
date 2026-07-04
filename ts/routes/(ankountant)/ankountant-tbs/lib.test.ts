@@ -17,6 +17,7 @@ import {
     parseExhibits,
     parseSteps,
     renderableTbsShape,
+    researchCitationComplete,
     revealResultPresentation,
     SECTION_SEARCH_ORDER,
     sectionChoiceFromModel,
@@ -409,6 +410,12 @@ test("buildResearchSubmission emits a single trimmed citation (backend research 
     expect(JSON.parse(buildResearchSubmission("  ASC 842-20-25-1 "))).toEqual({
         citation: "ASC 842-20-25-1",
     });
+});
+
+test("research submission requires a governing citation", () => {
+    expect(researchCitationComplete("ASC 842-20-25-1")).toBe(true);
+    expect(researchCitationComplete("   ")).toBe(false);
+    expect(() => buildResearchSubmission("   ")).toThrow(/governing citation/);
 });
 
 test("buildDocReviewSubmission submits each blank's chosen option id", () => {

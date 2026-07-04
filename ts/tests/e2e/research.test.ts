@@ -47,6 +47,17 @@ test("research: a normalized spelling still grades correct (T1 AC1)", async ({ p
     await expect(page.getByTestId("research-verdict")).toHaveClass(/correct/);
 });
 
+test("research: submit requires a governing citation", async ({ page }) => {
+    await page.goto("/ankountant-research");
+    await page.getByTestId("confidence-confident").click();
+    await expect(page.getByTestId("research-submit")).toBeDisabled();
+    await expect(page.getByTestId("research-citation-hint")).toContainText(
+        "Enter a governing citation",
+    );
+    await page.getByTestId("citation-input").fill("ASC 842-20-25-1");
+    await expect(page.getByTestId("research-submit")).toBeEnabled();
+});
+
 test("research: submit failures stay in the surface", async ({ page }) => {
     await page.route("**/_anki/submitPerformanceAttempt", async (route) => {
         await route.fulfill({

@@ -17,7 +17,11 @@ paraphrase + link and IRC/PCAOB/NIST show verbatim text.
 
     import ExamShell from "../ankountant-tbs/ExamShell.svelte";
     import type { TbsModel } from "../ankountant-tbs/lib";
-    import { buildResearchSubmission, buildRevealModel } from "../ankountant-tbs/lib";
+    import {
+        buildResearchSubmission,
+        buildRevealModel,
+        researchCitationComplete,
+    } from "../ankountant-tbs/lib";
     import ResultsLayer from "../ankountant-tbs/ResultsLayer.svelte";
 
     export let noteId: bigint;
@@ -36,9 +40,10 @@ paraphrase + link and IRC/PCAOB/NIST show verbatim text.
 
     $: reveal = results ? buildRevealModel(fields, tags) : null;
     $: responseLocked = submitting || results !== null;
+    $: citationEntered = researchCitationComplete(citation);
 
     async function submit(): Promise<void> {
-        if (confidence === null || citation.trim() === "" || responseLocked) {
+        if (confidence === null || !citationEntered || responseLocked) {
             return;
         }
         submitting = true;
@@ -99,9 +104,7 @@ paraphrase + link and IRC/PCAOB/NIST show verbatim text.
             <button
                 class="submit"
                 data-testid="research-submit"
-                disabled={responseLocked ||
-                    confidence === null ||
-                    citation.trim() === ""}
+                disabled={responseLocked || confidence === null || !citationEntered}
                 on:click={submit}
             >
                 {submitting ? "Submitting…" : "Submit citation"}
@@ -109,6 +112,10 @@ paraphrase + link and IRC/PCAOB/NIST show verbatim text.
             {#if confidence === null}
                 <span class="gate-hint" data-testid="research-gate-hint">
                     Commit a confidence level first.
+                </span>
+            {:else if !citationEntered}
+                <span class="gate-hint" data-testid="research-citation-hint">
+                    Enter a governing citation.
                 </span>
             {/if}
         </div>
