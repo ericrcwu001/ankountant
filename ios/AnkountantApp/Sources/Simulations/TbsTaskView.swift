@@ -292,11 +292,14 @@ struct TbsTaskView: View {
         submitting = true
         submitError = nil
         defer { submitting = false }
-        let submissionJson = model.shape == .numeric
-            ? buildNumericSubmission(numericCells)
-            : buildJeSubmission(jeLines)
-        let latencyMs = UInt32(clamping: Int((Date.now.timeIntervalSince(startedAt) * 1000).rounded()))
         do {
+            let submissionJson: String
+            if model.shape == .numeric {
+                submissionJson = try buildNumericSubmission(numericCells)
+            } else {
+                submissionJson = try buildJeSubmission(jeLines)
+            }
+            let latencyMs = UInt32(clamping: Int((Date.now.timeIntervalSince(startedAt) * 1000).rounded()))
             let resp = try performanceClient.submitTbs(noteId, submissionJson, confidence.rawValue, latencyMs)
             results = resp.steps
             total = resp.totalCredit

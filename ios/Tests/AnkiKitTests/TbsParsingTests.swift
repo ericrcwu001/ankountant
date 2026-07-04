@@ -50,6 +50,17 @@ private func expectTbsParseError<T>(_ expected: String, _ body: () throws -> T) 
     }
 }
 
+private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -> T) {
+    do {
+        _ = try body()
+        Issue.record("Expected TbsSubmissionError containing \(expected)")
+    } catch let error as TbsSubmissionError {
+        #expect(error.localizedDescription.contains(expected))
+    } catch {
+        Issue.record("Expected TbsSubmissionError containing \(expected), got \(error)")
+    }
+}
+
 @Test func parseStepsOnAnchorJournalEntry() throws {
     let steps = try parseSteps(anchorSteps)
 
@@ -149,8 +160,8 @@ private func expectTbsParseError<T>(_ expected: String, _ body: () throws -> T) 
 }
 
 @Test func buildJeSubmissionShapesAmounts() throws {
-    let json = buildJeSubmission([
-        JeLineInput(id: "l1", account: "ROU Asset", side: "dr", amount: "10000"),
+    let json = try buildJeSubmission([
+        JeLineInput(id: "l1", account: "ROU Asset", side: "dr", amount: " 10000.50 "),
         JeLineInput(id: "l2", account: "Cash", side: "cr", amount: ""),
     ])
     let steps = try #require(try parseObject(json)["steps"] as? [[String: Any]])
@@ -161,7 +172,7 @@ private func expectTbsParseError<T>(_ expected: String, _ body: () throws -> T) 
     #expect(first["account"] as? String == "ROU Asset")
     #expect(first["side"] as? String == "dr")
     // A provided amount is a JSON number, never a string.
-    #expect(first["amount"] as? Double == 10000)
+    #expect(first["amount"] as? Double == 10000.5)
     #expect(first["amount"] as? String == nil)
 
     let second = try #require(steps[1]["value"] as? [String: Any])
@@ -172,21 +183,39 @@ private func expectTbsParseError<T>(_ expected: String, _ body: () throws -> T) 
     #expect(second["amount"] as? Double == nil)
 }
 
+@Test func buildJeSubmissionRejectsMalformedAmounts() {
+    expectTbsSubmissionError("Amount for l1 must be a decimal number.") {
+        try buildJeSubmission([
+            JeLineInput(id: "l1", account: "ROU Asset", side: "dr", amount: "1,000"),
+        ])
+    }
+}
+
 @Test func buildNumericSubmissionShapesValues() throws {
-    let json = buildNumericSubmission([
-        NumericCellInput(id: "c1", value: "42"),
-        NumericCellInput(id: "c2", value: ""),
+    let json = try buildNumericSubmission([
+        NumericCellInput(id: "c1", value: "-42.5"),
+        NumericCellInput(id: "c2", value: "   "),
+        NumericCellInput(id: "c3", value: ".25"),
     ])
     let steps = try #require(try parseObject(json)["steps"] as? [[String: Any]])
-    #expect(steps.count == 2)
+    #expect(steps.count == 3)
 
     #expect(steps[0]["id"] as? String == "c1")
-    #expect(steps[0]["value"] as? Double == 42)
+    #expect(steps[0]["value"] as? Double == -42.5)
     #expect(steps[0]["value"] as? String == nil)
 
     #expect(steps[1]["id"] as? String == "c2")
     #expect(steps[1]["value"] as? String == "")
     #expect(steps[1]["value"] as? Double == nil)
+
+    #expect(steps[2]["id"] as? String == "c3")
+    #expect(steps[2]["value"] as? Double == 0.25)
+}
+
+@Test func buildNumericSubmissionRejectsMalformedValues() {
+    expectTbsSubmissionError("Value for c1 must be a decimal number.") {
+        try buildNumericSubmission([NumericCellInput(id: "c1", value: "NaN")])
+    }
 }
 
 @Test func buildChoiceSubmissionWrapsChoice() throws {

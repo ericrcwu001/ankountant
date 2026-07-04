@@ -55,6 +55,20 @@ public enum TbsParseError: Error, Equatable, LocalizedError, Sendable {
     }
 }
 
+public enum TbsSubmissionError: Error, Equatable, LocalizedError, Sendable {
+    case invalidDecimal(field: String)
+    case nonFiniteNumber(field: String)
+
+    public var errorDescription: String? {
+        switch self {
+        case let .invalidDecimal(field):
+            "\(field) must be a decimal number."
+        case let .nonFiniteNumber(field):
+            "\(field) must be a finite number."
+        }
+    }
+}
+
 /// Build the full TBS render model from a note's raw fields (+ tags for the
 /// section, ADR 0008). Mirrors the desktop `buildTbsModel(fields, tags)`.
 public func buildTbsModel(fields: [String], tags: [String] = []) throws -> TbsModel {
@@ -197,14 +211,14 @@ public func segmentDocument(_ body: String?) -> [DocSegment] {
 }
 
 /// Shape the submission_json for a journal-entry TBS.
-public func buildJeSubmission(_ lines: [JeLineInput]) -> String {
-    let steps = lines.map { line -> [String: Any] in
+public func buildJeSubmission(_ lines: [JeLineInput]) throws -> String {
+    let steps = try lines.map { line -> [String: Any] in
         [
             "id": line.id,
             "value": [
                 "account": line.account,
                 "side": line.side,
-                "amount": numberOrEmpty(line.amount),
+                "amount": try submissionNumber(line.amount, fieldName: "Amount for \(line.id)"),
             ] as [String: Any],
         ]
     }
@@ -212,9 +226,9 @@ public func buildJeSubmission(_ lines: [JeLineInput]) -> String {
 }
 
 /// Shape the submission_json for a numeric TBS.
-public func buildNumericSubmission(_ cells: [NumericCellInput]) -> String {
-    let steps = cells.map { cell -> [String: Any] in
-        ["id": cell.id, "value": numberOrEmpty(cell.value)]
+public func buildNumericSubmission(_ cells: [NumericCellInput]) throws -> String {
+    let steps = try cells.map { cell -> [String: Any] in
+        ["id": cell.id, "value": try submissionNumber(cell.value, fieldName: "Value for \(cell.id)")]
     }
     return jsonString(["steps": steps])
 }
@@ -293,12 +307,22 @@ private func jsonString(_ object: [String: Any]) -> String {
     }
 }
 
-/// A cell value for a submission: "" when empty, else the parsed number, else the
-/// raw string when it does not parse (mirrors lib.ts `x === "" ? "" : Number(x)`).
-private func numberOrEmpty(_ raw: String) -> Any {
-    if raw.isEmpty { return "" }
-    if let number = Double(raw) { return number }
-    return raw
+private let decimalNumberRegex = regex(#"^[+-]?(?:\d+\.?\d*|\.\d+)$"#)
+
+private func submissionNumber(_ raw: String, fieldName: String) throws -> Any {
+    let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return "" }
+    let range = NSRange(trimmed.startIndex..<trimmed.endIndex, in: trimmed)
+    guard decimalNumberRegex.firstMatch(in: trimmed, range: range) != nil else {
+        throw TbsSubmissionError.invalidDecimal(field: fieldName)
+    }
+    guard let number = Double(trimmed) else {
+        throw TbsSubmissionError.invalidDecimal(field: fieldName)
+    }
+    guard number.isFinite else {
+        throw TbsSubmissionError.nonFiniteNumber(field: fieldName)
+    }
+    return number
 }
 
 /// Parse a JSON array of strings (coercing numbers/other scalars to strings),
