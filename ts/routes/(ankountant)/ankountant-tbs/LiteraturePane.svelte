@@ -10,7 +10,11 @@ tileable pane. Optional `onCite` fills a caller's citation input (intra-surface
 sync — the cross-pane version is impossible without a shared store).
 -->
 <script lang="ts">
-    import { corpusForSection, searchCorpus } from "../ankountant-research/lib";
+    import {
+        corpusForSection,
+        searchCorpus,
+        type CorpusEntry,
+    } from "../ankountant-research/lib";
 
     export let section: string;
     /** Optional: called when the learner clicks "Use this citation". */
@@ -18,8 +22,18 @@ sync — the cross-pane version is impossible without a shared store).
     export let citationEnabled = true;
 
     let query = "";
-    $: entries = corpusForSection(section);
-    $: results = searchCorpus(entries, query);
+    let entries: CorpusEntry[] = [];
+    let corpusError: string | null = null;
+    $: {
+        try {
+            entries = corpusForSection(section);
+            corpusError = null;
+        } catch (error) {
+            entries = [];
+            corpusError = error instanceof Error ? error.message : String(error);
+        }
+    }
+    $: results = corpusError ? [] : searchCorpus(entries, query);
 </script>
 
 <div class="literature" data-testid="literature">
@@ -37,45 +51,55 @@ sync — the cross-pane version is impossible without a shared store).
     </div>
 
     <ul class="results" data-testid="lit-results">
-        {#each results as e (e.id)}
-            <li class="result card" data-testid="lit-result" data-citation={e.citation}>
-                <div class="result-head">
-                    <span class="cite">{e.citation}</span>
-                    <span class="kind-tag" class:verbatim={e.verbatim}>
-                        {e.verbatim
-                            ? "Verbatim · public domain"
-                            : "Paraphrase · cite-only"}
-                    </span>
-                </div>
-                <p class="title">{e.title}</p>
-                <p class="body" class:paraphrase={!e.verbatim}>{e.body}</p>
-                <div class="result-actions">
-                    {#if e.deepLink}
-                        <a
-                            class="deep-link"
-                            href={e.deepLink}
-                            target="_blank"
-                            rel="noreferrer noopener"
-                            data-testid="lit-deeplink"
-                        >
-                            Open source ↗
-                        </a>
-                    {/if}
-                    {#if onCite}
-                        <button
-                            type="button"
-                            class="cite-btn"
-                            data-testid="lit-cite"
-                            disabled={!citationEnabled}
-                            on:click={() => onCite?.(e.citation)}
-                        >
-                            Use this citation
-                        </button>
-                    {/if}
-                </div>
+        {#if corpusError}
+            <li class="error card" data-testid="lit-error" role="alert">
+                Literature unavailable: {corpusError}
             </li>
-        {/each}
-        {#if results.length === 0}
+        {:else}
+            {#each results as e (e.id)}
+                <li
+                    class="result card"
+                    data-testid="lit-result"
+                    data-citation={e.citation}
+                >
+                    <div class="result-head">
+                        <span class="cite">{e.citation}</span>
+                        <span class="kind-tag" class:verbatim={e.verbatim}>
+                            {e.verbatim
+                                ? "Verbatim · public domain"
+                                : "Paraphrase · cite-only"}
+                        </span>
+                    </div>
+                    <p class="title">{e.title}</p>
+                    <p class="body" class:paraphrase={!e.verbatim}>{e.body}</p>
+                    <div class="result-actions">
+                        {#if e.deepLink}
+                            <a
+                                class="deep-link"
+                                href={e.deepLink}
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                data-testid="lit-deeplink"
+                            >
+                                Open source ↗
+                            </a>
+                        {/if}
+                        {#if onCite}
+                            <button
+                                type="button"
+                                class="cite-btn"
+                                data-testid="lit-cite"
+                                disabled={!citationEnabled}
+                                on:click={() => onCite?.(e.citation)}
+                            >
+                                Use this citation
+                            </button>
+                        {/if}
+                    </div>
+                </li>
+            {/each}
+        {/if}
+        {#if !corpusError && results.length === 0}
             <li class="empty" data-testid="lit-none">
                 {query
                     ? `No passages match "${query}".`
@@ -155,6 +179,11 @@ sync — the cross-pane version is impossible without a shared store).
 
     .result {
         padding: var(--space-md);
+    }
+
+    .error {
+        padding: var(--space-md);
+        color: var(--fg-error);
     }
 
     .result-head {
