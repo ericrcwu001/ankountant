@@ -29,6 +29,9 @@ struct HomeView: View {
     @State private var readinessLoaded = false
     @State private var farDeckId: Int64?
     @State private var loadError: String?
+    @State private var showImport = false
+    @State private var importMessage: String?
+    @State private var showImportAlert = false
 
     @Shared(.appStorage(DemoSeed.versionKey)) private var demoSeedVersion = 0
 
@@ -66,6 +69,14 @@ struct HomeView: View {
                 canStudy: farDeckId != nil,
                 onStudy: startReview
             )
+        }
+        .fileImporter(isPresented: $showImport, allowedContentTypes: [.data]) { result in
+            handleImport(result)
+        }
+        .alert("Import", isPresented: $showImportAlert) {
+            Button("OK") {}
+        } message: {
+            Text(importMessage ?? "")
         }
     }
 
@@ -281,13 +292,6 @@ struct HomeView: View {
     private var actions: some View {
         VStack(spacing: AnkountantSpacing.sm) {
             primaryCta
-            if cta.target == .recall, let recallUnavailableMessage {
-                Text(recallUnavailableMessage)
-                    .ankountantFont(.caption)
-                    .foregroundStyle(palette.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
-            }
 
             Button {
                 path.append(HomeRoute.confusion)
@@ -312,25 +316,43 @@ struct HomeView: View {
     // multiple NavigationLinks would all fire on a single tap.
     @ViewBuilder
     private var primaryCta: some View {
-        let label = VStack(spacing: AnkountantSpacing.xxs) {
-            Text(cta.label)
+        switch cta.target {
+        case .recall:
+            if farDeckId == nil {
+                Button {
+                    showImport = true
+                } label: {
+                    ctaLabel(
+                        title: "Import FAR study deck",
+                        subtitle: "Load an Anki package to start recall review"
+                    )
+                }
+                .buttonStyle(AnkountantPrimaryButtonStyle())
+            } else {
+                Button(action: startReview) {
+                    ctaLabel(title: cta.label, subtitle: cta.subtitle)
+                }
+                .buttonStyle(AnkountantPrimaryButtonStyle())
+            }
+        case .confusion:
+            Button {
+                path.append(HomeRoute.confusion)
+            } label: {
+                ctaLabel(title: cta.label, subtitle: cta.subtitle)
+            }
+            .buttonStyle(AnkountantPrimaryButtonStyle())
+        }
+    }
+
+    private func ctaLabel(title: String, subtitle: String) -> some View {
+        VStack(spacing: AnkountantSpacing.xxs) {
+            Text(title)
                 .ankountantFont(.bodyEmphasis)
-            Text(cta.subtitle)
+            Text(subtitle)
                 .ankountantFont(.caption)
                 .opacity(0.85)
         }
         .frame(maxWidth: .infinity)
-
-        switch cta.target {
-        case .recall:
-            Button(action: startReview) { label }
-                .buttonStyle(AnkountantPrimaryButtonStyle())
-                .disabled(farDeckId == nil)
-                .accessibilityHint(recallUnavailableMessage ?? "")
-        case .confusion:
-            Button { path.append(HomeRoute.confusion) } label: { label }
-                .buttonStyle(AnkountantPrimaryButtonStyle())
-        }
     }
 
     private var farReadiness: ReadinessSummary? {
@@ -410,10 +432,6 @@ struct HomeView: View {
 
     private var cta: PhaseCta { buildPhaseCta(phase) }
 
-    private var recallUnavailableMessage: String? {
-        farDeckId == nil ? "Load or import the Ankountant FAR study deck to start recall review." : nil
-    }
-
     private var examDateBinding: Binding<Date> {
         Binding(
             get: { examDate },
@@ -436,6 +454,28 @@ struct HomeView: View {
     private func startReview() {
         if let farDeckId {
             pendingReviewDeckId = farDeckId
+        }
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            let ext = url.pathExtension.lowercased()
+            guard ext == "apkg" || ext == "colpkg" else {
+                importMessage = "Unsupported file type. Please select an .apkg or .colpkg file."
+                showImportAlert = true
+                return
+            }
+            do {
+                importMessage = try ImportHelper.importPackage(from: url)
+                Task { await load() }
+            } catch {
+                importMessage = "Import failed: \(error.localizedDescription)"
+            }
+            showImportAlert = true
+        case .failure(let error):
+            importMessage = "Could not select file: \(error.localizedDescription)"
+            showImportAlert = true
         }
     }
 
