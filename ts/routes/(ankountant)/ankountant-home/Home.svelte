@@ -545,6 +545,15 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         padding: var(--space-xl);
     }
 
+    .rail,
+    .mastery {
+        min-height: 0;
+    }
+
+    .rail {
+        overflow: auto;
+    }
+
     .rail-label {
         display: flex;
         align-items: center;
@@ -845,7 +854,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         flex-direction: column;
         min-width: 0;
         padding: var(--space-xl) var(--space-xl) var(--space-lg);
-        overflow: hidden;
+        overflow: auto;
         background: transparent;
         border-color: transparent;
         box-shadow: none;
