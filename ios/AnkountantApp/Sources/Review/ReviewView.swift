@@ -227,7 +227,8 @@ struct ReviewView: View {
                 },
                 onLookupRequested: tapLookup ? { text, _, _ in
                     if let text, !text.isEmpty { lookupQuery = text }
-                } : nil
+                } : nil,
+                onRenderError: { message in session.reportRenderError(message) }
             )
 
             Spacer()

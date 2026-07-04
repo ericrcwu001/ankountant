@@ -26,6 +26,7 @@ struct CardWebView: UIViewRepresentable {
     let onAudioStateChange: ((Bool) -> Void)?
     let onCardBackgroundColorChange: ((UIColor, Bool) -> Void)?
     let onLookupRequested: ((String?, String?, CGPoint) -> Void)?
+    let onRenderError: ((String) -> Void)?
 
     init(
         html: String,
@@ -46,7 +47,8 @@ struct CardWebView: UIViewRepresentable {
         onTypedAnswerSubmitted: ((String?) -> Void)? = nil,
         onAudioStateChange: ((Bool) -> Void)? = nil,
         onCardBackgroundColorChange: ((UIColor, Bool) -> Void)? = nil,
-        onLookupRequested: ((String?, String?, CGPoint) -> Void)? = nil
+        onLookupRequested: ((String?, String?, CGPoint) -> Void)? = nil,
+        onRenderError: ((String) -> Void)? = nil
     ) {
         self.html = html
         self.cardCSS = cardCSS
@@ -67,6 +69,7 @@ struct CardWebView: UIViewRepresentable {
         self.onAudioStateChange = onAudioStateChange
         self.onCardBackgroundColorChange = onCardBackgroundColorChange
         self.onLookupRequested = onLookupRequested
+        self.onRenderError = onRenderError
     }
 
     func makeCoordinator() -> CardWebViewCoordinator {
@@ -74,7 +77,8 @@ struct CardWebView: UIViewRepresentable {
             onTypedAnswerSubmitted: onTypedAnswerSubmitted,
             onAudioStateChange: onAudioStateChange,
             onCardBackgroundColorChange: onCardBackgroundColorChange,
-            onLookupRequested: onLookupRequested
+            onLookupRequested: onLookupRequested,
+            onRenderError: onRenderError
         )
     }
 
@@ -197,24 +201,41 @@ struct CardWebView: UIViewRepresentable {
         } else if context.coordinator.lastContentSignature != contentSignature {
             context.coordinator.lastContentSignature = contentSignature
             if context.coordinator.isPageLoaded {
-                webView.evaluateJavaScript(showCardScript, completionHandler: nil)
+                webView.evaluateJavaScript(showCardScript) { _, error in
+                    if let error {
+                        context.coordinator.reportRenderError("Failed to update rendered card: \(error.localizedDescription)")
+                    }
+                }
             } else {
                 context.coordinator.pendingUpdateScript = showCardScript
             }
         }
         if replayRequestID != context.coordinator.lastReplayRequestID {
             context.coordinator.lastReplayRequestID = replayRequestID
-            webView.evaluateJavaScript("window.ankountantReplayAll && window.ankountantReplayAll('" + replayMode.rawValue + "');", completionHandler: nil)
+            webView.evaluateJavaScript("window.ankountantReplayAll && window.ankountantReplayAll('" + replayMode.rawValue + "');") { _, error in
+                if let error {
+                    context.coordinator.reportRenderError("Failed to replay card audio: \(error.localizedDescription)")
+                }
+            }
         }
 
         if stopAudioRequestID != context.coordinator.lastStopAudioRequestID {
             context.coordinator.lastStopAudioRequestID = stopAudioRequestID
-            webView.evaluateJavaScript("window.ankountantStopAllAudio && window.ankountantStopAllAudio();", completionHandler: nil)
+            webView.evaluateJavaScript("window.ankountantStopAllAudio && window.ankountantStopAllAudio();") { _, error in
+                if let error {
+                    context.coordinator.reportRenderError("Failed to stop card audio: \(error.localizedDescription)")
+                }
+            }
         }
 
         if typedAnswerRequestID != context.coordinator.lastTypedAnswerRequestID {
             context.coordinator.lastTypedAnswerRequestID = typedAnswerRequestID
-            webView.evaluateJavaScript("window.ankountantGetTypedAnswer ? window.ankountantGetTypedAnswer() : null") { value, _ in
+            webView.evaluateJavaScript("window.ankountantGetTypedAnswer ? window.ankountantGetTypedAnswer() : null") { value, error in
+                if let error {
+                    context.coordinator.reportRenderError("Failed to read typed answer: \(error.localizedDescription)")
+                    context.coordinator.onTypedAnswerSubmitted?(nil)
+                    return
+                }
                 let typedAnswer: String?
                 if let string = value as? String {
                     typedAnswer = string

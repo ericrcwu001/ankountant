@@ -38,6 +38,7 @@ final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMess
     private let onAudioStateChange: ((Bool) -> Void)?
     private let onCardBackgroundColorChange: ((UIColor, Bool) -> Void)?
     private let onLookupRequested: ((String?, String?, CGPoint) -> Void)?
+    private let onRenderError: ((String) -> Void)?
 
     // MARK: Private state
 
@@ -50,12 +51,14 @@ final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMess
         onTypedAnswerSubmitted: ((String?) -> Void)? = nil,
         onAudioStateChange: ((Bool) -> Void)? = nil,
         onCardBackgroundColorChange: ((UIColor, Bool) -> Void)? = nil,
-        onLookupRequested: ((String?, String?, CGPoint) -> Void)? = nil
+        onLookupRequested: ((String?, String?, CGPoint) -> Void)? = nil,
+        onRenderError: ((String) -> Void)? = nil
     ) {
         self.onTypedAnswerSubmitted = onTypedAnswerSubmitted
         self.onAudioStateChange = onAudioStateChange
         self.onCardBackgroundColorChange = onCardBackgroundColorChange
         self.onLookupRequested = onLookupRequested
+        self.onRenderError = onRenderError
         super.init()
         speechSynthesizer.delegate = self
     }
@@ -282,17 +285,21 @@ final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMess
         self.pendingUpdateScript = nil
         webView.evaluateJavaScript(pendingUpdateScript) { _, error in
             if let error {
-                print("[CardWebView] evaluateJavaScript error: \(error)")
+                self.reportRenderError("Failed to render card content: \(error.localizedDescription)")
             }
         }
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        print("[CardWebView] Navigation failed: \(error)")
+        reportRenderError("Failed to load rendered card: \(error.localizedDescription)")
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        print("[CardWebView] Provisional navigation failed: \(error)")
+        reportRenderError("Failed to start loading rendered card: \(error.localizedDescription)")
+    }
+
+    func reportRenderError(_ message: String) {
+        onRenderError?(message)
     }
 
     // MARK: - CSS color parsing

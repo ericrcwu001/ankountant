@@ -93,6 +93,10 @@ final class ReviewSession {
         errorMessage = nil
     }
 
+    func reportRenderError(_ message: String) {
+        errorMessage = message
+    }
+
     func start() {
         errorMessage = nil
 
