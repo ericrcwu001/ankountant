@@ -2138,6 +2138,10 @@ fn typed_section_item_schema_is_validated_at_seed_time() {
         r#"[{"section":"REG","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"citation","accepted":[]}]}]"#,
         // research step id is not "citation"
         r#"[{"section":"REG","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"c","accepted":["IRC 162"]}]}]"#,
+        // step weights must sum to 1
+        r#"[{"section":"REG","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"citation","accepted":["IRC 162"],"weight":1.5}]}]"#,
+        // step weights must be nonnegative
+        r#"[{"section":"REG","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"citation","accepted":["IRC 162"],"weight":-0.1}]}]"#,
         // doc_review blank answer_key is not one of the option ids
         r#"[{"section":"FAR","tbs_type":"doc_review","set_id":"s","prompt":"p","source":"s","exhibits":[{"title":"d","kind":"document","role":"document","body":"x <blank step=\"b1\">y</blank>"}],"steps":[{"kind":"blank","id":"b1","answer_key":"o9","options":[{"id":"o1","text":"a"},{"id":"o2","text":"b"}]}]}]"#,
         // doc_review exhibit kind is not renderable by clients

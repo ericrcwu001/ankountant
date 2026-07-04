@@ -235,16 +235,8 @@ fn validate_gradable_steps(steps: &[grading::GradableStep]) -> Result<()> {
             invalid_input!("TBS note has duplicate step id: {}", step.id);
         }
     }
-    let weights = grading::effective_weights(steps);
-    let mut total = 0.0;
-    for (step, weight) in steps.iter().zip(weights) {
-        if !weight.is_finite() || weight < 0.0 {
-            invalid_input!("TBS note has invalid weight for step {}", step.id);
-        }
-        total += weight;
-    }
-    if (total - 1.0).abs() > 1e-6 {
-        invalid_input!("TBS note step weights must sum to 1.0");
+    if let Err(message) = grading::validate_effective_weights(steps) {
+        invalid_input!("{message}");
     }
     Ok(())
 }

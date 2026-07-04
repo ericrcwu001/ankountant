@@ -47,6 +47,26 @@ pub(crate) fn effective_weights(steps: &[GradableStep]) -> Vec<f64> {
     steps.iter().map(|s| s.weight.unwrap_or(default)).collect()
 }
 
+pub(crate) fn validate_effective_weights(
+    steps: &[GradableStep],
+) -> std::result::Result<(), String> {
+    if steps.is_empty() {
+        return Err("TBS note has no gradable steps".to_string());
+    }
+    let weights = effective_weights(steps);
+    let mut total = 0.0;
+    for (step, weight) in steps.iter().zip(weights) {
+        if !weight.is_finite() || weight < 0.0 {
+            return Err(format!("TBS note has invalid weight for step {}", step.id));
+        }
+        total += weight;
+    }
+    if (total - 1.0).abs() > 1e-6 {
+        return Err("TBS note step weights must sum to 1.0".to_string());
+    }
+    Ok(())
+}
+
 /// Grade a submission against the parsed steps. `submitted` maps step id ->
 /// submitted value. Returns per-step outcomes and the total credit fraction
 /// `Σ(weight × correct)`.

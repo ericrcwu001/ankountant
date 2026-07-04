@@ -820,6 +820,7 @@ impl Collection {
                 ),
             };
             let steps = content_tbs_steps(t);
+            validate_stored_steps(&steps)?;
             let mut note = tbs_nt.new_note();
             note.set_field(tbs_fields::TBS_TYPE, &t.kind)?;
             note.set_field(tbs_fields::PROMPT, &t.prompt)?;
@@ -1475,6 +1476,15 @@ fn section_item_steps(item: &SectionItem) -> Value {
     Value::Array(steps)
 }
 
+fn validate_stored_steps(steps: &Value) -> Result<()> {
+    let steps: Vec<super::grading::GradableStep> =
+        serde_json::from_value(steps.clone()).or_invalid("invalid steps_json")?;
+    if let Err(message) = super::grading::validate_effective_weights(&steps) {
+        invalid_input!("{message}");
+    }
+    Ok(())
+}
+
 /// Return `Err(InvalidInput)` unless `cond` holds — the seed-time validation
 /// primitive (D9: correctness is validated, not assumed).
 fn check(cond: bool, msg: impl Into<String>) -> Result<()> {
@@ -1511,6 +1521,7 @@ fn validate_section_item(item: &SectionItem) -> Result<()> {
     if let Some(v) = item.schema_version {
         check(v == 1, format!("unsupported schema_version {v}"))?;
     }
+    validate_stored_steps(&section_item_steps(item))?;
     for ex in &item.exhibits {
         check(!ex.title.trim().is_empty(), "exhibit is missing a title")?;
         check(
