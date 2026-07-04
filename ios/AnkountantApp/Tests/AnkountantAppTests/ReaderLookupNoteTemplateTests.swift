@@ -107,4 +107,13 @@ struct LookupStructuredContentTests {
         #expect(html.contains(#"const dictStyleValue = ".tag::before { content: \"${notInterpolation}\"; }";"#))
         #expect(!html.contains(#"window.dictionaryStyles = { [dictName]: `"#))
     }
+
+    @Test("externalURL accepts only web links")
+    func externalURLAcceptsOnlyWebLinks() {
+        #expect(LookupStructuredContentView.Coordinator.externalURL(from: " https://example.com/path ")?.scheme == "https")
+        #expect(LookupStructuredContentView.Coordinator.externalURL(from: "HTTP://example.com")?.scheme?.lowercased() == "http")
+        #expect(LookupStructuredContentView.Coordinator.externalURL(from: "javascript:alert(1)") == nil)
+        #expect(LookupStructuredContentView.Coordinator.externalURL(from: "file:///tmp/a") == nil)
+        #expect(LookupStructuredContentView.Coordinator.externalURL(from: "/relative") == nil)
+    }
 }

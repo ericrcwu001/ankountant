@@ -147,11 +147,21 @@ struct LookupStructuredContentView: UIViewRepresentable {
                 onLookupRequested?(text)
             case "openLink":
                 guard let urlString = message.body as? String,
-                      let url = URL(string: urlString) else { return }
+                      let url = Self.externalURL(from: urlString) else { return }
                 UIApplication.shared.open(url)
             default:
                 return
             }
+        }
+
+        static func externalURL(from raw: String) -> URL? {
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let url = URL(string: trimmed),
+                  let scheme = url.scheme?.lowercased(),
+                  scheme == "http" || scheme == "https" else {
+                return nil
+            }
+            return url
         }
 
         // MARK: WKURLSchemeHandler — dictionary-bundled media via image://
