@@ -107,6 +107,22 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
             <span class="state-icon empty-icon" aria-hidden="true">?</span>
             <p class="finished">No confusion items yet.</p>
             <p class="state-note">{emptyDetail}</p>
+            <div class="state-actions">
+                <a
+                    class="primary-link"
+                    href="/ankountant-tbs"
+                    data-testid="confusion-to-tbs"
+                >
+                    Practice simulations
+                </a>
+                <a
+                    class="secondary-link"
+                    href={dashboardHref}
+                    data-testid="confusion-to-dashboard"
+                >
+                    Readiness evidence
+                </a>
+            </div>
         </div>
     {:else if done}
         <div class="card state-card finished-card">
@@ -474,6 +490,13 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
         line-height: 1.45;
     }
 
+    .state-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--space-sm);
+    }
+
     .primary-link {
         font-weight: 600;
         color: #fff;
@@ -485,6 +508,26 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
 
         &:hover {
             background: var(--button-primary-hover-bg);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent) !important;
+            outline-offset: 2px;
+        }
+    }
+
+    .secondary-link {
+        font-weight: 600;
+        color: var(--fg-subtle);
+        text-decoration: none;
+        background: var(--canvas-inset);
+        border: 1px solid var(--border-control);
+        border-radius: var(--border-radius);
+        padding: var(--space-sm) var(--space-xl);
+
+        &:hover {
+            color: var(--fg);
+            border-color: var(--accent);
         }
 
         &:focus-visible {

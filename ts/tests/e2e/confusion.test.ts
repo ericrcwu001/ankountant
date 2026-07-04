@@ -41,7 +41,16 @@ test("items are label-stripped: no category-label element (A44/B2-D1)", async ({
 test("BAR deep link shows the section-specific empty confusion state", async ({ page, seed }) => {
     expect(seed.confusionSets).toBeGreaterThanOrEqual(4);
     await page.goto("/ankountant-confusion?section=BAR");
-    await expect(page.getByText("No BAR confusion items are available yet.")).toBeVisible();
+    const empty = page.getByTestId("confusion-empty");
+    await expect(empty).toContainText("No BAR confusion items are available yet.");
+    await expect(empty.getByRole("link", { name: "Practice simulations" })).toHaveAttribute(
+        "href",
+        "/ankountant-tbs",
+    );
+    await expect(empty.getByRole("link", { name: "Readiness evidence" })).toHaveAttribute(
+        "href",
+        "/ankountant-dashboard?section=BAR",
+    );
     await expect(page.getByTestId("confusion-item")).toHaveCount(0);
 });
 
