@@ -20,8 +20,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     {/key}
 {:else}
     <p class="empty" data-testid="docreview-empty">
-        No document-review task available yet. Load the FAR demo content from the
-        Ankountant menu.
+        No document-review task was found in this profile.
     </p>
 {/if}
 

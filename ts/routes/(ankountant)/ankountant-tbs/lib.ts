@@ -93,6 +93,10 @@ export const SECTION_SEARCH_ORDER: readonly Section[] = [
     ...SECTIONS.filter((section) => section !== DEFAULT_SECTION),
 ];
 
+export function sectionSearchOrder(section: string | null): readonly string[] {
+    return section && section.trim() !== "" ? [section] : SECTION_SEARCH_ORDER;
+}
+
 const SEC_TAG_PREFIX = "sec::";
 
 /** Typed exhibit kinds (mirrors the Rust SeedExhibit `kind`). */

@@ -3,20 +3,19 @@
 
 import { getNote, searchNotes } from "@generated/backend";
 
-import { buildTbsModel } from "../ankountant-tbs/lib";
+import { buildTbsModel, sectionSearchOrder, tbsSearch } from "../ankountant-tbs/lib";
 import type { PageLoad } from "./$types";
 
-// Section-agnostic (ADR 0008): filter by tbs_type + section (default FAR).
-// Deep-link a concrete item with ?note=<id> or pick a section with ?section=.
 export const load = (async ({ url }) => {
-    const section = url.searchParams.get("section") ?? "FAR";
-    const search = `"note:Ankountant TBS" "tbs_type:doc_review" deck:Ankountant::Sealed::${section}::*`;
     const noteIdParam = url.searchParams.get("note");
     let noteId = noteIdParam ? BigInt(noteIdParam) : 0n;
     if (noteId === 0n) {
-        const found = await searchNotes({ search });
-        if (found.ids.length > 0) {
-            noteId = found.ids[0];
+        for (const section of sectionSearchOrder(url.searchParams.get("section"))) {
+            const found = await searchNotes({ search: tbsSearch("doc_review", section) });
+            if (found.ids.length > 0) {
+                noteId = found.ids[0];
+                break;
+            }
         }
     }
     if (noteId === 0n) {
