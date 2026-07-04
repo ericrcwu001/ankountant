@@ -104,12 +104,10 @@ struct ReviewView: View {
                     .disabled(session.currentNote == nil)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
+                    Button("Look up word", systemImage: "character.book.closed") {
                         lookupQuery = ""
-                    } label: {
-                        Image(systemName: "character.book.closed")
                     }
-                    .accessibilityLabel("Look up word")
+                    .labelStyle(.iconOnly)
                 }
                 if showAudioReplayButton {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -169,7 +167,10 @@ struct ReviewView: View {
                 for: .navigationBar
             )
             .toolbarColorScheme(
-                autoMatchCardBackground && session.cardChromeIsDark ? .dark : .light,
+                reviewToolbarColorScheme(
+                    autoMatchCardBackground: autoMatchCardBackground,
+                    cardChromeIsDark: session.cardChromeIsDark
+                ),
                 for: .navigationBar
             )
             .sheet(item: $editingNote) { note in
