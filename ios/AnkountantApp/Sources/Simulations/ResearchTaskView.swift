@@ -22,8 +22,11 @@ struct ResearchTaskView: View {
     @State private var citation = ""
     @State private var submitting = false
     @State private var correct: Bool?
+    @State private var results: [PerformanceStepResult]?
+    @State private var reveal: TbsRevealModel?
     @State private var elapsedMs: UInt32 = 0
     @State private var submitError: String?
+    @State private var revealError: String?
     @State private var startedAt = Date.now
 
     private var placeholder: String {
@@ -103,6 +106,14 @@ struct ResearchTaskView: View {
                 verdict(correct)
             }
 
+            if let reveal, let results {
+                SimulationResultsRevealView(reveal: reveal, results: results)
+            }
+
+            if let revealError {
+                SimulationRevealErrorView(message: revealError)
+            }
+
             if let submitError {
                 SimulationSubmitErrorView(message: submitError)
             }
@@ -141,12 +152,19 @@ struct ResearchTaskView: View {
         guard let confidence, !submitting, correct == nil, !trimmedCitation.isEmpty else { return }
         submitting = true
         submitError = nil
+        revealError = nil
         defer { submitting = false }
         let latency = UInt32(clamping: Int((Date.now.timeIntervalSince(startedAt) * 1000).rounded()))
         do {
             let resp = try performanceClient.submitResearch(noteId, trimmedCitation, confidence.rawValue, latency)
             elapsedMs = latency
+            results = resp.steps
             correct = resp.totalCredit >= 1
+            do {
+                reveal = try performanceClient.loadTbsReveal(noteId)
+            } catch {
+                revealError = "Attempt recorded, but the answer key could not be shown: \(error.localizedDescription)"
+            }
         } catch {
             submitError = "Could not record this attempt: \(error.localizedDescription)"
         }

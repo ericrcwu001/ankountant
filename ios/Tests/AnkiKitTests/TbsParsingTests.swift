@@ -177,6 +177,61 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
     #expect(model.steps.count == 4)
 }
 
+@Test func buildTbsRevealModelFormatsJournalEntryKeys() throws {
+    let reveal = try buildTbsRevealModel(
+        fields: [
+            "journal_entry",
+            "Record the entry",
+            "[]",
+            anchorSteps,
+            "ds::lease::finance",
+            "ASC 842-20-35",
+        ],
+        tags: ["sec::FAR"]
+    )
+
+    #expect(reveal.section == "FAR")
+    #expect(reveal.schemaTag == "ds::lease::finance")
+    #expect(reveal.source == "ASC 842-20-35")
+    #expect(reveal.steps[0].label == "l1")
+    #expect(reveal.steps[0].correctText == "DR ROU Asset 10000")
+}
+
+@Test func buildTbsRevealModelResolvesDocReviewOptionText() throws {
+    let reveal = try buildTbsRevealModel(
+        fields: [
+            "doc_review",
+            "Review the document",
+            docReviewExhibits,
+            docReviewSteps,
+            "ds::audit::evidence",
+            "PCAOB AS 1105",
+        ],
+        tags: ["sec::AUD"]
+    )
+
+    #expect(reveal.section == "AUD")
+    #expect(reveal.steps[0].label == "Callout 1")
+    #expect(reveal.steps[0].correctText == "Accounts receivable aged by date due.")
+}
+
+@Test func buildTbsRevealModelJoinsResearchAcceptedCitations() throws {
+    let reveal = try buildTbsRevealModel(
+        fields: [
+            "research",
+            "Find support",
+            "[]",
+            researchSteps,
+            "ds::lease::finance",
+            "ASC 842-20-25-1",
+        ],
+        tags: ["sec::FAR"]
+    )
+
+    #expect(reveal.steps[0].label == "Governing citation")
+    #expect(reveal.steps[0].correctText == "ASC 842-20-25-1 / 842-20-25-1 / ASC 842-20-25")
+}
+
 @Test func buildTbsModelRejectsUnknownShape() throws {
     expectTbsParseError("Unsupported tbs_type: totally_unknown") {
         try buildTbsModel(fields: ["totally_unknown", "p", "[]", anchorSteps])

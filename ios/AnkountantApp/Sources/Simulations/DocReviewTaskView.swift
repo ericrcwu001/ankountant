@@ -21,9 +21,11 @@ struct DocReviewTaskView: View {
     @State private var confidence: ConfidenceLevel?
     @State private var blanks: [DocReviewBlankInput]
     @State private var results: [PerformanceStepResult]?
+    @State private var reveal: TbsRevealModel?
     @State private var total: Double?
     @State private var submitting = false
     @State private var submitError: String?
+    @State private var revealError: String?
     @State private var startedAt = Date.now
 
     private var blankInputsLocked: Bool {
@@ -60,6 +62,12 @@ struct DocReviewTaskView: View {
                 documentCard
                 blanksSection
                 submitSection
+                if let reveal, let results {
+                    SimulationResultsRevealView(reveal: reveal, results: results)
+                }
+                if let revealError {
+                    SimulationRevealErrorView(message: revealError)
+                }
 
                 let exhibits = paneExhibits(model)
                 if !exhibits.isEmpty {
@@ -227,6 +235,7 @@ struct DocReviewTaskView: View {
         guard let confidence, !submitting, results == nil else { return }
         submitting = true
         submitError = nil
+        revealError = nil
         defer { submitting = false }
         let submissionJson = buildStepsSubmission(blanks.map { (id: $0.id, value: $0.selection) })
         let latency = UInt32(clamping: Int((Date.now.timeIntervalSince(startedAt) * 1000).rounded()))
@@ -234,6 +243,11 @@ struct DocReviewTaskView: View {
             let resp = try performanceClient.submitDocReview(noteId, submissionJson, confidence.rawValue, latency)
             results = resp.steps
             total = resp.totalCredit
+            do {
+                reveal = try performanceClient.loadTbsReveal(noteId)
+            } catch {
+                revealError = "Attempt recorded, but the answer key could not be shown: \(error.localizedDescription)"
+            }
         } catch {
             submitError = "Could not record this attempt: \(error.localizedDescription)"
         }

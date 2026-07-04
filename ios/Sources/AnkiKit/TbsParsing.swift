@@ -101,6 +101,27 @@ public func buildTbsModel(fields: [String], tags: [String] = []) throws -> TbsMo
     )
 }
 
+public func buildTbsRevealModel(fields: [String], tags: [String] = []) throws -> TbsRevealModel {
+    let rawSteps = try jsonArray("steps_json", field(fields, TbsField.stepsJson))
+    let renderedSteps = try parseSteps(field(fields, TbsField.stepsJson))
+    let labelById = Dictionary(uniqueKeysWithValues: renderedSteps.map { ($0.id, $0.label) })
+    let steps = try rawSteps.enumerated().map { index, element in
+        let object = try jsonObject(element, fieldName: "steps_json[\(index)]")
+        let id = object["id"] as? String ?? "s\(index + 1)"
+        return StepReveal(
+            id: id,
+            label: labelById[id] ?? id,
+            correctText: revealCorrectText(object)
+        )
+    }
+    return TbsRevealModel(
+        steps: steps,
+        source: field(fields, TbsField.sourcePassage) ?? "",
+        section: try sectionFromTags(tags),
+        schemaTag: field(fields, TbsField.schemaTag) ?? ""
+    )
+}
+
 public func sectionFromTags(_ tags: [String]) throws -> String {
     let prefix = "sec::"
     guard let tag = tags.first(where: { $0.hasPrefix(prefix) }) else {
@@ -363,6 +384,44 @@ public func buildResearchSubmission(_ citation: String) -> String {
     jsonString(["citation": citation.trimmingCharacters(in: .whitespacesAndNewlines)])
 }
 
+private func revealCorrectText(_ object: [String: Any]) -> String {
+    let key = object["answer_key"]
+    if object["kind"] as? String == "blank",
+       let optionId = key as? String {
+        return revealOptionText(object["options"], id: optionId)
+    }
+    if let array = key as? [Any] {
+        return array.map(stringify).joined(separator: " / ")
+    }
+    if let dictionary = key as? [String: Any] {
+        if dictionary.keys.contains("account") {
+            return [
+                stringify(dictionary["side"] ?? "").uppercased(),
+                stringify(dictionary["account"] ?? ""),
+                stringify(dictionary["amount"] ?? ""),
+            ]
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        }
+        return jsonDescription(dictionary)
+    }
+    guard let key else { return "" }
+    return stringify(key)
+}
+
+private func revealOptionText(_ raw: Any?, id: String) -> String {
+    guard let array = raw as? [Any] else { return id }
+    for element in array {
+        guard let object = element as? [String: Any],
+              object["id"] as? String == id
+        else {
+            continue
+        }
+        return object["text"] as? String ?? id
+    }
+    return id
+}
+
 /// Confusion review is label-stripped: drop any trailing dev slug like
 /// " (capitalize_vs_expense q0)" so the stem never leaks the category.
 public func stripConfusionSlug(_ prompt: String) -> String {
@@ -415,6 +474,18 @@ private func jsonString(_ object: [String: Any]) -> String {
         return string
     } catch {
         preconditionFailure("Could not encode submission JSON: \(error.localizedDescription)")
+    }
+}
+
+private func jsonDescription(_ object: [String: Any]) -> String {
+    do {
+        let data = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+        guard let string = String(data: data, encoding: .utf8) else {
+            preconditionFailure("Could not encode reveal JSON as UTF-8.")
+        }
+        return string
+    } catch {
+        preconditionFailure("Could not encode reveal JSON: \(error.localizedDescription)")
     }
 }
 

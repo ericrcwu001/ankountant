@@ -147,6 +147,92 @@ struct SimulationSubmitErrorView: View {
     }
 }
 
+struct SimulationRevealErrorView: View {
+    let message: String
+
+    var body: some View {
+        AnkountantStatusMessageView(
+            title: "Answer key unavailable",
+            message: message,
+            systemImage: "exclamationmark.triangle",
+            tone: .warning
+        )
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, AnkountantSpacing.sm)
+        .ankountantStatusPanel(.warning)
+    }
+}
+
+struct SimulationResultsRevealView: View {
+    let reveal: TbsRevealModel
+    let results: [PerformanceStepResult]
+
+    @Environment(\.palette) private var palette
+
+    private var correctById: [String: Bool] {
+        Dictionary(uniqueKeysWithValues: results.map { ($0.id, $0.correct) })
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
+            Text("Answer key & rationale")
+                .ankountantFont(.micro)
+                .foregroundStyle(palette.textSecondary)
+                .textCase(.uppercase)
+
+            VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
+                ForEach(reveal.steps) { step in
+                    revealRow(step)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: AnkountantSpacing.xs) {
+                Text(reveal.schemaTag.isEmpty ? reveal.section : "\(reveal.section) · \(reveal.schemaTag)")
+                    .ankountantFont(.micro)
+                    .foregroundStyle(palette.accent)
+                    .padding(.horizontal, AnkountantSpacing.sm)
+                    .padding(.vertical, 2)
+                    .background(palette.accent.opacity(0.12), in: Capsule())
+                if !reveal.source.isEmpty {
+                    Text(reveal.source)
+                        .ankountantFont(.caption)
+                        .foregroundStyle(palette.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+                }
+            }
+            .padding(.top, AnkountantSpacing.xs)
+        }
+        .padding(AnkountantSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(palette.surfaceElevated, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
+                .stroke(palette.borderSubtle, lineWidth: 1)
+        )
+    }
+
+    private func revealRow(_ step: StepReveal) -> some View {
+        let correct = correctById[step.id] ?? false
+        return HStack(alignment: .top, spacing: AnkountantSpacing.sm) {
+            Image(systemName: correct ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .foregroundStyle(correct ? palette.positive : palette.danger)
+                .accessibilityLabel(correct ? "You were correct" : "You were incorrect")
+            VStack(alignment: .leading, spacing: AnkountantSpacing.xxs) {
+                Text(step.label)
+                    .ankountantFont(.caption)
+                    .foregroundStyle(palette.textPrimary)
+                Text(step.correctText)
+                    .ankountantFont(.mono)
+                    .foregroundStyle(palette.accent)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
 /// Read-only authoritative-literature browser (T2 / OQ-3): client-side search
 /// over the bundled, per-section corpus. Handles BOTH bodies (D10): ASC
 /// (FAR/BAR) shows OUR paraphrase + a deep link; IRC/PCAOB/NIST show real

@@ -15,10 +15,12 @@ struct TbsTaskView: View {
     @State private var numericCells: [NumericCellInput] = []
     @State private var confidence: ConfidenceLevel?
     @State private var results: [PerformanceStepResult]?
+    @State private var reveal: TbsRevealModel?
     @State private var total: Double?
     @State private var submitting = false
     @State private var loadError: String?
     @State private var submitError: String?
+    @State private var revealError: String?
     @State private var startedAt = Date.now
 
     private var answerInputsLocked: Bool {
@@ -209,6 +211,14 @@ struct TbsTaskView: View {
                 }
             }
 
+            if let reveal, let results {
+                SimulationResultsRevealView(reveal: reveal, results: results)
+            }
+
+            if let revealError {
+                SimulationRevealErrorView(message: revealError)
+            }
+
             if let submitError {
                 SimulationSubmitErrorView(message: submitError)
             }
@@ -278,8 +288,10 @@ struct TbsTaskView: View {
             numericCells = m.steps.map { NumericCellInput(id: $0.id) }
             confidence = nil
             results = nil
+            reveal = nil
             total = nil
             submitError = nil
+            revealError = nil
             startedAt = Date.now
             loadError = nil
         } catch {
@@ -291,6 +303,7 @@ struct TbsTaskView: View {
         guard let confidence, !submitting, results == nil else { return }
         submitting = true
         submitError = nil
+        revealError = nil
         defer { submitting = false }
         do {
             let submissionJson: String
@@ -303,6 +316,11 @@ struct TbsTaskView: View {
             let resp = try performanceClient.submitTbs(noteId, submissionJson, confidence.rawValue, latencyMs)
             results = resp.steps
             total = resp.totalCredit
+            do {
+                reveal = try performanceClient.loadTbsReveal(noteId)
+            } catch {
+                revealError = "Attempt recorded, but the answer key could not be shown: \(error.localizedDescription)"
+            }
         } catch {
             submitError = "Could not record this attempt: \(error.localizedDescription)"
         }

@@ -222,6 +222,32 @@ public struct PerformanceAttemptResult: Sendable, Equatable {
     }
 }
 
+public struct StepReveal: Sendable, Identifiable, Equatable {
+    public let id: String
+    public let label: String
+    public let correctText: String
+
+    public init(id: String, label: String, correctText: String) {
+        self.id = id
+        self.label = label
+        self.correctText = correctText
+    }
+}
+
+public struct TbsRevealModel: Sendable, Equatable {
+    public let steps: [StepReveal]
+    public let source: String
+    public let section: String
+    public let schemaTag: String
+
+    public init(steps: [StepReveal], source: String, section: String, schemaTag: String) {
+        self.steps = steps
+        self.source = source
+        self.section = section
+        self.schemaTag = schemaTag
+    }
+}
+
 /// A single confusion-set discrimination item. Deliberately label-stripped: no
 /// topic/category/deck label, so the learner discriminates on content.
 public struct ConfusionItemModel: Sendable, Identifiable, Equatable {

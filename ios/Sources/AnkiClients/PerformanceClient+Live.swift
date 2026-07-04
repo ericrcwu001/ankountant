@@ -38,6 +38,10 @@ extension PerformanceClient: DependencyKey {
                 let (fields, tags) = try fieldsAndTags(of: noteId)
                 return try buildTbsModel(fields: fields, tags: tags)
             },
+            loadTbsReveal: { noteId in
+                let (fields, tags) = try fieldsAndTags(of: noteId)
+                return try buildTbsRevealModel(fields: fields, tags: tags)
+            },
             submitTbs: { noteId, submissionJson, confidence, latencyMs in
                 try scheduler.submitPerformanceAttempt(noteId, "tbs", submissionJson, confidence, latencyMs)
             },
