@@ -89,3 +89,26 @@ test("doc-review: submit failures stay in the surface", async ({ page }) => {
     );
     await expect(page.getByTestId("docreview-submit")).toBeEnabled();
 });
+
+test("doc-review: empty state links to simulation and readiness surfaces", async ({ page }) => {
+    await page.route("**/_anki/searchNotes", async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: "application/binary",
+            body: Buffer.alloc(0),
+        });
+    });
+    await page.goto("/ankountant-doc-review");
+
+    const empty = page.getByTestId("docreview-empty");
+    await expect(empty).toBeVisible();
+    await expect(empty).toContainText("No document-review task found");
+    await expect(page.getByRole("link", { name: "Browse simulations" })).toHaveAttribute(
+        "href",
+        "/ankountant-tbs",
+    );
+    await expect(page.getByRole("link", { name: "View readiness evidence" })).toHaveAttribute(
+        "href",
+        "/ankountant-dashboard",
+    );
+});

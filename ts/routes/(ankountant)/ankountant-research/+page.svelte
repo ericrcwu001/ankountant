@@ -4,6 +4,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 -->
 <script lang="ts">
     import type { PageData } from "./$types";
+    import TaskEmptyState from "../TaskEmptyState.svelte";
     import ResearchSurface from "./ResearchSurface.svelte";
 
     export let data: PageData;
@@ -19,14 +20,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         />
     {/key}
 {:else}
-    <p class="empty" data-testid="research-empty">
-        No research task was found in this profile.
-    </p>
+    <TaskEmptyState
+        testId="research-empty"
+        eyebrow="Research practice"
+        title="No research task found"
+        description="This profile does not have a sealed research simulation for the selected section yet."
+    />
 {/if}
-
-<style lang="scss">
-    .empty {
-        margin: 2rem;
-        color: var(--fg-subtle);
-    }
-</style>

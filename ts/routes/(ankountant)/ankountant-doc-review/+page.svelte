@@ -4,6 +4,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 -->
 <script lang="ts">
     import type { PageData } from "./$types";
+    import TaskEmptyState from "../TaskEmptyState.svelte";
     import DocReviewSurface from "./DocReviewSurface.svelte";
 
     export let data: PageData;
@@ -19,14 +20,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         />
     {/key}
 {:else}
-    <p class="empty" data-testid="docreview-empty">
-        No document-review task was found in this profile.
-    </p>
+    <TaskEmptyState
+        testId="docreview-empty"
+        eyebrow="Document review"
+        title="No document-review task found"
+        description="This profile does not have a sealed document-review simulation for the selected section yet."
+    />
 {/if}
-
-<style lang="scss">
-    .empty {
-        margin: 2rem;
-        color: var(--fg-subtle);
-    }
-</style>
