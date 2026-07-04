@@ -162,8 +162,14 @@ struct ConfusionDrillView: View {
     private func load() async {
         do {
             items = try performanceClient.confusionQueue("ALL", 60)
+            index = 0
+            confidence = nil
+            lastCorrect = nil
+            submitError = nil
+            itemStartedAt = Date.now
             loadError = nil
         } catch {
+            items = []
             loadError = error.localizedDescription
         }
         isLoading = false
