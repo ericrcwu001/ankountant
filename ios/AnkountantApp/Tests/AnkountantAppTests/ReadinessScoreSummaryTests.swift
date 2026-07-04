@@ -13,6 +13,7 @@ struct ReadinessScoreSummaryTests {
                 pointEstimate: 80,
                 confidence: "High",
                 coverage: 1,
+                generatedAt: 1_704_067_200,
                 reasons: ["Coverage: 100% of topics; 188 sealed attempts"]
             ),
             topics: [
@@ -115,5 +116,28 @@ struct ReadinessScoreSummaryTests {
         )
 
         #expect(evidence.updatedAtLine == "Last updated time unavailable; refresh readiness after more graded evidence is logged.")
+    }
+
+    @Test func emittedReadinessRequiresGeneratedTime() {
+        let band = ReadinessBand(
+            abstain: false,
+            reason: "",
+            bandLow: 74,
+            bandHigh: 85,
+            pointEstimate: 80,
+            confidence: "High",
+            coverage: 1,
+            generatedAt: 0,
+            reasons: ["Coverage: 100% of topics; 188 sealed attempts"]
+        )
+
+        do {
+            _ = try validatedReadinessBand(band)
+            Issue.record("Expected emitted readiness without generatedAt to fail")
+        } catch let error as ReadinessValidationError {
+            #expect(error == .missingGeneratedAt)
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
     }
 }

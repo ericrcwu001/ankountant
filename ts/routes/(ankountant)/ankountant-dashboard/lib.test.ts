@@ -87,6 +87,7 @@ test("sufficient view is a CPA band + point + coverage, never a bare point (A54)
             pointEstimate: 70,
             confidence: "High",
             coverage: 0.75,
+            generatedAt: 1_704_067_200n,
             reasons: ["Coverage: 75% of topics; 40 sealed attempts"],
         }),
     );
@@ -110,6 +111,7 @@ test("emitted readiness requires a valid range, confidence, coverage, and eviden
         pointEstimate: 70,
         confidence: "High",
         coverage: 0.75,
+        generatedAt: 1_704_067_200n,
         reasons: ["Coverage: 75% of topics; 40 sealed attempts"],
     };
     expect(() => buildReadinessView(new Readiness({ ...valid, bandHigh: 62 }))).toThrow(
@@ -120,6 +122,7 @@ test("emitted readiness requires a valid range, confidence, coverage, and eviden
     );
     expect(() => buildReadinessView(new Readiness({ ...valid, confidence: "" }))).toThrow(/confidence is required/);
     expect(() => buildReadinessView(new Readiness({ ...valid, reasons: [] }))).toThrow(/evidence reasons are required/);
+    expect(() => buildReadinessView(new Readiness({ ...valid, generatedAt: 0n }))).toThrow(/generated timestamp/);
     expect(() => buildReadinessView(new Readiness({ ...valid, coverage: 1.1 }))).toThrow(
         /coverage must be between 0 and 1/,
     );
@@ -204,6 +207,7 @@ test("evidence view does not invent a memory value for thin-memory gaps", () => 
             pointEstimate: 80,
             confidence: "High",
             coverage: 1,
+            generatedAt: 1_704_067_200n,
             reasons: ["Coverage: 100% of topics; 188 sealed attempts"],
         }),
     );

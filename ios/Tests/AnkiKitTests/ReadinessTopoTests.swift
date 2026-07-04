@@ -16,6 +16,7 @@ struct ReadinessTopoTests {
         point: Double = 0,
         confidence: String = "Med",
         coverage: Double = 1,
+        generatedAt: Int64 = 1_704_067_200,
         reasons: [String]? = nil
     ) -> ReadinessBand {
         ReadinessBand(
@@ -26,6 +27,7 @@ struct ReadinessTopoTests {
             pointEstimate: point,
             confidence: confidence,
             coverage: coverage,
+            generatedAt: generatedAt,
             reasons: abstain ? [] : (reasons ?? ["Coverage: 100% of topics; 188 sealed attempts"])
         )
     }
@@ -123,6 +125,7 @@ struct ReadinessTopoTests {
         expectValidationError(.pointOutsideBand, band(low: 62, high: 78, point: 90))
         expectValidationError(.missingConfidence, band(low: 62, high: 78, point: 70, confidence: ""))
         expectValidationError(.missingEvidenceReasons, band(low: 62, high: 78, point: 70, reasons: []))
+        expectValidationError(.missingGeneratedAt, band(low: 62, high: 78, point: 70, generatedAt: 0))
         expectValidationError(.invalidCoverage, band(low: 62, high: 78, point: 70, coverage: 1.1))
         expectValidationError(.insufficientCoverage, band(low: 62, high: 78, point: 70, coverage: 0.4))
         expectValidationError(

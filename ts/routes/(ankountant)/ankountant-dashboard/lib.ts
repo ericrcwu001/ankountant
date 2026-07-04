@@ -238,6 +238,13 @@ function validateEmittedReadiness(readiness: Readiness): void {
     if (!reasons.length || reasons.some((reason) => !reason.trim())) {
         throw new Error("Readiness evidence reasons are required for an emitted range.");
     }
+    assertGeneratedAt(Number(readiness.generatedAt));
+}
+
+function assertGeneratedAt(generatedAt: number): void {
+    if (!Number.isFinite(generatedAt) || generatedAt <= 0) {
+        throw new Error("Readiness generated timestamp is required for an emitted range.");
+    }
 }
 
 function assertScaleValue(label: string, value: number): void {

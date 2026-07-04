@@ -99,6 +99,7 @@ public enum ReadinessValidationError: Error, Equatable, LocalizedError {
     case pointOutsideBand
     case missingConfidence
     case missingEvidenceReasons
+    case missingGeneratedAt
 
     public var errorDescription: String? {
         switch self {
@@ -120,6 +121,8 @@ public enum ReadinessValidationError: Error, Equatable, LocalizedError {
             "Readiness confidence is required for an emitted range."
         case .missingEvidenceReasons:
             "Readiness evidence reasons are required for an emitted range."
+        case .missingGeneratedAt:
+            "Readiness generated timestamp is required for an emitted range."
         }
     }
 }
@@ -159,6 +162,7 @@ public func validatedReadinessBand(_ band: ReadinessBand) throws -> ReadinessBan
     guard !reasons.isEmpty && !reasons.contains(where: \.isEmpty) else {
         throw ReadinessValidationError.missingEvidenceReasons
     }
+    guard band.generatedAt > 0 else { throw ReadinessValidationError.missingGeneratedAt }
 
     return ReadinessBand(
         abstain: false,
