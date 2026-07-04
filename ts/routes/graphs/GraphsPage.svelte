@@ -27,7 +27,15 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     }
 </script>
 
-<WithGraphData {search} {days} let:sourceData let:loading let:prefs let:revlogRange>
+<WithGraphData
+    {search}
+    {days}
+    let:sourceData
+    let:loading
+    let:errorMessage
+    let:prefs
+    let:revlogRange
+>
     {#if controller}
         <svelte:component this={controller} {search} {days} {loading} />
     {/if}
@@ -44,6 +52,11 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     on:search={browserSearch}
                 />
             {/each}
+        {:else if !loading && errorMessage}
+            <section class="graphs-error" data-testid="graphs-load-error" role="alert">
+                <strong>Statistics unavailable</strong>
+                <span>{errorMessage}</span>
+            </section>
         {/if}
     </div>
     <div class="spacer"></div>
@@ -79,6 +92,31 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             // grid layout does not honor page-break-inside
             display: block;
             margin-top: 3em;
+        }
+    }
+
+    .graphs-error {
+        grid-column: 1 / -1;
+        min-height: 12rem;
+        display: grid;
+        place-content: center;
+        gap: 0.5rem;
+        padding: 2rem;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--border-radius-large);
+        background: var(--canvas-elevated);
+        color: var(--fg);
+        text-align: center;
+
+        strong {
+            font-size: var(--type-card-title-size);
+            font-weight: var(--type-card-title-weight);
+            line-height: var(--type-card-title-line);
+        }
+
+        span {
+            max-width: 48rem;
+            color: var(--fg-subtle);
         }
     }
 
