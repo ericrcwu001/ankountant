@@ -58,7 +58,8 @@ test("passStanding: abstain (or missing) is unproven even with a zero point", ()
 test("summit sections are the five, FAR first, BAR excluded", () => {
     expect(SUMMIT_SECTIONS.map((s) => s.code)).toEqual(["FAR", "AUD", "REG", "TCP", "ISC"]);
     expect(sectionName("TCP")).toBe("Tax Compliance and Planning");
-    expect(sectionName("BAR")).toBe("BAR"); // unknown → code fallback
+    expect(sectionName(" tcp ")).toBe("Tax Compliance and Planning");
+    expect(() => sectionName("BAR")).toThrow(/Unknown CPA section/);
 });
 
 test("selectedSummitSection defaults, normalizes, and rejects unknown sections", () => {

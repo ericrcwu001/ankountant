@@ -31,9 +31,13 @@ export const SUMMIT_SECTIONS: CpaSection[] = [
 
 export const DEFAULT_SUMMIT_SECTION = "FAR";
 
-/** Human name for a section code (falls back to the code itself). */
-export function sectionName(code: string): string {
-    return SUMMIT_SECTIONS.find((s) => s.code === code)?.name ?? code;
+export function sectionName(raw: string): string {
+    const code = raw.trim().toUpperCase();
+    const section = SUMMIT_SECTIONS.find((s) => s.code === code);
+    if (!section) {
+        throw new Error(`Unknown CPA section: ${code}`);
+    }
+    return section.name;
 }
 
 export function selectedSummitSection(raw: string | null): string {
