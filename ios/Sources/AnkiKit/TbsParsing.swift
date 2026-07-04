@@ -80,13 +80,22 @@ public func buildTbsModel(fields: [String], tags: [String] = []) throws -> TbsMo
     guard let shapeRaw, let shape = TbsShape(rawValue: shapeRaw) else {
         throw TbsParseError.unsupportedTbsType(shapeRaw ?? "")
     }
+    guard let prompt = field(fields, TbsField.prompt),
+          !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    else {
+        throw TbsParseError.invalidValue(field: "prompt", message: "missing prompt")
+    }
     let exhibits = try parseExhibits(field(fields, TbsField.exhibitsJson))
     let document = exhibits.first(where: { $0.role == "document" })?.body
+    let steps = try parseSteps(field(fields, TbsField.stepsJson))
+    if shape == .docReview {
+        try validateDocReviewDocument(document, steps: steps)
+    }
     return TbsModel(
         shape: shape,
-        prompt: field(fields, TbsField.prompt) ?? "",
+        prompt: prompt,
         exhibits: exhibits,
-        steps: try parseSteps(field(fields, TbsField.stepsJson)),
+        steps: steps,
         section: try sectionFromTags(tags),
         document: document
     )
@@ -153,10 +162,19 @@ public func parseSteps(_ raw: String?) throws -> [RenderStep] {
     let array = try jsonArray("steps_json", raw)
     guard !array.isEmpty else { throw TbsParseError.emptySteps }
     let defaultWeight = 1.0 / Double(array.count)
+    var seenIds = Set<String>()
     return try array.enumerated().map { index, element in
         let fieldName = "steps_json[\(index)]"
         let object = try jsonObject(element, fieldName: fieldName)
-        let id = (object["id"] as? String) ?? "s\(index + 1)"
+        guard let id = object["id"] as? String,
+              !id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            throw TbsParseError.invalidValue(field: "\(fieldName).id", message: "missing step id")
+        }
+        guard !seenIds.contains(id) else {
+            throw TbsParseError.invalidValue(field: "steps_json", message: "duplicate step id: \(id)")
+        }
+        seenIds.insert(id)
         let kind = object["kind"] as? String
         let options = try parseOptions(object["options"], fieldName: "\(fieldName).options")
         if kind == "blank", options == nil {
@@ -174,6 +192,25 @@ public func parseSteps(_ raw: String?) throws -> [RenderStep] {
             // NOTE: answer_key / correct_option / accepted are deliberately
             // NOT read here (retrieval integrity C11).
         )
+    }
+}
+
+private func validateDocReviewDocument(_ document: String?, steps: [RenderStep]) throws {
+    guard let document, !document.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        throw TbsParseError.invalidValue(field: "doc_review.document", message: "missing document exhibit")
+    }
+    let blankIds = segmentDocument(document).compactMap { segment -> String? in
+        if case let .blank(_, blankId, _) = segment {
+            return blankId
+        }
+        return nil
+    }
+    guard !blankIds.isEmpty else {
+        throw TbsParseError.invalidValue(field: "doc_review.document", message: "no blank markers")
+    }
+    let stepIds = Set(steps.map(\.id))
+    if let missing = blankIds.first(where: { !stepIds.contains($0) }) {
+        throw TbsParseError.invalidValue(field: "doc_review.document", message: "blank \(missing) has no step")
     }
 }
 

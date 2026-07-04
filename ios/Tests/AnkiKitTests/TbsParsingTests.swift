@@ -98,6 +98,15 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
     expectTbsParseError("Invalid steps_json:") { try parseSteps("not json") }
     expectTbsParseError("steps_json must be an array.") { try parseSteps("{\"id\":\"x\"}") }
     expectTbsParseError("Invalid steps_json[0]: must be an object") { try parseSteps("[1]") }
+    expectTbsParseError("Invalid steps_json[0].id: missing step id") {
+        try parseSteps(#"[{"answer_key":1}]"#)
+    }
+    expectTbsParseError("Invalid steps_json[0].id: missing step id") {
+        try parseSteps(#"[{"id":" ","answer_key":1}]"#)
+    }
+    expectTbsParseError("Invalid steps_json: duplicate step id: s1") {
+        try parseSteps(#"[{"id":"s1"},{"id":"s1"}]"#)
+    }
     expectTbsParseError("Invalid steps_json[0].options: must be an array") {
         try parseSteps(#"[{"id":"s1","options":"bad"}]"#)
     }
@@ -169,6 +178,12 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
 @Test func buildTbsModelRejectsShortFields() {
     expectTbsParseError("Unsupported tbs_type: ") {
         try buildTbsModel(fields: [])
+    }
+    expectTbsParseError("Invalid prompt: missing prompt") {
+        try buildTbsModel(fields: ["numeric", "", "[]", anchorSteps])
+    }
+    expectTbsParseError("Invalid prompt: missing prompt") {
+        try buildTbsModel(fields: ["numeric", " ", "[]", anchorSteps])
     }
     expectTbsParseError("exhibits_json is missing.") {
         try buildTbsModel(fields: ["numeric", "p"])
@@ -388,6 +403,39 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
     // The primary document is excluded from the exhibits pane; the table stays.
     #expect(!paneExhibits(model).contains { $0.role == "document" })
     #expect(paneExhibits(model).contains { $0.kind == "table" })
+}
+
+@Test func buildTbsModelRejectsMalformedDocReviewDocument() {
+    expectTbsParseError("Invalid doc_review.document: missing document exhibit") {
+        try buildTbsModel(
+            fields: [
+                "doc_review",
+                "Review the list",
+                #"[{"title":"Supporting exhibit","body":"facts"}]"#,
+                docReviewSteps,
+            ]
+        )
+    }
+    expectTbsParseError("Invalid doc_review.document: no blank markers") {
+        try buildTbsModel(
+            fields: [
+                "doc_review",
+                "Review the list",
+                #"[{"id":"doc","kind":"document","role":"document","title":"Doc","body":"plain text"}]"#,
+                docReviewSteps,
+            ]
+        )
+    }
+    expectTbsParseError("Invalid doc_review.document: blank missing has no step") {
+        try buildTbsModel(
+            fields: [
+                "doc_review",
+                "Review the list",
+                #"[{"id":"doc","kind":"document","role":"document","title":"Doc","body":"<blank step=\"missing\">x</blank>"}]"#,
+                docReviewSteps,
+            ]
+        )
+    }
 }
 
 @Test func sectionFromTagsResolvesKnownAndFallsBackToFAR() throws {
