@@ -104,6 +104,9 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
     expectTbsParseError("Invalid steps_json[0].options[0]: must be an object") {
         try parseSteps(#"[{"id":"s1","options":[1]}]"#)
     }
+    expectTbsParseError("Invalid steps_json[0].options[0].kind: unknown option kind: maybe") {
+        try parseSteps(#"[{"id":"s1","options":[{"id":"o1","text":"x","kind":"maybe"}]}]"#)
+    }
     expectTbsParseError("Invalid steps_json[0].corpus_refs: must be an array") {
         try parseSteps(#"[{"id":"s1","corpus_refs":"asc"}]"#)
     }

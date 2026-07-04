@@ -127,6 +127,9 @@ test("parseSteps fails loudly on missing, malformed, or empty step json", () => 
     expect(() => parseSteps("not json")).toThrow(/Invalid steps_json/);
     expect(() => parseSteps("{}")).toThrow(/steps_json must be an array/);
     expect(() => parseSteps("[]")).toThrow(/steps_json must contain at least one step/);
+    expect(() => parseSteps(JSON.stringify([{ id: "s1", options: [{ id: "o1", text: "x", kind: "maybe" }] }]))).toThrow(
+        /Option o1 for s1 has unknown option kind: maybe/,
+    );
 });
 
 test("buildJeSubmission shapes account/side/amount per step", () => {

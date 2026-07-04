@@ -280,6 +280,18 @@ interface RawStep {
     // NOTE: `answer_key` is deliberately NOT read here (retrieval integrity C11).
 }
 
+const OPTION_KINDS = ["keep", "delete", "replace"] as const;
+
+function parseOptionKind(raw: unknown, fieldName: string): string {
+    if (raw === undefined) {
+        return "replace";
+    }
+    if (typeof raw !== "string" || !OPTION_KINDS.includes(raw as (typeof OPTION_KINDS)[number])) {
+        throw new Error(`${fieldName} has unknown option kind: ${String(raw)}`);
+    }
+    return raw;
+}
+
 function parseOptions(raw: unknown, stepId: string): RenderOption[] | undefined {
     if (raw === undefined) {
         return undefined;
@@ -301,7 +313,7 @@ function parseOptions(raw: unknown, stepId: string): RenderOption[] | undefined 
         return {
             id: obj.id,
             text: obj.text,
-            kind: typeof obj.kind === "string" ? obj.kind : "replace",
+            kind: parseOptionKind(obj.kind, `Option ${obj.id} for ${stepId}`),
         };
     });
 }

@@ -28,6 +28,8 @@ private let exhibitKinds: Set<String> = [
     "text", "email", "invoice", "table", "statement", "memo", "document", "stamp",
 ]
 
+private let optionKinds: Set<String> = ["keep", "delete", "replace"]
+
 public enum TbsParseError: Error, Equatable, LocalizedError, Sendable {
     case missingJson(field: String)
     case invalidJson(field: String, message: String)
@@ -183,9 +185,22 @@ private func parseOptions(_ raw: Any?, fieldName: String) throws -> [RenderOptio
         return RenderOption(
             id: (object["id"] as? String) ?? "o\(index + 1)",
             text: (object["text"] as? String) ?? "",
-            kind: (object["kind"] as? String) ?? "replace"
+            kind: try optionKind(object["kind"], fieldName: "\(optionFieldName).kind")
         )
     }
+}
+
+private func optionKind(_ raw: Any?, fieldName: String) throws -> String {
+    guard let raw else {
+        return "replace"
+    }
+    guard let kind = raw as? String, optionKinds.contains(kind) else {
+        throw TbsParseError.invalidValue(
+            field: fieldName,
+            message: "unknown option kind: \(String(describing: raw))"
+        )
+    }
+    return kind
 }
 
 private func jsonObject(_ raw: Any, fieldName: String) throws -> [String: Any] {
