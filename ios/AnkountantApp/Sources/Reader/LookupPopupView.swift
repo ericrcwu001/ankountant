@@ -6,12 +6,6 @@ import Dependencies
 import Sharing
 import SwiftUI
 
-/// Sheet that renders dictionary lookup results for a query. First-pass
-/// scope: plain-text glossaries, frequency strings, pitch positions, and
-/// deinflection trace — no Yomitan structured-content rendering yet.
-/// Calls `dictionaryLookupClient.lookup` directly; while the engine is a
-/// stub it returns an empty placeholder and the view shows the empty
-/// state.
 struct LookupPopupView: View {
     let initialQuery: String
     /// BCP-47 / loose hint forwarded into entry rows for TTS voice
@@ -238,11 +232,7 @@ struct LookupPopupView: View {
                 }
             }
         } else if result?.isPlaceholder == true {
-            ContentUnavailableView {
-                Label("Engine not ready", systemImage: "hourglass")
-            } description: {
-                Text("Dictionary lookup engine is still a placeholder — full hoshidicts integration is pending.")
-            }
+            dictionaryUnavailableView()
         } else {
             ContentUnavailableView.search(text: query)
         }
@@ -424,6 +414,8 @@ private struct LookupChildPane: View {
                     }
                 }
                 .listStyle(.plain)
+            } else if result?.isPlaceholder == true {
+                dictionaryUnavailableView()
             } else {
                 ContentUnavailableView.search(text: query)
             }
@@ -444,6 +436,15 @@ private struct LookupChildPane: View {
             lookupError = error.localizedDescription
             result = nil
         }
+    }
+}
+
+@ViewBuilder
+private func dictionaryUnavailableView() -> some View {
+    ContentUnavailableView {
+        Label("No term dictionaries enabled", systemImage: "book.closed")
+    } description: {
+        Text("Import or enable a term dictionary in Reader Settings before looking up words.")
     }
 }
 
