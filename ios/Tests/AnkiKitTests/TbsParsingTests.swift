@@ -86,6 +86,16 @@ private func expectTbsParseError<T>(_ expected: String, _ body: () throws -> T) 
     expectTbsParseError("steps_json must contain at least one step.") { try parseSteps("[]") }
     expectTbsParseError("Invalid steps_json:") { try parseSteps("not json") }
     expectTbsParseError("steps_json must be an array.") { try parseSteps("{\"id\":\"x\"}") }
+    expectTbsParseError("Invalid steps_json[0]: must be an object") { try parseSteps("[1]") }
+    expectTbsParseError("Invalid steps_json[0].options: must be an array") {
+        try parseSteps(#"[{"id":"s1","options":"bad"}]"#)
+    }
+    expectTbsParseError("Invalid steps_json[0].options[0]: must be an object") {
+        try parseSteps(#"[{"id":"s1","options":[1]}]"#)
+    }
+    expectTbsParseError("Invalid steps_json[0].corpus_refs: must be an array") {
+        try parseSteps(#"[{"id":"s1","corpus_refs":"asc"}]"#)
+    }
 }
 
 @Test func parseExhibitsFailsForMissingOrMalformedJson() throws {
@@ -94,6 +104,13 @@ private func expectTbsParseError<T>(_ expected: String, _ body: () throws -> T) 
     expectTbsParseError("exhibits_json is missing.") { try parseExhibits("") }
     expectTbsParseError("Invalid exhibits_json:") { try parseExhibits("not json") }
     expectTbsParseError("exhibits_json must be an array.") { try parseExhibits("{\"id\":\"x\"}") }
+    expectTbsParseError("Invalid exhibits_json[0]: must be an object") { try parseExhibits("[1]") }
+    expectTbsParseError("Invalid exhibits_json[0].columns: must be an array") {
+        try parseExhibits(#"[{"columns":"Item"}]"#)
+    }
+    expectTbsParseError("Invalid exhibits_json[0].rows[0]: must be an array") {
+        try parseExhibits(#"[{"rows":[1]}]"#)
+    }
 }
 
 @Test func buildTbsModelParsesJournalEntry() throws {

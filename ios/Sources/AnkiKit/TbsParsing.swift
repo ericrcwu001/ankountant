@@ -32,6 +32,7 @@ private let exhibitKinds: Set<String> = [
 public enum TbsParseError: Error, Equatable, LocalizedError, Sendable {
     case missingJson(field: String)
     case invalidJson(field: String, message: String)
+    case invalidValue(field: String, message: String)
     case nonArrayJson(field: String)
     case emptySteps
     case unsupportedTbsType(String)
@@ -41,6 +42,8 @@ public enum TbsParseError: Error, Equatable, LocalizedError, Sendable {
         case let .missingJson(field):
             "\(field) is missing."
         case let .invalidJson(field, message):
+            "Invalid \(field): \(message)"
+        case let .invalidValue(field, message):
             "Invalid \(field): \(message)"
         case let .nonArrayJson(field):
             "\(field) must be an array."
@@ -92,19 +95,20 @@ public func paneExhibits(_ model: TbsModel) -> [Exhibit] {
 /// columns, rows}). Mirrors the desktop `parseExhibits`.
 public func parseExhibits(_ raw: String?) throws -> [Exhibit] {
     let array = try jsonArray("exhibits_json", raw)
-    return array.enumerated().map { index, element in
-        let object = element as? [String: Any]
-        let kindRaw = (object?["kind"] as? String) ?? "text"
+    return try array.enumerated().map { index, element in
+        let fieldName = "exhibits_json[\(index)]"
+        let object = try jsonObject(element, fieldName: fieldName)
+        let kindRaw = (object["kind"] as? String) ?? "text"
         let kind = exhibitKinds.contains(kindRaw) ? kindRaw : "text"
         return Exhibit(
             id: index,
-            title: (object?["title"] as? String) ?? "Exhibit \(index + 1)",
-            body: (object?["body"] as? String) ?? "",
-            exhibitId: object?["id"] as? String,
+            title: (object["title"] as? String) ?? "Exhibit \(index + 1)",
+            body: (object["body"] as? String) ?? "",
+            exhibitId: object["id"] as? String,
             kind: kind,
-            role: object?["role"] as? String,
-            columns: stringArray(object?["columns"]),
-            rows: rowsArray(object?["rows"])
+            role: object["role"] as? String,
+            columns: try optionalStringArray(object["columns"], fieldName: "\(fieldName).columns"),
+            rows: try optionalRowsArray(object["rows"], fieldName: "\(fieldName).rows")
         )
     }
 }
@@ -118,18 +122,19 @@ public func parseSteps(_ raw: String?) throws -> [RenderStep] {
     let array = try jsonArray("steps_json", raw)
     guard !array.isEmpty else { throw TbsParseError.emptySteps }
     let defaultWeight = 1.0 / Double(array.count)
-    return array.enumerated().map { index, element in
-        let object = element as? [String: Any]
-        let id = (object?["id"] as? String) ?? "s\(index + 1)"
+    return try array.enumerated().map { index, element in
+        let fieldName = "steps_json[\(index)]"
+        let object = try jsonObject(element, fieldName: fieldName)
+        let id = (object["id"] as? String) ?? "s\(index + 1)"
         return RenderStep(
             id: id,
-            label: (object?["label"] as? String) ?? id,
-            weight: (object?["weight"] as? Double) ?? defaultWeight,
-            kind: object?["kind"] as? String,
-            options: parseOptions(object?["options"]),
-            originalText: object?["original_text"] as? String,
-            corpusRefs: stringArray(object?["corpus_refs"]) ?? [],
-            placeholder: (object?["placeholder"] as? String) ?? (object?["format"] as? String)
+            label: (object["label"] as? String) ?? id,
+            weight: (object["weight"] as? Double) ?? defaultWeight,
+            kind: object["kind"] as? String,
+            options: try parseOptions(object["options"], fieldName: "\(fieldName).options"),
+            originalText: object["original_text"] as? String,
+            corpusRefs: try optionalStringArray(object["corpus_refs"], fieldName: "\(fieldName).corpus_refs") ?? [],
+            placeholder: (object["placeholder"] as? String) ?? (object["format"] as? String)
             // NOTE: answer_key / correct_option / accepted are deliberately
             // NOT read here (retrieval integrity C11).
         )
@@ -138,16 +143,27 @@ public func parseSteps(_ raw: String?) throws -> [RenderStep] {
 
 /// Parse a step's `options` array into label-stripped render options. Mirrors
 /// the desktop `parseOptions`.
-private func parseOptions(_ raw: Any?) -> [RenderOption] {
-    guard let array = raw as? [Any] else { return [] }
-    return array.enumerated().map { index, element in
-        let object = element as? [String: Any]
+private func parseOptions(_ raw: Any?, fieldName: String) throws -> [RenderOption] {
+    guard let raw, !(raw is NSNull) else { return [] }
+    guard let array = raw as? [Any] else {
+        throw TbsParseError.invalidValue(field: fieldName, message: "must be an array")
+    }
+    return try array.enumerated().map { index, element in
+        let optionFieldName = "\(fieldName)[\(index)]"
+        let object = try jsonObject(element, fieldName: optionFieldName)
         return RenderOption(
-            id: (object?["id"] as? String) ?? "o\(index + 1)",
-            text: (object?["text"] as? String) ?? "",
-            kind: (object?["kind"] as? String) ?? "replace"
+            id: (object["id"] as? String) ?? "o\(index + 1)",
+            text: (object["text"] as? String) ?? "",
+            kind: (object["kind"] as? String) ?? "replace"
         )
     }
+}
+
+private func jsonObject(_ raw: Any, fieldName: String) throws -> [String: Any] {
+    guard let object = raw as? [String: Any] else {
+        throw TbsParseError.invalidValue(field: fieldName, message: "must be an object")
+    }
+    return object
 }
 
 /// Split a doc-review document body into text + blank segments. Each
@@ -286,16 +302,28 @@ private func numberOrEmpty(_ raw: String) -> Any {
 }
 
 /// Parse a JSON array of strings (coercing numbers/other scalars to strings),
-/// mirroring lib.ts `asStringArray`. Returns nil for a non-array.
-private func stringArray(_ raw: Any?) -> [String]? {
-    guard let array = raw as? [Any] else { return nil }
+/// mirroring lib.ts `asStringArray`. Returns nil only when the value is absent.
+private func optionalStringArray(_ raw: Any?, fieldName: String) throws -> [String]? {
+    guard let raw, !(raw is NSNull) else { return nil }
+    return try requiredStringArray(raw, fieldName: fieldName)
+}
+
+private func requiredStringArray(_ raw: Any, fieldName: String) throws -> [String] {
+    guard let array = raw as? [Any] else {
+        throw TbsParseError.invalidValue(field: fieldName, message: "must be an array")
+    }
     return array.map(stringify)
 }
 
 /// Parse a JSON array-of-arrays of strings (table rows), mirroring lib.ts.
-private func rowsArray(_ raw: Any?) -> [[String]]? {
-    guard let array = raw as? [Any] else { return nil }
-    return array.map { stringArray($0) ?? [] }
+private func optionalRowsArray(_ raw: Any?, fieldName: String) throws -> [[String]]? {
+    guard let raw, !(raw is NSNull) else { return nil }
+    guard let array = raw as? [Any] else {
+        throw TbsParseError.invalidValue(field: fieldName, message: "must be an array")
+    }
+    return try array.enumerated().map { index, element in
+        try requiredStringArray(element, fieldName: "\(fieldName)[\(index)]")
+    }
 }
 
 /// Coerce a JSON scalar to a String, mirroring JS `String(x ?? "")`.
