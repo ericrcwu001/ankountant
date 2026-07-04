@@ -1190,6 +1190,26 @@ fn a3_seeded_confusion_queue_has_authored_prompts() {
     }
 }
 
+#[test]
+fn a3_queue_rejects_blank_prompts() {
+    let (mut col, _) = seeded();
+    let nid = first_sealed_mcq(&mut col);
+    let mut note = col.storage.get_note(nid).unwrap().unwrap();
+    note.set_field(super::notetypes::tbs_fields::PROMPT, " ")
+        .unwrap();
+    col.update_note(&mut note).unwrap();
+
+    let err = SchedulerService::build_confusion_queue(
+        &mut col,
+        BuildConfusionQueueRequest {
+            section: "FAR".into(),
+            max_items: 0,
+        },
+    )
+    .unwrap_err();
+    assert_eq!(invalid_input_message(err), "Confusion item missing prompt");
+}
+
 /// Seed `correct` correct + `wrong` wrong confusion attempts for a set by
 /// writing Attempt Log notes directly.
 fn seed_confusion_accuracy(col: &mut Collection, set_id: &str, correct: u32, wrong: u32) {

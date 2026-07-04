@@ -122,7 +122,7 @@ impl Collection {
                 let Some(note) = self.storage.get_note(nid)? else {
                     continue;
                 };
-                let prompt = self.item_prompt(&note);
+                let prompt = self.item_prompt(&note)?;
                 out.push(RawItem {
                     note_id: nid,
                     prompt,
@@ -135,18 +135,25 @@ impl Collection {
     }
 
     /// Extract a client-facing prompt from a note without leaking labels.
-    fn item_prompt(&mut self, note: &Note) -> String {
-        // TBS notes carry a dedicated prompt field; other notes use field 0.
-        if let Ok(Some(nt)) = self.get_notetype(note.notetype_id) {
-            if nt.name == super::notetypes::TBS_NOTETYPE {
-                return note
-                    .fields()
-                    .get(tbs_fields::PROMPT)
-                    .cloned()
-                    .unwrap_or_default();
-            }
+    fn item_prompt(&mut self, note: &Note) -> Result<String> {
+        let nt = self
+            .get_notetype(note.notetype_id)?
+            .or_not_found(note.notetype_id)?;
+        let prompt = if nt.name == super::notetypes::TBS_NOTETYPE {
+            note.fields()
+                .get(tbs_fields::PROMPT)
+                .cloned()
+                .or_invalid("Confusion item missing prompt")?
+        } else {
+            note.fields()
+                .first()
+                .cloned()
+                .or_invalid("Confusion item missing prompt")?
+        };
+        if prompt.trim().is_empty() {
+            invalid_input!("Confusion item missing prompt");
         }
-        note.fields().first().cloned().unwrap_or_default()
+        Ok(prompt)
     }
 }
 
