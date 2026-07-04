@@ -13,7 +13,7 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
     import type { ConfidenceLevel } from "$lib/components/ConfidenceGate.svelte";
     import ConfidenceGate from "$lib/components/ConfidenceGate.svelte";
 
-    import { buildChoiceSubmission } from "./lib";
+    import { buildChoiceSubmission, confusionQueuePhase } from "./lib";
 
     export let items: ConfusionItem[];
 
@@ -25,7 +25,9 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
     let submitError: string | null = null;
 
     $: current = items[index];
-    $: done = index >= items.length;
+    $: phase = confusionQueuePhase(index, items.length);
+    $: empty = phase === "empty";
+    $: done = phase === "finished";
 
     // Confusion review is label-stripped (B2-D1): drop any trailing dev slug
     // like " (capitalize_vs_expense q0)" so the stem never leaks the category.
@@ -73,9 +75,18 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
 </script>
 
 <div class="confusion-mode" data-testid="confusion-mode">
-    {#if done}
-        <div class="card finished-card">
-            <span class="finished-icon" aria-hidden="true">&#10003;</span>
+    {#if empty}
+        <div class="card state-card empty-card" data-testid="confusion-empty">
+            <span class="state-icon empty-icon" aria-hidden="true">?</span>
+            <p class="finished">No confusion items yet.</p>
+            <p class="state-note">
+                Load a demo profile or CPA bank from the Ankountant menu to build the
+                drill queue.
+            </p>
+        </div>
+    {:else if done}
+        <div class="card state-card finished-card">
+            <span class="state-icon finished-icon" aria-hidden="true">&#10003;</span>
             <p class="finished" data-testid="confusion-finished">
                 Queue complete — {items.length} items reviewed.
             </p>
@@ -316,7 +327,7 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
         }
     }
 
-    .finished-card {
+    .state-card {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -325,21 +336,37 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
         text-align: center;
     }
 
-    .finished-icon {
+    .state-icon {
         display: grid;
         place-items: center;
         width: 48px;
         height: 48px;
         border-radius: var(--border-radius-large);
         font-size: 24px;
+    }
+
+    .finished-icon {
         color: var(--fg-success);
         background: rgba(31, 157, 87, 0.12);
+    }
+
+    .empty-icon {
+        color: var(--fg-muted);
+        background: var(--canvas-inset);
+        border: 1px solid var(--border-subtle);
     }
 
     .finished {
         margin: 0;
         font-size: 18px;
         font-weight: 600;
+    }
+
+    .state-note {
+        max-width: 26rem;
+        margin: 0;
+        color: var(--fg-muted);
+        line-height: 1.45;
     }
 
     .primary-link {

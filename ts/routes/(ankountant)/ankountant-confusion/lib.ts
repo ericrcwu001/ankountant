@@ -24,3 +24,18 @@ export function noThreeConsecutiveSameSet(setIds: string[]): boolean {
     }
     return true;
 }
+
+export type ConfusionQueuePhase = "empty" | "active" | "finished";
+
+export function confusionQueuePhase(index: number, itemCount: number): ConfusionQueuePhase {
+    if (!Number.isInteger(index) || index < 0) {
+        throw new Error("Confusion queue index must be a non-negative integer.");
+    }
+    if (!Number.isInteger(itemCount) || itemCount < 0) {
+        throw new Error("Confusion queue length must be a non-negative integer.");
+    }
+    if (itemCount === 0) {
+        return "empty";
+    }
+    return index >= itemCount ? "finished" : "active";
+}
