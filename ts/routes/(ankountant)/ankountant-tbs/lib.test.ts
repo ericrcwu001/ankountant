@@ -18,6 +18,7 @@ import {
     paneExhibits,
     parseExhibits,
     parseSteps,
+    readableTbsLoadError,
     renderableTbsShape,
     researchCitationComplete,
     revealResultPresentation,
@@ -104,6 +105,28 @@ test("section choices expose all sections plus direct section scopes", () => {
     expect(sectionChoiceFromModel(undefined)).toBe(ALL_SECTIONS);
     expect(() => sectionChoiceFromModel("NOPE")).toThrow(/Unknown CPA section: NOPE/);
     expect(sectionChoiceLabel(ALL_SECTIONS)).toBe("All sections");
+});
+
+test("readableTbsLoadError strips backend html from load failures", () => {
+    const html403 = `403: <!doctype html>
+        <html lang=en>
+        <title>403 Forbidden</title>
+        <h1>Forbidden</h1>
+        <p>You don&#39;t have the permission to access the requested resource.</p>`;
+
+    const message = readableTbsLoadError(new Error(html403));
+
+    expect(message).toBe("403 Forbidden. The TBS task could not be loaded.");
+    expect(message).not.toContain("<html");
+    expect(message).not.toContain("doctype");
+    expect(message).not.toContain("don&#39;t");
+});
+
+test("readableTbsLoadError preserves plain backend errors", () => {
+    expect(readableTbsLoadError(new Error("500: forced submit failure"))).toBe(
+        "500: forced submit failure",
+    );
+    expect(readableTbsLoadError("")).toBe("The TBS task could not be loaded.");
 });
 
 test("renderableTbsShape rejects specialized research and doc-review shapes", () => {

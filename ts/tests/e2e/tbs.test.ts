@@ -106,6 +106,24 @@ test("a TBS submit failure stays in the surface", async ({ page, seed }) => {
     await expect(page.getByTestId("tbs-submit")).toBeEnabled();
 });
 
+test("the TBS chooser does not leak backend html on load failure", async ({ page }) => {
+    await page.route("**/_anki/searchNotes", async (route) => {
+        await route.fulfill({
+            status: 403,
+            contentType: "text/html",
+            body: "<!doctype html><title>403 Forbidden</title><h1>Forbidden</h1><p>You don&#39;t have permission.</p>",
+        });
+    });
+
+    await page.goto("/ankountant-tbs");
+
+    await expect(page.getByTestId("tbs-error")).toContainText(
+        "403 Forbidden. The TBS task could not be loaded.",
+    );
+    await expect(page.getByTestId("tbs-error")).not.toContainText("<!doctype html>");
+    await expect(page.getByTestId("tbs-error")).not.toContainText("don&#39;t");
+});
+
 test("the TBS surface exposes NO Again/Hard/Good/Easy buttons (A52/B4-D3)", async ({ page, seed }) => {
     await page.goto(`/ankountant-tbs?note=${seed.sealedTbsNoteIds[0]}`);
     await expect(page.getByTestId("tbs-surface")).toBeVisible();

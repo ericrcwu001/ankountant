@@ -23,6 +23,7 @@ chooser opens on that note's shape and section.
         sectionChoiceSearchOrder,
         TBS_SHAPES,
         TBS_SECTION_CHOICES,
+        readableTbsLoadError,
         tbsSearch,
         tbsShapeSearchOrder,
     } from "./lib";
@@ -121,7 +122,7 @@ chooser opens on that note's shape and section.
             if (seq !== loadSeq) {
                 return;
             }
-            message = err instanceof Error ? err.message : String(err);
+            message = readableTbsLoadError(err);
             phase = "error";
         }
     }
@@ -153,7 +154,7 @@ chooser opens on that note's shape and section.
             }
             selected = requestedShape;
             selectedSection = requestedSection;
-            message = err instanceof Error ? err.message : String(err);
+            message = readableTbsLoadError(err);
             phase = "error";
         }
     }
@@ -235,8 +236,8 @@ chooser opens on that note's shape and section.
                 No {selectedLabel} simulation was found for {emptySectionLabel} in this profile.
             </p>
         {:else}
-            <div class="tbs-state" data-testid="tbs-error">
-                <p>Couldn't load this simulation.</p>
+            <div class="tbs-state error-state" data-testid="tbs-error">
+                <p class="state-title">Couldn't load this simulation.</p>
                 {#if message}
                     <p class="err-msg">{message}</p>
                 {/if}
@@ -352,10 +353,20 @@ chooser opens on that note's shape and section.
         color: var(--fg-subtle);
     }
 
+    .error-state {
+        color: var(--fg);
+    }
+
+    .state-title {
+        margin: 0 0 var(--space-xs);
+        font-weight: 650;
+    }
+
     .err-msg {
-        font-family: var(--font-mono);
-        font-size: 13px;
-        color: var(--fg-error);
+        max-width: 46rem;
+        margin: 0;
+        color: var(--fg-subtle);
+        line-height: 1.45;
     }
 
     .retry {
