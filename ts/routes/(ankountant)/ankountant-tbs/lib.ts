@@ -92,6 +92,31 @@ export const SECTION_SEARCH_ORDER: readonly Section[] = [
     DEFAULT_SECTION,
     ...SECTIONS.filter((section) => section !== DEFAULT_SECTION),
 ];
+export const ALL_SECTIONS = "ALL";
+export type SectionChoice = Section | typeof ALL_SECTIONS;
+export const TBS_SECTION_CHOICES: readonly SectionChoice[] = [
+    ALL_SECTIONS,
+    ...SECTION_SEARCH_ORDER,
+];
+
+export function sectionChoiceSearchOrder(choice: SectionChoice): readonly Section[] {
+    return choice === ALL_SECTIONS ? SECTION_SEARCH_ORDER : [choice];
+}
+
+export function sectionChoiceFromModel(section: string | undefined): SectionChoice {
+    const code = section?.trim().toUpperCase();
+    if (!code) {
+        return ALL_SECTIONS;
+    }
+    if ((SECTIONS as readonly string[]).includes(code)) {
+        return code as Section;
+    }
+    throw new Error(`Unknown CPA section: ${code}`);
+}
+
+export function sectionChoiceLabel(choice: SectionChoice): string {
+    return choice === ALL_SECTIONS ? "All sections" : choice;
+}
 
 export function sectionSearchOrder(section: string | null): readonly string[] {
     return section && section.trim() !== "" ? [section] : SECTION_SEARCH_ORDER;

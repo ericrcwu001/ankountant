@@ -4,6 +4,7 @@
 import { expect, test } from "vitest";
 
 import {
+    ALL_SECTIONS,
     buildDocReviewSubmission,
     buildJeSubmission,
     buildNumericSubmission,
@@ -15,10 +16,14 @@ import {
     parseSteps,
     renderableTbsShape,
     SECTION_SEARCH_ORDER,
+    sectionChoiceFromModel,
+    sectionChoiceLabel,
+    sectionChoiceSearchOrder,
     sectionFromTags,
     SECTIONS,
     sectionSearchOrder,
     segmentDocument,
+    TBS_SECTION_CHOICES,
     tbsSearch,
     tbsShapeSearchOrder,
 } from "./lib";
@@ -70,6 +75,16 @@ test("sectionSearchOrder honors explicit sections and otherwise scans all", () =
     expect(sectionSearchOrder("REG")).toEqual(["REG"]);
     expect(sectionSearchOrder(null)).toEqual(SECTION_SEARCH_ORDER);
     expect(sectionSearchOrder("")).toEqual(SECTION_SEARCH_ORDER);
+});
+
+test("section choices expose all sections plus direct section scopes", () => {
+    expect(TBS_SECTION_CHOICES).toEqual([ALL_SECTIONS, ...SECTION_SEARCH_ORDER]);
+    expect(sectionChoiceSearchOrder(ALL_SECTIONS)).toEqual(SECTION_SEARCH_ORDER);
+    expect(sectionChoiceSearchOrder("BAR")).toEqual(["BAR"]);
+    expect(sectionChoiceFromModel(" bar ")).toBe("BAR");
+    expect(sectionChoiceFromModel(undefined)).toBe(ALL_SECTIONS);
+    expect(() => sectionChoiceFromModel("NOPE")).toThrow(/Unknown CPA section: NOPE/);
+    expect(sectionChoiceLabel(ALL_SECTIONS)).toBe("All sections");
 });
 
 test("renderableTbsShape rejects specialized research and doc-review shapes", () => {

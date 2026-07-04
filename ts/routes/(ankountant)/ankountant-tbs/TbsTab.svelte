@@ -3,10 +3,9 @@ Copyright: Ankitects Pty Ltd and contributors
 License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 The unified TBS tab. All four TBS shapes (journal-entry, numeric, research,
-doc-review) live here behind a single chooser: the learner clicks a type and the
-first sealed task of that shape is loaded into the matching surface. A
-concrete task can still be deep-linked via ?note=<id> (the e2e does this), in
-which case the chooser opens on that note's shape.
+doc-review) live here behind shape and section choosers. A concrete task can
+still be deep-linked via ?note=<id> (the e2e does this), in which case the
+chooser opens on that note's shape and section.
 -->
 <script lang="ts">
     import { onMount } from "svelte";
@@ -15,11 +14,15 @@ which case the chooser opens on that note's shape.
 
     import DocReviewSurface from "../ankountant-doc-review/DocReviewSurface.svelte";
     import ResearchSurface from "../ankountant-research/ResearchSurface.svelte";
-    import type { TbsModel, TbsShape } from "./lib";
+    import type { SectionChoice, TbsModel, TbsShape } from "./lib";
     import {
+        ALL_SECTIONS,
         buildTbsModel,
-        SECTION_SEARCH_ORDER,
+        sectionChoiceFromModel,
+        sectionChoiceLabel,
+        sectionChoiceSearchOrder,
         TBS_SHAPES,
+        TBS_SECTION_CHOICES,
         tbsSearch,
         tbsShapeSearchOrder,
     } from "./lib";
@@ -35,6 +38,7 @@ which case the chooser opens on that note's shape.
     type Phase = "loading" | "ready" | "empty" | "error";
 
     let selected: TbsShape = initialModel?.shape ?? "journal_entry";
+    let selectedSection: SectionChoice = sectionChoiceFromModel(initialModel?.section);
     let phase: Phase = deepLinked ? "ready" : "loading";
     let noteId = initialNoteId;
     let model: TbsModel | null = initialModel;
@@ -46,6 +50,9 @@ which case the chooser opens on that note's shape.
 
     $: selectedLabel = TBS_SHAPES.find((s) => s.shape === selected)?.label ?? "TBS";
     $: selectedBlurb = TBS_SHAPES.find((s) => s.shape === selected)?.blurb ?? "";
+    $: selectedSectionLabel = sectionChoiceLabel(selectedSection);
+    $: emptySectionLabel =
+        selectedSection === ALL_SECTIONS ? "all sections" : selectedSectionLabel;
 
     interface LoadedShape {
         noteId: bigint;
@@ -54,8 +61,11 @@ which case the chooser opens on that note's shape.
         tags: string[];
     }
 
-    async function fetchShape(shape: TbsShape): Promise<LoadedShape | null> {
-        for (const section of SECTION_SEARCH_ORDER) {
+    async function fetchShape(
+        shape: TbsShape,
+        sectionChoice: SectionChoice,
+    ): Promise<LoadedShape | null> {
+        for (const section of sectionChoiceSearchOrder(sectionChoice)) {
             const found = await searchNotes({ search: tbsSearch(shape, section) });
             const foundNoteId = found.ids.length > 0 ? found.ids[0] : 0n;
             if (foundNoteId !== 0n) {
@@ -87,14 +97,18 @@ which case the chooser opens on that note's shape.
         tags = [];
     }
 
-    async function loadShape(shape: TbsShape): Promise<void> {
+    async function loadShape(
+        shape: TbsShape,
+        sectionChoice: SectionChoice = selectedSection,
+    ): Promise<void> {
         selected = shape;
+        selectedSection = sectionChoice;
         const seq = ++loadSeq;
         phase = "loading";
         clearLoadedShape();
         message = "";
         try {
-            const loaded = await fetchShape(shape);
+            const loaded = await fetchShape(shape, sectionChoice);
             if (seq !== loadSeq) {
                 return;
             }
@@ -114,13 +128,14 @@ which case the chooser opens on that note's shape.
 
     async function loadInitialShape(): Promise<void> {
         const requestedShape = selected;
+        const requestedSection = selectedSection;
         const seq = ++loadSeq;
         phase = "loading";
         clearLoadedShape();
         message = "";
         try {
             for (const shape of tbsShapeSearchOrder(requestedShape)) {
-                const loaded = await fetchShape(shape);
+                const loaded = await fetchShape(shape, requestedSection);
                 if (seq !== loadSeq) {
                     return;
                 }
@@ -130,12 +145,14 @@ which case the chooser opens on that note's shape.
                 }
             }
             selected = requestedShape;
+            selectedSection = requestedSection;
             phase = "empty";
         } catch (err) {
             if (seq !== loadSeq) {
                 return;
             }
             selected = requestedShape;
+            selectedSection = requestedSection;
             message = err instanceof Error ? err.message : String(err);
             phase = "error";
         }
@@ -148,6 +165,13 @@ which case the chooser opens on that note's shape.
         void loadShape(shape);
     }
 
+    function chooseSection(sectionChoice: SectionChoice): void {
+        if (sectionChoice === selectedSection && phase === "ready") {
+            return;
+        }
+        void loadShape(selected, sectionChoice);
+    }
+
     onMount(() => {
         if (!deepLinked) {
             void loadInitialShape();
@@ -156,6 +180,25 @@ which case the chooser opens on that note's shape.
 </script>
 
 <div class="tbs-tab" data-testid="tbs-tab">
+    <nav
+        class="section-chooser"
+        aria-label="CPA section"
+        data-testid="tbs-section-chooser"
+    >
+        {#each TBS_SECTION_CHOICES as choice (choice)}
+            <button
+                type="button"
+                class="section-btn"
+                class:active={selectedSection === choice}
+                aria-pressed={selectedSection === choice}
+                data-testid="tbs-section-{choice.toLowerCase()}"
+                on:click={() => chooseSection(choice)}
+            >
+                {sectionChoiceLabel(choice)}
+            </button>
+        {/each}
+    </nav>
+
     <nav class="tbs-chooser" aria-label="Simulation type" data-testid="tbs-chooser">
         {#each TBS_SHAPES as s (s.shape)}
             <button
@@ -189,7 +232,7 @@ which case the chooser opens on that note's shape.
             <p class="tbs-state" data-testid="tbs-loading">Loading…</p>
         {:else if phase === "empty"}
             <p class="tbs-state" data-testid="tbs-empty">
-                No {selectedLabel} simulation was found in this profile.
+                No {selectedLabel} simulation was found for {emptySectionLabel} in this profile.
             </p>
         {:else}
             <div class="tbs-state" data-testid="tbs-error">
@@ -216,8 +259,7 @@ which case the chooser opens on that note's shape.
         min-height: 0;
     }
 
-    // Segmented chooser: a row of type tiles, mirroring the workspace pane
-    // switcher (glyph + label). Active tile = brand navy tint (chrome-only).
+    .section-chooser,
     .tbs-chooser {
         display: flex;
         flex-wrap: wrap;
@@ -229,10 +271,19 @@ which case the chooser opens on that note's shape.
         padding: var(--space-lg) var(--space-lg) 0;
     }
 
-    .chooser-btn {
+    .section-chooser {
+        gap: var(--space-xs);
+        padding-top: var(--space-lg);
+    }
+
+    .tbs-chooser {
+        padding-top: var(--space-sm);
+    }
+
+    .chooser-btn,
+    .section-btn {
         display: inline-flex;
         align-items: center;
-        gap: var(--space-sm);
         font: inherit;
         font-weight: 500;
         color: var(--fg-subtle);
@@ -258,6 +309,17 @@ which case the chooser opens on that note's shape.
             outline: 2px solid var(--accent) !important;
             outline-offset: 2px;
         }
+    }
+
+    .chooser-btn {
+        gap: var(--space-sm);
+    }
+
+    .section-btn {
+        min-height: 32px;
+        padding: var(--space-2xs) var(--space-sm);
+        font-size: 12px;
+        box-shadow: none;
     }
 
     .glyph {
