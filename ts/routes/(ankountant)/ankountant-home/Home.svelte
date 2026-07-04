@@ -13,7 +13,6 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         buildReadinessEvidence,
         buildReadinessView,
         buildTopicRows,
-        CPA_MAX_SCORE,
         GAP_WARNING_THRESHOLD,
     } from "../ankountant-dashboard/lib";
     import {
@@ -58,8 +57,9 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     $: gapCount = farTopics.filter(
         (topic) => (topic.gap ?? 0) >= GAP_WARNING_THRESHOLD * 100,
     ).length;
-    $: gaugeScore = view.abstain ? null : view.pointEstimate;
-    $: gaugeFill = C * SWEEP * ((gaugeScore ?? 0) / CPA_MAX_SCORE);
+    $: gaugeArc = C * SWEEP;
+    $: gaugeRangeStart = view.abstain ? 0 : gaugeArc * (view.trackLeftPct / 100);
+    $: gaugeRangeFill = view.abstain ? 0 : gaugeArc * (view.trackWidthPct / 100);
     $: hoveredTopic = hoveredTopicKey
         ? farTopics.find((topic) => topic.key === hoveredTopicKey)
         : undefined;
@@ -215,7 +215,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     role="img"
                     aria-label={view.abstain
                         ? `Readiness withheld, ${view.reason}`
-                        : `Readiness ${view.pointLabel} out of 99`}
+                        : `Readiness range ${view.bandLabel} on the CPA 0 to 99 scale`}
                 >
                     <g transform="rotate(135 60 58)">
                         <circle
@@ -226,7 +226,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                             stroke="var(--border-subtle)"
                             stroke-width="9"
                             stroke-linecap="round"
-                            stroke-dasharray="{C * SWEEP} {C}"
+                            stroke-dasharray="{gaugeArc} {C}"
                         />
                         <circle
                             cx="60"
@@ -236,14 +236,15 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                             stroke="var(--accent)"
                             stroke-width="9"
                             stroke-linecap="round"
-                            stroke-dasharray="{gaugeFill} {C}"
+                            stroke-dasharray="{gaugeRangeFill} {C}"
+                            stroke-dashoffset={-gaugeRangeStart}
                         />
                     </g>
                     <text class="gauge-num tabular" x="60" y="60" text-anchor="middle">
-                        {view.abstain ? "—" : view.pointLabel}
+                        {view.abstain ? "—" : view.bandLabel}
                     </text>
                     <text class="gauge-den tabular" x="60" y="78" text-anchor="middle">
-                        /99
+                        range
                     </text>
                 </svg>
                 <div class="gauge-status">
@@ -255,7 +256,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     {#if view.abstain}
                         {view.reason} · {view.coveragePct}% covered
                     {:else}
-                        {view.bandLabel} range · {view.coveragePct}% covered
+                        CPA 0–99 · {view.coveragePct}% covered
                     {/if}
                 </div>
                 <div class="readiness-brief" data-testid="readiness-brief">

@@ -33,8 +33,6 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         <h1>Readiness</h1>
     </header>
 
-    <!-- Readiness honesty moment: the exam-day projection (or an explicit
-         abstain when the evidence is too thin). The score is the display hero. -->
     <section class="card readiness" data-testid="readiness">
         <h2 class="card-label">{examLabel}</h2>
         {#if view.abstain}
@@ -55,9 +53,6 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         {:else}
             <p class="band" data-testid="readiness-band">
                 <span class="range tabular hero">{view.bandLabel}</span>
-                <span class="point tabular" data-testid="point-estimate">
-                    point {view.pointLabel}
-                </span>
                 <span class="confidence" data-testid="confidence">
                     {view.confidence} confidence
                 </span>
@@ -225,7 +220,6 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         }
 
         h1 {
-            // Section heading — the score below is the display hero, not this.
             font-size: var(--type-section-heading-size);
             font-weight: var(--type-section-heading-weight);
             letter-spacing: var(--type-section-heading-tracking);
@@ -267,7 +261,6 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         margin-bottom: var(--space-xl);
     }
 
-    // Display hero (the score / projection) — the largest thing on the page.
     .hero {
         font-size: var(--type-display-hero-size);
         font-weight: var(--type-display-hero-weight);
@@ -285,12 +278,6 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     .band .range {
         color: var(--accent);
-    }
-
-    .band .point {
-        font-size: 14px;
-        color: var(--fg-subtle);
-        font-variant-numeric: tabular-nums lining-nums;
     }
 
     .band .confidence {

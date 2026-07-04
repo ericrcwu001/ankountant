@@ -3,12 +3,11 @@ Copyright: Ankitects Pty Ltd and contributors
 License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 The Home "summit": each CPA section as a peak on a shared CPA 0–99 axis with a
-dashed pass line at 75. Height = a section's projected readiness point; a faded
-navy Wilson band spans low–high with a neutral marker + tabular score, and a
-neutral triangle glyph (never colour alone) encodes above/below. Abstaining
+dashed pass line at 75. A faded navy Wilson band spans low–high with a neutral
+midpoint marker, and a neutral triangle glyph encodes above/below. Abstaining
 sections render as a dashed "unproven" ghost at the base (no height). Mirrors the
 iOS RangeHeroChart; the section list below owns navigation. Ledger tokens only —
-navy is chrome/band, scores are neutral ink.
+navy is chrome/band.
 -->
 <script lang="ts">
     import { CPA_PASS_SCORE } from "../ankountant-dashboard/lib";
@@ -112,7 +111,7 @@ navy is chrome/band, scores are neutral ink.
                     height={Math.max(c.bottom - c.top, 2)}
                     rx="3"
                 />
-                <!-- Authoritative point marker. -->
+                <!-- Midpoint marker. -->
                 <line
                     class="marker"
                     x1={c.cx - c.barW / 2}
@@ -121,10 +120,9 @@ navy is chrome/band, scores are neutral ink.
                     y2={c.markerY}
                     vector-effect="non-scaling-stroke"
                 />
-                <!-- Neutral glyph + tabular score (colour never alone). -->
+                <!-- Neutral glyph; the band owns the numeric readout. -->
                 <text class="score" x={c.cx} y={c.markerY - 6} text-anchor="middle">
                     {c.p.standing === "above" ? "▲" : "▼"}
-                    {c.p.displayScore}
                 </text>
             {/if}
             <text class="code" x={c.cx} y={BASE + 18} text-anchor="middle">
@@ -134,8 +132,8 @@ navy is chrome/band, scores are neutral ink.
     </svg>
 
     <p class="summit-note">
-        Height = projected CPA score (0–99). Pass line at 75 — rough projection, not an
-        official AICPA score.
+        Bars show projected CPA ranges. Triangles mark whether the midpoint is above or
+        below pass 75.
     </p>
 </div>
 
@@ -193,7 +191,6 @@ navy is chrome/band, scores are neutral ink.
         stroke-width: 2;
     }
 
-    // Score numerals are neutral ink + tabular (navy is reserved for the band).
     .score {
         fill: var(--fg);
         font-size: 12px;

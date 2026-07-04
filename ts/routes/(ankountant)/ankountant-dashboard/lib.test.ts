@@ -8,6 +8,7 @@ import {
     buildReadinessEvidence,
     buildReadinessView,
     buildTopicRows,
+    CPA_MAX_SCORE,
     formatUpdated,
     formatUpdatedLine,
     fractionToPct,
@@ -78,7 +79,7 @@ test("missing readiness data is named without inventing a volume diagnosis", () 
     expect(view.pointLabel).toBe("");
 });
 
-test("sufficient view is a CPA band + point + coverage, never a bare point (A54)", () => {
+test("sufficient view is a CPA band with internal midpoint and coverage (A54)", () => {
     const view = buildReadinessView(
         new Readiness({
             abstain: false,
@@ -95,9 +96,10 @@ test("sufficient view is a CPA band + point + coverage, never a bare point (A54)
     expect(view.bandLow).toBeLessThan(view.bandHigh);
     // CPA scaled-score band (0-99), not a percentage.
     expect(view.bandLabel).toBe("62–78");
-    expect(view.pointLabel).toBe("70");
     expect(view.pointEstimate).toBeGreaterThan(view.bandLow);
     expect(view.pointEstimate).toBeLessThan(view.bandHigh);
+    expect(view.trackLeftPct).toBeCloseTo((62 / CPA_MAX_SCORE) * 100);
+    expect(view.trackWidthPct).toBeCloseTo((16 / CPA_MAX_SCORE) * 100);
     expect(view.coveragePct).toBe(75);
     expect(view.confidence).toBe("High");
     expect(view.reasons.length).toBeGreaterThan(0);
