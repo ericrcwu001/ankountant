@@ -35,6 +35,9 @@ struct ReaderLibraryView: View {
     @State private var isLoading = false
     @State private var loadError: String?
     @State private var showConfiguration = false
+    @State private var showImport = false
+    @State private var importMessage: String?
+    @State private var showImportAlert = false
     @State private var searchText: String = ""
 
     private let progress = ReaderProgressCoordinator()
@@ -152,6 +155,14 @@ struct ReaderLibraryView: View {
                 }
             }
         }
+        .fileImporter(isPresented: $showImport, allowedContentTypes: [.data]) { result in
+            handleImport(result)
+        }
+        .alert("Import", isPresented: $showImportAlert) {
+            Button("OK") {}
+        } message: {
+            Text(importMessage ?? "")
+        }
         .task { await reload() }
         .onChange(of: deckName) { _, _ in
             Task { await reload() }
@@ -179,11 +190,20 @@ struct ReaderLibraryView: View {
                 Button("Retry") { Task { await reload() } }
             }
         } else if books.isEmpty {
-            ContentUnavailableView(
-                "No books in \"\(configuration.deckName)\"",
-                systemImage: "book.closed",
-                description: Text("Add notes to that deck — each note becomes a chapter, and notes sharing a Book ID collapse into a single book.")
-            )
+            ContentUnavailableView {
+                Label("No books in \"\(configuration.deckName)\"", systemImage: "book.closed")
+            } description: {
+                Text("Add notes to that deck. Each note becomes a chapter, and notes sharing a Book ID collapse into a single book.")
+            } actions: {
+                Button("Import package", systemImage: "square.and.arrow.down") {
+                    showImport = true
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button("Reader settings", systemImage: "slider.horizontal.3") {
+                    showConfiguration = true
+                }
+            }
         } else {
             ScrollView {
                 if sortedBooks.isEmpty {
@@ -217,6 +237,9 @@ struct ReaderLibraryView: View {
         } actions: {
             Button("Set Up Reader") { showConfiguration = true }
                 .buttonStyle(.borderedProminent)
+            Button("Import package", systemImage: "square.and.arrow.down") {
+                showImport = true
+            }
         }
     }
 
@@ -235,6 +258,28 @@ struct ReaderLibraryView: View {
         } catch {
             loadError = error.localizedDescription
             books = []
+        }
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            let ext = url.pathExtension.lowercased()
+            guard ext == "apkg" || ext == "colpkg" else {
+                importMessage = "Unsupported file type. Please select an .apkg or .colpkg file."
+                showImportAlert = true
+                return
+            }
+            do {
+                importMessage = try ImportHelper.importPackage(from: url)
+                Task { await reload() }
+            } catch {
+                importMessage = "Import failed: \(error.localizedDescription)"
+            }
+            showImportAlert = true
+        case .failure(let error):
+            importMessage = "Could not select file: \(error.localizedDescription)"
+            showImportAlert = true
         }
     }
 }
