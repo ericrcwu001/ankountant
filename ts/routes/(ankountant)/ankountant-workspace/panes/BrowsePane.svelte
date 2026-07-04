@@ -767,6 +767,7 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
                 <button
                     type="button"
                     class:active={!notesMode}
+                    aria-pressed={!notesMode}
                     on:click={() => toggleNotesMode(false)}
                 >
                     Cards
@@ -774,6 +775,7 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
                 <button
                     type="button"
                     class:active={notesMode}
+                    aria-pressed={notesMode}
                     on:click={() => toggleNotesMode(true)}
                 >
                     Notes
