@@ -148,10 +148,14 @@ struct TbsTaskView: View {
                         Spacer()
                         stepMark(for: line.id)
                     }
-                    TextField("Account", text: $line.account)
-                        .textFieldStyle(.roundedBorder)
-                        .autocorrectionDisabled()
-                        .disabled(answerInputsLocked)
+                    Picker("Account", selection: $line.account) {
+                        Text("Select account").tag("")
+                        ForEach(journalEntryAccounts, id: \.self) { account in
+                            Text(account).tag(account)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .disabled(answerInputsLocked)
                     HStack(spacing: 12) {
                         Picker("Debit / Credit", selection: $line.side) {
                             Text("Select").tag("")

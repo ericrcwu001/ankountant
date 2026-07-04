@@ -74,4 +74,12 @@ struct SimulationsHubSelectionTests {
             results: [PerformanceStepResult(id: "line-1", correct: false, weight: 1)]
         ) == .ungraded)
     }
+
+    @Test func journalEntryAccountsIncludeSeededAndCommonChoices() {
+        #expect(Set(journalEntryAccounts).count == journalEntryAccounts.count)
+        #expect(journalEntryAccounts.contains("Cash"))
+        #expect(journalEntryAccounts.contains("Lease Liability"))
+        #expect(journalEntryAccounts.contains("Interest Expense"))
+        #expect(journalEntryAccounts.contains("COGS"))
+    }
 }

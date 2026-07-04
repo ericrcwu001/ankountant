@@ -171,6 +171,42 @@ public struct JeLineInput: Sendable, Identifiable, Equatable {
     }
 }
 
+public let journalEntryAccounts: [String] = [
+    "Cash",
+    "Accounts Receivable",
+    "Allowance for Doubtful Accounts",
+    "Inventory",
+    "Prepaid Expenses",
+    "Land",
+    "Building",
+    "Equipment",
+    "ROU Asset",
+    "Right-of-Use Asset",
+    "Accumulated Depreciation",
+    "Patent",
+    "Accounts Payable",
+    "Lease Liability",
+    "Bonds Payable",
+    "Discount on Bonds Payable",
+    "Deferred Tax Liability",
+    "Income Tax Payable",
+    "Common Stock",
+    "Common Stock Dividend Distributable",
+    "Additional Paid-in Capital",
+    "Retained Earnings",
+    "Treasury Stock",
+    "Unrealized Holding Gain - Income",
+    "Unrealized Holding Gain - OCI",
+    "Fair Value Adjustment - Trading",
+    "Fair Value Adjustment (AFS)",
+    "Interest Expense",
+    "Income Tax Expense",
+    "Repairs and Maintenance Expense",
+    "Research and Development Expense",
+    "Loss on Sale of A/R",
+    "COGS",
+]
+
 /// One numeric cell as edited (mutable for SwiftUI binding).
 public struct NumericCellInput: Sendable, Identifiable, Equatable {
     public let id: String
