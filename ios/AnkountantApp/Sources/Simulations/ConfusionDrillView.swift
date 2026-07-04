@@ -225,6 +225,7 @@ struct ConfusionDrillView: View {
     }
 
     private func load() async {
+        guard isLoading else { return }
         do {
             items = try performanceClient.confusionQueue(queueSection, 60)
             index = 0
