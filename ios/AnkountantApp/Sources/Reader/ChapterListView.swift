@@ -8,12 +8,22 @@ struct ChapterListView: View {
     private var savedProgress: ReaderSavedProgress? { progress.resolved(bookID: book.id) }
 
     var body: some View {
-        List(book.chapters) { chapter in
-            NavigationLink(value: chapter) {
-                ChapterRow(
-                    chapter: chapter,
-                    savedProgress: savedProgress?.chapterID == chapter.id ? savedProgress : nil
+        Group {
+            if book.chapters.isEmpty {
+                ContentUnavailableView(
+                    "No Chapters",
+                    systemImage: "doc.text.magnifyingglass",
+                    description: Text("This book has no chapter notes. Check the Reader field mapping or add chapter notes to the selected deck.")
                 )
+            } else {
+                List(book.chapters) { chapter in
+                    NavigationLink(value: chapter) {
+                        ChapterRow(
+                            chapter: chapter,
+                            savedProgress: savedProgress?.chapterID == chapter.id ? savedProgress : nil
+                        )
+                    }
+                }
             }
         }
         .navigationDestination(for: ReaderChapter.self) { chapter in
@@ -47,6 +57,8 @@ private struct ChapterRow: View {
                 ProgressView(value: savedProgress.progress)
                     .tint(.accentColor)
                     .padding(.top, 2)
+                    .accessibilityLabel("Reading progress")
+                    .accessibilityValue("\(Int(savedProgress.progress * 100)) percent")
             }
         }
     }
