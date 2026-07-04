@@ -1,6 +1,6 @@
 # Ankountant — Phase 1 MVP PRD (loop-facing)
 
-> Status: Draft v2 · Owner: eric · Last updated: 2026-06-30
+> Status: Draft v3 · Owner: eric · Last updated: 2026-07-04
 > Scope: **Phase 1 of `brainlift_features.md` only.** Grounded in `brainlift.md` + a codebase survey.
 > **This file is the `agentic-loop`-facing spec** — kept lean so Plan/scope-guard stay cheap. Each feature carries a quotable requirement, objective acceptance bullets (the Contract phase reads these), and a **Detail:** pointer. **Implementers: open the referenced `prd/*.md` file before building a feature** — it holds the full acceptance criteria, proto contracts, data model, and integration file paths.
 > Launch parameters (clarifications + config) and the seed spec are in **`prd/build-spec.md`**.
@@ -29,7 +29,7 @@ Ankountant is a fork of Anki (shared Rust core + PyQt desktop + native iOS Swift
 - **AI/RAG card generation, quality checker, leakage/baseline eval → Phase 2a (out).**
 - **Cloud sync, accounts, sync server → Phase 2b (out).** MVP is local-first, single-device, but built sync-safe (no new tables/columns) so Phase 2b needs no rework.
 - **Populating provenance fields → Phase 2a (out).** The fields are **stored** on the TBS note type (in-scope, forward-compat); only their **population** is out.
-- **Real IRT/CAT psychometrics (out)** — Readiness is a Wilson accuracy-band heuristic; faithful 0-99 scaling is out (the AICPA transform isn't public).
+- **Real IRT/CAT psychometrics (out)** — Readiness is the ADR 0005 Wilson-to-CPA-scale band heuristic; adaptive CAT item selection and faithful AICPA score reproduction remain out.
 - **Research-sim & document-review TBS _surfaces_ → future PRD (out).** The TBS note type still **stores** all four shapes; only the playable surfaces for those two are deferred.
 - **Sections other than FAR; ablation study; full course library; head-on B2B/Becker — all out.**
 
@@ -41,9 +41,9 @@ Ankountant is a fork of Anki (shared Rust core + PyQt desktop + native iOS Swift
 
 #### A1 — Deadline-anchored scheduler · P0 · depends: none
 
-Intervals are computed backward from the exam date so recall peaks on exam day, not indefinitely. `desired_retention(days_to_exam)` ramps from 0.80 (≥60d out) to 0.95 (exam day), linear between; no exam date → the deck/preset configured retention (open-horizon). New read-only RPC `ComputeExamSchedule`; exam date lives in `col` config, set via the existing config-set RPC (constraint: no new setter RPC). Plugs into the existing FSRS `next_states` — no new scheduling math.
+Intervals are computed backward from the exam date so recall peaks on exam day, not indefinitely. `desired_retention(days_to_exam)` ramps from 0.80 (≥60d out) to 0.95 (exam day), linear between; no exam date → the deck/preset configured retention (open-horizon). `ComputeExamSchedule` previews the ramp; `SetExamDate`/`GetExamDate` persist the date as a sync-safe hidden `Ankountant Settings` note keyed by `(section, exam.date)`, with a read-only legacy `col`-config fallback. Plugs into the existing FSRS `next_states` — no new scheduling math.
 
-- **Acceptance (objective):** ramp exact at 90d→0.80, 30d→0.875, 0d→0.95, no-date→configured value (test-rust); a nearer exam date yields a shorter next interval than a farther one for the same card (test-rust); callable from Python after `just check` (test-py).
+- **Acceptance (objective):** ramp exact at 90d→0.80, 30d→0.875, 0d→0.95, no-date→configured value (test-rust); a nearer exam date yields a shorter next interval than a farther one for the same card (test-rust); exam-date set/read round-trips through the settings-note RPC path and legacy config remains a read-only fallback (test-rust/test-py).
 - **Detail:** `prd/rubrics-core.md` (A1) · `prd/contracts-and-data.md`.
 
 #### A2 — Latency-aware "too-easy" defunding, rote cards only · P1 · _cut early_ · depends: A6
@@ -69,9 +69,9 @@ New RPC `GetReadiness(section)` returns, per topic, `memory` (trailing-30d recal
 
 #### A5 — Abstain rule · P0 · depends: A4
 
-`GetReadiness` returns "not enough data yet" instead of a fabricated number when evidence is thin. Abstain when sealed attempts < 20 or confusion-set coverage < 60%. Otherwise readiness is a Wilson accuracy band (0–100%) labeled the exam-day projection — never a single point; the band widens as volume drops.
+`GetReadiness` returns "not enough data yet" instead of a fabricated number when evidence is thin. Abstain when sealed attempts < 20 or confusion-set coverage < 60%. Otherwise readiness is a Wilson sealed-Performance band projected through the ADR 0005 CPA scaled-score transform (0–99, pass line 75), with `band_low`, `band_high`, `point_estimate`, `coverage`, `generated_at`, and factual `reasons`. The UI may show the center only alongside the band; never render a bare point.
 
-- **Acceptance (objective):** <20 attempts → abstain "insufficient volume" (test-rust); ≥20 but coverage <60% → abstain "insufficient coverage" (test-rust); sufficient data → band low<high + confidence, never a point (test-rust); halving volume at fixed accuracy widens the band (test-rust).
+- **Acceptance (objective):** <20 attempts → abstain "insufficient volume" with coverage still populated (test-rust); ≥20 but coverage <60% → abstain "insufficient coverage" (test-rust); sufficient data → CPA-scale band low<high + point estimate + coverage/reasons, never a bare point (test-rust); halving volume at fixed accuracy widens the band (test-rust).
 - **Detail:** `prd/rubrics-core.md` (A5).
 
 #### A6 — Deep-structure + cognitive-demand tags · P0 · depends: none
@@ -150,7 +150,7 @@ One screen showing Memory, Performance, the gap, and exam-day Readiness as a ban
 
 ## 6. Key flows
 
-1. **Set exam date → schedule reshapes** (Settings writes `ankountant.exam.FAR.date`; near date ⇒ shorter intervals). 2. **Confusion-set session** (fetch queue → per item: confidence → label-stripped treatment pick → graded + logged). 3. **TBS session** (open surface → fill JE/numeric + exhibits → submit → per-step partial credit). 4. **Readiness check** (dashboard → abstain on thin data, else a narrowing band + the gap). Each flow has empty/loading/error states (see `prd/rubrics-*.md`).
+1. **Set exam date → schedule reshapes** (`SetExamDate` writes a sync-safe settings note; near date ⇒ shorter intervals). 2. **Confusion-set session** (fetch queue → per item: confidence → label-stripped treatment pick → graded + logged). 3. **TBS session** (open surface → fill JE/numeric + exhibits → submit → per-step partial credit). 4. **Readiness check** (dashboard → abstain on thin data, else a CPA-scale band + center + the gap). Each flow has empty/loading/error states (see `prd/rubrics-*.md`).
 
 ## 7. Success metrics
 
@@ -163,12 +163,12 @@ Demo proof-points (each maps to an acceptance test): exam-date change reschedule
 - **FR-3** Abstain if sealed attempts < 20 (strict) or coverage < 60% (coverage = sets-with-≥1-attempt / sets-defined).
 - **FR-4** Tunable constants in one module: ramp 0.80/0.95/60d; too-easy floor 21d, fast factor 0.5×, retention reduction −0.05 (floor 0.70), trailing-5, min-own-reps 3.
 - **FR-5** Sync-safe (hard): no new SQLite tables/columns; hidden notes + `col` config + `custom_data` only.
-- **FR-6** Proto append-only + iOS resync: append new RPCs after `simulateFsrsWorkload`; re-derive iOS indices from `_backend_generated.py` after `just check` + a dispatch smoke test.
-- **FR-7** Readiness is never a point — a band + confidence, labeled exam-day.
+- **FR-6** Proto append-only + iOS resync: append new RPCs without reordering existing service/method IDs; re-derive iOS indices from `_backend_generated.py` after `just check` + a dispatch smoke test.
+- **FR-7** Readiness is never a bare point — a CPA-scale band + center + confidence/coverage, labeled exam-day.
 
 ## 9. Non-functional requirements
 
-- **NFR-1** _Blocking:_ `GetReadiness`/`BuildConfusionQueue` <100 ms on the FAR seed. _Non-blocking (post-MVP):_ <100 ms on 50k notes (needs a `notes.tags` index; do not gate on it).
+- **NFR-1** _Blocking:_ `GetReadiness`/`BuildConfusionQueue` <100 ms on the FAR seed. _Evidence artifact:_ `just ankountant-bench` reports the release-mode shared Rust engine floor for answer, next-card, and dashboard operations. _Non-blocking (post-MVP):_ full UI/platform latency on 50k notes remains separately measured.
 - **NFR-2** Local-first / offline; no account. **NFR-3** Data round-trips through standard Anki sync unchanged (Phase 2b needs no rework). **NFR-4** AGPL-3.0. **NFR-5** Desktop (macOS/Win/Linux) + iOS, one shared core. **NFR-6** No live model calls at runtime.
 
 ## 10. Companion docs
@@ -177,6 +177,7 @@ Demo proof-points (each maps to an acceptance test): exam-date change reschedule
 - `prd/rubrics-frontend.md` — full B1–B5 criteria, desktop-objective vs iOS-demo split.
 - `prd/contracts-and-data.md` — proto message contracts, data model, integration file paths, build/test/lint commands, sync-safety.
 - `prd/build-spec.md` — seed content, phase ordering, cut order, **agentic-loop launch clarifications + config**, risks, open questions.
+- `evidence/README.md` — self-contained rubric evidence artifacts (`determinism`, `ablation`, `paraphrase`, `undo`, `latency`).
 - `PRD-tbs-shapes-future.md` — deferred research-sim + document-review TBS surfaces.
 
 ## Changelog
@@ -184,3 +185,4 @@ Demo proof-points (each maps to an acceptance test): exam-date change reschedule
 - v1 — 2026-06-30 — Initial draft (persona, Phase-1 scope, FAR seed, JE+numeric TBS, sync-safe Option A, per-feature rubrics).
 - Cycle 1 — 2026-06-30 — 4-expert refine: proto contracts; A1 ramp; A2 rewritten rote-only pre-FSRS; A8 precedent+PRAGMA; pinned storage/abstain/AC inputs; 50k demoted; FR-6 hardened; OQ-4 resolved; OQ-5 added.
 - v2 — 2026-06-30 — Restructured for `agentic-loop` (3 phase-simulations): split into lean loop-facing PRD + `prd/` companions; per-feature objective-acceptance bullets so the Contract phase (which never sees companions) has substance; fixed A2↔B1 phase-order bug (confidence via custom_data, tests seed it); iOS ACs made a non-gated demo checklist (objective contract = Rust + desktop-e2e); provenance stored-vs-populated disambiguated for the scope-guard; Phase-A-before-B encoded as `dependsOn`; timing ACs made non-gating; non-goals block prepared for `clarifications.nonGoals`.
+- v3 — 2026-07-04 — Refreshed for shipped evidence/features: exam dates now persist through `SetExamDate`/`GetExamDate` settings notes; Readiness emits a CPA-scale band/center/coverage/reasons; evidence artifacts include undo integrity and release latency benchmark.

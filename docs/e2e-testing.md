@@ -32,7 +32,7 @@ Start Anki once in a separate terminal, then reuse it across multiple test runs:
 
 ```shell
 # Terminal 1 — keep running
-./run
+just run
 
 # Terminal 2 — fast iteration
 ANKI_E2E_REUSE_SERVER=1 just test-e2e
@@ -80,6 +80,13 @@ Anki's mediasrv serves the following page families over HTTP:
 | `/deck-options/[deckId]`     | Deck options (SvelteKit)      |
 | `/congrats`                  | Post-study screen (SvelteKit) |
 | `/card-info/[cardId]`        | Card info (SvelteKit)         |
+| `/ankountant-home`           | CPA summit Home/readiness     |
+| `/ankountant-dashboard`      | Readiness dashboard           |
+| `/ankountant-workspace`      | Tiled study workspace         |
+| `/ankountant-confusion`      | Confusion-set practice        |
+| `/ankountant-tbs`            | TBS shell                     |
+| `/ankountant-sync`           | Ankountant sync view          |
+| `/ankountant-stats`          | Ankountant stats view         |
 | `/_anki/pages/congrats.html` | Legacy congrats page          |
 | `/favicon.ico`               | Mediasrv liveness probe       |
 

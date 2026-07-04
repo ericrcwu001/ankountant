@@ -1555,8 +1555,9 @@ public nonisolated struct Anki_Scheduler_ComputeExamScheduleRequest: Sendable {
 
   public var section: String = String()
 
-  /// Optional ISO-8601 exam date preview override. When empty, the date stored
-  /// in col config `ankountant.<section>.exam.date` is used.
+  /// Optional ISO-8601 exam date preview override. When empty, the
+  /// sync-safe Ankountant Settings-note exam date is used, with legacy
+  /// col-config fallback.
   public var examDate: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()

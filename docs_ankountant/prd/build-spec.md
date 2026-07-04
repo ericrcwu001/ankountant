@@ -31,9 +31,9 @@ clarifications = {
     "Shared Rust core binds desktop (PyO3) + iOS (C FFI); AGPL-3.0.",
     "Proto changes append-only; never reorder SchedulerService methods.",
     "iOS service/method indices hand-maintained in AnkiBackend.swift; resync from _backend_generated.py after any proto change (FR-6).",
-    "Sync-safe: no new SQLite table/column on notes/cards/revlog (FR-5) — hidden notes + col config only."
+    "Sync-safe: no new SQLite table/column on notes/cards/revlog (FR-5) — hidden notes/settings notes + col config only."
   ],
-  nonGoals: "AI/RAG card generation, quality checker, leakage/baseline eval (Phase 2a). Cloud sync, accounts, sync server (Phase 2b). Populating provenance fields (Phase 2a) — the FIELDS are stored, only population is out. Real IRT/CAT psychometrics (Wilson accuracy-band heuristic only). Research-sim & document-review TBS SURFACES (future PRD) — the note type still STORES all 4 shapes. Sections other than FAR. Ablation study. Full course/content library. B2B/Becker head-on.",
+  nonGoals: "Runtime AI/RAG card generation (Phase 2a is build-time only). Cloud sync, accounts, sync server proof (Phase 2b). Real IRT/CAT psychometrics (ADR 0005 CPA-scale heuristic only). Research-sim & document-review TBS SURFACES (future PRD) — the note type still STORES all 4 shapes. Sections other than FAR in the core MVP. Full unique 50k course/content library. B2B/Becker head-on.",
   definitionOfDone: "just check exits 0; test-rust + test-py + test-ts green; every desktop-UI acceptance (per-assertion Playwright specs) green; all objective contract assertions pass. iOS is a manual demo track, NOT contract-gated. A2 may be parked without failing the contract.",
   budget: "one overnight run",
   buildLocation: "in-place (no worktree)",
@@ -61,14 +61,14 @@ The loop skips a phase if its state file already exists. Because the rubrics in 
 
 - **R1 — scope vs one night.** Strict P0/P1 + cut order above; shared-core-first so the engine story demos even if a frontend slips.
 - **R2 — iOS index drift.** FR-6 append-only + resync + dispatch smoke test; iOS is cut-first.
-- **R3 — readiness over-engineering.** A5 pins a Wilson accuracy-band + abstain; faithful 0-99 scaling is out (OQ-1).
+- **R3 — readiness over-engineering.** A5 pins abstain + a Wilson sealed-Performance band projected through the ADR 0005 CPA-scale heuristic; faithful IRT/CAT scoring is out.
 - **R4 — sync-safety regressions.** FR-5 hard rule + A8 AC4 PRAGMA round-trip.
 - **R5 — thin seed.** Seed spec above sizes to cross every threshold + show interleaving.
 - **R6 — loop ships with iOS unverified.** iOS ACs are a non-gated demo checklist by design; the objective contract is Rust + desktop-e2e. Review iOS manually before calling the demo done.
 
 ## Open questions
 
-- **OQ-1** — Readiness display scale: ships as a Wilson band on accuracy % (0–100), exam-day labeled; 0-99 scaled-score mapping deferred (AICPA transform not public). Blocks nothing.
+- **OQ-1** — Resolved: Readiness ships as a Wilson sealed-Performance band projected onto the CPA 0–99 scale by the documented ADR 0005 heuristic; faithful AICPA IRT/CAT scaling remains out because the transform is not public. Blocks nothing.
 - **OQ-2** — Attempt Log volume at 50k scale: recall reps stay in revlog+custom_data (not Attempt Log). Blocks nothing for MVP.
 - **OQ-3** — iOS verification: XCTest at client layer + manual demo; accepted, non-gated.
 - **OQ-4** — Resolved: memory = trailing-30d recall accuracy (≥5 in-window reps else "insufficient").

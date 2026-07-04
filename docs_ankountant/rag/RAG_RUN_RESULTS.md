@@ -167,3 +167,7 @@ the confusable patch applied.
    50k unique grounded cards needs a corpus ~10–20× larger across all six sections
    (including BAR). Add Tier-A public + Tier-B review PDFs per section, then run
    `just cardgen-full` with audit judging + Batch API.
+4. **Stress testing is separate from unique generation:** `just cardgen-stress`
+   duplicates the emitted packs into `stress_bank_part*.apkg` shards for 50k-scale
+   app/load testing. Those cards are tagged `stress` / `dup::<n>` and are not
+   counted as unique generated study material.

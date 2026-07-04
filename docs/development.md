@@ -40,11 +40,9 @@ On all platforms, you will need to install:
   from https://github.com/ninja-build/ninja/releases/tag/v1.11.1 and
   placed on your path, or from your distro/homebrew if it's 1.10+.
   - On Windows, if you have WSL installed, it may conflict with MSYS2 bash. If you are getting an error, try running `C:\msys64\usr\bin\bash.exe tools/install-n2` instead.
-- (Optional) [just](https://just.systems/man/en/packages.html) command runner.
-  Install with `brew install just` or `uv tool install just`.
-  We are experimenting with `just` as the official tool for running
-  Anki-specific commands, and it will likely become the source of truth
-  in the future.
+- [just](https://just.systems/man/en/packages.html) command runner. Install with
+  `brew install just` or `uv tool install just`. In this repo, `just --list` is
+  the source of truth for build, run, test, lint, format, and docs commands.
 
 Platform-specific requirements:
 
@@ -57,10 +55,8 @@ Platform-specific requirements:
 From the top level of Anki's source folder:
 
 ```
-./run
+just run
 ```
-
-(`.\run` on Windows)
 
 This will build Anki and run it in place.
 
@@ -74,33 +70,30 @@ If Anki fails to start, you may need to install [extra libraries](https://docs.a
 To run all tests at once, from the top-level folder:
 
 ```
-./ninja check
+just check
 ```
 
-(`tools\ninja check` on Windows).
-
-You can also run specific checks. For example, if you see during the checks
-that `check:svelte:editor` is failing, you can use `./ninja check:svelte:editor`
-to re-run that check, or `./ninja check:svelte` to re-run all Svelte checks.
+You can also run focused checks: `just test-rust`, `just test-py`,
+`just test-ts`, `just test-e2e`, `just lint`, and `just fmt`.
 
 ## Fixing formatting
 
 When formatting issues are reported, they can be fixed with
 
 ```
-./ninja format
+just fix-fmt
 ```
 
 ## Fixing ruff/eslint/copyright header issues
 
 ```
-./ninja fix
+just fix-lint
 ```
 
 ## Fixing clippy issues
 
 ```
-cargo clippy --fix
+just fix-lint
 ```
 
 ## Excluding your own untracked files from formatting and checks
@@ -109,7 +102,7 @@ If you want to add files or folders to the project tree that should be excluded 
 
 ## Optimized builds
 
-The `./run` command will create a non-optimized build by default. This is faster
+The `just run` command will create a non-optimized build by default. This is faster
 to compile, but will mean Anki will run slower.
 
 To run Anki in optimized mode, use:
@@ -123,7 +116,7 @@ the build much slower.
 
 ## Building redistributable wheels
 
-The `./run` method described in the platform-specific instructions is a shortcut
+The `just run` method described in the platform-specific instructions is a shortcut
 for starting Anki directly from the build folder. For regular study, it's recommended
 you build Python wheels and then install them into your own python venv. This is also
 a good idea if you wish to install extra tools from PyPi that Anki's build process
@@ -132,10 +125,10 @@ does not use.
 To build wheels on Mac/Linux:
 
 ```
-./tools/build
+just wheels
 ```
 
-(on Windows, `.\tools\build.bat`)
+(on Windows, use the matching `just wheels` recipe.)
 
 The generated wheels are in out/wheels. You can then install them by copying the paths into a pip install command.
 Follow the steps [on the beta site](https://betas.ankiweb.net/#via-pypipip), but replace the
@@ -188,7 +181,7 @@ just docs-rust
 
 If ANKIDEV is set before starting Anki, some extra log messages will be printed on stdout,
 and automatic backups will be disabled - so please don't use this except on a test profile.
-It is automatically enabled when using ./run.
+It is automatically enabled when using `just run`.
 
 If TRACESQL is set, all SQL statements will be printed as they are executed.
 
@@ -199,9 +192,12 @@ If ANKI_PROFILE_CODE is set, Python profiling data will be written on exit.
 
 ## Installer
 
-Run `tools/build-installer` to build the installer.
+Installer packaging is not currently exposed by the top-level `justfile`. Add a
+`just` recipe that wraps the installer tooling before making installer builds a
+repeatable workflow.
 
-Depending on your operating system, this produces a file under `out/installer/dist`:
+Depending on your operating system, the installer tooling produces a file under
+`out/installer/dist`:
 
 - An MSI installer on Windows.
 - A .dmg file on macOS.

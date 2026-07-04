@@ -126,11 +126,11 @@ For information on adding new translatable strings to Anki, please see
 
 ## Tests Must Pass
 
-Please make sure 'ninja check' completes successfully before submitting code.
+Please make sure `just check` completes successfully before submitting code.
 
 [pre-commit](https://pre-commit.com/) is used to run that check from a Git hook.
-It is configured in `.pre-commit-config.yaml` at the repository root. After
-installing the dev dependencies (for example `uv sync --group dev`), run one of:
+It is configured in `.pre-commit-config.yaml` at the repository root. Install it
+through your preferred Python environment, then run one of:
 
 ```
 uv run pre-commit install --hook-type pre-push
@@ -143,9 +143,9 @@ python3 -m pre_commit install --hook-type pre-push
 (`pre-commit` alone only works if that executable is on your `PATH`, for example
 after `pip install --user pre-commit` or with your virtual environment activated.)
 
-The bundled hook runs `./ninja check` on **pre-push** (not on every commit),
-because the full check suite can take a long time. You can still run
-`./ninja check` manually at any time.
+The bundled hook runs the full check suite on **pre-push** (not on every
+commit), because it can take a long time. You can still run `just check`
+manually at any time.
 
 You may need to ensure your usual shell `PATH` is visible to the hook (for
 example if tools such as `ninja` are installed outside standard locations),

@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white" alt="Swift 6.2">
-  <img src="https://img.shields.io/badge/iOS-17%2B-000000?logo=apple&logoColor=white" alt="iOS 17+">
+  <img src="https://img.shields.io/badge/iOS-18%2B-000000?logo=apple&logoColor=white" alt="iOS 18+">
   <img src="https://img.shields.io/badge/Rust-FFI-DEA584?logo=rust&logoColor=white" alt="Rust FFI">
   <img src="https://img.shields.io/badge/License-AGPL--3.0-blue" alt="AGPL-3.0">
 </p>
@@ -69,7 +69,7 @@ For the full architecture walkthrough, see **[ARCHITECTURE.md](ARCHITECTURE.md)*
 
 | Tool             | Version            |
 | ---------------- | ------------------ |
-| iOS              | 17.0+              |
+| iOS              | 18.0+              |
 | Xcode            | 16.0+              |
 | Rust             | 1.92+ (via rustup) |
 | protoc           | 3.0+               |
@@ -133,7 +133,7 @@ Select an iOS Simulator or device, then build and run (Cmd+R).
 - **UI**: SwiftUI with strict concurrency (Swift 6.2, language mode v6)
 - **Dependency Injection**: [swift-dependencies](https://github.com/pointfreeco/swift-dependencies) (`@DependencyClient` struct-closure pattern)
 - **Backend**: [ankitects/anki](https://github.com/ankitects/anki) Rust crate via C FFI
-- **Serialization**: Protocol Buffers (24 .proto service definitions)
+- **Serialization**: Protocol Buffers generated from `proto/anki/*.proto`
 - **Database**: SQLite (owned by Rust backend)
 - **Build**: SPM for library modules, xcodegen for the app target
 

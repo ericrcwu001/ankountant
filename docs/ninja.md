@@ -5,10 +5,12 @@ Brief notes for people used to the existing Bazel build system:
 - Ensure Rust is installed via rustup: https://rustup.rs/
 - Remove the .bazel and node_modules folders from your existing checkout
 
-- Run with ./run
-- Run tests with './ninja check' (tools\ninja on Windows)
-- Format files with './ninja format'
-- Fix eslint/copyright issues with './ninja fix'
-- Targets are hierarchical, so './ninja check:jest:deck-options' will run
-  the Jest tests for ts/deck-options, and './ninja check:jest' will run all
-  Jest tests.
+- Run with `just run`
+- Run all checks with `just check`
+- Run focused tests with `just test-rust`, `just test-py`, `just test-ts`, or
+  `just test-e2e`
+- Check or fix formatting with `just fmt` / `just fix-fmt`
+- Fix auto-fixable lint issues with `just fix-lint`
+- Use `just --list` for the current command surface. The underlying build graph
+  still uses N2/Ninja, but project docs and agent workflows should go through
+  `just`.

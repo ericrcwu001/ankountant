@@ -1,6 +1,7 @@
 # CPA Question-Bank at Scale — RAG Backlog Plan
 
-> **Status:** Built & live-proven (run `proof3`). This is **Phase 2a** from
+> **Status:** Built & live-proven (`proof3`) with an importable template deck
+> (`tmpl4`) and a sharded stress-test pack. This is **Phase 2a** from
 > [`../brainlift_features.md`](../brainlift_features.md). It is an **offline,
 > build-time batch tool** (`tools/cardgen/`) — the study loop never calls a model
 > live (the "decouple build-time from runtime" split). The MVP seeds the
@@ -9,7 +10,9 @@
 >
 > **As-built (read these first):** the shipped stack + licensing deltas are in
 > [`../adr/0009-rag-cardgen-lean-stack-cursor-judge-tier-b.md`](../adr/0009-rag-cardgen-lean-stack-cursor-judge-tier-b.md);
-> the latest run's numbers + evidence are in [`RAG_RUN_RESULTS.md`](RAG_RUN_RESULTS.md);
+> the latest RAG run's numbers + evidence are in [`RAG_RUN_RESULTS.md`](RAG_RUN_RESULTS.md);
+> the importable template deck and stress-pack notes are in
+> [`TEMPLATE_DECK_RESULTS.md`](TEMPLATE_DECK_RESULTS.md);
 > the operational state is in [`HANDOFF.md`](HANDOFF.md). Docs **01–07** below are
 > the design reference — **ADR 0009 supersedes their stack/licensing specifics**.
 
@@ -48,6 +51,12 @@ calibrates it against the gold set (positives + planted negatives) and **halts t
 run if it can't be trusted**. Surviving cards are emitted as **ordinary Anki notes**
 (`Ankountant Study` / `Ankountant TBS`, provenance fields populated), so they sync
 with zero data-model change.
+
+The 50k **stress pack** is separate: `just cardgen-stress` duplicates the
+current emitted packs into `stress_bank_part*.apkg` shards under
+`Ankountant::Stress::`, tagged `stress` and `dup::<n>`. It exists only to test
+import, rendering, search, and dashboard scale; it is not unique generated study
+content.
 
 ## Document map
 

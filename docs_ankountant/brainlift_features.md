@@ -21,9 +21,9 @@
 - **"Which treatment applies?" gate (SPOV 4):** A pre-step that requires picking the method/standard before computing anything.
 - **3-score dashboard (SPOV 5 + SPOV 3):** Memory / Performance / Readiness, with the gap shown and the abstain message when data is thin. Readiness shown as the exam-day projection (as a range, not a point), not "today."
 
-### AI Content Pipeline → Phase 2 (deferred; see Phase 2a)
+### AI Content Pipeline → Phase 2a (built/proven, still runtime-off)
 
-All AI card-generation work lives in **Phase 2a**. It's a **build-time batch tool**, not a runtime app feature — the study loop never calls a model live — so the MVP ships on hand-authored / seed content and doesn't depend on it (the 1A "decouple build-time from runtime" split).
+AI card-generation now lives in a **build-time batch tool** (`tools/cardgen/`), not a runtime app feature — the study loop never calls a model live. The MVP can still ship on hand-authored / seed content, while Phase 2a provides a proven path to grow the bank offline.
 
 ### Review Modes (3 modes - only one is a flashcard)
 
@@ -64,25 +64,22 @@ Three items above quietly assume schema changes: "add an effort/latency field to
 
 ## Phase 2 (deferred) — AI content pipeline + cross-device sync & accounts
 
-**Not MVP — build these only after the core study experience works** (deadline scheduler, the 3 review modes incl. TBS, the 3-score dashboard). Phase 1 ships on hand-authored / seed content and is local-first (one device studies fine with no server). Two Phase-2 workstreams follow — the AI content pipeline (2a) and cross-device sync + accounts (2b). Phase 1 is still built _under the sync-safe constraint above_ (Option A: TBS attempts as hidden notes; scores in `col` config JSON), so switching sync on later needs **no data-model rework** — the whole reason to hold the constraint now and defer the server.
+**Not required for the core study loop** (deadline scheduler, the 3 review modes incl. TBS, the 3-score dashboard). Phase 1 can run on hand-authored / seed content and is local-first. Two Phase-2 workstreams exist — the build-time AI content pipeline (2a, now proven) and cross-device sync + accounts (2b). Phase 1 is still built _under the sync-safe constraint above_ (Option A: TBS attempts as hidden notes; settings as per-object notes where merge-sensitive; rollups in `col` config JSON), so switching sync on later needs **no data-model rework**.
 
 ### Phase 2a — AI content pipeline (offline, build-time batch tool)
 
-The full RAG generation pipeline, deferred whole. Decoupled from the study loop by design (**Runs AI-off**): a build-time batch tool that pre-generates the deck; study / scheduling / scoring never call a model live — which is exactly why it can wait (the MVP studies pre-made / hand-authored cards).
+The RAG/template generation pipeline is now built and live-proven. It remains decoupled from the study loop by design (**Runs AI-off**): a build-time batch tool pre-generates ordinary Anki notes; study / scheduling / scoring never call a model live.
 
-> **📋 Fully planned:** the 50,000-card scale-up is specified in
-> **[`rag/README.md`](rag/README.md)** (a cross-referenced doc set: sources &
-> licensing, blueprint-driven taxonomy/allocation, the RAG stack, the generation
-> pipeline, the quality/eval/baseline protocol, and provenance/output/ops).
-> **Chosen stack (build-time Python batch, `tools/cardgen/`):** ingest
-> public-domain / CC-licensed corpora (OpenStax, IRC, IRS pubs, PCAOB/SEC/GAO,
-> AICPA Blueprints as taxonomy) → **LanceDB** (embedded vector + BM25) with
-> **Voyage AI** embeddings → generate with **Anthropic Claude** (Sonnet bulk /
-> Opus for hard TBS + flagged) → **independent LLM judge + human gold set**
-> (3-bucket gate) → **Ragas** faithfulness + a **BM25/vector/RAG baseline A/B/C**
-> → emit **ordinary Anki notes** (provenance fields populated) as an `.apkg`.
-> Copyrighted standards (FASB ASC, GASB, AICPA questions) are **cited, never
-> ingested** — the licensing firewall that keeps provenance defensible.
+> **Built stack:** ingest public/open and personal-use CPA sources → quality-filter
+> chunks → **LanceDB** (embedded vector + BM25) with OpenAI
+> **`text-embedding-3-small`** → generate with OpenAI **`gpt-5-mini`** constrained
+> to retrieved passages → deterministic self-check → independent **Cursor
+> subagent** judge + human gold set (3-bucket gate) → leakage/dedup/baseline →
+> emit **ordinary Anki notes** (provenance fields populated) as `.apkg`.
+> `proof3` shipped 161 vetted RAG cards with baseline PASS; `tmpl4` ships a
+> 325-card template deck; `just cardgen-stress` builds duplicate 50k-scale shards
+> for load testing only. Full unique 50k generation still needs a much larger
+> corpus.
 
 - **RAG card generator:** Pull from source docs (textbook chapters, notes, FASB/IRC) → generate full Q&A flashcards at scale, targeting the 50k deck. Every card stores the source passage it came from. (Assignment rule: AI output with no traceable source zeroes that section.)
 - **RAG generates TBS items** — start with research + numeric (cleanly checkable), document-review later. _(TBS note-type coverage is a Phase 1 data-model item; generation lives here — the 2A split.)_

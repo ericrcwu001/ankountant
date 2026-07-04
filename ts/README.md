@@ -1,10 +1,15 @@
-Anki's TypeScript and Sass dependencies. Some TS/JS code is also
-stored separately in ../qt/aqt/data/web/.
+Anki's TypeScript and Sass dependencies. Some TS/JS code is also stored
+separately in `../qt/aqt/data/web/`.
 
-To update all dependencies:
+Use the root `just` recipes as the command surface:
 
-./update.sh
+```bash
+just web-watch
+just rebuild-web
+just test-ts
+just lint
+```
 
-To add a new dev dependency, use something like:
-
-./add.sh -D @rollup/plugin-alias
+Dependency-update helper scripts from upstream are not present in this checkout;
+add or update packages through the repo's package manager files and verify with
+`just test-ts` / `just check`.

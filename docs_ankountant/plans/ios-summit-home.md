@@ -108,12 +108,12 @@ Corrections the cross-check forced into this plan:
 - **All 5 sections are real — verified against `cursor/cpa-online-cards`** (worktree
   `../ankountant-cpa-online`, currently uncommitted). It adds card-generation tooling
   (`tools/cardgen/scripts/{harvest_online,triage_online,emit_online}.py`, `fetch_ankiweb.mjs`)
-  that harvests + LLM-triages online/AnkiWeb cards and emits an `online_bank.apkg` of
-  Basic/Cloze notes into `Ankountant::Community::<SECTION>::<deck>` decks tagged
-  `sec::<SECTION>`, categorized across **FAR/AUD/REG/TCP/ISC/BAR** by keyword scoring. It
-  changes **no `proto`, `rslib/src/ankountant`, or `ios` code** (only `tools/cardgen`,
-  `docs_ankountant/rag`, and the desktop `qt/aqt/main.py` loader) → the iOS plan's data model
-  and readiness math are unaffected.
+  that harvests + LLM-triages online/AnkiWeb cards and emits scored Basic/Cloze candidates
+  under `tools/cardgen/out/online/`. The current committed importable deck is still
+  `tools/cardgen/out/tmpl4/cpa_bank.apkg`; no separate `online_bank.apkg` is present in this
+  checkout. The online harvest changes **no `proto`, `rslib/src/ankountant`, or `ios` code**
+  (only `tools/cardgen`, `docs_ankountant/rag`, and the desktop `qt/aqt/main.py` loader) → the
+  iOS plan's data model and readiness math are unaffected.
 - **Nuance (don't over-promise the peaks):** those community cards are **study-pile (Memory)
   content**, not the sealed **Performance** bank or confusion-set (`ds::*`) items, and
   confusable maps still come from `rslib` seed (FAR-only today). So importing the bank gives

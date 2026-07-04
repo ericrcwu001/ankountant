@@ -10,8 +10,9 @@ C FFI + protobuf serialization. Deeper data-flow and build detail live in
 `ios/ARCHITECTURE.md`.
 
 > Build note: iOS has its own toolchain — Swift Package Manager + `xcodebuild` +
-> the scripts in `ios/scripts/`. The repo's `just` recipes build the **desktop**
-> app only; they do not build iOS.
+> the scripts in `ios/scripts/`. The repo exposes only a `just test-ios` stub
+> today; add/use a `just` wrapper before making any iOS command a required repo
+> gate.
 
 ## Architecture
 
@@ -39,7 +40,7 @@ target is the separate Xcode project `AnkountantApp/`.
 | Module                           | Purpose                                                                                                                                                           |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AnkiKit`                        | Pure Swift domain types (`Rating`, `CardRecord`, `DeckInfo`, `FSRSState`, …)                                                                                      |
-| `AnkiProto`                      | Generated Swift protobuf types from `proto/anki/*.proto` (24 service files)                                                                                       |
+| `AnkiProto`                      | Generated Swift protobuf types from `proto/anki/*.proto`                                                                                                          |
 | `AnkiBackend`                    | Swift wrapper around the Rust C FFI (`AnkiBackend` class) + the hand-maintained `Service`/`*Method` index enums                                                   |
 | `AnkiServices`                   | Domain service layer (`DecksService`, `SchedulerService`, `NotesService`, …) over the backend                                                                     |
 | `AnkiClients`                    | `@DependencyClient` structs + live implementations                                                                                                                |

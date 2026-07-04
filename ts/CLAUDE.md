@@ -8,7 +8,10 @@ deck-options.html). This is where new ankountant study UI lands.
 
 - `routes/` — SvelteKit routes, one dir per page: `congrats/`, `deck-options/`,
   `graphs/`, `image-occlusion/`, `change-notetype/`, `import-csv/`,
-  `import-anki-package/`, `import-page/`, `card-info/`.
+  `import-anki-package/`, `import-page/`, `card-info/`, plus Ankountant pages
+  under `routes/(ankountant)/` (`ankountant-home`, `ankountant-dashboard`,
+  `ankountant-workspace`, `ankountant-confusion`, `ankountant-tbs`,
+  `ankountant-sync`, `ankountant-stats`).
 - `reviewer/` — review session runtime (`index.ts`, `answering.ts`,
   `preload.ts`, `images.ts`); the card display loop, hooks, and state API.
 - `editor/` — note field editor (NoteEditor, EditorField, contenteditable,
@@ -60,11 +63,12 @@ deck-options.html). This is where new ankountant study UI lands.
 
 ## Ankountant work
 
-New ankountant study UI lands here: a confidence-gate-before-reveal reviewer
-hooks into `reviewer/answering.ts` / the `onShownHook` reveal path; TBS task
-surfaces and confusion-set discrimination practice land as new `routes/` pages
-or a custom reviewer mode, with new RPCs via `postProto()` (proto in `proto/`)
-and reusable widgets in `lib/components/`.
+Ankountant study UI lives in `routes/(ankountant)/`: the summit Home/readiness
+map, Readiness dashboard, tiled workspace, confusion practice, TBS shell, sync
+view, and stats. The pre-reveal confidence gate hooks into
+`reviewer/answering.ts` / the `onShownHook` reveal path and reuses components in
+`lib/components/`. New RPCs come through `@generated/backend` / `postProto()`
+from `proto/`.
 
 ## Dev loop
 

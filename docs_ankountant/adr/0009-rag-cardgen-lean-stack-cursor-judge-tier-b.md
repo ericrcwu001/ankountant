@@ -21,7 +21,9 @@ requirement are all **unchanged** from `docs_ankountant/rag/`.
 ## Decision
 
 1. **Lean provider stack (replaces the premium one).**
-   - Generation: **OpenAI `gpt-4o-mini`** (was Claude Sonnet/Opus).
+   - Generation: **OpenAI `gpt-5-mini`** primary, with **`gpt-4o` fallback**
+     (was Claude Sonnet/Opus). Retrieval reranking uses **`gpt-4o-mini`** when
+     live rerank is enabled.
    - Embeddings: **OpenAI `text-embedding-3-small`** (was Voyage).
    - Vector + keyword store: **LanceDB** (vector **and** BM25) — _unchanged_; it
      still provides two of the three baseline arms for free.
@@ -48,10 +50,11 @@ requirement are all **unchanged** from `docs_ankountant/rag/`.
    generated `.apkg` is a **personal artifact and is not publicly
    redistributable.**
 
-4. **Cost posture.** `gpt-4o-mini` gen + Cursor judge ⇒ OpenAI spend ≈ **$1–2
-   (bounded proof)** / **≈ $45 (full 50k, ~$22 with Batch API)**; judging rides
-   the Cursor subscription. Executed as a **bounded live proof across all six
-   sections now** + a **one-command, resumable scale-up** to the full 50k.
+4. **Cost posture.** Low-cost OpenAI generation + Cursor judge keeps the bounded
+   proof cheap and leaves the full 50k run as a resumable Batch-API-capable
+   scale-up; judging rides the Cursor subscription. Executed as a **bounded live
+   proof across all six sections now** + a **one-command, resumable scale-up** to
+   the full 50k.
 
 ## Consequences
 

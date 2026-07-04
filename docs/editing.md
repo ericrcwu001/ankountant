@@ -24,8 +24,8 @@ You'll need Rust to be installed, which is required as part of the build process
 ### Build First
 
 Code completion partly depends on files that are generated as part of the
-regular build process, so for things to work correctly, use './run' or
-'tools/build' prior to using code completion.
+regular build process, so for things to work correctly, use `just run` or
+`just build` prior to using code completion.
 
 ## Visual Studio Code
 

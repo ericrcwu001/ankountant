@@ -5,19 +5,17 @@
 > same quality pipeline (self-check -> gold -> judge -> leakage -> dedup -> emit).
 > See the plan `template_card_generation` and `templates.py`.
 >
-> **Current best deck:** `tools/cardgen/out/tmpl4/cpa_bank.apkg` — **325 shipped,
-> 1 wrong blocked, 0 leakage** (see "Scaling via corpus harvest" below). The
+> **Current importable deck:** `tools/cardgen/out/tmpl4/cpa_bank.apkg` — **325
+> shipped, 1 wrong blocked, 0 leakage** (see "Scaling via corpus harvest" below). The
 > section immediately below documents the original hand-curated `tmpl2` proof (14
 > cards) that established the pipeline.
 >
-> **Online-sourced supplement:** `tools/cardgen/out/tmpl4/online_bank.apkg` — **191
-> cards curated from AnkiWeb community CPA decks** (parsed from third-party `.apkg`s,
-> cleaned, categorized into a CPA section — FAR 138 / AUD 33 / REG 20 — deduped
-> against the 325, then passed through an independent-subagent usefulness triage:
-> **223 harvested → 191 kept**). Provenance stays on every card (`src::ankiweb`,
-> deck `Ankountant::Community::<section>`). The desktop **"CPA Bank"** button imports
-> both packs (**516 total**) in one click. Pipeline: `scripts/fetch_ankiweb.mjs` →
-> `harvest_online.py` → `triage_online.py` → `emit_online.py`.
+> **Online-sourced supplement status:** `tools/cardgen/out/online/report.md`
+> currently records **222 kept candidates** from AnkiWeb community decks (FAR 149 /
+> AUD 50 / REG 23), but `tools/cardgen/out/tmpl4/online_bank.apkg` is **not present
+> in this checkout**. The desktop **"CPA Bank"** loader imports whichever generated
+> packs exist (`cpa_bank.apkg` and, if regenerated, `online_bank.apkg`). Pipeline:
+> `fetch_ankiweb.mjs` → `harvest_online.py` → `triage_online.py` → `emit_online.py`.
 
 ## What it is
 
@@ -141,6 +139,26 @@ Two honest takeaways:
   squeezing.
 
 ## Honest scope / next steps
+
+## 50k stress-test pack (`just cardgen-stress`)
+
+`tools/cardgen/scripts/stress_bank.py` duplicates the emitted packs up to a
+target size (default 51,000 notes) and writes sharded
+`tools/cardgen/out/tmpl4/stress_bank_part*.apkg` files by default. These cards
+are intentionally duplicate load-test material, not new study content.
+
+- Decks are re-homed under `Ankountant::Stress::`.
+- Cards are tagged `stress` and `dup::<n>` so they can be found/deleted.
+- Note types and templates are preserved, so import/render/search paths see
+  realistic Ankountant notes at scale.
+- The desktop menu item **Load 50k Stress Test (duplicates)** imports the shards.
+
+Run:
+
+```bash
+just cardgen-stress
+just cardgen-stress --run-id tmpl4 --target 51000 --shard-size 10000
+```
 
 - Only the tax-threshold and citation families are true "plug-and-play": each new
   card needs a real, source-pinned value/citation, so volume tracks curated data,

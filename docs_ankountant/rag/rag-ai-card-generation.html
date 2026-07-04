@@ -248,18 +248,17 @@
     <p>325 shipped from a 501 pool (cloze ship-rate 29% &rarr; ~54% after the filter). Across 501 grounded cards only <b>1 was wrong</b>, and the gate blocked it — the safety property templates buy. The corpus, not the filter, is now the constraint: raising per-source caps adds no cloze cards, and the ~231 genuinely-good threshold sentences in these pubs are ~87% shipped. Materially more cards means <b>more corpus/seams</b> (FAR via OpenStax, NIST control enhancements), not more cloze squeezing.</p>
   </div>
 
-  <h2>Provenance mix — AI-generated vs. sourced online</h2>
+  <h2>Provenance mix — current deck and online harvest</h2>
   <div class="stats">
-    <div class="stat"><div class="v green">516</div><div class="l">Total finalized CPA cards</div></div>
-    <div class="stat"><div class="v">325 · 63%</div><div class="l">AI-generated (grounded + judged)</div></div>
-    <div class="stat"><div class="v">191 · 37%</div><div class="l">Sourced online (AnkiWeb, triaged)</div></div>
+    <div class="stat"><div class="v green">325</div><div class="l">Current importable CPA cards</div></div>
+    <div class="stat"><div class="v">325</div><div class="l">AI/template generated (grounded + judged)</div></div>
+    <div class="stat"><div class="v">222</div><div class="l">Online candidates kept by triage</div></div>
     <div class="stat"><div class="v">2</div><div class="l">Community decks ingested</div></div>
   </div>
   <div style="display:flex;height:30px;border-radius:6px;overflow:hidden;margin:6px 0 12px;font:600 12px/30px system-ui;color:#fff">
-    <div style="width:63%;background:var(--green);text-align:center" title="AI-generated: 325">AI · 325 (63%)</div>
-    <div style="width:37%;background:var(--accent);text-align:center" title="Sourced online: 191">Online · 191 (37%)</div>
+    <div style="width:100%;background:var(--green);text-align:center" title="Current importable deck: 325">CPA Bank · 325 importable cards</div>
   </div>
-  <p class="muted">The finalized bank the one-click loader imports is <b>516 cards</b>: the <b>325</b> AI/template cards (each grounded in a named public source and cleared by the independent judge) plus <b>191</b> cards <b>sourced from AnkiWeb</b> community CPA decks. Online cards are parsed from third-party <code>.apkg</code>s, cleaned, <b>categorized into a CPA section</b> (FAR 138 · AUD 33 · REG 20), de-duplicated against the 325, then put through the same independent-subagent usefulness gate: <b>223 harvested &rarr; 191 kept</b> (32 dropped as Canadian/IFRS-only-stated-as-general, factually wrong, or fragments). Every online card keeps <code>src::ankiweb</code> provenance and lands under an <code>Ankountant::Community::&lt;section&gt;</code> deck, so AI-vs-sourced stays auditable — and the desktop "CPA Bank" button imports both in one click.</p>
+  <p class="muted">The current committed one-click deck is <b>325 cards</b> in <code>tools/cardgen/out/tmpl4/cpa_bank.apkg</code>: AI/template cards grounded in named public sources and cleared by the independent judge. The online supplement is harvested and triaged separately; <code>tools/cardgen/out/online/report.md</code> records <b>222 kept candidates</b> from community decks (FAR 149 · AUD 50 · REG 23), but <code>tools/cardgen/out/tmpl4/online_bank.apkg</code> is <b>not present in this checkout</b>. The desktop "CPA Bank" loader imports whichever generated packs exist, so a regenerated online pack will join the current CPA bank without changing the app data model.</p>
 
 </div>
 

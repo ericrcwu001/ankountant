@@ -6,15 +6,15 @@
 
 ## A1 — Deadline-anchored scheduler (SPOV 2/3) · P0 · depends: —
 
-**Behavior (pinned):** exam date read from `col` config `ankountant.exam.FAR.date` (**set via the existing config-set RPC in `config.proto`** — a constraint, not a new feature/RPC). `desired_retention(d)`, `d = days_to_exam`: `d ≥ 60 → 0.80`; `d ≤ 0 → 0.95`; `0 < d < 60 → 0.80 + 0.15 × (60 − d)/60`; no date → deck/preset configured retention (open-horizon). This value replaces the static one fed to the existing FSRS `next_states` — no new scheduling math. New read-only RPC `ComputeExamSchedule` returns the retention + per-card interval preview.
+**Behavior (pinned):** exam date is written/read through `SchedulerService.SetExamDate` / `GetExamDate` and stored as a hidden `Ankountant Settings` note keyed by `(section, exam.date)`, so it merges as a normal note instead of overwriting the whole `col` config blob. Legacy `ankountant.<section>.exam.date` config is read only as a migration fallback. `desired_retention(d)`, `d = days_to_exam`: `d ≥ 60 → 0.80`; `d ≤ 0 → 0.95`; `0 < d < 60 → 0.80 + 0.15 × (60 − d)/60`; no date → deck/preset configured retention (open-horizon). This value replaces the static one fed to the existing FSRS `next_states` — no new scheduling math. `ComputeExamSchedule` returns the retention + per-card interval preview.
 
 - [ ] AC1 — exam date 90d out → desired_retention == 0.80. _(test-rust, ramp fn)_
 - [ ] AC2 — exam date 30d out → 0.875. _(test-rust)_
 - [ ] AC3 — exam date 0d/past → 0.95. _(test-rust)_
 - [ ] AC4 — no exam date → configured preset value (no dynamic override). _(test-rust)_
 - [ ] AC5 — review card, stable interval 60d: `ComputeExamSchedule` with date 90d out (dr=0.80) vs 30d out (dr=0.875) → interval(30d) < interval(90d). _(test-rust)_
-- [ ] AC6 — `ComputeExamSchedule` callable from Python after `just check`. _(test-py)_
-- [ ] AC7 — exam date set via `col` config; a test sets it via the config API and observes the ramp change. _(test-rust/test-py)_
+- [ ] AC6 — `ComputeExamSchedule`, `SetExamDate`, and `GetExamDate` callable from Python after `just check`. _(test-py)_
+- [x] AC7 — exam date round-trips through the sync-safe Settings note, clears cleanly, and does not write the legacy config key; legacy config remains a read fallback. _(test-rust)_
       **Done when:** exam date is a first-class synced object; retention ramps with days-to-exam; open-horizon fallback intact.
 
 ---
@@ -61,12 +61,12 @@
 
 ## A5 — Abstain rule (SPOV 5) · P0 · depends: A4
 
-**Behavior (pinned):** part of `GetReadiness`. **Abstain when** sealed attempts < 20 (strict) OR coverage < 60%, where coverage = (sets with ≥1 sealed attempt) / (sets defined in the CONFUSABLE map) — a zero-attempt set counts against coverage. When not abstaining: readiness = a band on Performance accuracy (0–100%) via a Wilson 95% interval (widens as volume drops), labeled the exam-day projection — a percentage band, NOT a 0-99 scaled score (deferred, OQ-1). `confidence` = Med (20–49) / High (≥50); below 20 abstains. Never a single point.
+**Behavior (pinned):** part of `GetReadiness`. **Abstain when** sealed attempts < 20 (strict) OR coverage < 60%, where coverage = (sets with ≥1 sealed attempt) / (sets defined in the CONFUSABLE map) — a zero-attempt set counts against coverage. When not abstaining: readiness = a Wilson 95% interval on sealed Performance accuracy, projected through the ADR 0005 CPA scaled-score transform (0–99, pass line 75). Response fields include `band_low`, `band_high`, `point_estimate`, `confidence`, `coverage`, `generated_at`, and factual `reasons`. The point estimate is only the center of the band; UI must never render it as a standalone score. `confidence` = Med (20–49) / High (≥50); below 20 abstains.
 
 - [ ] AC1 — <20 sealed attempts → `abstain==true`, reason "insufficient volume". _(test-rust)_
 - [ ] AC2 — ≥20 attempts but coverage <60% → `abstain==true`, reason "insufficient coverage". _(test-rust)_
-- [ ] AC3 — sufficient volume+coverage → `abstain==false`, band_low < band_high (never a point) + confidence level. _(test-rust)_
-- [ ] AC4 — 50% accuracy on 40 attempts (≥60% coverage) → band [L₁,H₁]; halve to 20 attempts same accuracy → [L₂,H₂] with (H₂−L₂) > (H₁−L₁). _(test-rust)_
+- [ ] AC3 — sufficient volume+coverage → `abstain==false`, CPA-scale `band_low < band_high`, `point_estimate`, `coverage`, `generated_at`, factual `reasons`, and confidence level. _(test-rust)_
+- [ ] AC4 — fixed accuracy on 40 attempts (≥60% coverage) → CPA band [L₁,H₁]; halve to 20 attempts same accuracy → [L₂,H₂] with (H₂−L₂) > (H₁−L₁). _(test-rust)_
       **Done when:** readiness is a band that abstains honestly under thin evidence.
 
 ---
@@ -136,5 +136,5 @@
 ## Worked examples (for the Build generator)
 
 - **A10 AC1 — TBS partial credit.** Input: `steps_json` = 4 JE lines, weight 0.25 each; `submission_json` matches lines 1–3, line 4 amount wrong. Output: `{ steps:[{id,correct:true,weight:0.25}×3, {id,correct:false,weight:0.25}], total_credit: 0.75, attempt_note_id: <n> }`; one Attempt Log note written (`mode=tbs`, per-step array, confidence, latency).
-- **A5 — abstain→band.** 12 sealed attempts → `{abstain:true, reason:"insufficient volume"}`. Add to 25 attempts across ≥60% of sets → `{abstain:false, band_low, band_high, confidence:"Med"}`. Doubling attempts narrows the band.
+- **A5 — abstain→band.** 12 sealed attempts → `{abstain:true, reason:"insufficient volume", coverage, reasons}`. Add to 25 attempts across ≥60% of sets → `{abstain:false, band_low, band_high, point_estimate, confidence:"Med", coverage, reasons}` on the CPA 0–99 scale. Doubling attempts narrows the band.
 - **A1 — ramp.** days_to_exam 90 → 0.80; 60 → 0.80; 30 → 0.875; 0 → 0.95; none → configured preset (e.g. 0.90).

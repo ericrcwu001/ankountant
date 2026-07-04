@@ -26,7 +26,7 @@ Svelte/TypeScript web components and drives the collection via typed operations.
 ## Gotchas
 
 - Forms import from the synthetic `_aqt.forms.<name>_qt6` (e.g. `qt/aqt/forms/about.py` is just `from _aqt.forms.about_qt6 import *`). `_aqt` is generated into `out/` for namespace isolation — it does not exist until the build runs.
-- Codegen (forms, hooks, colors/props) is mandatory before type checking: `just lint`/`just check-py` fail until the build has produced `out/qt/_aqt/`. Run `just check` to trigger it.
+- Codegen (forms, hooks, colors/props) is mandatory before type checking: `just lint` and `just check` need `out/qt/_aqt/`. Run `just check` to trigger it.
 - `CollectionOp` runs its op in a background thread — do NOT touch UI or call `browser.selectedCards()` inside the op.
 - `AnkiWebViewKind` controls QWebEngineProfile routing and which views may reach the backend API — check the kind before expecting API access.
 - Styling is injected post-load after the `domDone` signal; pages serve from `http://127.0.0.1:{port}/_anki/...` (port from `ANKI_API_PORT`).
@@ -44,8 +44,11 @@ Svelte/TypeScript web components and drives the collection via typed operations.
 
 ## Ankountant work
 
-Standard Anki fork — no ankountant-specific changes here yet. Add new collection
-mutations as a `CollectionOp` in `operations/` (use `QueryOp` for read-only async).
-New dialogs: either a `.ui` form + generated code, or embed an `AnkiWebView`
-SvelteKit page and register its route/`PageContext` in `mediasrv.py`. After `.proto`
-or codegen-affecting changes, run a full `just check` before type checking.
+Qt now owns Ankountant desktop integration: the single-window shell/menu entries,
+Ankountant `AnkiWebViewKind` routing, mediasrv registration for the
+`routes/(ankountant)/` SvelteKit pages, workspace webviews, and CPA bank / 50k
+stress-test loaders. Add new collection mutations as a `CollectionOp` in
+`operations/` (use `QueryOp` for read-only async). New dialogs: either a `.ui`
+form + generated code, or embed an `AnkiWebView` SvelteKit page and register its
+route/`PageContext` in `mediasrv.py`. After `.proto` or codegen-affecting
+changes, run a full `just check` before type checking.

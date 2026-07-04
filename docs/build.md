@@ -27,11 +27,13 @@ The build/ folder is made up of 4 packages:
 
 If you run into trouble with the build process:
 
-- You can see the executed commands with e.g. `./ninja pylib -v`
-- You can see the output of successful commands by defining N2_OUTPUT_SUCCESS=1
-- You can see what's triggering a rebuild of a target with e.g.
-  `./ninja qt/anki -d explain`.
-- You can browse the build graph via e.g. `./ninja -- -t browse wheels`
+- Use `just build` for the normal build and `just check` for the full check
+  suite.
+- You can see the output of successful build commands by defining
+  `N2_OUTPUT_SUCCESS=1` before a `just` recipe.
+- The underlying graph is still N2/Ninja. If you need target-specific graph
+  tracing that is not exposed by a `just` recipe yet, add a recipe before
+  documenting or relying on that workflow.
 - You can profile build performance with
   https://discourse.cmake.org/t/profiling-build-performance/2443/3.
 

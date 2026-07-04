@@ -60,5 +60,5 @@ over PyO3, with each protobuf RPC exposed as a snake_case Python method.
 This subtree tracks upstream Anki's pylib/anki; it is a passthrough to the Rust
 backend with no fork-specific logic. Add domain behavior in `rslib/backend`
 (Rust) and surface it here by regenerating the backend interface. After
-proto changes, run a full `just check`; for pylib iteration use `just pylib`
+proto changes, run a full `just check`; for pylib iteration use `just build`,
 then `just test-py` / `just lint`.

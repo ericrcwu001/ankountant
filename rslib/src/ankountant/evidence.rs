@@ -1,13 +1,12 @@
 // Copyright: Ankitects Pty Ltd and contributors
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
-//! Reproducible evidence emitters for the readiness/scheduler honesty claims
-//! (#4 determinism, #5 A2 ablation). The emitters themselves are `#[ignore]`d
-//! tests in [`super::determinism`] and [`super::ablation`], run by
-//! `just ankountant-evidence`; each recomputes its backing numbers and writes a
-//! JSON record plus a self-contained HTML artifact (with the JSON inlined)
-//! under `docs_ankountant/evidence/`. Nothing here runs in the normal `just
-//! test-rust` suite, and nothing here is on any product code path.
+//! Reproducible evidence artifact helpers for Ankountant rubric claims:
+//! determinism, A2 ablation, paraphrase transfer, undo integrity, and latency.
+//! Correctness emitters run through `just ankountant-evidence`; the optimized
+//! latency emitter runs through `just ankountant-bench`. Each emitter writes a
+//! JSON record plus a self-contained HTML artifact under
+//! `docs_ankountant/evidence/`. Nothing here is on any product code path.
 
 use std::path::PathBuf;
 

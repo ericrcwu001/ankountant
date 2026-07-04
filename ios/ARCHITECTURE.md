@@ -37,7 +37,7 @@ it relates to the desktop app, and `ios/CLAUDE.md` for working conventions.
 | Module                                 | Purpose                                                                                                                |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | **AnkiKit**                            | Pure Swift domain types: `Rating`, `FSRSState`, `DeckInfo`, `CardRecord`, etc.                                         |
-| **AnkiProto**                          | Generated Swift protobuf types from the 24 `.proto` service files                                                      |
+| **AnkiProto**                          | Generated Swift protobuf types from `proto/anki/*.proto`                                                               |
 | **AnkiBackend**                        | Swift wrapper around the Rust C FFI (`AnkiBackend` class) + hand-maintained service/method index enums                 |
 | **AnkiServices**                       | Domain service layer (`DecksService`, `SchedulerService`, `NotesService`, …) translating UI requests into backend RPCs |
 | **AnkiClients**                        | `@DependencyClient` structs with live implementations                                                                  |
@@ -105,17 +105,10 @@ table** (odd service IDs).
 `Sources/AnkiBackend/AnkiBackend.swift` are **maintained by hand**, re-derived
 from `_backend_generated.py`. A `.proto` service/method add or reorder updates
 Python/TS via `just check` but leaves Swift stale → calls hit the wrong method.
-See `proto/CLAUDE.md`.
-
-| Service ID | Name                        | Key Methods                                           |
-| ---------- | --------------------------- | ----------------------------------------------------- |
-| 1          | BackendSyncService          | 3=SyncLogin, 5=SyncCollection, 6=FullUploadOrDownload |
-| 3          | BackendCollectionService    | 0=OpenCollection, 1=CloseCollection                   |
-| 7          | BackendDecksService         | 8=GetDeckTree, 13=GetDeckNames                        |
-| 13         | BackendSchedulerService     | 3=GetQueuedCards, 4=AnswerCard, 7=CountsForDeckToday  |
-| 25         | BackendNotesService         | 5=GetNote                                             |
-| 27         | BackendCardRenderingService | 6=RenderExistingCard                                  |
-| 29         | BackendSearchService        | 0=SearchCards, 1=SearchNotes                          |
+See `proto/CLAUDE.md`. Do not duplicate a "current method IDs" table in this
+document; it goes stale quickly. For the live table, inspect
+`Sources/AnkiBackend/AnkiBackend.swift` and verify it against
+`out/pylib/anki/_backend_generated.py` after `just check`.
 
 ## Data Flows
 

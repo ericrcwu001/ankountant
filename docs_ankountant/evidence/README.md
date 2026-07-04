@@ -1,6 +1,6 @@
 # Ankountant — reproducible evidence artifacts
 
-Self-contained HTML reports that back two rubric claims with runnable code, not
+Self-contained HTML reports that back five rubric claims with runnable code, not
 prose. Open the `.html` files directly in a browser.
 
 | Artifact                               | Claim                                                                                                                                                                                                                                               | Emitter                                                          |
@@ -14,9 +14,10 @@ prose. Open the `.html` files directly in a browser.
 ## Regenerate
 
 ```
-just check            # once, so protobuf descriptors exist
-just ankountant-evidence   # determinism, ablation, paraphrase, undo (correctness)
-just ankountant-bench      # latency.html (RELEASE build; ANKOUNTANT_BENCH_CARDS=50000 for the headline run)
+just check                       # once, so protobuf descriptors exist
+just ankountant-evidence          # determinism, ablation, paraphrase, undo
+just ankountant-bench             # default 10k-card release latency artifact
+ANKOUNTANT_BENCH_CARDS=50000 just ankountant-bench
 ```
 
 `ankountant-evidence` runs the `#[ignore]`d Rust emitters. Each recomputes its
@@ -30,7 +31,11 @@ non-ignored tests in `just test-rust` (`determinism_*`, `a2_ablation_*`,
 `ankountant-bench` is separate because latency is only meaningful from an
 optimized build; it measures the in-process Rust engine (no PyO3/IPC/render) and
 records the build profile in the artifact. It reports pass/fail against the
-targets but never gates on machine-dependent wall-clock numbers.
+targets but never gates on machine-dependent wall-clock numbers. The committed
+`latency.json` is the default release benchmark (`ANKOUNTANT_BENCH_CARDS=10000`,
+10,457 total cards after the FAR seed); rerun with `ANKOUNTANT_BENCH_CARDS=50000`
+for the headline 50k-deck artifact. `ANKOUNTANT_BENCH_ANSWERS` and
+`ANKOUNTANT_BENCH_DASH_ITERS` tune the sample counts.
 
 `data/` holds the raw JSON records; the HTML files embed a copy inline so they
 open with no server.

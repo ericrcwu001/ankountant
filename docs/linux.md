@@ -21,7 +21,7 @@ $ sudo apt install bash grep findutils curl gcc gcc-12 g++ make git rsync
 
 If you get errors during build or startup, try starting with
 
-QT_DEBUG_PLUGINS=1 ./run
+QT_DEBUG_PLUGINS=1 just run
 
 It will likely complain about missing libraries, which you can install with
 your package manager. Some of the libraries that might be required on Debian
@@ -59,7 +59,7 @@ You can use your system's Qt libraries if they are Qt 6.2 or later, if
 you wish. After installing the system libraries (eg:
 'sudo apt install python3-pyqt6.qt{quick,webengine} python3-venv pyqt6-dev-tools'),
 find the place they are installed (eg '/usr/lib/python3/dist-packages'). On modern Ubuntu, you'll
-also need 'sudo apt remove python3-protobuf'. Then before running any commands like './run', tell Anki where
+also need 'sudo apt remove python3-protobuf'. Then before running any commands like `just run`, tell Anki where
 the packages can be found:
 
 ```

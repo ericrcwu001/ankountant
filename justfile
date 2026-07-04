@@ -77,21 +77,17 @@ test-e2e ui='': _install-playwright-browsers
 test-ios:
     @echo "iOS is a non-gated demo track; no automated tests wired up. (no-op)"
 
-# Regenerate the reproducible honesty-evidence artifacts into
-# docs_ankountant/evidence/: backend determinism (rubric #4) and the A2 too-easy
-# defunding off/on ablation (rubric #5). Runs the `#[ignore]`d Rust emitters,
-# which recompute the numbers and write <name>.{json,html}. Run `just check`
-# (or `just test-rust`) once first so the protobuf descriptors exist; this
-# reuses the ninja build's Cargo target dir so it needs no from-scratch rebuild.
+# Runs the `#[ignore]`d correctness emitters. Run `just check` once first so
+# protobuf descriptors exist; this reuses the ninja build's Cargo target dir.
+# Regenerate Ankountant evidence artifacts: determinism, ablation, paraphrase, undo.
 ankountant-evidence:
     CARGO_TARGET_DIR=out/rust cargo test -p anki _evidence -- --ignored --nocapture
     @echo "Evidence written to docs_ankountant/evidence/{determinism,ablation,paraphrase,undo}.html"
 
-# Run the one-command latency benchmark (challenge 7h / section 10) in RELEASE
-# and write docs_ankountant/evidence/latency.html. Set ANKOUNTANT_BENCH_CARDS
-# (default 10000; the doc's headline size is 50000) to size the deck. Release is
-# required for the numbers to be meaningful. Run `just check` once first so the
-# protobuf descriptors exist.
+# Release is required for meaningful numbers. Set ANKOUNTANT_BENCH_CARDS
+# (default 10000; headline 50000), ANKOUNTANT_BENCH_ANSWERS, and
+# ANKOUNTANT_BENCH_DASH_ITERS as needed.
+# Run Ankountant release latency benchmark and write latency.html.
 ankountant-bench *args:
     CARGO_TARGET_DIR=out/rust cargo test --release -p anki emit_latency_bench -- --ignored --nocapture {{ args }}
     @echo "Latency benchmark written to docs_ankountant/evidence/latency.html"
