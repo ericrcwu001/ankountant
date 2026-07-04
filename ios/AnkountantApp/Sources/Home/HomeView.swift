@@ -19,6 +19,7 @@ struct HomeView: View {
     @Dependency(\.deckClient) private var deckClient
 
     @Environment(\.palette) private var palette
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var examDate = Date.now
     @State private var hasExamDate = false
@@ -129,35 +130,7 @@ struct HomeView: View {
 
     private var summitHero: some View {
         VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Ankountant")
-                        .ankountantFont(.sectionHeading)
-                        .foregroundStyle(.white)
-                    Text("CPA EXAM PREP")
-                        .ankountantFont(.micro)
-                        .foregroundStyle(Color.white.opacity(0.68))
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
-                    Label(heroFreshnessTitle, systemImage: heroFreshnessIcon)
-                        .ankountantFont(.micro)
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.78)
-                    Text(heroFreshnessDetail)
-                        .ankountantFont(.micro)
-                        .foregroundStyle(Color.white.opacity(0.68))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.78)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .frame(maxWidth: 132, alignment: .trailing)
-                .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(heroFreshnessAccessibilityLabel)
-            }
+            summitHeroHeader
 
             FarTopicHeroChart(topics: farTopics)
                 .frame(height: 150)
@@ -180,13 +153,72 @@ struct HomeView: View {
         .accessibilityLabel("Ankountant CPA exam prep readiness and FAR topic mastery")
     }
 
+    @ViewBuilder
+    private var summitHeroHeader: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
+                summitHeroTitle
+                heroFreshnessBadge
+            }
+        } else {
+            HStack(alignment: .center) {
+                summitHeroTitle
+                Spacer()
+                heroFreshnessBadge
+            }
+        }
+    }
+
+    private var summitHeroTitle: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Ankountant")
+                .ankountantFont(.sectionHeading)
+                .foregroundStyle(.white)
+            Text("CPA EXAM PREP")
+                .ankountantFont(.micro)
+                .foregroundStyle(Color.white.opacity(0.68))
+        }
+    }
+
+    private var heroFreshnessBadge: some View {
+        VStack(alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .trailing, spacing: 2) {
+            Label(heroFreshnessTitle, systemImage: heroFreshnessIcon)
+                .ankountantFont(.micro)
+                .foregroundStyle(.white)
+            Text(heroFreshnessDetail)
+                .ankountantFont(.micro)
+                .foregroundStyle(Color.white.opacity(0.68))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .frame(
+            maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 132,
+            alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .trailing
+        )
+        .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(heroFreshnessAccessibilityLabel)
+    }
+
     private var metricDeck: some View {
         VStack(spacing: AnkountantSpacing.sm) {
+            metricCards
+            ReadinessScoreStrip(scores: readinessScores)
+        }
+    }
+
+    @ViewBuilder
+    private var metricCards: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: AnkountantSpacing.sm) {
+                HomeMetricCard(value: countdownNumeral, label: countdownCaption)
+                HomeMetricCard(value: coverageValue, label: coverageCaption)
+            }
+        } else {
             HStack(spacing: AnkountantSpacing.sm) {
                 HomeMetricCard(value: countdownNumeral, label: countdownCaption)
                 HomeMetricCard(value: coverageValue, label: coverageCaption)
             }
-            ReadinessScoreStrip(scores: readinessScores)
         }
     }
 
@@ -474,26 +506,10 @@ private struct HomeMetricCard: View {
     var gauge: Double?
 
     @Environment(\.palette) private var palette
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        HStack(spacing: AnkountantSpacing.sm) {
-            Text(value)
-                .ankountantFont(.sectionHeading)
-                .monospacedDigit()
-                .foregroundStyle(palette.textPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(label)
-                .ankountantFont(.caption)
-                .foregroundStyle(palette.textSecondary)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: AnkountantSpacing.sm)
-            if let gauge {
-                MiniGauge(fraction: gauge)
-                    .frame(width: 40, height: 40)
-            }
-        }
+        content
         .frame(maxWidth: .infinity, minHeight: 66, alignment: .leading)
         .padding(AnkountantSpacing.md)
         .background(palette.surfaceElevated, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
@@ -501,6 +517,46 @@ private struct HomeMetricCard: View {
             RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
                 .stroke(palette.borderSubtle, lineWidth: 1)
         )
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: AnkountantSpacing.xs) {
+                valueText
+                labelText
+                if let gauge {
+                    MiniGauge(fraction: gauge)
+                        .frame(width: 44, height: 44)
+                }
+            }
+        } else {
+            HStack(spacing: AnkountantSpacing.sm) {
+                valueText
+                labelText
+                Spacer(minLength: AnkountantSpacing.sm)
+                if let gauge {
+                    MiniGauge(fraction: gauge)
+                        .frame(width: 40, height: 40)
+                }
+            }
+        }
+    }
+
+    private var valueText: some View {
+        Text(value)
+            .ankountantFont(.sectionHeading)
+            .monospacedDigit()
+            .foregroundStyle(palette.textPrimary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+    }
+
+    private var labelText: some View {
+        Text(label)
+            .ankountantFont(.caption)
+            .foregroundStyle(palette.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
