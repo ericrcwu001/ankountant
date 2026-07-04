@@ -80,4 +80,40 @@ struct ReadinessScoreSummaryTests {
         #expect(scores[2].rangeText == "withheld")
         #expect(!scores[2].available)
     }
+
+    @Test func readinessEvidenceIncludesLastUpdatedLine() {
+        let evidence = readinessEvidence(
+            band: ReadinessBand(
+                abstain: false,
+                reason: "",
+                bandLow: 74,
+                bandHigh: 85,
+                pointEstimate: 80,
+                confidence: "High",
+                coverage: 1,
+                generatedAt: 1_704_067_200,
+                reasons: ["Coverage: 100% of topics; 188 sealed attempts"]
+            ),
+            topics: []
+        )
+
+        #expect(evidence.updatedAtLine.hasPrefix("Last updated "))
+        #expect(!evidence.updatedAtLine.contains("unavailable"))
+    }
+
+    @Test func readinessEvidenceReportsMissingGeneratedTime() {
+        let evidence = readinessEvidence(
+            band: ReadinessBand(
+                abstain: true,
+                reason: "insufficient volume",
+                bandLow: 0,
+                bandHigh: 0,
+                confidence: "",
+                generatedAt: 0
+            ),
+            topics: []
+        )
+
+        #expect(evidence.updatedAtLine == "Last updated time unavailable; refresh readiness after more graded evidence is logged.")
+    }
 }

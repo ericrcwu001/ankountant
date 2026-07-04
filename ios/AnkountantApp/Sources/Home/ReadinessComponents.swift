@@ -163,6 +163,11 @@ struct ReadinessEvidencePanel: View {
                 lines: evidence.evidenceLines
             )
             evidenceSection(
+                title: "Last updated",
+                systemImage: "clock",
+                lines: [evidence.updatedAtLine]
+            )
+            evidenceSection(
                 title: "Still missing",
                 systemImage: "tray",
                 lines: evidence.missingData

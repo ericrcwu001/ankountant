@@ -196,6 +196,7 @@ private func validateScaleValue(_ label: String, _ value: Double) throws {
 
 public struct ReadinessEvidence: Sendable, Equatable {
     public let evidenceLines: [String]
+    public let updatedAtLine: String
     public let missingData: [String]
     public let calibrationStatus: String
     public let nextAction: String
@@ -203,12 +204,14 @@ public struct ReadinessEvidence: Sendable, Equatable {
 
     public init(
         evidenceLines: [String],
+        updatedAtLine: String,
         missingData: [String],
         calibrationStatus: String,
         nextAction: String,
         giveUpRule: String
     ) {
         self.evidenceLines = evidenceLines
+        self.updatedAtLine = updatedAtLine
         self.missingData = missingData
         self.calibrationStatus = calibrationStatus
         self.nextAction = nextAction
@@ -257,11 +260,20 @@ public func readinessEvidence(band: ReadinessBand, topics: [TopicScoreModel]) ->
 
     return ReadinessEvidence(
         evidenceLines: validatedBand.reasons.isEmpty ? [validatedBand.reason] : validatedBand.reasons,
+        updatedAtLine: readinessGeneratedAtLine(validatedBand.generatedAt),
         missingData: missingData,
         calibrationStatus: "No past score-verification history is available yet; treat this as an uncalibrated projection until held-out outcomes are logged.",
         nextAction: bestNextReadinessAction(band: validatedBand, topics: topics),
         giveUpRule: "No readiness range until there are at least \(readinessMinimumSealedAttempts) sealed attempts and \(formatPercent(readinessMinimumCoverage)) topic coverage."
     )
+}
+
+public func readinessGeneratedAtLine(_ generatedAt: Int64) -> String {
+    guard generatedAt > 0 else {
+        return "Last updated time unavailable; refresh readiness after more graded evidence is logged."
+    }
+    let date = Date(timeIntervalSince1970: TimeInterval(generatedAt))
+    return "Last updated \(date.formatted(date: .abbreviated, time: .shortened))."
 }
 
 private func bestNextReadinessAction(band: ReadinessBand, topics: [TopicScoreModel]) -> String {
