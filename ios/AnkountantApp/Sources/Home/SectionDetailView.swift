@@ -19,6 +19,7 @@ struct SectionDetailView: View {
 
     @State private var summary: ReadinessSummary?
     @State private var loaded = false
+    @State private var loadErrorMessage: String?
 
     var body: some View {
         ScrollView {
@@ -32,7 +33,7 @@ struct SectionDetailView: View {
                 } else if loaded {
                     AnkountantStatusMessageView(
                         title: "Readiness unavailable",
-                        message: "Couldn't load \(section.code) readiness.",
+                        message: loadErrorMessage ?? "Couldn't load \(section.code) readiness.",
                         systemImage: "exclamationmark.triangle",
                         tone: .warning
                     )
@@ -66,15 +67,24 @@ struct SectionDetailView: View {
     }
 
     private func load() async {
-        // Off the main actor: getReadiness is a synchronous FFI call. Capture the
-        // @Sendable closure before hopping so swift-dependencies overrides survive.
         let getReadiness = schedulerService.getReadiness
         let code = section.code
         let result = await Task.detached(priority: .userInitiated) {
-            try? getReadiness(code)
+            Result {
+                try getReadiness(code)
+            }
         }.value
         guard !Task.isCancelled else { return }
-        summary = result
+
+        switch result {
+        case .success(let loadedSummary):
+            summary = loadedSummary
+            loadErrorMessage = nil
+        case .failure(let error):
+            summary = nil
+            loadErrorMessage = "Failed to load \(code) readiness: \(error.localizedDescription)"
+        }
+
         loaded = true
     }
 }

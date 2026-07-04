@@ -17,6 +17,7 @@ struct StatsDashboardView: View {
     @State private var period: StatsPeriod = .month
     @State private var decks: [DeckInfo] = []
     @State private var selectedDeck: DeckInfo?
+    @State private var deckLoadErrorMessage: String?
 
     var body: some View {
         ScrollView {
@@ -37,6 +38,12 @@ struct StatsDashboardView: View {
                         deckMenu
                         periodMenu
                         Spacer()
+                    }
+
+                    if let deckLoadErrorMessage {
+                        Text(deckLoadErrorMessage)
+                            .ankountantStatusText(.danger, font: .caption)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
 
                     PeriodStatsCard(period: period, today: graphs.today, reviews: graphs.reviews)
@@ -60,7 +67,10 @@ struct StatsDashboardView: View {
         .navigationTitle("Statistics")
         .task { await loadDecks() }
         .task(id: loadKey) { await loadStats() }
-        .refreshable { await loadStats() }
+        .refreshable {
+            await loadDecks()
+            await loadStats()
+        }
     }
 
     /// Identity for the stats fetch: changing deck or period re-runs `loadStats`
@@ -123,7 +133,14 @@ struct StatsDashboardView: View {
     }
 
     private func loadDecks() async {
-        decks = (try? deckClient.fetchAll()) ?? []
+        do {
+            decks = try deckClient.fetchAll()
+            deckLoadErrorMessage = nil
+        } catch {
+            decks = []
+            selectedDeck = nil
+            deckLoadErrorMessage = "Failed to load deck filters: \(error.localizedDescription)"
+        }
     }
 
     private func loadStats() async {
