@@ -43,11 +43,23 @@ private struct PreviewCard: View {
                 badge("Danger", color: palette.danger)
             }
 
-            Button("Primary action") {}
-                .buttonStyle(AnkountantPrimaryButtonStyle())
+            primaryButtonSwatch
         }
         .padding(AnkountantSpacing.lg)
         .background(palette.surface, in: RoundedRectangle(cornerRadius: AnkountantRadius.card))
+    }
+
+    private var primaryButtonSwatch: some View {
+        Text("Primary button")
+            .ankountantFont(.bodyEmphasis)
+            .foregroundStyle(palette.onAccent)
+            .padding(.vertical, AnkountantSpacing.sm)
+            .padding(.horizontal, 20)
+            .background(
+                palette.accentFill,
+                in: RoundedRectangle(cornerRadius: AnkountantRadius.control, style: .continuous)
+            )
+            .accessibilityLabel("Primary button preview")
     }
 
     private func badge(_ text: String, color: Color) -> some View {
