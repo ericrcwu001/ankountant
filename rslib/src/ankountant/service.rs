@@ -4,11 +4,10 @@
 //! The four new `SchedulerService` RPCs (appended to the proto tail) plus the
 //! transactional `SubmitPerformanceAttempt` write path (A10 + A8).
 
-use std::collections::HashMap;
-use std::collections::HashSet;
-
 use anki_proto::scheduler;
 use serde_json::Value;
+use std::collections::HashMap;
+use std::collections::HashSet;
 
 use super::attempt_log::NewAttempt;
 use super::attempt_log::Outcome;
@@ -223,19 +222,7 @@ fn validate_attempt_item(mode: &str, note: &Note, steps: &[grading::GradableStep
 }
 
 fn validate_gradable_steps(steps: &[grading::GradableStep]) -> Result<()> {
-    if steps.is_empty() {
-        invalid_input!("TBS note has no gradable steps");
-    }
-    let mut ids = HashSet::new();
-    for step in steps {
-        if step.id.trim().is_empty() {
-            invalid_input!("TBS note has blank step id");
-        }
-        if !ids.insert(step.id.as_str()) {
-            invalid_input!("TBS note has duplicate step id: {}", step.id);
-        }
-    }
-    if let Err(message) = grading::validate_effective_weights(steps) {
+    if let Err(message) = grading::validate_steps(steps) {
         invalid_input!("{message}");
     }
     Ok(())

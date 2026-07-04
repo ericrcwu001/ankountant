@@ -788,6 +788,36 @@ fn a8_submit_rejects_negative_tbs_weight_before_logging() {
 }
 
 #[test]
+fn a8_submit_rejects_missing_tbs_answer_key_before_logging() {
+    let (mut col, _) = seeded();
+    let nid = je_note(&mut col);
+    let mut note = col.storage.get_note(nid).unwrap().unwrap();
+    note.set_field(
+        super::notetypes::tbs_fields::STEPS_JSON,
+        r#"[
+            {"id":"l1","answer_key":null,"weight":1.0}
+        ]"#,
+    )
+    .unwrap();
+    col.update_note(&mut note).unwrap();
+    let before = attempt_log_count(&mut col);
+
+    let err = submit_result(
+        &mut col,
+        nid,
+        "tbs",
+        json!({"steps":[{"id":"l1","value":1}]}),
+        "guess",
+    )
+    .unwrap_err();
+    assert_eq!(
+        invalid_input_message(err),
+        "TBS note missing answer key for step l1"
+    );
+    assert_eq!(attempt_log_count(&mut col), before);
+}
+
+#[test]
 fn a8_submit_rejects_mode_item_mismatch_before_logging() {
     let (mut col, _) = seeded();
     let nid = je_note(&mut col);
@@ -958,6 +988,21 @@ fn a9_notetype_stores_je_and_numeric_tbs() {
         .search_notes_unordered("note:\"Ankountant TBS\" \"Compute the amounts*\"")
         .unwrap();
     assert!(!numeric.is_empty());
+}
+
+#[test]
+fn a9_seeded_numeric_tbs_keeps_authored_row_labels() {
+    let (mut col, _) = seeded();
+    let nid = col
+        .search_notes_unordered("note:\"Ankountant TBS\" \"Ridge Co. acquires*\"")
+        .unwrap()
+        .into_iter()
+        .next()
+        .unwrap();
+    let note = col.storage.get_note(nid).unwrap().unwrap();
+    let steps: serde_json::Value =
+        serde_json::from_str(&note.fields()[super::notetypes::tbs_fields::STEPS_JSON]).unwrap();
+    assert_eq!(steps[0]["label"], "Capitalized cost of the machine");
 }
 
 #[test]
@@ -2142,6 +2187,10 @@ fn typed_section_item_schema_is_validated_at_seed_time() {
         r#"[{"section":"REG","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"citation","accepted":["IRC 162"],"weight":1.5}]}]"#,
         // step weights must be nonnegative
         r#"[{"section":"REG","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"citation","accepted":["IRC 162"],"weight":-0.1}]}]"#,
+        // duplicate step ids
+        r#"[{"section":"FAR","tbs_type":"numeric","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"numeric","id":"c1","answer_key":1},{"kind":"numeric","id":"c1","answer_key":2}]}]"#,
+        // negative numeric tolerance
+        r#"[{"section":"FAR","tbs_type":"numeric","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"numeric","id":"c1","answer_key":1,"tolerance":-0.5}]}]"#,
         // doc_review blank answer_key is not one of the option ids
         r#"[{"section":"FAR","tbs_type":"doc_review","set_id":"s","prompt":"p","source":"s","exhibits":[{"title":"d","kind":"document","role":"document","body":"x <blank step=\"b1\">y</blank>"}],"steps":[{"kind":"blank","id":"b1","answer_key":"o9","options":[{"id":"o1","text":"a"},{"id":"o2","text":"b"}]}]}]"#,
         // doc_review exhibit kind is not renderable by clients
@@ -2163,6 +2212,28 @@ fn typed_section_item_schema_is_validated_at_seed_time() {
         assert!(
             super::seed::validate_section_items_json(bad).is_err(),
             "bad case {i} should have failed validation"
+        );
+    }
+}
+
+#[test]
+fn legacy_content_tbs_schema_is_validated_at_seed_time() {
+    let good = r#"[
+      {"kind":"numeric","prompt":"p","set_id":"s","source":"s",
+       "steps":[{"id":"c1","label":"Amount","answer_key":10,"weight":1.0,"tolerance":1}]}
+    ]"#;
+    assert_eq!(super::seed::validate_content_tbs_json(good).unwrap(), 1);
+
+    let bad_cases = [
+        r#"[{"kind":"essay","prompt":"p","set_id":"s","source":"s","steps":[{"id":"c1","label":"Amount","answer_key":10,"weight":1.0,"tolerance":1}]}]"#,
+        r#"[{"kind":"numeric","prompt":"p","set_id":"s","source":"s","steps":[{"id":"c1","label":"Amount","weight":1.0,"tolerance":1}]}]"#,
+        r#"[{"kind":"numeric","prompt":"p","set_id":"s","source":"s","steps":[{"id":"c1","label":"Amount","answer_key":10,"weight":1.0,"tolerance":-1}]}]"#,
+        r#"[{"kind":"journal_entry","prompt":"p","set_id":"s","source":"s","steps":[{"id":"l1","account":"Cash","side":"left","amount":10,"weight":1.0}]}]"#,
+    ];
+    for (i, bad) in bad_cases.iter().enumerate() {
+        assert!(
+            super::seed::validate_content_tbs_json(bad).is_err(),
+            "bad legacy content TBS case {i} should have failed validation"
         );
     }
 }

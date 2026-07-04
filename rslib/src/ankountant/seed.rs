@@ -19,6 +19,7 @@
 use anki_proto::scheduler::bury_or_suspend_cards_request::Mode as BuryOrSuspendMode;
 use serde::Deserialize;
 use serde_json::json;
+use serde_json::Map;
 use serde_json::Value;
 
 use super::attempt_log::NewAttempt;
@@ -819,8 +820,7 @@ impl Collection {
                     String::new(),
                 ),
             };
-            let steps = content_tbs_steps(t);
-            validate_stored_steps(&steps)?;
+            let steps = content_tbs_steps(t)?;
             let mut note = tbs_nt.new_note();
             note.set_field(tbs_fields::TBS_TYPE, &t.kind)?;
             note.set_field(tbs_fields::PROMPT, &t.prompt)?;
@@ -1362,40 +1362,97 @@ impl Collection {
     }
 }
 
-/// Transform a content TBS item's flat steps into the graded `steps_json`
-/// shape (`grading::GradableStep`): JE lines wrap `{account,side,amount}` under
-/// `answer_key`; numeric cells carry a scalar `answer_key` + `tolerance`.
-fn content_tbs_steps(t: &TbsItem) -> Value {
-    // Content always supplies these keys (validated at authoring time); a null
-    // default is a cheap, clippy-clean fallback that grading treats as absent.
-    let field = |s: &Value, k: &str| s.get(k).cloned().unwrap_or(Value::Null);
+fn content_tbs_steps(t: &TbsItem) -> Result<Value> {
+    check(
+        matches!(t.kind.as_str(), "journal_entry" | "numeric"),
+        format!("unsupported content TBS kind {:?}", t.kind),
+    )?;
+    check(!t.steps.is_empty(), "content TBS has no steps")?;
     let steps: Vec<Value> = t
         .steps
         .iter()
-        .map(|s| {
-            let id = field(s, "id");
-            let weight = field(s, "weight");
-            if t.kind == "journal_entry" {
-                json!({
-                    "id": id,
-                    "answer_key": {
-                        "account": field(s, "account"),
-                        "side": field(s, "side"),
-                        "amount": field(s, "amount"),
-                    },
-                    "weight": weight,
-                })
-            } else {
-                json!({
-                    "id": id,
-                    "answer_key": field(s, "answer_key"),
-                    "weight": weight,
-                    "tolerance": field(s, "tolerance"),
-                })
-            }
-        })
-        .collect();
-    Value::Array(steps)
+        .enumerate()
+        .map(|(index, step)| content_tbs_step(t.kind.as_str(), index, step))
+        .collect::<Result<Vec<_>>>()?;
+    let steps = Value::Array(steps);
+    validate_stored_steps(&steps)?;
+    Ok(steps)
+}
+
+fn content_tbs_step(kind: &str, index: usize, step: &Value) -> Result<Value> {
+    let object = content_step_object(step, index)?;
+    let id = content_step_string(object, index, "id")?;
+    let weight = content_step_number(object, index, "weight")?;
+    match kind {
+        "journal_entry" => {
+            let account = content_step_string(object, index, "account")?;
+            let side = content_step_string(object, index, "side")?;
+            check(
+                side.eq_ignore_ascii_case("dr") || side.eq_ignore_ascii_case("cr"),
+                format!("content TBS step {index}.side must be dr or cr"),
+            )?;
+            Ok(json!({
+                "id": id,
+                "answer_key": {
+                    "account": account,
+                    "side": side,
+                    "amount": content_step_number(object, index, "amount")?,
+                },
+                "weight": weight,
+            }))
+        }
+        "numeric" => Ok(json!({
+            "id": id,
+            "label": content_step_string(object, index, "label")?,
+            "answer_key": content_step_number(object, index, "answer_key")?,
+            "weight": weight,
+            "tolerance": content_step_nonnegative_number(object, index, "tolerance")?,
+        })),
+        _ => unreachable!(),
+    }
+}
+
+fn content_step_object(step: &Value, index: usize) -> Result<&Map<String, Value>> {
+    step.as_object()
+        .or_invalid(format!("content TBS step {index} must be an object"))
+}
+
+fn content_step_string<'a>(
+    object: &'a Map<String, Value>,
+    index: usize,
+    field: &str,
+) -> Result<&'a str> {
+    object
+        .get(field)
+        .and_then(Value::as_str)
+        .filter(|s| !s.trim().is_empty())
+        .or_invalid(format!(
+            "content TBS step {index}.{field} must be a nonempty string"
+        ))
+}
+
+fn content_step_number(object: &Map<String, Value>, index: usize, field: &str) -> Result<Value> {
+    let value = object
+        .get(field)
+        .or_invalid(format!("content TBS step {index} missing {field}"))?;
+    if value.as_f64().is_some_and(f64::is_finite) {
+        Ok(value.clone())
+    } else {
+        invalid_input!("content TBS step {index}.{field} must be a finite number");
+    }
+}
+
+fn content_step_nonnegative_number(
+    object: &Map<String, Value>,
+    index: usize,
+    field: &str,
+) -> Result<Value> {
+    let value = content_step_number(object, index, field)?;
+    if value.as_f64().is_some_and(|number| number >= 0.0) {
+        Ok(value)
+    } else {
+        invalid_input!("content TBS step {index}.{field} must be nonnegative");
+    }
 }
 
 /// Transform a typed [`SectionItem`]'s steps into the grader's stored
@@ -1479,7 +1536,7 @@ fn section_item_steps(item: &SectionItem) -> Value {
 fn validate_stored_steps(steps: &Value) -> Result<()> {
     let steps: Vec<super::grading::GradableStep> =
         serde_json::from_value(steps.clone()).or_invalid("invalid steps_json")?;
-    if let Err(message) = super::grading::validate_effective_weights(&steps) {
+    if let Err(message) = super::grading::validate_steps(&steps) {
         invalid_input!("{message}");
     }
     Ok(())
@@ -1648,6 +1705,15 @@ pub(crate) fn validate_section_items_json(json: &str) -> Result<usize> {
         serde_json::from_str(json).or_invalid("invalid section_items json")?;
     for item in &items {
         validate_section_item(item)?;
+    }
+    Ok(items.len())
+}
+
+#[cfg(test)]
+pub(crate) fn validate_content_tbs_json(json: &str) -> Result<usize> {
+    let items: Vec<TbsItem> = serde_json::from_str(json).or_invalid("invalid content TBS json")?;
+    for item in &items {
+        content_tbs_steps(item)?;
     }
     Ok(items.len())
 }

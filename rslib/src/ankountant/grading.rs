@@ -11,6 +11,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
+use std::collections::HashSet;
 
 use super::constants;
 use super::logic;
@@ -65,6 +66,33 @@ pub(crate) fn validate_effective_weights(
         return Err("TBS note step weights must sum to 1.0".to_string());
     }
     Ok(())
+}
+
+pub(crate) fn validate_steps(steps: &[GradableStep]) -> std::result::Result<(), String> {
+    if steps.is_empty() {
+        return Err("TBS note has no gradable steps".to_string());
+    }
+    let mut ids = HashSet::new();
+    for step in steps {
+        if step.id.trim().is_empty() {
+            return Err("TBS note has blank step id".to_string());
+        }
+        if !ids.insert(step.id.as_str()) {
+            return Err(format!("TBS note has duplicate step id: {}", step.id));
+        }
+        if step.answer_key.is_null() {
+            return Err(format!("TBS note missing answer key for step {}", step.id));
+        }
+        if let Some(tolerance) = step.tolerance {
+            if !tolerance.is_finite() || tolerance < 0.0 {
+                return Err(format!(
+                    "TBS note has invalid tolerance for step {}",
+                    step.id
+                ));
+            }
+        }
+    }
+    validate_effective_weights(steps)
 }
 
 /// Grade a submission against the parsed steps. `submitted` maps step id ->
