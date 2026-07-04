@@ -17,7 +17,7 @@ public struct NotetypeFieldInfo: Sendable {
     public let fontName: String
     public let fontSize: Int
 
-    package init(name: String, ordinal: Int, fontName: String, fontSize: Int) {
+    public init(name: String, ordinal: Int, fontName: String, fontSize: Int) {
         self.name = name
         self.ordinal = ordinal
         self.fontName = fontName

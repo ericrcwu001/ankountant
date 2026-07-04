@@ -167,6 +167,81 @@ final class ReviewSessionTests: XCTestCase {
         }
     }
 
+    func testTypedAnswerMissingNotetypeFieldReportsError() {
+        let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
+        let stubResult = QueuedCardsResult(
+            cards: [stubCard], newCount: 1, learningCount: 0, reviewCount: 0
+        )
+        let stubNote = NoteRecord(
+            id: 100,
+            guid: "g",
+            mid: 200,
+            mod: 0,
+            flds: "Front value\u{1f}Back value",
+            sfld: "",
+            csum: 0
+        )
+
+        withDependencies {
+            $0.decksService.setCurrentDeck = { _ in }
+            $0.schedulerService.getQueuedCards = { _ in stubResult }
+            $0.notesService.getNote = { _ in stubNote }
+            $0.notetypesService.getNotetypeFields = { _ in [
+                NotetypeFieldInfo(name: "Front", ordinal: 0, fontName: "-apple-system", fontSize: 18),
+                NotetypeFieldInfo(name: "Back", ordinal: 1, fontName: "-apple-system", fontSize: 18),
+            ] }
+            $0.cardRenderingService.renderCard = { _ in
+                RenderedCard(frontHTML: "<p>Prompt [[type:Missing]]</p>", backHTML: "<p>Back [[type:Missing]]</p>", cardCSS: "")
+            }
+        } operation: {
+            let session = ReviewSession(deckId: 1)
+            session.start()
+
+            XCTAssertFalse(session.requiresTypedAnswerInput)
+            XCTAssertFalse(session.frontHTML.contains("[[type:Missing]]"))
+            XCTAssertFalse(session.frontHTML.contains("typeans"))
+            XCTAssertTrue(session.errorMessage?.contains("field \"Missing\"") == true)
+        }
+    }
+
+    func testTypedAnswerMissingNoteFieldReportsError() {
+        let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
+        let stubResult = QueuedCardsResult(
+            cards: [stubCard], newCount: 1, learningCount: 0, reviewCount: 0
+        )
+        let stubNote = NoteRecord(
+            id: 100,
+            guid: "g",
+            mid: 200,
+            mod: 0,
+            flds: "Front value",
+            sfld: "",
+            csum: 0
+        )
+
+        withDependencies {
+            $0.decksService.setCurrentDeck = { _ in }
+            $0.schedulerService.getQueuedCards = { _ in stubResult }
+            $0.notesService.getNote = { _ in stubNote }
+            $0.notetypesService.getNotetypeFields = { _ in [
+                NotetypeFieldInfo(name: "Front", ordinal: 0, fontName: "-apple-system", fontSize: 18),
+                NotetypeFieldInfo(name: "Back", ordinal: 1, fontName: "-apple-system", fontSize: 18),
+            ] }
+            $0.cardRenderingService.renderCard = { _ in
+                RenderedCard(frontHTML: "<p>Prompt [[type:Back]]</p>", backHTML: "<p>Back [[type:Back]]</p>", cardCSS: "")
+            }
+        } operation: {
+            let session = ReviewSession(deckId: 1)
+            session.start()
+
+            XCTAssertFalse(session.requiresTypedAnswerInput)
+            XCTAssertFalse(session.frontHTML.contains("[[type:Back]]"))
+            XCTAssertFalse(session.frontHTML.contains("typeans"))
+            XCTAssertTrue(session.errorMessage?.contains("field \"Back\"") == true)
+            XCTAssertTrue(session.errorMessage?.contains("note 100") == true)
+        }
+    }
+
     // MARK: - revealAnswer() sets showAnswer
 
     /// revealAnswer() when there is no typed-answer placeholder should set showAnswer = true.

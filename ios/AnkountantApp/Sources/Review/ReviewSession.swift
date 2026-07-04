@@ -232,9 +232,9 @@ final class ReviewSession {
             frontHTML = makeTypedAnswerFrontHTML(state: typedAnswerState, raw: renderedFrontHTML)
 
             if showAnswer, let state = typedAnswerState {
-                // Re-substitute back placeholder with diff using empty typed value.
-                // We don't have the user's original typed text after a sheet round-trip.
                 backHTML = makeTypedAnswerBackHTML(state: state, typedAnswer: "")
+            } else if showAnswer {
+                backHTML = strippingTypedAnswerPlaceholders(from: renderedBackHTML)
             } else {
                 backHTML = renderedBackHTML
             }
@@ -304,18 +304,13 @@ final class ReviewSession {
             let fields = try notetypes.getNotetypeFields(noteRecord.mid)
 
             guard let field = fields.first(where: { $0.name == placeholder.fieldName }) else {
-                // Field name not found — typed answer with empty expected
-                return TypedAnswerState(
-                    placeholder: placeholder.rawToken,
-                    expected: "",
-                    combining: placeholder.combining,
-                    fontName: "-apple-system",
-                    fontSize: 18
-                )
+                errorMessage = "Failed to prepare typed answer: field \"\(placeholder.fieldName)\" does not exist on notetype \(noteRecord.mid)."
+                return nil
             }
 
             let fieldValues = noteRecord.flds.components(separatedBy: "\u{1f}")
             guard fieldValues.indices.contains(field.ordinal) else {
+                errorMessage = "Failed to prepare typed answer: field \"\(field.name)\" is missing from note \(noteRecord.id)."
                 return nil
             }
 
@@ -374,9 +369,7 @@ final class ReviewSession {
     }
 
     private func strippingTypedAnswerPlaceholders(from html: String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: #"\[\[type:.+?\]\]"#) else {
-            return html
-        }
+        let regex = typedAnswerRegex(pattern: #"\[\[type:.+?\]\]"#)
         let range = NSRange(html.startIndex..., in: html)
         return regex.stringByReplacingMatches(in: html, range: range, withTemplate: "")
     }
@@ -391,9 +384,7 @@ final class ReviewSession {
     }
 
     private func firstTypedAnswerPlaceholder(in html: String) -> TypedAnswerPlaceholder? {
-        guard let regex = try? NSRegularExpression(pattern: #"\[\[type:(.+?)\]\]"#) else {
-            return nil
-        }
+        let regex = typedAnswerRegex(pattern: #"\[\[type:(.+?)\]\]"#)
         let nsRange = NSRange(html.startIndex..., in: html)
         guard let match = regex.firstMatch(in: html, range: nsRange),
               let rawRange = Range(match.range(at: 0), in: html),
@@ -423,6 +414,14 @@ final class ReviewSession {
             combining: combining,
             clozeOrdinal: clozeOrdinal
         )
+    }
+
+    private func typedAnswerRegex(pattern: String) -> NSRegularExpression {
+        do {
+            return try NSRegularExpression(pattern: pattern)
+        } catch {
+            preconditionFailure("Invalid typed-answer regex: \(error)")
+        }
     }
 
     private func queuedClozeOrdinal() -> UInt32 {
