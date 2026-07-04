@@ -33,6 +33,9 @@ test("items are label-stripped: no category-label element (A44/B2-D1)", async ({
     await page.goto("/ankountant-confusion");
     await expect(page.getByTestId("confusion-item")).toBeVisible();
     await expect(page.locator("[data-testid=\"category-label\"]")).toHaveCount(0);
+    await expect(page.getByTestId("confusion-prompt")).not.toContainText(
+        /\([a-z0-9_]+\s+q\d+\)/i,
+    );
 });
 
 test("BAR deep link shows the section-specific empty confusion state", async ({ page, seed }) => {
