@@ -37,3 +37,18 @@ test("encodeConfigJson rejects values that are not JSON preferences", () => {
 test("errorMessage handles non-Error throw values", () => {
     expect(errorMessage("failed")).toBe("failed");
 });
+
+test("errorMessage strips backend html from workspace pane failures", () => {
+    const html403 = `403: <!doctype html>
+        <html lang=en>
+        <title>403 Forbidden</title>
+        <h1>Forbidden</h1>
+        <p>You don&#39;t have the permission to access the requested resource.</p>`;
+
+    const message = errorMessage(new Error(html403));
+
+    expect(message).toBe("403 Forbidden. This workspace surface could not be loaded.");
+    expect(message).not.toContain("<html");
+    expect(message).not.toContain("doctype");
+    expect(message).not.toContain("don&#39;t");
+});

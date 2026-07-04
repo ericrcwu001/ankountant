@@ -1,8 +1,10 @@
 // Copyright: Ankitects Pty Ltd and contributors
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
+import { readableBackendError } from "../../backendError";
+
 export function errorMessage(error: unknown): string {
-    return error instanceof Error ? error.message : String(error);
+    return readableBackendError(error, "This workspace surface could not be loaded.");
 }
 
 export function isMissingConfigJson(error: unknown, key: string): boolean {

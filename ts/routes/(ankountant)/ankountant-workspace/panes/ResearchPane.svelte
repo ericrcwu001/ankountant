@@ -19,6 +19,7 @@ sections, so it never collides with a JE/numeric item.
         SECTION_SEARCH_ORDER,
         tbsSearch,
     } from "../../ankountant-tbs/lib";
+    import { errorMessage } from "./configJson";
     import PaneState from "./PaneState.svelte";
 
     let phase: "loading" | "ready" | "empty" | "error" = "loading";
@@ -42,7 +43,7 @@ sections, so it never collides with a JE/numeric item.
             tags = note.tags;
             phase = "ready";
         } catch (err) {
-            message = err instanceof Error ? err.message : String(err);
+            message = errorMessage(err);
             phase = "error";
         }
     }

@@ -12,6 +12,7 @@ ankountant-confusion/+page.ts.
     import { buildConfusionQueue } from "@generated/backend";
 
     import ConfusionMode from "../../ankountant-confusion/ConfusionMode.svelte";
+    import { errorMessage } from "./configJson";
     import PaneState from "./PaneState.svelte";
 
     const SECTION = "ALL";
@@ -27,7 +28,7 @@ ankountant-confusion/+page.ts.
             items = resp.items;
             phase = items.length > 0 ? "ready" : "empty";
         } catch (err) {
-            message = err instanceof Error ? err.message : String(err);
+            message = errorMessage(err);
             phase = "error";
         }
     }

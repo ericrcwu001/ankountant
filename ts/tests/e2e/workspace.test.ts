@@ -60,6 +60,25 @@ test("workspace find and replace shows apply failures in the dialog", async ({ p
     await expect(dialog).toBeVisible();
 });
 
+test("workspace panes do not leak backend html on load failure", async ({ page }) => {
+    await page.route("**/_anki/searchNotes", async (route) => {
+        await route.fulfill({
+            status: 403,
+            contentType: "text/html",
+            body: "<!doctype html><title>403 Forbidden</title><h1>Forbidden</h1><p>You don&#39;t have permission.</p>",
+        });
+    });
+
+    await page.goto("/ankountant-workspace?initial=tbs");
+
+    const paneState = page.getByTestId("pane-state");
+    await expect(paneState).toContainText(
+        "403 Forbidden. This workspace surface could not be loaded.",
+    );
+    await expect(paneState).not.toContainText("<!doctype html>");
+    await expect(paneState).not.toContainText("don&#39;t");
+});
+
 test("workspace TBS pane reveals the answer key after submit", async ({ page, seed }) => {
     expect(seed.sealedTbsNoteIds.length).toBeGreaterThan(0);
     await page.goto("/ankountant-workspace?initial=tbs");

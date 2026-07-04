@@ -16,6 +16,7 @@ ankountant-tbs/TbsTab.svelte for the JE/numeric task types this pane can render.
         SECTION_SEARCH_ORDER,
         tbsSearch,
     } from "../../ankountant-tbs/lib";
+    import { errorMessage } from "./configJson";
     import TbsSurface from "../../ankountant-tbs/TbsSurface.svelte";
     import PaneState from "./PaneState.svelte";
 
@@ -42,7 +43,7 @@ ankountant-tbs/TbsTab.svelte for the JE/numeric task types this pane can render.
             tags = note.tags;
             phase = "ready";
         } catch (err) {
-            message = err instanceof Error ? err.message : String(err);
+            message = errorMessage(err);
             phase = "error";
         }
     }

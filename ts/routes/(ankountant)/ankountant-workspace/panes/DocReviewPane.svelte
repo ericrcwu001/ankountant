@@ -18,6 +18,7 @@ supported sections, so it loads a doc-review item, not the first TBS note.
         SECTION_SEARCH_ORDER,
         tbsSearch,
     } from "../../ankountant-tbs/lib";
+    import { errorMessage } from "./configJson";
     import PaneState from "./PaneState.svelte";
 
     let phase: "loading" | "ready" | "empty" | "error" = "loading";
@@ -41,7 +42,7 @@ supported sections, so it loads a doc-review item, not the first TBS note.
             tags = note.tags;
             phase = "ready";
         } catch (err) {
-            message = err instanceof Error ? err.message : String(err);
+            message = errorMessage(err);
             phase = "error";
         }
     }

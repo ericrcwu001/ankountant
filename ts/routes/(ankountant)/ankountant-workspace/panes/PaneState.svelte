@@ -60,13 +60,11 @@ pane never renders blank.
     .detail {
         margin: 0;
         max-width: 48ch;
-        font-family: var(--font-mono);
-        font-size: var(--type-caption-size);
-        color: var(--fg-faint);
+        font-size: var(--type-callout-size);
+        line-height: 1.45;
+        color: var(--fg-subtle);
         overflow-wrap: anywhere;
     }
-
-    // Feedback-only motion; collapses under prefers-reduced-motion (base.scss).
     .spinner {
         width: 22px;
         height: 22px;
