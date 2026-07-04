@@ -336,11 +336,16 @@ export function parseSteps(raw: string | undefined): RenderStep[] {
     });
 }
 
-/** Resolve a note's section from its `sec::<SECTION>` tag (fallback FAR). */
-export function sectionFromTags(tags: string[] | undefined): string {
+export function sectionFromTags(tags: string[] | undefined): Section {
     const t = (tags ?? []).find((x) => x.startsWith(SEC_TAG_PREFIX));
-    const sec = t ? t.slice(SEC_TAG_PREFIX.length) : "FAR";
-    return (SECTIONS as readonly string[]).includes(sec) ? sec : "FAR";
+    if (!t) {
+        return DEFAULT_SECTION;
+    }
+    const code = t.slice(SEC_TAG_PREFIX.length).trim().toUpperCase();
+    if ((SECTIONS as readonly string[]).includes(code)) {
+        return code as Section;
+    }
+    throw new Error(`Unknown CPA section tag: ${t}`);
 }
 
 /** Build the full TBS render model from a note's raw fields (+ tags for section). */

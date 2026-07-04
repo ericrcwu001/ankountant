@@ -173,9 +173,10 @@ test("buildNumericSubmission rejects non-finite or malformed cell values", () =>
 
 test("sectionFromTags reads sec:: tag, falls back to FAR", () => {
     expect(sectionFromTags(["ds::reg::deduct", "sec::REG"])).toBe("REG");
+    expect(sectionFromTags(["sec::reg"])).toBe("REG");
     expect(sectionFromTags(["ds::lease::finance"])).toBe("FAR");
     expect(sectionFromTags(undefined)).toBe("FAR");
-    expect(sectionFromTags(["sec::NOPE"])).toBe("FAR");
+    expect(() => sectionFromTags(["sec::NOPE"])).toThrow(/Unknown CPA section tag: sec::NOPE/);
 });
 
 test("parseExhibits reads typed exhibits (kind, table columns/rows, role)", () => {
