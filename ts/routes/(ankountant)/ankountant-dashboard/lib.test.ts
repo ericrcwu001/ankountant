@@ -318,7 +318,7 @@ test("evidence view does not invent a memory value for thin-memory gaps", () => 
         }),
     ]);
     const evidence = buildReadinessEvidence(view, rows);
-    expect(evidence.nextAction).toContain("sealed exam-style practice");
+    expect(evidence.nextAction).toContain("retrieval review");
     expect(evidence.nextAction).not.toContain("memory is 0%");
 });
 

@@ -305,6 +305,13 @@ function bestNextAction(view: ReadinessView, rows: TopicRow[]): string {
         }; performance has no sealed evidence yet.`;
     }
 
+    const thinMemory = rows.find((row) => row.memoryPct === null);
+    if (thinMemory) {
+        return `Run retrieval review for ${
+            prettySetId(thinMemory.setId)
+        } until memory has enough evidence, then return to sealed practice.`;
+    }
+
     const weakest = [...rows]
         .filter((row) => row.performancePct !== null)
         .sort((a, b) => requiredPerformancePct(a) - requiredPerformancePct(b))[0];
