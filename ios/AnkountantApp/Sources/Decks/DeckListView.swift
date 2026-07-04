@@ -22,6 +22,9 @@ struct DeckListView: View {
     @State private var isLoading = true
     @State private var loadErrorMessage: String?
     @State private var showCreateSheet = false
+    @State private var showImport = false
+    @State private var importMessage: String?
+    @State private var showImportAlert = false
 
     private enum DeckListRoute: Hashable {
         case simulations
@@ -64,11 +67,20 @@ struct DeckListView: View {
                 .listRowSeparator(.hidden)
             } else if tree.isEmpty {
                 Section {
-                    ContentUnavailableView(
-                        "No Decks",
-                        systemImage: "rectangle.stack",
-                        description: Text("Sync with your server to get your decks.")
-                    )
+                    ContentUnavailableView {
+                        Label("No decks yet", systemImage: "rectangle.stack")
+                    } description: {
+                        Text("Create a local deck or import an Anki package to start studying.")
+                    } actions: {
+                        Button("Create deck", systemImage: "plus") {
+                            showCreateSheet = true
+                        }
+                        .buttonStyle(.borderedProminent)
+
+                        Button("Import package", systemImage: "square.and.arrow.down") {
+                            showImport = true
+                        }
+                    }
                 }
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -116,8 +128,19 @@ struct DeckListView: View {
         .sheet(isPresented: $showCreateSheet) {
             CreateDeckSheet {
                 showCreateSheet = false
-                Task { await loadDecks() }
+                Task {
+                    await onAdditionalRefresh?()
+                    await loadDecks()
+                }
             }
+        }
+        .fileImporter(isPresented: $showImport, allowedContentTypes: [.data]) { result in
+            handleImport(result)
+        }
+        .alert("Import", isPresented: $showImportAlert) {
+            Button("OK") {}
+        } message: {
+            Text(importMessage ?? "")
         }
         .task(id: reloadID) {
             await loadDecks()
@@ -138,6 +161,31 @@ struct DeckListView: View {
         } catch {
             tree = []
             loadErrorMessage = "Failed to load decks: \(error.localizedDescription)"
+        }
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            let ext = url.pathExtension.lowercased()
+            guard ext == "apkg" || ext == "colpkg" else {
+                importMessage = "Unsupported file type. Please select an .apkg or .colpkg file."
+                showImportAlert = true
+                return
+            }
+            do {
+                importMessage = try ImportHelper.importPackage(from: url)
+                Task {
+                    await onAdditionalRefresh?()
+                    await loadDecks()
+                }
+            } catch {
+                importMessage = "Import failed: \(error.localizedDescription)"
+            }
+            showImportAlert = true
+        case .failure(let error):
+            importMessage = "Could not select file: \(error.localizedDescription)"
+            showImportAlert = true
         }
     }
 }
