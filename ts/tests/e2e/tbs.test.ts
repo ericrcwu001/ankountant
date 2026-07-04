@@ -139,6 +139,7 @@ test("the TBS chooser empty state keeps next steps visible", async ({ page }) =>
     await expect(empty).toContainText("No Journal Entry simulation found");
     await expect(page.getByTestId("tbs-section-chooser")).toBeVisible();
     await expect(page.getByTestId("tbs-chooser")).toBeVisible();
+    await expect(empty.getByRole("button", { name: "Import package" })).toBeVisible();
     await expect(empty.getByRole("link", { name: "Readiness evidence" })).toHaveAttribute(
         "href",
         "/ankountant-dashboard",

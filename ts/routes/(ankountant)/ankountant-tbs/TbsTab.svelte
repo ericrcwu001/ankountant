@@ -11,6 +11,7 @@ chooser opens on that note's shape and section.
     import { onMount } from "svelte";
 
     import { getNote, searchNotes } from "@generated/backend";
+    import { bridgeCommand } from "@tslib/bridgecommand";
 
     import DocReviewSurface from "../ankountant-doc-review/DocReviewSurface.svelte";
     import ResearchSurface from "../ankountant-research/ResearchSurface.svelte";
@@ -177,6 +178,10 @@ chooser opens on that note's shape and section.
         void loadShape(selected, sectionChoice);
     }
 
+    function openImport(): void {
+        bridgeCommand("ankountant:import");
+    }
+
     onMount(() => {
         if (!deepLinked) {
             void loadInitialShape();
@@ -241,10 +246,19 @@ chooser opens on that note's shape and section.
                 <p class="state-title">No {selectedLabel} simulation found</p>
                 <p class="state-detail">
                     No {selectedLabel} simulation was found for {emptySectionLabel} in this
-                    profile. Switch the section or simulation type above, or use readiness
-                    evidence to choose the next practice target.
+                    profile. Import a practice package, switch the section or simulation type
+                    above, or use readiness evidence to choose the next practice target.
                 </p>
-                <a class="state-link" href={readinessHref}>Readiness evidence</a>
+                <div class="state-actions">
+                    <button
+                        type="button"
+                        class="state-link primary"
+                        on:click={openImport}
+                    >
+                        Import package
+                    </button>
+                    <a class="state-link" href={readinessHref}>Readiness evidence</a>
+                </div>
             </div>
         {:else}
             <div class="tbs-state error-state" data-testid="tbs-error">
@@ -401,6 +415,13 @@ chooser opens on that note's shape and section.
         line-height: 1.45;
     }
 
+    .state-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+        margin-top: var(--space-xs);
+    }
+
     .state-link {
         min-height: 36px;
         display: inline-flex;
@@ -411,12 +432,20 @@ chooser opens on that note's shape and section.
         border-radius: var(--border-radius);
         background: var(--accent-tint);
         color: var(--accent);
+        font: inherit;
         font-size: var(--type-caption-size);
         font-weight: 700;
         text-decoration: none;
+        cursor: pointer;
 
         &:hover {
             background: var(--canvas-inset);
+        }
+
+        &:not(.primary) {
+            border-color: var(--border-subtle);
+            background: var(--canvas-elevated);
+            color: var(--fg);
         }
 
         &:focus-visible {
