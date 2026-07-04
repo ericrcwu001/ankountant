@@ -21,6 +21,10 @@ struct TbsTaskView: View {
     @State private var submitError: String?
     @State private var startedAt = Date.now
 
+    private var answerInputsLocked: Bool {
+        submitting || results != nil
+    }
+
     init(noteId: Int64) {
         self.noteId = noteId
     }
@@ -111,6 +115,7 @@ struct TbsTaskView: View {
                         .ankountantFont(.mono)
                         .frame(width: 120)
                         .textFieldStyle(.roundedBorder)
+                        .disabled(answerInputsLocked)
                     stepMark(for: cell.id)
                 }
                 .padding(.vertical, 10)
@@ -144,6 +149,7 @@ struct TbsTaskView: View {
                     TextField("Account", text: $line.account)
                         .textFieldStyle(.roundedBorder)
                         .autocorrectionDisabled()
+                        .disabled(answerInputsLocked)
                     HStack(spacing: 12) {
                         Picker("Debit / Credit", selection: $line.side) {
                             Text("Select").tag("")
@@ -151,6 +157,7 @@ struct TbsTaskView: View {
                             Text("Credit").tag("cr")
                         }
                         .pickerStyle(.menu)
+                        .disabled(answerInputsLocked)
                         Spacer()
                         TextField("Amount", text: $line.amount)
                             .keyboardType(.decimalPad)
@@ -158,6 +165,7 @@ struct TbsTaskView: View {
                             .ankountantFont(.mono)
                             .frame(width: 120)
                             .textFieldStyle(.roundedBorder)
+                            .disabled(answerInputsLocked)
                     }
                 }
                 .padding(12)
