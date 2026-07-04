@@ -57,6 +57,12 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
         sortTypeKey,
     } from "./browseColumns";
     import ContextMenu, { type MenuItem } from "./ContextMenu.svelte";
+    import {
+        decodeConfigJson,
+        encodeConfigJson,
+        errorMessage,
+        isMissingConfigJson,
+    } from "./configJson";
     import FindReplaceDialog from "./FindReplaceDialog.svelte";
     import PaneState from "./PaneState.svelte";
 
@@ -153,18 +159,30 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
     async function readJson<T>(key: string, fallback: T): Promise<T> {
         try {
             const raw = await getConfigJson({ val: key }, { alertOnError: false });
-            return JSON.parse(new TextDecoder().decode(raw.json)) as T;
-        } catch {
-            return fallback;
+            return decodeConfigJson<T>(key, raw.json);
+        } catch (error) {
+            if (isMissingConfigJson(error, key)) {
+                return fallback;
+            }
+            throw error;
         }
     }
 
     async function writeJson(key: string, value: unknown): Promise<void> {
+        const valueJson = encodeConfigJson(key, value);
+        await setConfigJson({ key, valueJson, undoable: false });
+    }
+
+    function reportError(error: unknown): void {
+        message = errorMessage(error);
+    }
+
+    async function runPaneAction(action: () => Promise<void>): Promise<void> {
         try {
-            const valueJson = new TextEncoder().encode(JSON.stringify(value));
-            await setConfigJson({ key, valueJson, undoable: false });
-        } catch {
-            /* config write failures are non-fatal */
+            await action();
+            message = "";
+        } catch (error) {
+            reportError(error);
         }
     }
 
@@ -183,16 +201,27 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
     }
 
     async function loadColumnsAndSort(): Promise<void> {
-        const saved = await readJson<string[]>(
-            activeColsKey(notesMode),
-            defaultColumns(notesMode),
-        );
+        const columnKey = activeColsKey(notesMode);
+        const saved = await readJson<unknown>(columnKey, defaultColumns(notesMode));
+        if (!Array.isArray(saved) || saved.some((key) => typeof key !== "string")) {
+            throw new Error(`Saved preference "${columnKey}" must be a string list.`);
+        }
         activeKeys = saved.filter((k) => columnByKey.has(k));
         if (activeKeys.length === 0) {
             activeKeys = defaultColumns(notesMode).filter((k) => columnByKey.has(k));
         }
-        sortColumn = await readJson<string>(sortTypeKey(notesMode), "noteFld");
-        sortReverse = await readJson<boolean>(sortBackwardsKey(notesMode), false);
+        const sortKey = sortTypeKey(notesMode);
+        const savedSortColumn = await readJson<unknown>(sortKey, "noteFld");
+        if (typeof savedSortColumn !== "string") {
+            throw new Error(`Saved preference "${sortKey}" must be a string.`);
+        }
+        sortColumn = savedSortColumn;
+        const reverseKey = sortBackwardsKey(notesMode);
+        const savedSortReverse = await readJson<unknown>(reverseKey, false);
+        if (typeof savedSortReverse !== "boolean") {
+            throw new Error(`Saved preference "${reverseKey}" must be a boolean.`);
+        }
+        sortReverse = savedSortReverse;
         await setActiveBrowserColumns({ vals: activeKeys });
     }
 
@@ -247,26 +276,27 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
             await doSearch();
             await tick();
             paneEl?.focus();
-        } catch (err) {
-            message = err instanceof Error ? err.message : String(err);
+        } catch (error) {
+            message = errorMessage(error);
             phase = "error";
         }
     }
 
     function onSubmit(event: Event): void {
         event.preventDefault();
-        void doSearch();
+        void runPaneAction(() => doSearch());
     }
 
     function runSearch(newQuery: string): void {
         query = newQuery;
-        void doSearch();
+        void runPaneAction(() => doSearch());
     }
 
     async function toggleNotesMode(next: boolean): Promise<void> {
         if (next === notesMode) {
             return;
         }
+        const previous = notesMode;
         notesMode = next;
         try {
             // browser_row_for_id reads this config, so it must be set first.
@@ -277,8 +307,10 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
             });
             await loadColumnsAndSort();
             await doSearch();
-        } catch (err) {
-            message = err instanceof Error ? err.message : String(err);
+            message = "";
+        } catch (error) {
+            notesMode = previous;
+            reportError(error);
         }
     }
 
@@ -286,26 +318,40 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
         if (!isSortable(col, notesMode)) {
             return;
         }
+        const previousColumn = sortColumn;
+        const previousReverse = sortReverse;
         if (sortColumn === col.key) {
             sortReverse = !sortReverse;
         } else {
             sortColumn = col.key;
             sortReverse = defaultReverse(col, notesMode);
         }
-        await writeJson(sortTypeKey(notesMode), sortColumn);
-        await writeJson(sortBackwardsKey(notesMode), sortReverse);
-        await doSearch(true);
+        try {
+            await writeJson(sortTypeKey(notesMode), sortColumn);
+            await writeJson(sortBackwardsKey(notesMode), sortReverse);
+            await doSearch(true);
+            message = "";
+        } catch (error) {
+            sortColumn = previousColumn;
+            sortReverse = previousReverse;
+            reportError(error);
+        }
     }
 
     async function setColumns(keys: string[]): Promise<void> {
         if (keys.length === 0) {
             return;
         }
-        activeKeys = keys;
-        await setActiveBrowserColumns({ vals: keys });
-        await writeJson(activeColsKey(notesMode), keys);
-        cache = new Map();
-        rowVersion += 1;
+        try {
+            await setActiveBrowserColumns({ vals: keys });
+            await writeJson(activeColsKey(notesMode), keys);
+            activeKeys = keys;
+            cache = new Map();
+            rowVersion += 1;
+            message = "";
+        } catch (error) {
+            reportError(error);
+        }
     }
 
     function toggleColumn(key: string): void {
@@ -426,12 +472,11 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
         }
         const out: bigint[] = [];
         for (const nid of native) {
-            try {
-                const res = await cardsOfNote({ nid });
-                out.push(...res.cids);
-            } catch {
-                /* skip notes whose cards can't be fetched */
-            }
+            const res = await cardsOfNote({ nid });
+            out.push(...res.cids);
+        }
+        if (native.length > 0 && out.length === 0) {
+            throw new Error("Selected notes have no cards for this action.");
         }
         return out;
     }
@@ -444,16 +489,15 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
         const seen = new Set<string>();
         const out: bigint[] = [];
         for (const cid of native) {
-            try {
-                const card = await getCard({ cid });
-                const key = card.noteId.toString();
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    out.push(card.noteId);
-                }
-            } catch {
-                /* skip cards that can't be fetched */
+            const card = await getCard({ cid });
+            const key = card.noteId.toString();
+            if (!seen.has(key)) {
+                seen.add(key);
+                out.push(card.noteId);
             }
+        }
+        if (native.length > 0 && out.length === 0) {
+            throw new Error("Selected cards have no note for this action.");
         }
         return out;
     }
@@ -464,8 +508,9 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
         try {
             await action();
             await doSearch(true);
-        } catch (err) {
-            message = err instanceof Error ? err.message : String(err);
+            message = "";
+        } catch (error) {
+            reportError(error);
         }
     }
 
@@ -572,9 +617,10 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
             if (token === editorToken) {
                 editorNoteId = card.noteId;
             }
-        } catch {
+        } catch (error) {
             if (token === editorToken) {
                 editorNoteId = 0n;
+                reportError(error);
             }
         }
     }
@@ -590,8 +636,13 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
     // ---- find & replace -----------------------------------------------------
 
     async function openFindReplace(): Promise<void> {
-        findReplaceNoteIds = selection.size > 0 ? await resolveNoteIds() : [];
-        findReplaceOpen = true;
+        try {
+            findReplaceNoteIds = selection.size > 0 ? await resolveNoteIds() : [];
+            findReplaceOpen = true;
+            message = "";
+        } catch (error) {
+            reportError(error);
+        }
     }
 
     function onFindReplaceApplied(): void {

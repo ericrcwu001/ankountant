@@ -13,6 +13,8 @@ event so the pane can do range/multi-select and show the context menu.
     import { BrowserRow_Color } from "@generated/anki/search_pb";
     import { browserRowForId } from "@generated/backend";
 
+    import { errorMessage } from "./configJson";
+
     export let id: bigint;
     export let columnCount: number;
     export let gridTemplate: string;
@@ -26,23 +28,30 @@ event so the pane can do range/multi-select and show the context menu.
     export let onContextMenu: ((event: MouseEvent) => void) | undefined = undefined;
 
     let row: BrowserRow | null = null;
+    let rowError = "";
 
     async function fetchRow(rowId: bigint, _version: number): Promise<void> {
         const key = rowId.toString();
         const cached = cache.get(key);
         if (cached) {
             row = cached;
+            rowError = "";
             return;
         }
         row = null;
+        rowError = "";
         try {
             const fetched = await browserRowForId({ val: rowId });
             cache.set(key, fetched);
             if (rowId === id) {
                 row = fetched;
+                rowError = "";
             }
-        } catch {
-            row = null;
+        } catch (error) {
+            if (rowId === id) {
+                row = null;
+                rowError = errorMessage(error);
+            }
         }
     }
 
@@ -80,7 +89,9 @@ event so the pane can do range/multi-select and show the context menu.
     on:mousedown={(e) => onSelect?.(e)}
     on:contextmenu|preventDefault={(e) => onContextMenu?.(e)}
 >
-    {#if row}
+    {#if rowError}
+        <span class="cell row-error" role="cell">Could not load row: {rowError}</span>
+    {:else if row}
         {#each row.cells as cell, i (i)}
             <span class="cell" class:rtl={cell.isRtl} role="cell">{cell.text}</span>
         {/each}
@@ -139,6 +150,12 @@ event so the pane can do range/multi-select and show the context menu.
 
         &.rtl {
             direction: rtl;
+        }
+
+        &.row-error {
+            grid-column: 1 / -1;
+            color: var(--fg-error);
+            overflow-wrap: anywhere;
         }
     }
 </style>

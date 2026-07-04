@@ -44,6 +44,7 @@ Section collapse is kept local (not yet persisted to col config).
     } from "./searchNodes";
     import type { TreeItem } from "./sidebarModel";
     import { deckTreeToItems, filterItems, tagTreeToItems } from "./sidebarModel";
+    import { decodeConfigJson, errorMessage, isMissingConfigJson } from "./configJson";
     import SidebarTree from "./SidebarTree.svelte";
 
     export let query = "";
@@ -94,6 +95,7 @@ Section collapse is kept local (not yet persisted to col config).
     let notetypes: string[] = [];
     let savedSearches: StaticEntry[] = [];
     let filter = "";
+    let message = "";
 
     const sectionOpen: Record<string, boolean> = {
         saved: true,
@@ -148,9 +150,10 @@ Section collapse is kept local (not yet persisted to col config).
             } else {
                 str = (await buildSearchString(node)).val;
             }
+            message = "";
             onSearch(str);
-        } catch {
-            /* a malformed combine just leaves the search unchanged */
+        } catch (error) {
+            message = errorMessage(error);
         }
     }
 
@@ -177,17 +180,31 @@ Section collapse is kept local (not yet persisted to col config).
                     { val: "savedFilters" },
                     { alertOnError: false },
                 );
-                const parsed = JSON.parse(new TextDecoder().decode(raw.json));
-                if (parsed && typeof parsed === "object") {
-                    savedSearches = Object.entries(
-                        parsed as Record<string, string>,
-                    ).map(([label, value]) => ({ label, node: parsableText(value) }));
+                const parsed = decodeConfigJson<unknown>("savedFilters", raw.json);
+                if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+                    throw new Error(
+                        'Saved preference "savedFilters" must be an object.',
+                    );
                 }
-            } catch {
-                savedSearches = [];
+                savedSearches = Object.entries(parsed).map(([label, value]) => {
+                    if (typeof value !== "string") {
+                        throw new Error(
+                            `Saved search "${label}" is not a search string.`,
+                        );
+                    }
+                    return { label, node: parsableText(value) };
+                });
+            } catch (error) {
+                if (isMissingConfigJson(error, "savedFilters")) {
+                    savedSearches = [];
+                } else {
+                    throw error;
+                }
             }
             phase = "ready";
-        } catch {
+            message = "";
+        } catch (error) {
+            message = errorMessage(error);
             phase = "error";
         }
     }
@@ -212,7 +229,13 @@ Section collapse is kept local (not yet persisted to col config).
         <p class="hint">Loading…</p>
     {:else if phase === "error"}
         <p class="hint">Couldn’t load the sidebar.</p>
+        {#if message}
+            <p class="hint detail">{message}</p>
+        {/if}
     {:else}
+        {#if message}
+            <p class="hint detail" role="alert">{message}</p>
+        {/if}
         <nav class="sections">
             <button
                 type="button"

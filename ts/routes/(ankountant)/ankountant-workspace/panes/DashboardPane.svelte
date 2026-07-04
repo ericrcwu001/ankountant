@@ -13,6 +13,7 @@ a route loader.
     import { getConfigJson, getReadiness } from "@generated/backend";
 
     import Dashboard from "../../ankountant-dashboard/Dashboard.svelte";
+    import { decodeConfigJson, errorMessage, isMissingConfigJson } from "./configJson";
     import PaneState from "./PaneState.svelte";
 
     const SECTION = "FAR";
@@ -26,20 +27,31 @@ a route loader.
         phase = "loading";
         try {
             readiness = await getReadiness({ section: SECTION });
-            // Exam date is optional col config; NotFound is the normal state.
             try {
                 const raw = await getConfigJson(
                     { val: `ankountant.${SECTION}.exam.date` },
                     { alertOnError: false },
                 );
-                const parsed = JSON.parse(new TextDecoder().decode(raw.json));
-                examDate = typeof parsed === "string" ? parsed : "";
-            } catch {
-                examDate = "";
+                const parsed = decodeConfigJson<unknown>(
+                    `ankountant.${SECTION}.exam.date`,
+                    raw.json,
+                );
+                if (typeof parsed !== "string") {
+                    throw new Error(
+                        `Saved preference "ankountant.${SECTION}.exam.date" must be a string.`,
+                    );
+                }
+                examDate = parsed;
+            } catch (error) {
+                if (isMissingConfigJson(error, `ankountant.${SECTION}.exam.date`)) {
+                    examDate = "";
+                } else {
+                    throw error;
+                }
             }
             phase = "ready";
-        } catch (err) {
-            message = err instanceof Error ? err.message : String(err);
+        } catch (error) {
+            message = errorMessage(error);
             phase = "error";
         }
     }
