@@ -13,6 +13,10 @@ export function buildChoiceSubmission(choice: string): string {
     return JSON.stringify({ choice });
 }
 
+export function stripConfusionSlug(prompt: string): string {
+    return prompt.replace(/\s*\([a-z0-9_]+\s+q\d+\)\s*$/i, "").trimEnd();
+}
+
 export interface ConfusionRevealModel {
     correctText: string;
     source: string;

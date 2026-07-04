@@ -18,6 +18,7 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
         buildChoiceSubmission,
         buildConfusionRevealModel,
         confusionQueuePhase,
+        stripConfusionSlug,
     } from "./lib";
 
     export let items: ConfusionItem[];
@@ -44,12 +45,6 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
         section === "ALL"
             ? "Load or import CPA practice to build the drill queue."
             : `No ${section} confusion items are available yet. Load or import section practice to build the drill queue.`;
-
-    // Confusion review is label-stripped (B2-D1): drop any trailing dev slug
-    // like " (capitalize_vs_expense q0)" so the stem never leaks the category.
-    function stem(prompt: string): string {
-        return prompt.replace(/\s*\([a-z0-9_]+\s+q\d+\)\s*$/i, "");
-    }
 
     function onCommit(level: ConfidenceLevel): void {
         confidence = level;
@@ -127,7 +122,9 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
         <div class="card item" data-testid="confusion-item" data-set-id={current.setId}>
             <!-- Label-stripped prompt: NO topic/category/deck label element
                  (B2-D1 / A44). Do NOT render data-testid="category-label". -->
-            <p class="prompt" data-testid="confusion-prompt">{stem(current.prompt)}</p>
+            <p class="prompt" data-testid="confusion-prompt">
+                {stripConfusionSlug(current.prompt)}
+            </p>
 
             <div class="gate">
                 <ConfidenceGate committed={confidence} {onCommit} />

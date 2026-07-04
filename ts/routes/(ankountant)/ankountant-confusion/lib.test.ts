@@ -9,6 +9,7 @@ import {
     confusionQueuePhase,
     noThreeConsecutiveSameSet,
     selectedConfusionSection,
+    stripConfusionSlug,
 } from "./lib";
 
 test("buildChoiceSubmission wraps the treatment in {choice}", () => {
@@ -81,4 +82,11 @@ test("selectedConfusionSection accepts all practice sections and rejects unknown
     expect(selectedConfusionSection("bar")).toBe("BAR");
     expect(selectedConfusionSection(" tcp ")).toBe("TCP");
     expect(() => selectedConfusionSection("NOPE")).toThrow(/Unknown CPA section: NOPE/);
+});
+
+test("stripConfusionSlug removes trailing dev slugs only", () => {
+    expect(stripConfusionSlug("Which treatment applies? (capitalize_vs_expense q0)")).toBe(
+        "Which treatment applies?",
+    );
+    expect(stripConfusionSlug("Which treatment applies?")).toBe("Which treatment applies?");
 });
