@@ -251,7 +251,10 @@ final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMess
         let trimmed = href.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty,
               let url = URL(string: trimmed, relativeTo: baseURL)?.absoluteURL ?? URL(string: trimmed),
-              url.scheme?.lowercased() != "javascript" else {
+              let scheme = url.scheme?.lowercased(),
+              scheme != "javascript",
+              scheme != CardAssetPath.scheme,
+              !url.isFileURL else {
             return nil
         }
         return url

@@ -83,6 +83,15 @@ final class CardWebViewTests: XCTestCase {
     }
 
     @MainActor
+    func testResolvedCardLinkRejectsLocalAndCardAssetURLs() throws {
+        let cardBaseURL = try XCTUnwrap(URL(string: "ankountant-asset://media/"))
+
+        XCTAssertNil(CardWebViewCoordinator.resolvedCardLink(from: "file:///private/tmp/card.html", baseURL: nil))
+        XCTAssertNil(CardWebViewCoordinator.resolvedCardLink(from: "ankountant-asset://media/image.png", baseURL: nil))
+        XCTAssertNil(CardWebViewCoordinator.resolvedCardLink(from: "image.png", baseURL: cardBaseURL))
+    }
+
+    @MainActor
     func testTypedAnswerBridgeMessageAcceptsStringAndNull() {
         XCTAssertEqual(CardWebViewCoordinator.typedAnswerBridgeMessage(from: "typed"), .submit("typed"))
         XCTAssertEqual(CardWebViewCoordinator.typedAnswerBridgeMessage(from: NSNull()), .submit(nil))
