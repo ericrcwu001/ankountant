@@ -365,10 +365,12 @@ class Workspace:
             self._start_ankountant_study()
         elif cmd == "ankountant:stats":
             aqt.dialogs.open("NewDeckStats", self.mw)
-        elif cmd == "ankountant:prefs":
-            self.mw.onPrefs()
-        elif cmd == "ankountant:import":
-            self.mw.onImport()
+        elif cmd in {"ankountant:prefs", "ankountant:import"}:
+            app_dialogs = {
+                "ankountant:prefs": self.mw.onPrefs,
+                "ankountant:import": self.mw.onImport,
+            }
+            app_dialogs[cmd]()
         elif cmd == "ankountant:sync":
             self.mw.on_sync_button_clicked()
         elif cmd.startswith("ankountant:nav:"):
