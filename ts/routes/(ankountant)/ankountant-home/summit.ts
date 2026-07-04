@@ -65,22 +65,6 @@ export function passStanding(readiness: Readiness | undefined): PassStanding {
     return readiness.pointEstimate >= CPA_PASS_SCORE ? "above" : "below";
 }
 
-/**
- * Near-pass display rule: classify on the raw point, but clamp the *displayed*
- * integer so it never crosses the line versus the true standing — a below-pass
- * score never renders as an unqualified "75" beside the pass line.
- */
-export function passDisplayScore(point: number, standing: PassStanding): number {
-    const rounded = Math.round(point);
-    if (standing === "above") {
-        return Math.max(rounded, CPA_PASS_SCORE);
-    }
-    if (standing === "below") {
-        return Math.min(rounded, CPA_PASS_SCORE - 1);
-    }
-    return rounded;
-}
-
 /** One section's peak on the summit range. */
 export interface SectionPeak {
     code: string;
@@ -91,8 +75,6 @@ export interface SectionPeak {
     /** Wilson band endpoints on the CPA scale (0..99), null when unproven. */
     bandLow: number | null;
     bandHigh: number | null;
-    /** Near-pass-clamped integer to display, null when unproven. */
-    displayScore: number | null;
     /** Confidence label ("Med"/"High"); empty when unproven. */
     confidence: string;
 }
@@ -110,7 +92,6 @@ export function buildSectionPeak(
             point: null,
             bandLow: null,
             bandHigh: null,
-            displayScore: null,
             confidence: "",
         };
     }
@@ -118,13 +99,9 @@ export function buildSectionPeak(
         code: section.code,
         name: section.name,
         standing,
-        // Raw CPA values for geometry — the label uses the near-pass-clamped
-        // displayScore. Plotting the raw point keeps the marker on the correct
-        // side of the pass line for near-75 scores (a raw 74.6 stays below).
         point: readiness.pointEstimate,
         bandLow: readiness.bandLow,
         bandHigh: readiness.bandHigh,
-        displayScore: passDisplayScore(readiness.pointEstimate, standing),
         confidence: readiness.confidence,
     };
 }

@@ -106,8 +106,6 @@ export interface ReadinessView {
     generatedAt: number;
     /** Human band string ("62–78"), only meaningful when !abstain. */
     bandLabel: string;
-    /** Point-estimate string ("70"), only meaningful when !abstain. */
-    pointLabel: string;
     /** Left/width/pass marker as 0..100 percentages for the band track. */
     trackLeftPct: number;
     trackWidthPct: number;
@@ -131,7 +129,6 @@ export function buildReadinessView(readiness: Readiness | undefined): ReadinessV
             reasons: readiness?.reasons ?? [],
             generatedAt: readiness ? Number(readiness.generatedAt) : 0,
             bandLabel: "",
-            pointLabel: "",
             trackLeftPct: 0,
             trackWidthPct: 0,
             trackPassPct: (CPA_PASS_SCORE / CPA_MAX_SCORE) * 100,
@@ -153,7 +150,6 @@ export function buildReadinessView(readiness: Readiness | undefined): ReadinessV
         reasons,
         generatedAt: Number(readiness.generatedAt),
         bandLabel: `${low}–${high}`,
-        pointLabel: `${point}`,
         trackLeftPct: (low / CPA_MAX_SCORE) * 100,
         trackWidthPct: (Math.max(high - low, 0) / CPA_MAX_SCORE) * 100,
         trackPassPct: (CPA_PASS_SCORE / CPA_MAX_SCORE) * 100,

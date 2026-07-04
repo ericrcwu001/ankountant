@@ -9,7 +9,6 @@ import {
     buildSectionPeak,
     heightForScore,
     PASS_HEIGHT,
-    passDisplayScore,
     passStanding,
     sectionName,
     SUMMIT_SECTIONS,
@@ -54,14 +53,6 @@ test("passStanding: abstain (or missing) is unproven even with a zero point", ()
     expect(passStanding(undefined)).toBe("unproven");
 });
 
-test("passDisplayScore never shows a misleading 75 for a below-pass score", () => {
-    expect(passDisplayScore(74.6, "below")).toBe(74);
-    expect(passDisplayScore(75.4, "above")).toBe(75);
-    expect(passDisplayScore(90, "above")).toBe(90);
-    expect(passDisplayScore(60, "below")).toBe(60);
-    expect(passDisplayScore(0, "unproven")).toBe(0);
-});
-
 test("summit sections are the five, FAR first, BAR excluded", () => {
     expect(SUMMIT_SECTIONS.map((s) => s.code)).toEqual(["FAR", "AUD", "REG", "TCP", "ISC"]);
     expect(sectionName("TCP")).toBe("Tax Compliance and Planning");
@@ -78,7 +69,6 @@ test("buildSectionPeak fills proven peaks and blanks unproven ones", () => {
         point: 61,
         bandLow: 44,
         bandHigh: 75,
-        displayScore: 61,
         confidence: "Med",
     });
 
@@ -91,6 +81,5 @@ test("buildSectionPeak fills proven peaks and blanks unproven ones", () => {
         point: null,
         bandLow: null,
         bandHigh: null,
-        displayScore: null,
     });
 });

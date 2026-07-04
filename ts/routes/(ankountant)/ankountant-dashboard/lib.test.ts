@@ -76,7 +76,7 @@ test("missing readiness data is named without inventing a volume diagnosis", () 
     const view = buildReadinessView(undefined);
     expect(view.abstain).toBe(true);
     expect(view.reason).toBe("no readiness data");
-    expect(view.pointLabel).toBe("");
+    expect(view.bandLabel).toBe("");
 });
 
 test("sufficient view is a CPA band with internal midpoint and coverage (A54)", () => {
