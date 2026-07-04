@@ -46,6 +46,15 @@ type Tok =
     | { t: "comma" }
     | { t: "colon" };
 
+function parseFormattedNumber(raw: string): number | null {
+    const cleaned = raw.replace(/[$,%\s]/g, "");
+    if (!/[0-9]/.test(cleaned)) {
+        return null;
+    }
+    const value = Number(cleaned);
+    return Number.isFinite(value) ? value : null;
+}
+
 function tokenize(input: string): Tok[] | null {
     const toks: Tok[] = [];
     let i = 0;
@@ -76,7 +85,7 @@ function tokenize(input: string): Tok[] | null {
                 j += 1;
             }
             const v = Number(input.slice(i, j));
-            if (!isFinite(v)) {
+            if (!Number.isFinite(v)) {
                 return null;
             }
             toks.push({ t: "num", v });
@@ -281,8 +290,8 @@ class Parser {
                 this.seen.delete(ref);
             }
         }
-        const n = Number(raw.replace(/[$,%\s]/g, ""));
-        if (!isFinite(n)) {
+        const n = parseFormattedNumber(raw);
+        if (n === null) {
             throw new Error("#VALUE");
         }
         return n;
@@ -305,8 +314,8 @@ export function evalCell(
         if (trimmed === "") {
             return { ok: true, value: 0 };
         }
-        const n = Number(trimmed.replace(/[$,%\s]/g, ""));
-        return isFinite(n) ? { ok: true, value: n } : { ok: false, error: "#VALUE" };
+        const n = parseFormattedNumber(trimmed);
+        return n === null ? { ok: false, error: "#VALUE" } : { ok: true, value: n };
     }
     if (seen.size > MAX_DEPTH) {
         return { ok: false, error: "#DEPTH" };

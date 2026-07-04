@@ -21,6 +21,7 @@ test("parseRef / cellKey / colLabel round-trip within bounds", () => {
 test("plain numeric cells and arithmetic evaluate", () => {
     const g = grid({ A1: "10", A2: "5" });
     expect(evalCell("42", g)).toEqual({ ok: true, value: 42 });
+    expect(evalCell("$1,200", g)).toEqual({ ok: true, value: 1200 });
     expect(evalCell("=A1+A2", g)).toEqual({ ok: true, value: 15 });
     expect(evalCell("=A1*2-A2", g)).toEqual({ ok: true, value: 15 });
     expect(evalCell("=(A1+A2)/5", g)).toEqual({ ok: true, value: 3 });
@@ -44,6 +45,8 @@ test("errors: div by zero, cycles, bad names, non-numeric refs", () => {
     expect(evalCell("=1/0", grid({}))).toEqual({ ok: false, error: "#DIV/0" });
     expect(evalCell("=NOPE(A1)", grid({ A1: "1" }))).toEqual({ ok: false, error: "#NAME" });
     expect(evalCell("=A1", grid({ A1: "abc" }))).toEqual({ ok: false, error: "#VALUE" });
+    expect(evalCell("$", grid({}))).toEqual({ ok: false, error: "#VALUE" });
+    expect(evalCell("=A1", grid({ A1: "%" }))).toEqual({ ok: false, error: "#VALUE" });
 
     const cyclic = grid({ A1: "=A2", A2: "=A1" });
     const r = evalCell("=A1", cyclic);
