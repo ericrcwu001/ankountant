@@ -46,6 +46,25 @@ struct SimulationsHubSelectionTests {
         #expect(confusionCountLabel(2) == "2 items")
     }
 
+    @Test func tbsShapeLabelsKeepSegmentLabelsShortAndMenuLabelsComplete() {
+        #expect(tbsShapeDisplayLabel(.docReview) == "Document review")
+        #expect(tbsShapeSegmentLabel(.docReview) == "Review")
+        #expect(tbsShapeMenuLabel(.docReview, taskCount: 2) == "Document review · 2 simulations")
+        #expect(tbsShapeMenuLabel(.numeric, taskCount: 1) == "Numeric · 1 simulation")
+    }
+
+    @Test func tbsTaskCountFiltersByShape() {
+        let tasks = [
+            TbsTaskSummary(noteId: 1, shape: .journalEntry, prompt: "Journal"),
+            TbsTaskSummary(noteId: 2, shape: .numeric, prompt: "Numeric"),
+            TbsTaskSummary(noteId: 3, shape: .numeric, prompt: "Another numeric"),
+        ]
+
+        #expect(tbsTaskCount(for: .journalEntry, in: tasks) == 1)
+        #expect(tbsTaskCount(for: .numeric, in: tasks) == 2)
+        #expect(tbsTaskCount(for: .research, in: tasks) == 0)
+    }
+
     @Test func confusionCompletionReadinessLinkTargetsKnownSection() {
         #expect(confusionReadinessSection(after: .aud) == .aud)
         #expect(confusionReadinessButtonLabel(for: .aud) == "View AUD readiness")

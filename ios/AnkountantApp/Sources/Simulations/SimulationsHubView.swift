@@ -6,6 +6,7 @@ import Dependencies
 
 struct SimulationsHubView: View {
     @Environment(\.palette) private var palette
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Dependency(\.performanceClient) var performanceClient
 
     @State private var tasks: [TbsTaskSummary] = []
@@ -73,22 +74,12 @@ struct SimulationsHubView: View {
 
     private var loadedContent: some View {
         VStack(spacing: 0) {
-            // Type chooser: the learner picks which kind of simulation to
-            // practise, and the list below filters to that shape.
-            Picker("Simulation type", selection: $selectedShape) {
-                ForEach(shapeOrder, id: \.self) { shape in
-                    Text(segmentLabel(shape)).tag(shape)
-                }
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
-            .padding(.top, 8)
-            .padding(.bottom, 4)
+            shapeChooser
 
             List {
-                Section(shapeLabel(selectedShape)) {
+                Section(tbsShapeDisplayLabel(selectedShape)) {
                     if filteredTasks.isEmpty {
-                        Text("No \(shapeLabel(selectedShape).lowercased()) simulations in this profile.")
+                        Text("No \(tbsShapeDisplayLabel(selectedShape).lowercased()) simulations in this profile.")
                             .ankountantFont(.body)
                             .foregroundStyle(palette.textSecondary)
                     } else {
@@ -117,6 +108,76 @@ struct SimulationsHubView: View {
             .ankountantSectionBackground()
         }
         .background(palette.background)
+    }
+
+    @ViewBuilder
+    private var shapeChooser: some View {
+        VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
+            Text("Simulation type")
+                .ankountantFont(.micro)
+                .foregroundStyle(palette.textSecondary)
+                .textCase(.uppercase)
+
+            if dynamicTypeSize.isAccessibilitySize {
+                shapeMenu
+            } else {
+                Picker("Simulation type", selection: $selectedShape) {
+                    ForEach(shapeOrder, id: \.self) { shape in
+                        Text(tbsShapeSegmentLabel(shape))
+                            .accessibilityLabel(tbsShapeDisplayLabel(shape))
+                            .tag(shape)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+        }
+        .padding(.horizontal)
+        .padding(.top, AnkountantSpacing.sm)
+        .padding(.bottom, AnkountantSpacing.xs)
+    }
+
+    private var shapeMenu: some View {
+        Menu {
+            ForEach(shapeOrder, id: \.self) { shape in
+                Button {
+                    selectedShape = shape
+                } label: {
+                    if shape == selectedShape {
+                        Label(shapeMenuLabel(shape), systemImage: "checkmark")
+                    } else {
+                        Text(shapeMenuLabel(shape))
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: AnkountantSpacing.md) {
+                Text(shapeMenuLabel(selectedShape))
+                    .ankountantFont(.body)
+                    .foregroundStyle(palette.textPrimary)
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: AnkountantSpacing.sm)
+                Image(systemName: "chevron.up.chevron.down")
+                    .ankountantFont(.caption)
+                    .foregroundStyle(palette.textSecondary)
+            }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .padding(.horizontal, AnkountantSpacing.md)
+            .padding(.vertical, AnkountantSpacing.sm)
+            .background(
+                RoundedRectangle(cornerRadius: AnkountantRadius.control, style: .continuous)
+                    .fill(palette.surfaceElevated)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AnkountantRadius.control, style: .continuous)
+                    .stroke(palette.border, lineWidth: 1)
+            )
+        }
+        .accessibilityLabel("Simulation type")
+        .accessibilityValue(tbsShapeDisplayLabel(selectedShape))
+    }
+
+    private func shapeMenuLabel(_ shape: TbsShape) -> String {
+        tbsShapeMenuLabel(shape, taskCount: tbsTaskCount(for: shape, in: tasks))
     }
 
     private func allConfusionRow(enabled: Bool) -> some View {
@@ -174,31 +235,11 @@ struct SimulationsHubView: View {
                 .ankountantFont(.body)
                 .foregroundStyle(palette.textPrimary)
                 .lineLimit(2)
-            Text("\(task.section) · \(shapeLabel(task.shape))")
+            Text("\(task.section) · \(tbsShapeDisplayLabel(task.shape))")
                 .ankountantFont(.caption)
                 .foregroundStyle(palette.textSecondary)
         }
         .padding(.vertical, 2)
-    }
-
-    private func shapeLabel(_ shape: TbsShape) -> String {
-        switch shape {
-        case .journalEntry: "Journal entry"
-        case .numeric: "Numeric"
-        case .research: "Research"
-        case .docReview: "Document review"
-        }
-    }
-
-    // Concise labels for the segmented control (the full label rides in each
-    // row's caption), so four segments fit without truncation.
-    private func segmentLabel(_ shape: TbsShape) -> String {
-        switch shape {
-        case .journalEntry: "Journal"
-        case .numeric: "Numeric"
-        case .research: "Research"
-        case .docReview: "Review"
-        }
     }
 
     private func loadTasks() async {
@@ -253,6 +294,36 @@ func availableConfusionSections(
 
 func confusionCountLabel(_ count: Int) -> String {
     count == 1 ? "1 item" : "\(count) items"
+}
+
+func tbsShapeDisplayLabel(_ shape: TbsShape) -> String {
+    switch shape {
+    case .journalEntry: "Journal entry"
+    case .numeric: "Numeric"
+    case .research: "Research"
+    case .docReview: "Document review"
+    }
+}
+
+func tbsShapeSegmentLabel(_ shape: TbsShape) -> String {
+    switch shape {
+    case .journalEntry: "Journal"
+    case .numeric: "Numeric"
+    case .research: "Research"
+    case .docReview: "Review"
+    }
+}
+
+func tbsTaskCount(for shape: TbsShape, in tasks: [TbsTaskSummary]) -> Int {
+    tasks.filter { $0.shape == shape }.count
+}
+
+func tbsShapeCountLabel(_ count: Int) -> String {
+    count == 1 ? "1 simulation" : "\(count) simulations"
+}
+
+func tbsShapeMenuLabel(_ shape: TbsShape, taskCount: Int) -> String {
+    "\(tbsShapeDisplayLabel(shape)) · \(tbsShapeCountLabel(taskCount))"
 }
 
 func simulationsHubHasContent(tasks: [TbsTaskSummary], allConfusionCount: Int) -> Bool {
