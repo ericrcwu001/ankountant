@@ -11,6 +11,8 @@ struct DeckDetailView: View {
     @Dependency(\.deckClient) var deckClient
     @State private var counts: DeckCounts = .zero
     @State private var childDecks: [DeckTreeNode] = []
+    @State private var countsError: String?
+    @State private var childDecksError: String?
     @State private var showReview = false
 
     // Custom-study actions
@@ -82,6 +84,13 @@ struct DeckDetailView: View {
                 .padding(.vertical, 8)
             }
 
+            if let countsError {
+                Section {
+                    Text(countsError)
+                        .ankountantStatusText(.danger, font: .caption)
+                }
+            }
+
             Section {
                 Button {
                     showReview = true
@@ -108,6 +117,13 @@ struct DeckDetailView: View {
                         Label("Empty", systemImage: "tray")
                     }
                     .disabled(actionInFlight)
+                }
+            }
+
+            if let childDecksError {
+                Section("Subdecks") {
+                    Text(childDecksError)
+                        .ankountantStatusText(.danger, font: .caption)
                 }
             }
 
@@ -357,21 +373,25 @@ struct DeckDetailView: View {
     }
 
     private func loadCounts() async {
+        countsError = nil
+
         do {
             counts = try deckClient.countsForDeck(deck.id)
-            print("[DeckDetail] Counts for '\(deck.name)' (\(deck.id)): new=\(counts.newCount), learn=\(counts.learnCount), review=\(counts.reviewCount)")
         } catch {
-            print("[DeckDetail] Error loading counts for '\(deck.name)': \(error)")
             counts = .zero
+            countsError = "Failed to load deck counts: \(error.localizedDescription)"
         }
     }
 
     private func loadChildren() async {
+        childDecksError = nil
+
         do {
             let tree = try deckClient.fetchTree()
             childDecks = findChildren(in: tree, parentId: deck.id)
         } catch {
             childDecks = []
+            childDecksError = "Failed to load subdecks: \(error.localizedDescription)"
         }
     }
 
