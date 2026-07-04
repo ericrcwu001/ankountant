@@ -20,7 +20,7 @@ struct HomeView: View {
 
     @Environment(\.palette) private var palette
 
-    @State private var examDate = Date()
+    @State private var examDate = Date.now
     @State private var hasExamDate = false
     @State private var sections: [SectionReadiness] = CPASection.homeOrder.map {
         SectionReadiness(section: $0, summary: nil)
@@ -138,9 +138,12 @@ struct HomeView: View {
     }
 
     private var metricDeck: some View {
-        HStack(spacing: AnkountantSpacing.sm) {
-            HomeMetricCard(value: countdownNumeral, label: countdownCaption)
-            HomeMetricCard(value: readinessValue, label: readinessCaption, gauge: readinessFraction)
+        VStack(spacing: AnkountantSpacing.sm) {
+            HStack(spacing: AnkountantSpacing.sm) {
+                HomeMetricCard(value: countdownNumeral, label: countdownCaption)
+                HomeMetricCard(value: coverageValue, label: coverageCaption)
+            }
+            ReadinessScoreStrip(scores: readinessScores)
         }
     }
 
@@ -275,22 +278,20 @@ struct HomeView: View {
         return abs(days) == 1 ? "Day since exam" : "Days since exam"
     }
 
-    private var readinessValue: String {
-        guard let band = farReadiness?.band, !band.abstain else { return "—" }
-        return "\(Int(band.pointEstimate.rounded()))"
+    private var readinessScores: [ReadinessScoreSummary] {
+        farReadiness?.scoreSummaries ?? ReadinessScoreSummary.pendingSummaries(loaded: readinessLoaded)
     }
 
-    private var readinessCaption: String {
-        guard let band = farReadiness?.band else {
-            return readinessLoaded ? "Not enough data" : "Loading"
+    private var coverageValue: String {
+        guard let band = farReadiness?.band else { return readinessLoaded ? "—" : "..." }
+        return formatPercent(band.coverage)
+    }
+
+    private var coverageCaption: String {
+        guard farReadiness?.band != nil else {
+            return readinessLoaded ? "No coverage" : "Loading"
         }
-        if band.abstain { return "Readiness withheld" }
-        return "\(Self.scoreRange(band)) · \(band.confidence)"
-    }
-
-    private var readinessFraction: Double? {
-        guard let band = farReadiness?.band, !band.abstain else { return nil }
-        return TopoScale.height(forScore: band.pointEstimate)
+        return "Coverage"
     }
 
     private var memoryReady: Bool {
@@ -337,7 +338,7 @@ struct HomeView: View {
                 examDate = parsed
                 hasExamDate = true
             } else {
-                examDate = Date()
+                examDate = Date.now
                 hasExamDate = false
             }
 
@@ -387,9 +388,6 @@ struct HomeView: View {
         return formatter
     }()
 
-    private static func scoreRange(_ band: ReadinessBand) -> String {
-        "\(Int(band.bandLow.rounded()))-\(Int(band.bandHigh.rounded()))"
-    }
 }
 
 private struct HomeMetricCard: View {

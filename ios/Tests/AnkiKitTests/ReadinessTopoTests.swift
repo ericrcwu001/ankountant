@@ -175,4 +175,90 @@ struct ReadinessTopoTests {
         #expect(evidence.nextAction.contains("sealed exam-style practice"))
         #expect(!evidence.nextAction.contains("memory is 0%"))
     }
+
+    @Test func scoreSummariesExposeThreeRangeAwareSignals() {
+        let summary = ReadinessSummary(
+            band: band(low: 74, high: 85, point: 80, confidence: "High"),
+            topics: [
+                TopicScoreModel(
+                    setId: "leases",
+                    memory: 0.8,
+                    performance: 0.5,
+                    gap: 0.3,
+                    memoryInsufficient: false,
+                    memoryLow: 0.7,
+                    memoryHigh: 0.9,
+                    performanceLow: 0.4,
+                    performanceHigh: 0.6
+                ),
+                TopicScoreModel(
+                    setId: "tax_timing",
+                    memory: 0.6,
+                    performance: 0.7,
+                    gap: 0.1,
+                    memoryInsufficient: false,
+                    memoryLow: 0.5,
+                    memoryHigh: 0.7,
+                    performanceLow: 0.6,
+                    performanceHigh: 0.8
+                ),
+            ]
+        )
+
+        let scores = summary.scoreSummaries
+        #expect(scores.map(\.label) == ["Memory", "Performance", "Readiness"])
+        #expect(scores[0].valueText == "70%")
+        #expect(scores[0].rangeText == "60–80%")
+        #expect(scores[0].detailText == "Topic average")
+        #expect(scores[1].valueText == "60%")
+        #expect(scores[1].rangeText == "50–70%")
+        #expect(scores[1].detailText == "Sealed tasks")
+        #expect(scores[2].valueText == "80")
+        #expect(scores[2].rangeText == "74–85")
+        #expect(scores[2].detailText == "High confidence")
+        #expect(scores.allSatisfy { $0.available })
+    }
+
+    @Test func scoreSummariesWithholdReadinessButKeepAvailableSignals() {
+        let summary = ReadinessSummary(
+            band: band(abstain: true, confidence: ""),
+            topics: [
+                TopicScoreModel(
+                    setId: "leases",
+                    memory: 0.8,
+                    performance: 0,
+                    gap: 0,
+                    memoryInsufficient: false,
+                    memoryLow: 0.7,
+                    memoryHigh: 0.9,
+                    performanceLow: 0,
+                    performanceHigh: 0
+                ),
+            ]
+        )
+
+        let scores = summary.scoreSummaries
+        #expect(scores[0].valueText == "80%")
+        #expect(scores[0].rangeText == "70–90%")
+        #expect(scores[0].available)
+        #expect(scores[1].valueText == "—")
+        #expect(scores[1].rangeText == "insufficient")
+        #expect(!scores[1].available)
+        #expect(scores[2].valueText == "—")
+        #expect(scores[2].rangeText == "withheld")
+        #expect(scores[2].detailText == "insufficient volume")
+        #expect(!scores[2].available)
+    }
+
+    @Test func pendingScoreSummariesDifferentiateLoadingAndLoadedEmptyStates() {
+        let loading = ReadinessScoreSummary.pendingSummaries(loaded: false)
+        let loaded = ReadinessScoreSummary.pendingSummaries(loaded: true)
+
+        #expect(loading.map(\.rangeText) == ["loading", "loading", "loading"])
+        #expect(loading.map(\.valueText) == ["...", "...", "..."])
+        #expect(loaded.map(\.rangeText) == ["insufficient", "insufficient", "insufficient"])
+        #expect(loaded.map(\.valueText) == ["—", "—", "—"])
+        #expect(!loading.contains { $0.available })
+        #expect(!loaded.contains { $0.available })
+    }
 }
