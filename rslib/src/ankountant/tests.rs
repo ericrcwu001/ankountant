@@ -1641,6 +1641,14 @@ fn typed_section_item_schema_is_validated_at_seed_time() {
         r#"[{"section":"REG","tbs_type":"research","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"citation","id":"c","accepted":["IRC 162"]}]}]"#,
         // doc_review blank answer_key is not one of the option ids
         r#"[{"section":"FAR","tbs_type":"doc_review","set_id":"s","prompt":"p","source":"s","exhibits":[{"title":"d","kind":"document","role":"document","body":"x <blank step=\"b1\">y</blank>"}],"steps":[{"kind":"blank","id":"b1","answer_key":"o9","options":[{"id":"o1","text":"a"},{"id":"o2","text":"b"}]}]}]"#,
+        // doc_review exhibit kind is not renderable by clients
+        r#"[{"section":"FAR","tbs_type":"doc_review","set_id":"s","prompt":"p","source":"s","exhibits":[{"title":"d","kind":"chart","role":"document","body":"x <blank step=\"b1\">y</blank>"}],"steps":[{"kind":"blank","id":"b1","answer_key":"o1","options":[{"id":"o1","text":"a"},{"id":"o2","text":"b"}]}]}]"#,
+        // doc_review option id is empty
+        r#"[{"section":"FAR","tbs_type":"doc_review","set_id":"s","prompt":"p","source":"s","exhibits":[{"title":"d","kind":"document","role":"document","body":"x <blank step=\"b1\">y</blank>"}],"steps":[{"kind":"blank","id":"b1","answer_key":"o2","options":[{"id":"","text":"a"},{"id":"o2","text":"b"}]}]}]"#,
+        // doc_review option text is empty
+        r#"[{"section":"FAR","tbs_type":"doc_review","set_id":"s","prompt":"p","source":"s","exhibits":[{"title":"d","kind":"document","role":"document","body":"x <blank step=\"b1\">y</blank>"}],"steps":[{"kind":"blank","id":"b1","answer_key":"o1","options":[{"id":"o1","text":""},{"id":"o2","text":"b"}]}]}]"#,
+        // doc_review option kind is not renderable by clients
+        r#"[{"section":"FAR","tbs_type":"doc_review","set_id":"s","prompt":"p","source":"s","exhibits":[{"title":"d","kind":"document","role":"document","body":"x <blank step=\"b1\">y</blank>"}],"steps":[{"kind":"blank","id":"b1","answer_key":"o1","options":[{"id":"o1","kind":"maybe","text":"a"},{"id":"o2","text":"b"}]}]}]"#,
         // doc_review missing a role:document exhibit
         r#"[{"section":"FAR","tbs_type":"doc_review","set_id":"s","prompt":"p","source":"s","steps":[{"kind":"blank","id":"b1","answer_key":"o1","options":[{"id":"o1","text":"a"},{"id":"o2","text":"b"}]}]}]"#,
         // doc_review blank with no marker in the document body

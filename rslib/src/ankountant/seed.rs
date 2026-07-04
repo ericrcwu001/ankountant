@@ -193,6 +193,17 @@ struct SeedExhibit {
     rows: Vec<Vec<String>>,
 }
 
+const SEED_EXHIBIT_KINDS: &[&str] = &[
+    "text",
+    "email",
+    "invoice",
+    "table",
+    "statement",
+    "memo",
+    "document",
+    "stamp",
+];
+
 fn default_exhibit_kind() -> String {
     "text".to_string()
 }
@@ -207,6 +218,8 @@ struct SeedOption {
     #[serde(default = "default_option_kind")]
     kind: String,
 }
+
+const SEED_OPTION_KINDS: &[&str] = &["keep", "delete", "replace"];
 
 fn default_option_kind() -> String {
     "replace".to_string()
@@ -1500,6 +1513,10 @@ fn validate_section_item(item: &SectionItem) -> Result<()> {
     }
     for ex in &item.exhibits {
         check(!ex.title.trim().is_empty(), "exhibit is missing a title")?;
+        check(
+            SEED_EXHIBIT_KINDS.contains(&ex.kind.as_str()),
+            format!("exhibit {:?} has unknown kind {:?}", ex.title, ex.kind),
+        )?;
         if ex.kind == "table" {
             check(
                 !ex.rows.is_empty(),
@@ -1557,6 +1574,21 @@ fn validate_section_item(item: &SectionItem) -> Result<()> {
                         )?;
                         let mut seen = std::collections::HashSet::new();
                         for o in options {
+                            check(
+                                !o.id.trim().is_empty(),
+                                format!("blank {id} has an option with empty id"),
+                            )?;
+                            check(
+                                !o.text.trim().is_empty(),
+                                format!("blank {id} option {:?} has empty text", o.id),
+                            )?;
+                            check(
+                                SEED_OPTION_KINDS.contains(&o.kind.as_str()),
+                                format!(
+                                    "blank {id} option {:?} has unknown kind {:?}",
+                                    o.id, o.kind
+                                ),
+                            )?;
                             check(
                                 seen.insert(o.id.as_str()),
                                 format!("blank {id} has duplicate option id {:?}", o.id),
