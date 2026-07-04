@@ -30,6 +30,8 @@ specific field; regex + case options map straight onto FindAndReplaceRequest.
     let matchCase = false;
     let field = ALL_FIELDS;
     let fieldNames: string[] = [];
+    let loadingFields = true;
+    let fieldLoadError = "";
     let busy = false;
     let error = "";
     let searchInput: HTMLInputElement | undefined;
@@ -39,17 +41,29 @@ specific field; regex + case options map straight onto FindAndReplaceRequest.
             ? `${noteIds.length} selected note${noteIds.length === 1 ? "" : "s"}`
             : "the whole collection";
 
+    function errorMessage(err: unknown): string {
+        return err instanceof Error ? err.message : String(err);
+    }
+
     async function loadFields(): Promise<void> {
+        loadingFields = true;
+        fieldLoadError = "";
         try {
-            const resp = await fieldNamesForNotes({ nids: noteIds });
+            const resp = await fieldNamesForNotes(
+                { nids: noteIds },
+                { alertOnError: false },
+            );
             fieldNames = resp.fields;
-        } catch {
+        } catch (err) {
             fieldNames = [];
+            fieldLoadError = errorMessage(err);
+        } finally {
+            loadingFields = false;
         }
     }
 
     async function apply(): Promise<void> {
-        if (busy || !search) {
+        if (busy || !search || loadingFields || fieldLoadError) {
             return;
         }
         busy = true;
@@ -57,29 +71,35 @@ specific field; regex + case options map straight onto FindAndReplaceRequest.
         try {
             let count: number;
             if (field === TAGS) {
-                const resp = await findAndReplaceTag({
-                    noteIds,
-                    search,
-                    replacement,
-                    regex,
-                    matchCase,
-                });
+                const resp = await findAndReplaceTag(
+                    {
+                        noteIds,
+                        search,
+                        replacement,
+                        regex,
+                        matchCase,
+                    },
+                    { alertOnError: false },
+                );
                 count = resp.count;
             } else {
-                const resp = await findAndReplace({
-                    nids: noteIds,
-                    search,
-                    replacement,
-                    regex,
-                    matchCase,
-                    fieldName: field === ALL_FIELDS ? "" : field,
-                });
+                const resp = await findAndReplace(
+                    {
+                        nids: noteIds,
+                        search,
+                        replacement,
+                        regex,
+                        matchCase,
+                        fieldName: field === ALL_FIELDS ? "" : field,
+                    },
+                    { alertOnError: false },
+                );
                 count = resp.count;
             }
             onApplied(count);
             onClose();
         } catch (err) {
-            error = err instanceof Error ? err.message : String(err);
+            error = errorMessage(err);
         } finally {
             busy = false;
         }
@@ -121,9 +141,12 @@ specific field; regex + case options map straight onto FindAndReplaceRequest.
     </label>
     <label class="fr-row">
         <span>In</span>
-        <select bind:value={field}>
+        <select bind:value={field} disabled={loadingFields || fieldLoadError !== ""}>
             <option value={ALL_FIELDS}>All fields</option>
             <option value={TAGS}>Tags</option>
+            {#if loadingFields}
+                <option value="" disabled>Loading fields…</option>
+            {/if}
             {#each fieldNames as name (name)}
                 <option value={name}>{name}</option>
             {/each}
@@ -144,8 +167,16 @@ specific field; regex + case options map straight onto FindAndReplaceRequest.
     {#if field === TAGS}
         <p class="fr-note">Tags mode replaces within tag text, not fields.</p>
     {/if}
+    {#if fieldLoadError}
+        <div class="fr-load-error" role="alert" data-testid="fr-field-load-error">
+            <p>Could not load fields: {fieldLoadError}</p>
+            <button type="button" class="fr-btn small" on:click={loadFields}>
+                Retry fields
+            </button>
+        </div>
+    {/if}
     {#if error}
-        <p class="fr-error" role="alert">{error}</p>
+        <p class="fr-error" role="alert" data-testid="fr-apply-error">{error}</p>
     {/if}
 
     <div class="fr-actions">
@@ -153,7 +184,8 @@ specific field; regex + case options map straight onto FindAndReplaceRequest.
         <button
             type="button"
             class="fr-btn primary"
-            disabled={busy || !search}
+            data-testid="fr-replace"
+            disabled={busy || !search || loadingFields || fieldLoadError !== ""}
             on:click={apply}
         >
             {busy ? "Replacing…" : "Replace"}
@@ -253,6 +285,24 @@ specific field; regex + case options map straight onto FindAndReplaceRequest.
         overflow-wrap: anywhere;
     }
 
+    .fr-load-error {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-sm);
+        margin: 0 0 var(--space-sm);
+        padding: var(--space-sm);
+        color: var(--fg-error);
+        background: var(--gap-warning-bg);
+        border: 1px solid rgba(214, 69, 65, 0.4);
+        border-radius: var(--border-radius);
+
+        p {
+            margin: 0;
+            overflow-wrap: anywhere;
+        }
+    }
+
     .fr-actions {
         display: flex;
         justify-content: flex-end;
@@ -287,6 +337,11 @@ specific field; regex + case options map straight onto FindAndReplaceRequest.
         &[disabled] {
             opacity: 0.5;
             cursor: default;
+        }
+
+        &.small {
+            flex: 0 0 auto;
+            padding: var(--space-xxs) var(--space-sm);
         }
 
         &:focus-visible {
