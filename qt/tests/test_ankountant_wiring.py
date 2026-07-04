@@ -9,6 +9,10 @@ cover the two registrations that must be present for the menu dialogs to work at
 all: the routes must be recognised as SvelteKit pages, and their webview kinds
 must exist (and be granted backend API access in webview.py)."""
 
+from aqt.main import (
+    ankountant_confusable_patch_updates,
+    require_ankountant_demo_phase,
+)
 from aqt.mediasrv import is_sveltekit_page
 from aqt.webview import AnkiWebViewKind
 from aqt.workspace import ankountant_route_for_page
@@ -68,3 +72,66 @@ def test_ankountant_route_lookup_rejects_unknown_pages() -> None:
         assert "unknown Ankountant page: dasboard" in str(exc)
     else:
         raise AssertionError("expected route lookup to reject typo")
+
+
+def test_ankountant_demo_phase_lookup_rejects_unknown_phases() -> None:
+    for phase in ("foundation", "discrimination", "consolidation"):
+        require_ankountant_demo_phase(phase)
+
+    try:
+        require_ankountant_demo_phase("exam-soon")
+    except ValueError as exc:
+        assert "unknown Ankountant demo phase: exam-soon" in str(exc)
+    else:
+        raise AssertionError("expected demo phase lookup to reject typo")
+
+
+def test_confusable_patch_updates_group_by_section() -> None:
+    updates = ankountant_confusable_patch_updates(
+        {
+            "set-a": {
+                "section": "FAR",
+                "tags": ["lease", "liability"],
+                "treatments": [{"front": "A"}],
+            },
+            "set-b": {
+                "section": "AUD",
+                "tags": [],
+                "treatments": [],
+            },
+        }
+    )
+
+    assert updates == {
+        "ankountant.confusable.FAR": {
+            "set-a": {
+                "tags": ["lease", "liability"],
+                "treatments": [{"front": "A"}],
+            }
+        },
+        "ankountant.confusable.AUD": {
+            "set-b": {
+                "tags": [],
+                "treatments": [],
+            }
+        },
+    }
+
+
+def test_confusable_patch_updates_reject_malformed_entries() -> None:
+    malformed_patches = [
+        [],
+        {"": {"section": "FAR"}},
+        {"set": []},
+        {"set": {"tags": []}},
+        {"set": {"section": "FAR", "tags": "lease"}},
+        {"set": {"section": "FAR", "treatments": "drill"}},
+    ]
+
+    for patch in malformed_patches:
+        try:
+            ankountant_confusable_patch_updates(patch)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"expected malformed patch to fail: {patch!r}")

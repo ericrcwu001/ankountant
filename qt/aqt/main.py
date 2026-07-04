@@ -100,6 +100,44 @@ MainWindowState = Literal[
 T = TypeVar("T")
 
 
+ANKOUNTANT_DEMO_PHASES = frozenset({"foundation", "discrimination", "consolidation"})
+
+
+def require_ankountant_demo_phase(phase: str) -> None:
+    if phase not in ANKOUNTANT_DEMO_PHASES:
+        raise ValueError(f"unknown Ankountant demo phase: {phase}")
+
+
+def ankountant_confusable_patch_updates(
+    patch: Any,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    if not isinstance(patch, dict):
+        raise ValueError("confusable_patch.json must contain an object")
+
+    updates: dict[str, dict[str, dict[str, Any]]] = {}
+    for set_id, entry in patch.items():
+        if not isinstance(set_id, str) or not set_id:
+            raise ValueError("confusable set ids must be non-empty strings")
+        if not isinstance(entry, dict):
+            raise ValueError(f"confusable set {set_id} must contain an object")
+        section = entry.get("section")
+        if not isinstance(section, str) or not section:
+            raise ValueError(f"confusable set {set_id} is missing section")
+        tags = entry.get("tags", [])
+        if not isinstance(tags, list):
+            raise ValueError(f"confusable set {set_id} tags must be a list")
+        treatments = entry.get("treatments", [])
+        if not isinstance(treatments, list):
+            raise ValueError(f"confusable set {set_id} treatments must be a list")
+        key = f"ankountant.confusable.{section}"
+        updates.setdefault(key, {})[set_id] = {
+            "tags": tags,
+            "treatments": treatments,
+        }
+
+    return updates
+
+
 class MainWebView(AnkiWebView):
     def __init__(self, mw: AnkiQt) -> None:
         AnkiWebView.__init__(self, kind=AnkiWebViewKind.MAIN)
@@ -1673,6 +1711,7 @@ title="{}" {}>{}</button>""".format(
 
         Each calls the LoadFarSeed backend RPC (F016), then sets/clears the shared
         exam-date config key, and refreshes. Best on a fresh/throwaway profile."""
+        require_ankountant_demo_phase(phase)
         if self.col is None:
             return
         if not askUser(
@@ -1699,7 +1738,7 @@ title="{}" {}>{}</button>""".format(
             resp = self.col._backend.load_far_seed(section=section, with_history=True)
             iso = (datetime.date.today() + datetime.timedelta(days=7)).isoformat()
             self.col.set_config(exam_key, iso)
-        else:  # "discrimination": the seed's own ~45-day exam date is far enough.
+        else:
             resp = self.col._backend.load_far_seed(section=section, with_history=True)
 
         self.reset()
@@ -1774,6 +1813,16 @@ title="{}" {}>{}</button>""".format(
         if not packs:
             showInfo("No .apkg packs found to import.", parent=self)
             return
+        patch_path = pack_dir / "confusable_patch.json"
+        patch_updates: dict[str, dict[str, dict[str, Any]]] = {}
+        if patch_path.exists():
+            try:
+                patch_updates = ankountant_confusable_patch_updates(
+                    json.loads(patch_path.read_text(encoding="utf-8"))
+                )
+            except (OSError, json.JSONDecodeError, ValueError) as exc:
+                showWarning(f"Invalid confusable_patch.json: {exc}", parent=self)
+                return
         if not askUser(
             f"Load {len(packs)} generated CPA pack(s) into this collection?\n\n"
             f"From: {pack_dir}\n\n"
@@ -1800,29 +1849,13 @@ title="{}" {}>{}</button>""".format(
             sealed = col.find_cards("deck:Ankountant::Sealed::*")
             if sealed:
                 col.sched.suspend_cards(sealed)
-            # (b) Merge the confusable-set patch into per-section col config.
-            patch_path = pack_dir / "confusable_patch.json"
-            if patch_path.exists():
-                try:
-                    patch = json.loads(patch_path.read_text(encoding="utf-8"))
-                    updates: dict[str, dict] = {}
-                    for set_id, entry in patch.items():
-                        section = entry.get("section")
-                        if not section:
-                            continue
-                        key = f"ankountant.confusable.{section}"
-                        current = (
-                            updates.get(key) or col.get_config(key, default={}) or {}
-                        )
-                        current[set_id] = {
-                            "tags": entry.get("tags", []),
-                            "treatments": entry.get("treatments", []),
-                        }
-                        updates[key] = current
-                    for key, value in updates.items():
-                        col.set_config(key, value)
-                except Exception:
-                    pass  # best-effort; the deck still imports without it
+            for key, entries in patch_updates.items():
+                current = col.get_config(key, default={}) or {}
+                if not isinstance(current, dict):
+                    raise ValueError(f"{key} config must contain an object")
+                merged = dict(current)
+                merged.update(entries)
+                col.set_config(key, merged)
             return changes
 
         def on_success(_out: Any) -> None:
