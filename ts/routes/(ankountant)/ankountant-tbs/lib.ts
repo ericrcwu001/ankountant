@@ -214,6 +214,13 @@ function parseJsonArray(fieldName: string, raw: string | undefined): unknown[] {
     }
 }
 
+function jsonObject(raw: unknown, fieldName: string): Record<string, unknown> {
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+        throw new Error(`${fieldName} must be an object.`);
+    }
+    return raw as Record<string, unknown>;
+}
+
 const EXHIBIT_KINDS: ExhibitKind[] = [
     "text",
     "email",
@@ -246,7 +253,7 @@ function asStringArray(v: unknown): string[] | undefined {
 export function parseExhibits(raw: string | undefined): Exhibit[] {
     const parsed = parseJsonArray("exhibits_json", raw);
     return parsed.map((e, i) => {
-        const obj = (e ?? {}) as Record<string, unknown>;
+        const obj = jsonObject(e, `exhibits_json[${i}]`);
         const kind = parseExhibitKind(obj.kind, `exhibits_json[${i}].kind`);
         const rows = Array.isArray(obj.rows)
             ? (obj.rows as unknown[]).map((r) => asStringArray(r) ?? [])
@@ -303,7 +310,7 @@ function parseOptions(raw: unknown, stepId: string): RenderOption[] | undefined 
         throw new Error(`Options for ${stepId} must contain at least one option.`);
     }
     return raw.map((o, i) => {
-        const obj = (o ?? {}) as RawOption;
+        const obj = jsonObject(o, `Option ${i + 1} for ${stepId}`) as RawOption;
         if (typeof obj.id !== "string" || obj.id.trim() === "") {
             throw new Error(`Option ${i + 1} for ${stepId} is missing an id.`);
         }
@@ -330,24 +337,25 @@ export function parseSteps(raw: string | undefined): RenderStep[] {
     }
     const defaultWeight = 1 / parsed.length;
     return parsed.map((s, i) => {
-        const id = typeof s.id === "string" ? s.id : `s${i + 1}`;
-        const label = typeof s.label === "string" ? s.label : id;
-        const weight = typeof s.weight === "number" ? s.weight : defaultWeight;
+        const obj = jsonObject(s, `steps_json[${i}]`) as RawStep;
+        const id = typeof obj.id === "string" ? obj.id : `s${i + 1}`;
+        const label = typeof obj.label === "string" ? obj.label : id;
+        const weight = typeof obj.weight === "number" ? obj.weight : defaultWeight;
         const step: RenderStep = { id, label, weight };
-        if (typeof s.kind === "string") {
-            step.kind = s.kind;
+        if (typeof obj.kind === "string") {
+            step.kind = obj.kind;
         }
-        const options = parseOptions(s.options, id);
+        const options = parseOptions(obj.options, id);
         if (step.kind === "blank" && !options) {
             throw new Error(`Options for ${id} must be an array.`);
         }
         if (options) {
             step.options = options;
         }
-        if (typeof s.original_text === "string") {
-            step.originalText = s.original_text;
+        if (typeof obj.original_text === "string") {
+            step.originalText = obj.original_text;
         }
-        const corpusRefs = asStringArray(s.corpus_refs);
+        const corpusRefs = asStringArray(obj.corpus_refs);
         if (corpusRefs) {
             step.corpusRefs = corpusRefs;
         }

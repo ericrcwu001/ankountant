@@ -114,6 +114,7 @@ test("parseExhibits fails loudly on missing or malformed json", () => {
     expect(() => parseExhibits(undefined)).toThrow(/exhibits_json is missing/);
     expect(() => parseExhibits("not json")).toThrow(/Invalid exhibits_json/);
     expect(() => parseExhibits("{}")).toThrow(/exhibits_json must be an array/);
+    expect(() => parseExhibits("[1]")).toThrow(/exhibits_json\[0\] must be an object/);
     expect(() => parseExhibits(JSON.stringify([{ kind: "chart" }]))).toThrow(
         /exhibits_json\[0\]\.kind has unknown exhibit kind: chart/,
     );
@@ -127,6 +128,7 @@ test("parseSteps fails loudly on missing, malformed, or empty step json", () => 
     expect(() => parseSteps("not json")).toThrow(/Invalid steps_json/);
     expect(() => parseSteps("{}")).toThrow(/steps_json must be an array/);
     expect(() => parseSteps("[]")).toThrow(/steps_json must contain at least one step/);
+    expect(() => parseSteps("[1]")).toThrow(/steps_json\[0\] must be an object/);
     expect(() => parseSteps(JSON.stringify([{ id: "s1", options: [{ id: "o1", text: "x", kind: "maybe" }] }]))).toThrow(
         /Option o1 for s1 has unknown option kind: maybe/,
     );
@@ -265,6 +267,17 @@ test("parseSteps rejects malformed doc-review blank options", () => {
             },
         ]))
     ).toThrow(/Options for b1 must contain at least one option/);
+
+    expect(() =>
+        parseSteps(JSON.stringify([
+            {
+                id: "b1",
+                kind: "blank",
+                label: "Blank 1",
+                options: [1],
+            },
+        ]))
+    ).toThrow(/Option 1 for b1 must be an object/);
 
     expect(() =>
         parseSteps(JSON.stringify([
