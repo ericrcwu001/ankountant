@@ -9,23 +9,22 @@ struct ChapterListView: View {
 
     var body: some View {
         List(book.chapters) { chapter in
-            NavigationLink {
-                ChapterReaderView(book: book, chapter: chapter, progress: progress)
-            } label: {
+            NavigationLink(value: chapter) {
                 ChapterRow(
                     chapter: chapter,
                     savedProgress: savedProgress?.chapterID == chapter.id ? savedProgress : nil
                 )
             }
         }
+        .navigationDestination(for: ReaderChapter.self) { chapter in
+            ChapterReaderView(book: book, chapter: chapter, progress: progress)
+        }
         .navigationTitle(book.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if let savedProgress, let chapter = book.chapters.first(where: { $0.id == savedProgress.chapterID }) {
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        ChapterReaderView(book: book, chapter: chapter, progress: progress)
-                    } label: {
+                    NavigationLink(value: chapter) {
                         Label("Resume", systemImage: "play.fill")
                     }
                 }

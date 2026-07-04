@@ -39,6 +39,10 @@ struct ReaderLibraryView: View {
 
     private let progress = ReaderProgressCoordinator()
 
+    private enum ReaderRoute: Hashable {
+        case chapters(ReaderBook)
+    }
+
     private var sortMode: BookshelfSortMode {
         BookshelfSortMode(rawValue: sortModeRaw) ?? .recent
     }
@@ -146,6 +150,12 @@ struct ReaderLibraryView: View {
         .onChange(of: deckName) { _, _ in
             Task { await reload() }
         }
+        .navigationDestination(for: ReaderRoute.self) { route in
+            switch route {
+            case .chapters(let book):
+                ChapterListView(book: book, progress: progress)
+            }
+        }
     }
 
     // MARK: - Bookshelf
@@ -172,9 +182,7 @@ struct ReaderLibraryView: View {
             ScrollView {
                 LazyVGrid(columns: gridColumns, spacing: 12) {
                     ForEach(sortedBooks) { book in
-                        NavigationLink {
-                            ChapterListView(book: book, progress: progress)
-                        } label: {
+                        NavigationLink(value: ReaderRoute.chapters(book)) {
                             BookGridCell(book: book, savedProgress: progress.resolved(bookID: book.id))
                         }
                         .buttonStyle(.plain)
