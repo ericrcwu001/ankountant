@@ -4,7 +4,7 @@
 function decodeHtmlEntities(text: string): string {
     return text
         .replace(/&#39;/g, "'")
-        .replace(/&quot;/g, '"')
+        .replace(/&quot;/g, "\"")
         .replace(/&amp;/g, "&")
         .replace(/&lt;/g, "<")
         .replace(/&gt;/g, ">");
@@ -20,10 +20,9 @@ export function readableBackendError(error: unknown, fallback: string): string {
     if (!hasHtml) {
         return trimmed;
     }
-    const title =
-        trimmed.match(/<title[^>]*>(.*?)<\/title>/is)?.[1] ??
-        trimmed.match(/<h1[^>]*>(.*?)<\/h1>/is)?.[1] ??
-        "";
+    const title = trimmed.match(/<title[^>]*>(.*?)<\/title>/is)?.[1]
+        ?? trimmed.match(/<h1[^>]*>(.*?)<\/h1>/is)?.[1]
+        ?? "";
     const decodedTitle = decodeHtmlEntities(title.replace(/<[^>]+>/g, " "))
         .replace(/\s+/g, " ")
         .trim();
