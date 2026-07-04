@@ -113,16 +113,15 @@ struct LookupStructuredContentView: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             updateContentHeight(for: webView)
-            // Initial layout pass settles a beat after didFinish; re-poll
-            // a couple of times so the intrinsic-size invalidation
-            // catches the post-layout height. Mirrors DreamAfar.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak webView] in
-                guard let webView else { return }
-                self.updateContentHeight(for: webView)
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak webView] in
-                guard let webView else { return }
-                self.updateContentHeight(for: webView)
+            scheduleContentHeightUpdate(for: webView, after: .milliseconds(50))
+            scheduleContentHeightUpdate(for: webView, after: .milliseconds(200))
+        }
+
+        private func scheduleContentHeightUpdate(for webView: WKWebView, after delay: Duration) {
+            Task { @MainActor [weak self, weak webView] in
+                try? await Task.sleep(for: delay)
+                guard let self, let webView else { return }
+                updateContentHeight(for: webView)
             }
         }
 
