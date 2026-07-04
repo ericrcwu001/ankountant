@@ -107,8 +107,8 @@ test("non-FAR sections use emitted topics without FAR placeholders", () => {
         "aud_evidence_sufficiency",
     ]);
     expect(topics.map((t) => t.label)).toEqual([
-        "Request Relevance",
-        "Evidence Sufficiency",
+        "Request relevance",
+        "Evidence sufficiency",
     ]);
     expect(topics.every((t) => !t.setId.includes("lease"))).toBe(true);
 });

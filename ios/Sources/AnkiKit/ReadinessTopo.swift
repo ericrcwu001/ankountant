@@ -241,11 +241,11 @@ public func readinessEvidence(band: ReadinessBand, topics: [TopicScoreModel]) ->
         missingData.append("Need sealed evidence across \(formatPercent(readinessMinimumCoverage)) of topics; current coverage is \(formatPercent(validatedBand.coverage)).")
     }
 
-    let thinMemory = topics.filter(\.memoryInsufficient).prefix(3).map(\.displayName)
+    let thinMemory = topics.filter(\.memoryInsufficient).prefix(3).map(\.sentenceName)
     if !thinMemory.isEmpty {
         missingData.append("Memory is still thin for \(thinMemory.joined(separator: ", ")).")
     }
-    let missingPerformance = topics.filter(\.performanceInsufficient).prefix(3).map(\.displayName)
+    let missingPerformance = topics.filter(\.performanceInsufficient).prefix(3).map(\.sentenceName)
     if !missingPerformance.isEmpty {
         missingData.append("Performance has no sealed evidence for \(missingPerformance.joined(separator: ", ")).")
     }
@@ -284,24 +284,27 @@ private func bestNextReadinessAction(band: ReadinessBand, topics: [TopicScoreMod
     if let gap = topics
         .filter(\.gapWarning)
         .max(by: { $0.gap < $1.gap }) {
-        return "Run a confusion-set drill for \(gap.displayName); memory is \(formatPercent(gap.memory)) and performance is \(formatPercent(gap.performance))."
+        return "Run a confusion-set drill for \(gap.sentenceName); memory is \(formatPercent(gap.memory)) and performance is \(formatPercent(gap.performance))."
     }
     if let missingPerformance = topics.first(where: \.performanceInsufficient) {
-        return "Do sealed exam-style practice for \(missingPerformance.displayName); performance has no sealed evidence yet."
+        return "Do sealed exam-style practice for \(missingPerformance.sentenceName); performance has no sealed evidence yet."
     }
     if let thinMemory = topics.first(where: \.memoryInsufficient) {
-        return "Run retrieval review for \(thinMemory.displayName) until memory has enough evidence, then return to sealed practice."
+        return "Run retrieval review for \(thinMemory.sentenceName) until memory has enough evidence, then return to sealed practice."
     }
     if let weakest = topics.filter({ !$0.performanceInsufficient }).min(by: { $0.performance < $1.performance }) {
-        return "Do sealed exam-style practice for \(weakest.displayName); current performance is \(formatPercent(weakest.performance))."
+        return "Do sealed exam-style practice for \(weakest.sentenceName); current performance is \(formatPercent(weakest.performance))."
     }
     preconditionFailure("Readiness topics require at least one performance value.")
 }
 
 public extension TopicScoreModel {
-    /// "capitalize_vs_expense" → "Capitalize Vs Expense".
     var displayName: String {
-        setId.replacingOccurrences(of: "_", with: " ").capitalized
+        topicDisplayName(setId)
+    }
+
+    var sentenceName: String {
+        topicSentenceName(setId)
     }
 
     /// Performance has no reliable value until the sealed bank is sampled — the

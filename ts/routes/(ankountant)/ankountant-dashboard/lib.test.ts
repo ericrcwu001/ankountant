@@ -13,6 +13,7 @@ import {
     formatUpdatedLine,
     fractionToPct,
     isGapWarning,
+    prettySetId,
 } from "./lib";
 
 test("gap-warning fires at the 0.25 threshold (A56)", () => {
@@ -39,6 +40,12 @@ test("topic rows carry memory/performance/gap + gapWarning (A54/A56)", () => {
     expect(rows[0].performancePct).toBe(65);
     expect(rows[0].gapPct).toBe(25);
     expect(rows[0].gapWarning).toBe(true);
+});
+
+test("topic labels use CPA terminology instead of raw set ids", () => {
+    expect(prettySetId("government_nfp")).toBe("Government & NFP");
+    expect(prettySetId("trading_afs_htm")).toBe("Trading, AFS & HTM securities");
+    expect(prettySetId("aud_request_relevance")).toBe("Request relevance");
 });
 
 test("topic gaps may be negative when performance exceeds memory", () => {

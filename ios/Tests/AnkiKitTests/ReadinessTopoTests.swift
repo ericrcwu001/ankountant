@@ -139,7 +139,7 @@ struct ReadinessTopoTests {
             performanceHigh: 0.6
         )
         #expect(warn.gapWarning)
-        #expect(warn.displayName == "Capitalize Vs Expense")
+        #expect(warn.displayName == "Capitalization vs expense")
         let ok = TopicScoreModel(
             setId: "x",
             memory: 0.8,
@@ -155,6 +155,14 @@ struct ReadinessTopoTests {
         let noPerf = TopicScoreModel(setId: "x", memory: 0.8, performance: 0, gap: 0, memoryInsufficient: false, memoryLow: 0.7, memoryHigh: 0.9, performanceLow: 0, performanceHigh: 0)
         #expect(noPerf.performanceInsufficient)
         #expect(!noPerf.gapWarning)
+    }
+
+    @Test func topicDisplayNamesUseAccountingTerminology() {
+        #expect(topicDisplayName("government_nfp") == "Government & NFP")
+        #expect(topicDisplayName("trading_afs_htm") == "Trading, AFS & HTM securities")
+        #expect(topicDisplayName("aud_request_relevance") == "Request relevance")
+        #expect(topicSentenceName("tax_timing") == "tax timing")
+        #expect(topicSentenceName("trading_afs_htm") == "trading, AFS & HTM securities")
     }
 
     @Test func gapsToCloseCount() {
@@ -184,7 +192,7 @@ struct ReadinessTopoTests {
         )
         #expect(evidence.giveUpRule.contains("20 sealed attempts"))
         #expect(evidence.missingData.joined(separator: " ").contains("60% of topics"))
-        #expect(evidence.missingData.joined(separator: " ").contains("Tax Timing"))
+        #expect(evidence.missingData.joined(separator: " ").contains("tax timing"))
         #expect(evidence.calibrationStatus.contains("No past score-verification history"))
     }
 
@@ -206,7 +214,7 @@ struct ReadinessTopoTests {
                 TopicScoreModel(setId: "tax_timing", memory: 0.7, performance: 0.51, gap: 0.19, memoryInsufficient: false, memoryLow: 0.6, memoryHigh: 0.8, performanceLow: 0.41, performanceHigh: 0.61),
             ]
         )
-        #expect(evidence.nextAction.contains("Leases"))
+        #expect(evidence.nextAction.contains("leases"))
         #expect(evidence.nextAction.contains("memory is 90%"))
         #expect(evidence.missingData.first?.contains("No hard blockers") == true)
     }
@@ -279,7 +287,7 @@ struct ReadinessTopoTests {
                 ),
             ]
         )
-        #expect(evidence.missingData.joined(separator: " ").contains("Performance has no sealed evidence for Leases"))
+        #expect(evidence.missingData.joined(separator: " ").contains("Performance has no sealed evidence for leases"))
         #expect(evidence.nextAction.contains("performance has no sealed evidence yet"))
         #expect(!evidence.nextAction.contains("performance is 0%"))
     }

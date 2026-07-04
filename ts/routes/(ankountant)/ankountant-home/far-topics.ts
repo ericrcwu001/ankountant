@@ -4,6 +4,7 @@
 import type { GetReadinessResponse, TopicScore } from "@generated/anki/scheduler_pb";
 
 import { hasTopicPerformanceEvidence, validateTopicScoreEvidence } from "../topic-evidence";
+import { topicLabel } from "../topic-labels";
 import { heightForTopicScore, type TopoTopic } from "./topo";
 
 export interface FarTopic extends TopoTopic {
@@ -275,8 +276,5 @@ function rangeLabel(low: number, high: number): string {
 }
 
 function prettyTopic(setId: string): string {
-    return setId
-        .replace(/^(far|aud|reg|tcp|isc)_/, "")
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    return topicLabel(setId);
 }

@@ -567,7 +567,6 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
         .set-id {
             font-weight: 500;
-            text-transform: capitalize;
             padding-top: calc(var(--space-md) + 1px);
         }
     }

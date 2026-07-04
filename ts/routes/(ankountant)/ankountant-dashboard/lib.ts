@@ -8,6 +8,7 @@
 import type { Readiness, TopicScore } from "@generated/anki/scheduler_pb";
 
 import { hasTopicPerformanceEvidence, validateTopicScoreEvidence } from "../topic-evidence";
+import { topicLabel, topicSentenceLabel } from "../topic-labels";
 
 /** A gap >= this threshold is flagged (contract A56 / B5-D3). */
 export const GAP_WARNING_THRESHOLD = 0.25;
@@ -54,7 +55,11 @@ export function isGapWarning(gap: number): boolean {
 }
 
 export function prettySetId(setId: string): string {
-    return setId.replace(/_/g, " ");
+    return topicLabel(setId);
+}
+
+function sentenceSetId(setId: string): string {
+    return topicSentenceLabel(setId);
 }
 
 /**
@@ -187,14 +192,14 @@ export function buildReadinessEvidence(
     const thinMemory = rows.filter((row) => row.memoryPct === null).slice(0, 3);
     if (thinMemory.length) {
         missingData.push(
-            `Memory is still thin for ${thinMemory.map((row) => prettySetId(row.setId)).join(", ")}.`,
+            `Memory is still thin for ${thinMemory.map((row) => sentenceSetId(row.setId)).join(", ")}.`,
         );
     }
     const missingPerformance = rows.filter((row) => row.performancePct === null).slice(0, 3);
     if (missingPerformance.length) {
         missingData.push(
             `Performance has no sealed evidence for ${
-                missingPerformance.map((row) => prettySetId(row.setId)).join(", ")
+                missingPerformance.map((row) => sentenceSetId(row.setId)).join(", ")
             }.`,
         );
     }
@@ -288,7 +293,7 @@ function bestNextAction(view: ReadinessView, rows: TopicRow[]): string {
         .filter((row) => row.gapWarning && row.memoryPct !== null && row.performancePct !== null)
         .sort((a, b) => requiredGap(b) - requiredGap(a))[0];
     if (gap) {
-        return `Run a confusion-set drill for ${prettySetId(gap.setId)}; memory is ${
+        return `Run a confusion-set drill for ${sentenceSetId(gap.setId)}; memory is ${
             requiredMemoryPct(gap)
         }% and performance is ${requiredPerformancePct(gap)}%.`;
     }
@@ -296,14 +301,14 @@ function bestNextAction(view: ReadinessView, rows: TopicRow[]): string {
     const missingPerformance = rows.find((row) => row.performancePct === null);
     if (missingPerformance) {
         return `Do sealed exam-style practice for ${
-            prettySetId(missingPerformance.setId)
+            sentenceSetId(missingPerformance.setId)
         }; performance has no sealed evidence yet.`;
     }
 
     const thinMemory = rows.find((row) => row.memoryPct === null);
     if (thinMemory) {
         return `Run retrieval review for ${
-            prettySetId(thinMemory.setId)
+            sentenceSetId(thinMemory.setId)
         } until memory has enough evidence, then return to sealed practice.`;
     }
 
@@ -313,7 +318,7 @@ function bestNextAction(view: ReadinessView, rows: TopicRow[]): string {
     if (!weakest) {
         throw new Error("Readiness topics require at least one performance value.");
     }
-    return `Do sealed exam-style practice for ${prettySetId(weakest.setId)}; current performance is ${
+    return `Do sealed exam-style practice for ${sentenceSetId(weakest.setId)}; current performance is ${
         requiredPerformancePct(weakest)
     }%.`;
 }
