@@ -41,6 +41,9 @@ struct SyncSheet: View {
                         .padding(.horizontal)
                 }
 
+                syncProofPanel
+                    .padding(.horizontal)
+
                 Spacer()
                 switch syncState {
                 case .idle:
@@ -173,6 +176,55 @@ struct SyncSheet: View {
         KeychainHelper.deleteUsername()
         KeychainHelper.deleteCurrentEndpoint()
         syncState = .idle
+    }
+
+    private var syncProofPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Proof Run")
+                    .font(.caption.weight(.semibold))
+                Spacer()
+                Text("Speedrun 7b")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            syncProofRow(
+                title: "Review logs merge additively",
+                detail: "10 phone reviews plus 10 desktop reviews should leave 20 revlog rows.",
+                systemImage: "list.bullet.rectangle"
+            )
+            syncProofRow(
+                title: "Full-sync choices stay explicit",
+                detail: "Merge, upload, or download requires a visible user choice before overwrite.",
+                systemImage: "arrow.triangle.2.circlepath"
+            )
+            syncProofRow(
+                title: "Same-card winner is recorded",
+                detail: "When both devices answer one card offline, keep both revlogs and note the final card state.",
+                systemImage: "checklist"
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color.secondary.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func syncProofRow(title: String, detail: String, systemImage: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                Text(detail)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     @ViewBuilder
