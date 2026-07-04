@@ -17,6 +17,11 @@ struct SimulationsHubView: View {
     // desktop TBS-tab chooser (TBS_SHAPES in ankountant-tbs/lib.ts).
     private let shapeOrder: [TbsShape] = [.journalEntry, .numeric, .research, .docReview]
 
+    private enum SimulationRoute: Hashable {
+        case tbs(Int64)
+        case confusion(CPASection?)
+    }
+
     private var filteredTasks: [TbsTaskSummary] {
         tasks.filter { $0.shape == selectedShape }
     }
@@ -45,6 +50,14 @@ struct SimulationsHubView: View {
         .task {
             await loadTasks()
         }
+        .navigationDestination(for: SimulationRoute.self) { route in
+            switch route {
+            case .tbs(let noteId):
+                TbsTaskView(noteId: noteId)
+            case .confusion(let section):
+                ConfusionDrillView(section: section)
+            }
+        }
     }
 
     // MARK: - Loaded content
@@ -71,9 +84,7 @@ struct SimulationsHubView: View {
                             .foregroundStyle(palette.textSecondary)
                     } else {
                         ForEach(filteredTasks) { task in
-                            NavigationLink {
-                                TbsTaskView(noteId: task.noteId)
-                            } label: {
+                            NavigationLink(value: SimulationRoute.tbs(task.noteId)) {
                                 taskRow(task)
                             }
                         }
@@ -81,10 +92,13 @@ struct SimulationsHubView: View {
                 }
 
                 Section("Confusion") {
-                    NavigationLink {
-                        ConfusionDrillView()
-                    } label: {
-                        Label("Confusion drill", systemImage: "arrow.triangle.branch")
+                    NavigationLink(value: SimulationRoute.confusion(nil)) {
+                        Label("All sections", systemImage: "arrow.triangle.branch")
+                    }
+                    ForEach(CPASection.homeOrder) { section in
+                        NavigationLink(value: SimulationRoute.confusion(section)) {
+                            sectionRow(section)
+                        }
                     }
                 }
             }
@@ -92,6 +106,18 @@ struct SimulationsHubView: View {
             .ankountantSectionBackground()
         }
         .background(palette.background)
+    }
+
+    private func sectionRow(_ section: CPASection) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("\(section.code) confusion drill")
+                .ankountantFont(.body)
+                .foregroundStyle(palette.textPrimary)
+            Text(section.displayName)
+                .ankountantFont(.caption)
+                .foregroundStyle(palette.textSecondary)
+        }
+        .padding(.vertical, 2)
     }
 
     private func taskRow(_ task: TbsTaskSummary) -> some View {

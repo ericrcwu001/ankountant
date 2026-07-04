@@ -53,7 +53,7 @@ struct HomeView: View {
         .navigationDestination(for: HomeRoute.self) { route in
             switch route {
             case .confusion:
-                ConfusionDrillView()
+                ConfusionDrillView(section: .far)
             }
         }
         .navigationDestination(for: CPASection.self) { section in

@@ -23,6 +23,10 @@ struct DeckListView: View {
     @State private var loadErrorMessage: String?
     @State private var showCreateSheet = false
 
+    private enum DeckListRoute: Hashable {
+        case simulations
+    }
+
     var body: some View {
         List {
             if let header {
@@ -76,9 +80,7 @@ struct DeckListView: View {
                         .listRowSeparator(.hidden)
                 }
                 Section {
-                    NavigationLink {
-                        SimulationsHubView()
-                    } label: {
+                    NavigationLink(value: DeckListRoute.simulations) {
                         Label("Simulations", systemImage: "list.bullet.clipboard")
                     }
                 }
@@ -91,6 +93,12 @@ struct DeckListView: View {
         }
         .navigationDestination(for: DeckInfo.self) { deck in
             DeckDetailView(deck: deck)
+        }
+        .navigationDestination(for: DeckListRoute.self) { route in
+            switch route {
+            case .simulations:
+                SimulationsHubView()
+            }
         }
         .scrollContentBackground(.hidden)
         .ankountantSectionBackground()

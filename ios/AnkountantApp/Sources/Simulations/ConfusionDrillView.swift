@@ -6,11 +6,13 @@ import AnkountantTheme
 
 /// B3 confusion-set drill (mirrors the desktop
 /// ts/routes/(ankountant)/ankountant-confusion/ConfusionMode.svelte). Plays the
-/// interleaved, label-stripped FAR queue: per item it runs the B1 confidence
-/// gate, then the which-treatment gate, submits the choice via
-/// SubmitPerformanceAttempt (grading is authoritative on the Rust side), shows a
-/// verdict, and advances. A finished card is shown once the queue is exhausted.
+/// interleaved, label-stripped queue: per item it runs the B1 confidence gate,
+/// then the which-treatment gate, submits the choice via SubmitPerformanceAttempt
+/// (grading is authoritative on the Rust side), shows a verdict, and advances.
+/// A finished card is shown once the queue is exhausted.
 struct ConfusionDrillView: View {
+    private let section: CPASection?
+
     @Dependency(\.performanceClient) var performanceClient
     @Environment(\.palette) private var palette
 
@@ -25,10 +27,22 @@ struct ConfusionDrillView: View {
     @State private var loadError: String?
 
     private var done: Bool { index >= items.count }
+    private var queueSection: String { section?.code ?? "ALL" }
+    private var title: String { section.map { "\($0.code) Confusion" } ?? "Confusion" }
+    private var emptyDescription: String {
+        if let section {
+            return "No \(section.code) confusion items are available yet. Load or import section practice to build the drill queue."
+        }
+        return "Load or import CPA practice to build the drill queue."
+    }
+
+    init(section: CPASection? = nil) {
+        self.section = section
+    }
 
     var body: some View {
         content
-            .navigationTitle("Confusion")
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .task { await load() }
     }
@@ -48,7 +62,7 @@ struct ConfusionDrillView: View {
             ContentUnavailableView(
                 "No confusion items",
                 systemImage: "questionmark.circle",
-                description: Text("Load a demo profile or CPA bank to build the queue.")
+                description: Text(emptyDescription)
             )
         } else if done {
             finishedCard
@@ -161,7 +175,7 @@ struct ConfusionDrillView: View {
 
     private func load() async {
         do {
-            items = try performanceClient.confusionQueue("ALL", 60)
+            items = try performanceClient.confusionQueue(queueSection, 60)
             index = 0
             confidence = nil
             lastCorrect = nil
