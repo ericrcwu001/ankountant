@@ -62,6 +62,7 @@ public enum TbsParseError: Error, Equatable, LocalizedError, Sendable {
 public enum TbsSubmissionError: Error, Equatable, LocalizedError, Sendable {
     case invalidDecimal(field: String)
     case nonFiniteNumber(field: String)
+    case missingStepSelection
 
     public var errorDescription: String? {
         switch self {
@@ -69,6 +70,8 @@ public enum TbsSubmissionError: Error, Equatable, LocalizedError, Sendable {
             "\(field) must be a decimal number."
         case let .nonFiniteNumber(field):
             "\(field) must be a finite number."
+        case .missingStepSelection:
+            "Doc-review submission requires a selected option for every blank."
         }
     }
 }
@@ -432,8 +435,17 @@ public func buildChoiceSubmission(_ choice: String) -> String {
 /// Generic step submission `{"steps":[{"id":…,"value":…}]}` with STRING values.
 /// Used by the doc-review surface (value = chosen option id) — mirrors the
 /// desktop `buildDocReviewSubmission`. Research uses `buildResearchSubmission`.
-public func buildStepsSubmission(_ pairs: [(id: String, value: String)]) -> String {
-    let steps = pairs.map { ["id": $0.id, "value": $0.value] }
+public func docReviewBlanksComplete(_ blanks: [DocReviewBlankInput]) -> Bool {
+    !blanks.isEmpty && blanks.allSatisfy { !$0.selection.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+}
+
+public func buildStepsSubmission(_ pairs: [(id: String, value: String)]) throws -> String {
+    guard !pairs.isEmpty,
+          pairs.allSatisfy({ !$0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+    else {
+        throw TbsSubmissionError.missingStepSelection
+    }
+    let steps = pairs.map { ["id": $0.id, "value": $0.value.trimmingCharacters(in: .whitespacesAndNewlines)] }
     return jsonString(["steps": steps])
 }
 

@@ -20,6 +20,7 @@ Never renders which option is correct before submit (options carry no key).
     import {
         buildDocReviewSubmission,
         buildRevealModel,
+        docReviewAnswersComplete,
         segmentDocument,
     } from "../ankountant-tbs/lib";
     import ResultsLayer from "../ankountant-tbs/ResultsLayer.svelte";
@@ -45,6 +46,8 @@ Never renders which option is correct before submit (options carry no key).
     $: resultById = new Map((results ?? []).map((r) => [r.id, r]));
     $: reveal = results ? buildRevealModel(fields, tags) : null;
     $: answerInputsLocked = submitting || results !== null;
+    $: answerPairs = model.steps.map((s) => ({ id: s.id, value: answers[s.id] ?? "" }));
+    $: allAnswersSelected = docReviewAnswersComplete(answerPairs);
 
     async function submit(): Promise<void> {
         if (confidence === null || answerInputsLocked) {
@@ -57,12 +60,7 @@ Never renders which option is correct before submit (options carry no key).
                 {
                     itemNoteId: noteId,
                     mode: "doc_review",
-                    submissionJson: buildDocReviewSubmission(
-                        model.steps.map((s) => ({
-                            id: s.id,
-                            value: answers[s.id] ?? "",
-                        })),
-                    ),
+                    submissionJson: buildDocReviewSubmission(answerPairs),
                     confidence,
                     latencyMs: Date.now() - startedAt,
                 },
@@ -133,13 +131,20 @@ Never renders which option is correct before submit (options carry no key).
             <button
                 class="submit"
                 data-testid="docreview-submit"
-                disabled={submitting || confidence === null || results !== null}
+                disabled={submitting ||
+                    confidence === null ||
+                    results !== null ||
+                    !allAnswersSelected}
                 on:click={submit}
             >
                 {submitting ? "Submitting…" : "Submit review"}
             </button>
             {#if confidence === null}
                 <span class="gate-hint">Commit a confidence level first.</span>
+            {:else if !allAnswersSelected}
+                <span class="gate-hint" data-testid="docreview-answer-hint">
+                    Select an edit for every blank.
+                </span>
             {/if}
             {#if total !== null}
                 <p class="total" data-testid="docreview-total">

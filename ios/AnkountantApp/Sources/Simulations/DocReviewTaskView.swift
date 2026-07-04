@@ -32,6 +32,10 @@ struct DocReviewTaskView: View {
         submitting || results != nil
     }
 
+    private var allBlanksAnswered: Bool {
+        docReviewBlanksComplete(blanks)
+    }
+
     init(noteId: Int64, model: TbsModel) {
         self.noteId = noteId
         self.model = model
@@ -205,10 +209,14 @@ struct DocReviewTaskView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(AnkountantPrimaryButtonStyle())
-            .disabled(submitting || confidence == nil || results != nil)
+            .disabled(submitting || confidence == nil || results != nil || !allBlanksAnswered)
 
             if confidence == nil {
                 Text("Commit a confidence level first.")
+                    .ankountantFont(.caption)
+                    .foregroundStyle(palette.textSecondary)
+            } else if !allBlanksAnswered {
+                Text("Select an edit for every blank.")
                     .ankountantFont(.caption)
                     .foregroundStyle(palette.textSecondary)
             }
@@ -232,14 +240,14 @@ struct DocReviewTaskView: View {
     }
 
     private func submit() async {
-        guard let confidence, !submitting, results == nil else { return }
+        guard let confidence, !submitting, results == nil, allBlanksAnswered else { return }
         submitting = true
         submitError = nil
         revealError = nil
         defer { submitting = false }
-        let submissionJson = buildStepsSubmission(blanks.map { (id: $0.id, value: $0.selection) })
         let latency = UInt32(clamping: Int((Date.now.timeIntervalSince(startedAt) * 1000).rounded()))
         do {
+            let submissionJson = try buildStepsSubmission(blanks.map { (id: $0.id, value: $0.selection) })
             let resp = try performanceClient.submitDocReview(noteId, submissionJson, confidence.rawValue, latency)
             results = resp.steps
             total = resp.totalCredit

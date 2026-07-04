@@ -597,8 +597,15 @@ export function buildResearchSubmission(citation: string): string {
 /** Shape the submission_json for a doc-review TBS (all blanks in one attempt;
  *  each value is the chosen option id, matched server-side against the blank's
  *  answer_key option id). */
+export function docReviewAnswersComplete(blanks: { id: string; value: string }[]): boolean {
+    return blanks.length > 0 && blanks.every((blank) => blank.value.trim() !== "");
+}
+
 export function buildDocReviewSubmission(blanks: { id: string; value: string }[]): string {
-    return JSON.stringify({ steps: blanks.map((b) => ({ id: b.id, value: b.value })) });
+    if (!docReviewAnswersComplete(blanks)) {
+        throw new Error("Doc-review submission requires a selected option for every blank.");
+    }
+    return JSON.stringify({ steps: blanks.map((b) => ({ id: b.id, value: b.value.trim() })) });
 }
 
 // --- Post-submit reveal (Results layer) --------------------------------------

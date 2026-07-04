@@ -15,6 +15,7 @@ test("doc-review: document with blanks + co-visible exhibits + partial credit (T
     const doc = page.getByTestId("dr-document");
     await expect(doc).toBeVisible();
     const blanks = page.getByTestId("dr-blank-select");
+    await expect(blanks.first()).toBeVisible();
     const n = await blanks.count();
     expect(n).toBeGreaterThanOrEqual(3);
 
@@ -47,6 +48,25 @@ test("doc-review: each blank offers its confusion-set candidates (T3 AC2)", asyn
     expect(optionCount).toBeGreaterThanOrEqual(3);
 });
 
+test("doc-review: submit requires an edit for every blank", async ({ page }) => {
+    await page.goto("/ankountant-doc-review");
+    const blanks = page.getByTestId("dr-blank-select");
+    await expect(blanks.first()).toBeVisible();
+    const n = await blanks.count();
+    expect(n).toBeGreaterThanOrEqual(3);
+
+    await page.getByTestId("confidence-unsure").click();
+    await expect(page.getByTestId("docreview-submit")).toBeDisabled();
+    await expect(page.getByTestId("docreview-answer-hint")).toContainText(
+        "Select an edit for every blank",
+    );
+
+    for (let i = 0; i < n; i++) {
+        await blanks.nth(i).selectOption({ index: 1 });
+    }
+    await expect(page.getByTestId("docreview-submit")).toBeEnabled();
+});
+
 test("doc-review: submit failures stay in the surface", async ({ page }) => {
     await page.route("**/_anki/submitPerformanceAttempt", async (route) => {
         await route.fulfill({
@@ -57,6 +77,7 @@ test("doc-review: submit failures stay in the surface", async ({ page }) => {
     });
     await page.goto("/ankountant-doc-review");
     const blanks = page.getByTestId("dr-blank-select");
+    await expect(blanks.first()).toBeVisible();
     const n = await blanks.count();
     for (let i = 0; i < n; i++) {
         await blanks.nth(i).selectOption({ index: 1 });

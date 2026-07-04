@@ -438,16 +438,27 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
 }
 
 @Test func buildStepsSubmissionShapesStringValues() throws {
-    let json = buildStepsSubmission([(id: "s1", value: "o2"), (id: "s2", value: "")])
+    let json = try buildStepsSubmission([(id: "s1", value: " o2 "), (id: "s2", value: "o3")])
     let steps = try #require(try parseObject(json)["steps"] as? [[String: Any]])
 
     #expect(steps.count == 2)
     #expect(steps[0]["id"] as? String == "s1")
     #expect(steps[0]["value"] as? String == "o2")
-    // The option id is a JSON string, and an unselected blank is the empty string.
     #expect(steps[0]["value"] as? Double == nil)
     #expect(steps[1]["id"] as? String == "s2")
-    #expect(steps[1]["value"] as? String == "")
+    #expect(steps[1]["value"] as? String == "o3")
+}
+
+@Test func docReviewSubmissionRequiresEveryBlankSelection() throws {
+    #expect(docReviewBlanksComplete([DocReviewBlankInput(id: "s1", selection: "o2")]))
+    #expect(!docReviewBlanksComplete([DocReviewBlankInput(id: "s1")]))
+    #expect(!docReviewBlanksComplete([]))
+    do {
+        _ = try buildStepsSubmission([(id: "s1", value: "")])
+        Issue.record("Expected missing step selection error.")
+    } catch let error as TbsSubmissionError {
+        #expect(error == .missingStepSelection)
+    }
 }
 
 @Test func segmentDocumentSplitsTextAndBlanks() {

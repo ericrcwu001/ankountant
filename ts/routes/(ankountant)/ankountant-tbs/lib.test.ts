@@ -12,6 +12,7 @@ import {
     buildRevealModel,
     buildTbsModel,
     defaultStepLabel,
+    docReviewAnswersComplete,
     paneExhibits,
     parseExhibits,
     parseSteps,
@@ -412,7 +413,7 @@ test("buildResearchSubmission emits a single trimmed citation (backend research 
 
 test("buildDocReviewSubmission submits each blank's chosen option id", () => {
     const json = buildDocReviewSubmission([
-        { id: "b1", value: "o1" },
+        { id: "b1", value: " o1 " },
         { id: "b2", value: "o2" },
     ]);
     expect(JSON.parse(json)).toEqual({
@@ -421,6 +422,15 @@ test("buildDocReviewSubmission submits each blank's chosen option id", () => {
             { id: "b2", value: "o2" },
         ],
     });
+});
+
+test("doc-review submission requires every blank to be selected", () => {
+    expect(docReviewAnswersComplete([{ id: "b1", value: "o1" }])).toBe(true);
+    expect(docReviewAnswersComplete([{ id: "b1", value: "" }])).toBe(false);
+    expect(docReviewAnswersComplete([])).toBe(false);
+    expect(() => buildDocReviewSubmission([{ id: "b1", value: "" }])).toThrow(
+        /selected option for every blank/,
+    );
 });
 
 test("buildRevealModel resolves the correct value only from raw fields (post-submit)", () => {

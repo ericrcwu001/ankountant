@@ -225,8 +225,7 @@ public struct NumericCellInput: Sendable, Identifiable, Equatable {
 }
 
 /// One doc-review blank as edited (mutable for SwiftUI binding). `selection` is
-/// the chosen option id; `""` means unselected (submitted as empty → graded
-/// incorrect, matching the exam rule that a blank must be answered).
+/// the chosen option id; `""` means unselected and cannot be submitted.
 public struct DocReviewBlankInput: Sendable, Identifiable, Equatable {
     public let id: String
     public var selection: String
