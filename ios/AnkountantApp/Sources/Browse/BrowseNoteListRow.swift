@@ -9,33 +9,51 @@ struct BrowseNoteListRow: View {
     let onRefresh: () -> Void
 
     var body: some View {
-        HStack {
-            if selectionState.isSelectMode {
-                Image(systemName: selectionState.contains(note.id) ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(selectionState.contains(note.id) ? Color.accentColor : Color.secondary)
-                NoteRowView(note: note, notetypeName: notetypeName)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        selectionState.toggle(note.id)
-                    }
-                    .onAppear {
-                        onRowAppear(note)
-                    }
-            } else {
+        if selectionState.isSelectMode {
+            Button {
+                selectionState.toggle(note.id)
+            } label: {
                 HStack {
-                    NavigationLink(value: note) {
-                        NoteRowView(note: note, notetypeName: notetypeName)
-                            .onAppear {
-                                onRowAppear(note)
-                            }
-                    }
-                    NoteContextMenuButton(noteId: note.id, onSuccess: onRefresh)
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                        .accessibilityHidden(true)
+                    NoteRowView(note: note, notetypeName: notetypeName)
+                    Spacer(minLength: 0)
                 }
                 .contentShape(Rectangle())
-                .onLongPressGesture(minimumDuration: 0.5) {
-                    selectionState.enterSelectMode(preselect: note.id)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityValue(isSelected ? "Selected" : "Not selected")
+            .accessibilityHint(isSelected ? "Double-tap to deselect this note." : "Double-tap to select this note.")
+            .onAppear {
+                onRowAppear(note)
+            }
+        } else {
+            HStack {
+                NavigationLink(value: note) {
+                    NoteRowView(note: note, notetypeName: notetypeName)
+                        .onAppear {
+                            onRowAppear(note)
+                        }
                 }
+                NoteContextMenuButton(noteId: note.id, onSuccess: onRefresh)
+            }
+            .contentShape(Rectangle())
+            .onLongPressGesture(minimumDuration: 0.5) {
+                selectionState.enterSelectMode(preselect: note.id)
             }
         }
+    }
+
+    private var isSelected: Bool {
+        selectionState.contains(note.id)
+    }
+
+    private var accessibilityLabel: String {
+        if let subtitle = composeNoteSubtitle(notetypeName: notetypeName, tags: note.tags) {
+            return "\(note.sfld), \(subtitle)"
+        }
+        return note.sfld
     }
 }
