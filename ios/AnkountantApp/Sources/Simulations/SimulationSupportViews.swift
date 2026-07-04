@@ -154,6 +154,7 @@ struct SimulationSubmitErrorView: View {
 /// Mirrors the desktop `LiteraturePane`.
 struct LiteraturePaneView: View {
     let section: String
+    var citationEnabled = true
     var onCite: ((String) -> Void)? = nil
 
     @Environment(\.palette) private var palette
@@ -218,6 +219,7 @@ struct LiteraturePaneView: View {
                 if let onCite {
                     Button("Use this citation") { onCite(entry.citation) }
                         .buttonStyle(AnkountantSecondaryButtonStyle())
+                        .disabled(!citationEnabled)
                 }
             }
         }

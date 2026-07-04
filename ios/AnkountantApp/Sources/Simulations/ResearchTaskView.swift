@@ -34,6 +34,10 @@ struct ResearchTaskView: View {
         citation.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var responseLocked: Bool {
+        submitting || correct != nil
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AnkountantSpacing.lg) {
@@ -48,7 +52,9 @@ struct ResearchTaskView: View {
                     SimulationExhibitsView(exhibits: exhibits)
                 }
 
-                LiteraturePaneView(section: model.section) { citation = $0 }
+                LiteraturePaneView(section: model.section, citationEnabled: !responseLocked) {
+                    citation = $0
+                }
             }
             .padding()
             .frame(maxWidth: 720, alignment: .leading)
@@ -75,7 +81,7 @@ struct ResearchTaskView: View {
                     .ankountantFont(.mono)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.characters)
-                    .disabled(correct != nil)
+                    .disabled(responseLocked)
             }
 
             Button {
