@@ -102,7 +102,8 @@ struct BrowseView: View {
                     Button("Add Note") { showAddNote = true }
                     Button("Add Image Occlusion") { showAddImageOcclusion = true }
                 } label: {
-                    Image(systemName: "plus")
+                    Label("Add note", systemImage: "plus")
+                        .labelStyle(.iconOnly)
                 }
             }
             ToolbarItem(placement: .topBarLeading) {
@@ -119,7 +120,8 @@ struct BrowseView: View {
                         }
                     }
                 } label: {
-                    Image(systemName: "arrow.up.arrow.down")
+                    Label("Sort notes", systemImage: "arrow.up.arrow.down")
+                        .labelStyle(.iconOnly)
                 }
                 .disabled(notes.isEmpty)
             }

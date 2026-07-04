@@ -98,11 +98,10 @@ struct DeckListView: View {
         .navigationBarTitleDisplayMode(navigationTitle.isEmpty ? .inline : .automatic)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
+                Button("Create deck", systemImage: "plus") {
                     showCreateSheet = true
-                } label: {
-                    Image(systemName: "plus")
                 }
+                .labelStyle(.iconOnly)
             }
         }
         .sheet(isPresented: $showCreateSheet) {
