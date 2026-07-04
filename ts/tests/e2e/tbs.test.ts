@@ -12,6 +12,9 @@ test("a JE TBS renders an editable grid and shows per-line + partial-credit tota
     const jeNoteId = seed.sealedTbsNoteIds[0];
     await page.goto(`/ankountant-tbs?note=${jeNoteId}`);
     await expect(page.getByTestId("tbs-surface")).toHaveAttribute("data-shape", "journal_entry");
+    await expect(page.getByTestId("tbs-surface")).toHaveAttribute("data-section", "FAR");
+    await expect(page.getByTestId("tbs-title")).toHaveText("Journal entry simulation");
+    await expect(page.getByTestId("tbs-section")).toHaveText("FAR");
     const grid = page.getByTestId("je-grid");
     await expect(grid).toBeVisible();
     const rows = page.getByTestId("je-row");

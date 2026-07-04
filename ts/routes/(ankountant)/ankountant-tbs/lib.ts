@@ -77,6 +77,15 @@ export function renderableTbsShape(shape: TbsShape): RenderableTbsShape {
     throw new Error(`TbsSurface cannot render ${shape}; use the specialized ${shape} surface.`);
 }
 
+export function tbsSurfaceTitle(shape: RenderableTbsShape): string {
+    switch (shape) {
+        case "journal_entry":
+            return "Journal entry simulation";
+        case "numeric":
+            return "Numeric simulation";
+    }
+}
+
 /** Build the sealed-bank search that finds TBS notes of a given shape in a
  *  section (mirrors the research/doc-review page loaders). `shape` is the value
  *  stored in the `tbs_type` note field. */

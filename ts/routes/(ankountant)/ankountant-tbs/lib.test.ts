@@ -27,6 +27,7 @@ import {
     TBS_SECTION_CHOICES,
     tbsSearch,
     tbsShapeSearchOrder,
+    tbsSurfaceTitle,
 } from "./lib";
 
 test("buildTbsModel parses a JE note without leaking answer keys", () => {
@@ -105,6 +106,11 @@ test("renderableTbsShape rejects specialized research and doc-review shapes", ()
     expect(renderableTbsShape("numeric")).toBe("numeric");
     expect(() => renderableTbsShape("research")).toThrow(/specialized research surface/);
     expect(() => renderableTbsShape("doc_review")).toThrow(/specialized doc_review surface/);
+});
+
+test("tbsSurfaceTitle names standalone gradable TBS shapes", () => {
+    expect(tbsSurfaceTitle("journal_entry")).toBe("Journal entry simulation");
+    expect(tbsSurfaceTitle("numeric")).toBe("Numeric simulation");
 });
 
 test("parseSteps defaults weights to 1/N so totals reconcile with A10", () => {

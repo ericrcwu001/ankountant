@@ -17,6 +17,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         JE_ACCOUNTS,
         paneExhibits,
         renderableTbsShape,
+        tbsSurfaceTitle,
     } from "./lib";
     import ExhibitsPane from "./ExhibitsPane.svelte";
     import ResultsLayer from "./ResultsLayer.svelte";
@@ -27,6 +28,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     export let tags: string[];
 
     $: shape = renderableTbsShape(model.shape);
+    $: title = tbsSurfaceTitle(shape);
     $: reveal = results ? buildRevealModel(fields, tags) : null;
     $: exhibits = paneExhibits(model);
 
@@ -107,9 +109,17 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 <!-- NOTE: this is a dedicated task surface, NOT the flashcard reviewer. It must
      never expose Again/Hard/Good/Easy grading buttons (B4-D3 / A52). -->
-<div class="tbs-surface" data-testid="tbs-surface" data-shape={shape}>
+<div
+    class="tbs-surface"
+    data-testid="tbs-surface"
+    data-shape={shape}
+    data-section={model.section}
+>
     <header class="tbs-head">
-        <h1>Task-Based Simulation</h1>
+        <div class="title-row">
+            <h1 data-testid="tbs-title">{title}</h1>
+            <span class="section-chip" data-testid="tbs-section">{model.section}</span>
+        </div>
         <p class="prompt" data-testid="tbs-prompt">{model.prompt}</p>
     </header>
 
@@ -361,6 +371,13 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     .tbs-head {
         margin-bottom: var(--space-lg);
 
+        .title-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+        }
+
         h1 {
             // Section heading
             font-size: var(--type-section-heading-size);
@@ -368,6 +385,17 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             letter-spacing: var(--type-section-heading-tracking);
             line-height: var(--type-section-heading-line);
             margin: 0;
+        }
+
+        .section-chip {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: var(--accent);
+            background: var(--accent-tint);
+            border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+            border-radius: 999px;
+            padding: 2px var(--space-sm);
         }
 
         .prompt {
