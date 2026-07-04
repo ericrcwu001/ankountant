@@ -949,8 +949,12 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     .map-wrap {
         position: relative;
-        flex: 1;
-        min-height: 620px;
+        flex: 0 1 auto;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1000 / 680;
+        min-height: 520px;
+        max-height: 760px;
         margin-top: var(--space-md);
     }
 
@@ -1121,6 +1125,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         }
 
         .map-wrap {
+            height: 500px;
             min-height: 500px;
         }
     }

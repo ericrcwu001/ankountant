@@ -239,14 +239,12 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
 </div>
 
 <style lang="scss">
-    // Focus mode: center the single card in the viewport so empty space is
-    // balanced, not dumped below the fold. (48px = shell top bar.)
     .confusion-mode {
         display: grid;
-        place-items: center;
-        // Fill the host (a workspace pane or the full shell), not the viewport.
+        align-content: start;
+        justify-items: center;
         min-height: 100%;
-        padding: var(--space-xl) var(--space-lg);
+        padding: clamp(72px, 14vh, 160px) var(--space-lg) var(--space-xl);
         font-size: var(--font-size);
         color: var(--fg);
     }

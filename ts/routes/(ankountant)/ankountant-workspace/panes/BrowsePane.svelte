@@ -140,6 +140,8 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
     let searchInput: HTMLInputElement | undefined;
     let scrollTop = 0;
     let viewportH = 0;
+    let emptyTitle = "";
+    let emptyDetail = "";
 
     $: total = ids.length;
     $: activeColumns = activeKeys
@@ -164,16 +166,18 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
     $: hasRecoverableSearch =
         normalizedQuery !== "" && normalizedQuery !== DEFAULT_QUERY;
     $: canShowWholeCollection = normalizedQuery !== "";
-    $: emptyTitle = hasRecoverableSearch
-        ? `No ${browseKind} match this search`
-        : normalizedQuery === DEFAULT_QUERY
-          ? `No ${browseKind} in the current deck`
-          : `No ${browseKind} available`;
-    $: emptyDetail = hasRecoverableSearch
-        ? `This search returned no ${browseKind}. Return to the current deck, show the whole collection, or adjust the sidebar filters.`
-        : normalizedQuery === DEFAULT_QUERY
-          ? `The current deck has no ${browseKind} in this view. Show the whole collection, or choose a specific deck or tag in the sidebar.`
-          : `There are no ${browseKind} to show for this workspace view yet.`;
+    $: {
+        if (hasRecoverableSearch) {
+            emptyTitle = `No ${browseKind} match this search`;
+            emptyDetail = `This search returned no ${browseKind}. Return to the current deck, show the whole collection, or adjust the sidebar filters.`;
+        } else if (normalizedQuery === DEFAULT_QUERY) {
+            emptyTitle = `No ${browseKind} in the current deck`;
+            emptyDetail = `The current deck has no ${browseKind} in this view. Show the whole collection, or choose a specific deck or tag in the sidebar.`;
+        } else {
+            emptyTitle = `No ${browseKind} available`;
+            emptyDetail = `There are no ${browseKind} to show for this workspace view yet.`;
+        }
+    }
 
     // ---- config helpers -----------------------------------------------------
 

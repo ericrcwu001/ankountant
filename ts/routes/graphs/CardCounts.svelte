@@ -33,9 +33,11 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         graphData = gatherData(sourceData, $prefs.cardCountsSeparateInactive);
         tableData = renderCards(svg as any, bounds, graphData);
     }
+    $: hasCards = graphData.counts.some(([, count, show]) => show && count > 0);
 
     const label = tr2.statisticsCountsSeparateSuspendedBuriedCards();
     const total = tr2.statisticsCountsTotalCards();
+    const noData = tr2.statisticsNoData();
 </script>
 
 <Graph title={graphData.title}>
@@ -51,41 +53,46 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             <svg
                 bind:this={svg}
                 viewBox={`0 0 ${bounds.width} ${bounds.height}`}
-                style="opacity: {graphData.totalCards ? 1 : 0}"
+                style="opacity: {hasCards ? 1 : 0}"
             >
                 <g class="counts" />
             </svg>
+            {#if !hasCards}
+                <div class="empty-counts" role="status">{noData}</div>
+            {/if}
         </div>
-        <div class="counts-table">
-            <table>
-                <tbody>
-                    {#each tableData as d, _idx}
-                        <tr>
-                            <!-- prettier-ignore -->
-                            <td>
-                            <span style="color: {d.colour};">■&nbsp;</span>
-                            {#if $prefs.browserLinksSupported}
-                                <button class="search-link" on:click={() => dispatch('search', { query: d.query })}>{d.label}</button>
-                            {:else}
-                                <span>{d.label}</span>
-                            {/if}
-                        </td>
-                            <td class="right">{d.count}</td>
-                            <td class="right">{d.percent}</td>
-                        </tr>
-                    {/each}
+        {#if hasCards}
+            <div class="counts-table">
+                <table>
+                    <tbody>
+                        {#each tableData as d, _idx}
+                            <tr>
+                                <!-- prettier-ignore -->
+                                <td>
+                                <span style="color: {d.colour};">■&nbsp;</span>
+                                {#if $prefs.browserLinksSupported}
+                                    <button class="search-link" on:click={() => dispatch('search', { query: d.query })}>{d.label}</button>
+                                {:else}
+                                    <span>{d.label}</span>
+                                {/if}
+                            </td>
+                                <td class="right">{d.count}</td>
+                                <td class="right">{d.percent}</td>
+                            </tr>
+                        {/each}
 
-                    <tr>
-                        <td>
-                            <span style="visibility: hidden;">■</span>
-                            {total}
-                        </td>
-                        <td class="right">{graphData.totalCards}</td>
-                        <td></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+                        <tr>
+                            <td>
+                                <span style="visibility: hidden;">■</span>
+                                {total}
+                            </td>
+                            <td class="right">{graphData.totalCards}</td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        {/if}
     </div>
 </Graph>
 
@@ -102,7 +109,9 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         flex: 1;
 
         .svg-container {
+            position: relative;
             width: 225px;
+            min-height: 250px;
         }
 
         .counts-table {
@@ -138,5 +147,16 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     .search-link:hover {
         color: var(--fg-link);
         text-decoration: underline;
+    }
+
+    .empty-counts {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: var(--fg-faint);
+        font-size: var(--type-caption-size);
+        font-weight: 650;
+        text-transform: uppercase;
     }
 </style>
