@@ -177,6 +177,14 @@ private func expectTbsSubmissionError<T>(_ expected: String, _ body: () throws -
     #expect(model.steps.count == 4)
 }
 
+@Test func tbsSearchFiltersByRenderableSimulationShape() {
+    let search = tbsSearch(shape: .journalEntry, section: "FAR")
+
+    #expect(search.contains("\"note:Ankountant TBS\""))
+    #expect(search.contains("\"tbs_type:journal_entry\""))
+    #expect(search.contains("deck:Ankountant::Sealed::FAR::*"))
+}
+
 @Test func buildTbsRevealModelFormatsJournalEntryKeys() throws {
     let reveal = try buildTbsRevealModel(
         fields: [

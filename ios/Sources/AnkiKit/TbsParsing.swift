@@ -101,6 +101,10 @@ public func buildTbsModel(fields: [String], tags: [String] = []) throws -> TbsMo
     )
 }
 
+public func tbsSearch(shape: TbsShape, section: String) -> String {
+    "\"note:Ankountant TBS\" \"tbs_type:\(shape.rawValue)\" deck:Ankountant::Sealed::\(section)::*"
+}
+
 public func buildTbsRevealModel(fields: [String], tags: [String] = []) throws -> TbsRevealModel {
     let rawSteps = try jsonArray("steps_json", field(fields, TbsField.stepsJson))
     let renderedSteps = try parseSteps(field(fields, TbsField.stepsJson))

@@ -21,8 +21,12 @@ extension PerformanceClient: DependencyKey {
 
         return Self(
             listTbsTasks: {
-                let query = "\"note:Ankountant TBS\" deck:Ankountant::Sealed::*"
-                let ids = try notes.searchNoteIds(query)
+                var ids: [Int64] = []
+                for shape in TbsShape.allCases {
+                    for section in TBS_SECTIONS {
+                        ids.append(contentsOf: try notes.searchNoteIds(tbsSearch(shape: shape, section: section)))
+                    }
+                }
                 return try ids.map { id in
                     let (fields, tags) = try fieldsAndTags(of: id)
                     let model = try buildTbsModel(fields: fields, tags: tags)

@@ -8,7 +8,7 @@
 
 /// The shape of a Task-Based Simulation, from the `tbs_type` note field.
 /// Raw values match the strings stored in the "Ankountant TBS" note type.
-public enum TbsShape: String, Sendable, Equatable {
+public enum TbsShape: String, Sendable, Equatable, CaseIterable {
     case journalEntry = "journal_entry"
     case numeric = "numeric"
     case research = "research"
