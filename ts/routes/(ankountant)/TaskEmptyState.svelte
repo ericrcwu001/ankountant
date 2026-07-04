@@ -3,10 +3,16 @@ Copyright: Ankitects Pty Ltd and contributors
 License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 -->
 <script lang="ts">
+    import { bridgeCommand } from "@tslib/bridgecommand";
+
     export let testId: string;
     export let eyebrow: string;
     export let title: string;
     export let description: string;
+
+    function openImport(): void {
+        bridgeCommand("ankountant:import");
+    }
 </script>
 
 <section class="empty" data-testid={testId}>
@@ -15,7 +21,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     <h1>{title}</h1>
     <p>{description}</p>
     <div class="actions">
-        <a class="primary" href="/ankountant-tbs">Browse simulations</a>
+        <button type="button" class="primary" on:click={openImport}>
+            Import package
+        </button>
+        <a href="/ankountant-tbs">Browse simulations</a>
         <a href="/ankountant-dashboard">View readiness evidence</a>
     </div>
 </section>
@@ -81,7 +90,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         gap: var(--space-sm);
         margin-top: var(--space-sm);
 
-        a {
+        :is(a, button) {
             min-height: 40px;
             display: inline-flex;
             align-items: center;
@@ -91,9 +100,11 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             border-radius: var(--border-radius);
             background: var(--canvas-elevated);
             color: var(--fg);
+            font: inherit;
             font-size: var(--type-caption-size);
             font-weight: 700;
             text-decoration: none;
+            cursor: pointer;
 
             &:hover {
                 background: var(--canvas-inset);

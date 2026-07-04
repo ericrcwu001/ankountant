@@ -9,6 +9,7 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
 <script lang="ts">
     import type { ConfusionItem } from "@generated/anki/scheduler_pb";
     import { getNote, submitPerformanceAttempt } from "@generated/backend";
+    import { bridgeCommand } from "@tslib/bridgecommand";
 
     import type { ConfidenceLevel } from "$lib/components/ConfidenceGate.svelte";
     import ConfidenceGate from "$lib/components/ConfidenceGate.svelte";
@@ -48,6 +49,10 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
 
     function onCommit(level: ConfidenceLevel): void {
         confidence = level;
+    }
+
+    function openImport(): void {
+        bridgeCommand("ankountant:import");
     }
 
     async function choose(treatment: string): Promise<void> {
@@ -108,8 +113,16 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
             <p class="finished">No confusion items yet.</p>
             <p class="state-note">{emptyDetail}</p>
             <div class="state-actions">
-                <a
+                <button
+                    type="button"
                     class="primary-link"
+                    data-testid="confusion-import"
+                    on:click={openImport}
+                >
+                    Import package
+                </button>
+                <a
+                    class="secondary-link"
                     href="/ankountant-tbs"
                     data-testid="confusion-to-tbs"
                 >
@@ -496,6 +509,10 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
     }
 
     .primary-link {
+        min-height: 40px;
+        border: 0;
+        cursor: pointer;
+        font: inherit;
         font-weight: 600;
         color: #fff;
         text-decoration: none;
@@ -515,6 +532,9 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
     }
 
     .secondary-link {
+        min-height: 40px;
+        cursor: pointer;
+        font: inherit;
         font-weight: 600;
         color: var(--fg-subtle);
         text-decoration: none;

@@ -367,6 +367,8 @@ class Workspace:
             aqt.dialogs.open("NewDeckStats", self.mw)
         elif cmd == "ankountant:prefs":
             self.mw.onPrefs()
+        elif cmd == "ankountant:import":
+            self.mw.onImport()
         elif cmd == "ankountant:sync":
             self.mw.on_sync_button_clicked()
         elif cmd.startswith("ankountant:nav:"):
