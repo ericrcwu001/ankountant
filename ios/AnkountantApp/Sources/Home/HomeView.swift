@@ -556,10 +556,8 @@ private struct FarTopicDetailView: View {
                 }
                 .buttonStyle(AnkountantPrimaryButtonStyle())
                 .disabled(!canStudy)
-                NavigationLink {
-                    SectionDetailView(section: .far)
-                } label: {
-                    Label("View topic notes", systemImage: "doc.text")
+                NavigationLink(value: CPASection.far) {
+                    Label("View FAR readiness", systemImage: "chart.line.uptrend.xyaxis")
                         .ankountantFont(.bodyEmphasis)
                         .foregroundStyle(palette.accent)
                         .frame(maxWidth: .infinity)
