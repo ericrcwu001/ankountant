@@ -109,11 +109,24 @@ struct HomeView: View {
                         .foregroundStyle(Color.white.opacity(0.68))
                 }
                 Spacer()
-                Image(systemName: "bell")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 34, height: 34)
-                    .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                VStack(alignment: .trailing, spacing: 2) {
+                    Label(heroFreshnessTitle, systemImage: heroFreshnessIcon)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                    Text(heroFreshnessDetail)
+                        .ankountantFont(.micro)
+                        .foregroundStyle(Color.white.opacity(0.68))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .frame(maxWidth: 132, alignment: .trailing)
+                .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(heroFreshnessAccessibilityLabel)
             }
 
             FarTopicHeroChart(topics: farTopics)
@@ -292,6 +305,29 @@ struct HomeView: View {
             return readinessLoaded ? "No coverage" : "Loading"
         }
         return "Coverage"
+    }
+
+    private var heroFreshnessIcon: String {
+        guard readinessLoaded else { return "clock" }
+        guard let band = farReadiness?.band, band.generatedAt > 0 else { return "exclamationmark.triangle" }
+        return band.abstain ? "hourglass" : "clock"
+    }
+
+    private var heroFreshnessTitle: String {
+        guard readinessLoaded else { return "Loading" }
+        guard let band = farReadiness?.band, band.generatedAt > 0 else { return "Needs evidence" }
+        return band.abstain ? "Withheld" : "Updated"
+    }
+
+    private var heroFreshnessDetail: String {
+        guard readinessLoaded else { return "Readiness" }
+        guard let generatedAt = farReadiness?.band.generatedAt, generatedAt > 0 else { return "Practice first" }
+        let date = Date(timeIntervalSince1970: TimeInterval(generatedAt))
+        return date.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    private var heroFreshnessAccessibilityLabel: String {
+        "\(heroFreshnessTitle), \(heroFreshnessDetail)"
     }
 
     private var memoryReady: Bool {
