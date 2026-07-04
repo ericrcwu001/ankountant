@@ -244,7 +244,7 @@ struct ReadinessTopoTests {
                 TopicScoreModel(setId: "tax_timing", memory: 0, performance: 0.42, gap: 0.38, memoryInsufficient: true, performanceLow: 0.32, performanceHigh: 0.52),
             ]
         )
-        #expect(evidence.nextAction.contains("sealed exam-style practice"))
+        #expect(evidence.nextAction.contains("retrieval review"))
         #expect(!evidence.nextAction.contains("memory is 0%"))
     }
 

@@ -289,6 +289,9 @@ private func bestNextReadinessAction(band: ReadinessBand, topics: [TopicScoreMod
     if let missingPerformance = topics.first(where: \.performanceInsufficient) {
         return "Do sealed exam-style practice for \(missingPerformance.displayName); performance has no sealed evidence yet."
     }
+    if let thinMemory = topics.first(where: \.memoryInsufficient) {
+        return "Run retrieval review for \(thinMemory.displayName) until memory has enough evidence, then return to sealed practice."
+    }
     if let weakest = topics.filter({ !$0.performanceInsufficient }).min(by: { $0.performance < $1.performance }) {
         return "Do sealed exam-style practice for \(weakest.displayName); current performance is \(formatPercent(weakest.performance))."
     }
