@@ -264,11 +264,17 @@ struct CardWebView: UIViewRepresentable {
     /// (including <style> and <script> blocks) with runtime placeholder tokens.
     /// It is named .js because the resource was extracted under that name in Task 8.
     private static let bridgeFrameTemplate: String = {
-        guard let url = Bundle.main.url(forResource: "CardWebViewBridge", withExtension: "js", subdirectory: "Review"),
-              let data = try? Data(contentsOf: url),
-              let str = String(data: data, encoding: .utf8) else {
-            assertionFailure("CardWebViewBridge.js missing from bundle — regenerate xcodeproj")
-            return ""
+        guard let url = Bundle.main.url(forResource: "CardWebViewBridge", withExtension: "js", subdirectory: "Review") else {
+            fatalError("CardWebViewBridge.js missing from bundle.")
+        }
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch {
+            fatalError("CardWebViewBridge.js could not be loaded: \(error.localizedDescription)")
+        }
+        guard let str = String(data: data, encoding: .utf8) else {
+            fatalError("CardWebViewBridge.js is not valid UTF-8.")
         }
         return str
     }()

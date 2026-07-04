@@ -75,7 +75,7 @@ struct AnkiAppApp: App {
                 mediaFolderPath: mediaPath,
                 mediaDbPath: mediaDbPath
             )
-            try? backend.checkDatabase()
+            try backend.checkDatabase()
             $0.ankiBackend = backend
             $0.syncCoordinator = SyncCoordinator()
             // Wire the Anki-backed concrete realization of the dictionary
