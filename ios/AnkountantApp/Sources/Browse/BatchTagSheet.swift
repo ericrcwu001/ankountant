@@ -24,6 +24,7 @@ struct BatchTagSheet: View {
                         TextField("Add new tag", text: $newTagName)
                             .autocorrectionDisabled()
                             .textInputAutocapitalization(.never)
+                            .disabled(isApplying)
                         Button("Add") {
                             let trimmed = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
                             guard !trimmed.isEmpty else { return }
@@ -34,7 +35,7 @@ struct BatchTagSheet: View {
                             }
                             newTagName = ""
                         }
-                        .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isApplying)
                     }
                 }
 
@@ -53,10 +54,14 @@ struct BatchTagSheet: View {
                                 HStack {
                                     Image(systemName: checkedTags.contains(tag) ? "checkmark.square.fill" : "square")
                                         .foregroundStyle(checkedTags.contains(tag) ? Color.accentColor : Color.secondary)
+                                        .accessibilityHidden(true)
                                     Text(tag).foregroundStyle(.primary)
                                     Spacer()
                                 }
                             }
+                            .disabled(isApplying)
+                            .accessibilityLabel(tag)
+                            .accessibilityValue(checkedTags.contains(tag) ? "Selected" : "Not selected")
                         }
                     }
                 }
@@ -82,12 +87,19 @@ struct BatchTagSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
+                        .disabled(isApplying)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Apply") {
-                        Task { await apply() }
+                    if isApplying {
+                        ProgressView()
+                            .controlSize(.small)
+                            .accessibilityLabel("Applying tags")
+                    } else {
+                        Button("Apply") {
+                            startApply()
+                        }
+                        .disabled(checkedTags.isEmpty)
                     }
-                        .disabled(checkedTags.isEmpty || isApplying)
                 }
             }
             .task {
@@ -103,13 +115,18 @@ struct BatchTagSheet: View {
         }
     }
 
-    private func apply() async {
+    private func startApply() {
+        guard !checkedTags.isEmpty, !isApplying else { return }
         isApplying = true
         applyErrorMessage = nil
+        let tags = checkedTags
+        Task { await apply(tags) }
+    }
+
+    private func apply(_ tags: Set<String>) async {
         defer { isApplying = false }
 
         let ids = Array(noteIDs)
-        let tags = checkedTags
 
         do {
             for tag in tags {
