@@ -57,11 +57,15 @@ struct ConfusionDrillView: View {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let loadError {
-            ContentUnavailableView(
-                "Couldn't load drill",
-                systemImage: "exclamationmark.triangle",
-                description: Text(loadError)
-            )
+            ContentUnavailableView {
+                Label("Couldn't load drill", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(loadError)
+            } actions: {
+                Button("Retry") {
+                    Task { await load() }
+                }
+            }
         } else if items.isEmpty {
             ContentUnavailableView(
                 "No confusion items",
@@ -231,7 +235,9 @@ struct ConfusionDrillView: View {
     }
 
     private func load() async {
-        guard isLoading else { return }
+        isLoading = true
+        loadError = nil
+        defer { isLoading = false }
         do {
             items = try performanceClient.confusionQueue(queueSection, 60)
             index = 0
@@ -246,7 +252,6 @@ struct ConfusionDrillView: View {
             items = []
             loadError = error.localizedDescription
         }
-        isLoading = false
     }
 
     private func choose(_ current: ConfusionItemModel, _ treatment: String) {

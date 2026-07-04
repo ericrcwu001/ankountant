@@ -38,11 +38,15 @@ struct SimulationsHubView: View {
             if isLoading {
                 ProgressView()
             } else if let errorMessage {
-                ContentUnavailableView(
-                    "Couldn't Load Simulations",
-                    systemImage: "exclamationmark.triangle",
-                    description: Text(errorMessage)
-                )
+                ContentUnavailableView {
+                    Label("Couldn't Load Simulations", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(errorMessage)
+                } actions: {
+                    Button("Retry") {
+                        Task { await loadTasks() }
+                    }
+                }
             } else if !simulationsHubHasContent(tasks: tasks, allConfusionCount: allConfusionCount) {
                 ContentUnavailableView(
                     "No Simulations",

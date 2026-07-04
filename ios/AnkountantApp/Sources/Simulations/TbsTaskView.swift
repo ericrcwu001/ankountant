@@ -26,6 +26,7 @@ struct TbsTaskView: View {
     @State private var reveal: TbsRevealModel?
     @State private var total: Double?
     @State private var submitting = false
+    @State private var isLoading = true
     @State private var loadError: String?
     @State private var submitError: String?
     @State private var revealError: String?
@@ -41,16 +42,22 @@ struct TbsTaskView: View {
 
     var body: some View {
         Group {
-            if let loadError {
-                ContentUnavailableView(
-                    "Couldn't Load Simulation",
-                    systemImage: "exclamationmark.triangle",
-                    description: Text(loadError)
-                )
+            if isLoading {
+                ProgressView()
+            } else if let loadError {
+                ContentUnavailableView {
+                    Label("Couldn't Load Simulation", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(loadError)
+                } actions: {
+                    Button("Retry") {
+                        Task { await load() }
+                    }
+                }
             } else if let model {
                 content(model)
             } else {
-                ProgressView()
+                preconditionFailure("TBS task load completed without a model or load error")
             }
         }
         .navigationTitle("Simulation")
@@ -378,6 +385,9 @@ struct TbsTaskView: View {
     // MARK: - Data
 
     private func load() async {
+        isLoading = true
+        loadError = nil
+        defer { isLoading = false }
         do {
             let m = try performanceClient.loadTbs(noteId)
             model = m
@@ -393,6 +403,7 @@ struct TbsTaskView: View {
             startedAt = Date.now
             loadError = nil
         } catch {
+            model = nil
             loadError = error.localizedDescription
         }
     }
