@@ -47,7 +47,7 @@ struct DebugView: View {
 
             Section("Ankountant demo phases") {
                 Button("Foundation — beginner (no history)") { loadPhase(.foundation) }
-                Button("Discrimination — mid-prep (exam far)") { loadPhase(.discrimination) }
+                Button("Discrimination — mid-prep (exam later)") { loadPhase(.discrimination) }
                 Button("Consolidation — exam soon") { loadPhase(.consolidation) }
             }
 
