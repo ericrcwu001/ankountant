@@ -304,32 +304,41 @@ final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMess
 
     // MARK: - CSS color parsing
 
-    private static func parseCSSColor(_ cssColor: String) -> UIColor? {
+    static func parseCSSColor(_ cssColor: String) -> UIColor? {
         let trimmed = cssColor.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if trimmed.hasPrefix("#") {
             return parseHexColor(trimmed)
         }
 
         if trimmed.hasPrefix("rgb(") || trimmed.hasPrefix("rgba(") {
-            let pattern = #"rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\)"#
-            guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+            let pattern = #"^rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*((?:\d+(?:\.\d*)?)|(?:\.\d+)))?\)$"#
+            let regex: NSRegularExpression
+            do {
+                regex = try NSRegularExpression(pattern: pattern)
+            } catch {
+                preconditionFailure("Invalid CSS color regex: \(error)")
+            }
             let range = NSRange(location: 0, length: trimmed.utf16.count)
             guard let match = regex.firstMatch(in: trimmed, options: [], range: range) else { return nil }
 
-            func component(_ idx: Int) -> CGFloat {
-                guard let r = Range(match.range(at: idx), in: trimmed) else { return 0 }
-                let value = Double(trimmed[r]) ?? 0
+            func component(_ idx: Int) -> CGFloat? {
+                guard let r = Range(match.range(at: idx), in: trimmed) else { return nil }
+                guard let value = Double(trimmed[r]) else { return nil }
                 return CGFloat(max(0, min(255, value)) / 255.0)
+            }
+
+            guard let red = component(1), let green = component(2), let blue = component(3) else {
+                return nil
             }
 
             var alpha: CGFloat = 1
             if match.range(at: 4).location != NSNotFound,
                let r = Range(match.range(at: 4), in: trimmed) {
-                let value = Double(trimmed[r]) ?? 1
+                guard let value = Double(trimmed[r]) else { return nil }
                 alpha = CGFloat(max(0, min(1, value)))
             }
 
-            return UIColor(red: component(1), green: component(2), blue: component(3), alpha: alpha)
+            return UIColor(red: red, green: green, blue: blue, alpha: alpha)
         }
 
         if trimmed == "transparent" {
@@ -342,26 +351,26 @@ final class CardWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMess
     private static func parseHexColor(_ hex: String) -> UIColor? {
         let value = String(hex.dropFirst())
         let chars = Array(value)
-        func hexByte(_ a: Character, _ b: Character) -> UInt8 {
-            UInt8(String([a, b]), radix: 16) ?? 0
+        func hexByte(_ a: Character, _ b: Character) -> UInt8? {
+            UInt8(String([a, b]), radix: 16)
         }
 
         switch chars.count {
         case 3:
-            let r = hexByte(chars[0], chars[0])
-            let g = hexByte(chars[1], chars[1])
-            let b = hexByte(chars[2], chars[2])
+            guard let r = hexByte(chars[0], chars[0]),
+                  let g = hexByte(chars[1], chars[1]),
+                  let b = hexByte(chars[2], chars[2]) else { return nil }
             return UIColor(red: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: 1)
         case 6:
-            let r = hexByte(chars[0], chars[1])
-            let g = hexByte(chars[2], chars[3])
-            let b = hexByte(chars[4], chars[5])
+            guard let r = hexByte(chars[0], chars[1]),
+                  let g = hexByte(chars[2], chars[3]),
+                  let b = hexByte(chars[4], chars[5]) else { return nil }
             return UIColor(red: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: 1)
         case 8:
-            let r = hexByte(chars[0], chars[1])
-            let g = hexByte(chars[2], chars[3])
-            let b = hexByte(chars[4], chars[5])
-            let a = hexByte(chars[6], chars[7])
+            guard let r = hexByte(chars[0], chars[1]),
+                  let g = hexByte(chars[2], chars[3]),
+                  let b = hexByte(chars[4], chars[5]),
+                  let a = hexByte(chars[6], chars[7]) else { return nil }
             return UIColor(red: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: CGFloat(a) / 255)
         default:
             return nil
