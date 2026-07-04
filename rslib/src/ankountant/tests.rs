@@ -240,7 +240,7 @@ fn seed_latency_reps(col: &mut Collection, cid: CardId, latencies: &[u32]) {
                     taken_millis: ms,
                     ..Default::default()
                 },
-                false,
+                true,
             )?;
         }
         Ok(())
@@ -1682,7 +1682,7 @@ fn seed_memory_reps(col: &mut Collection, tag: &str, total: u32, correct: u32) {
                     review_kind: RevlogReviewKind::Review,
                     ..Default::default()
                 },
-                false,
+                true,
             )?;
         }
         Ok(())
