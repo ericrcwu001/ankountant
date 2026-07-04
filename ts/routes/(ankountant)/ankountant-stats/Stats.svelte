@@ -348,7 +348,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
         h1 {
             margin: 0;
-            font-size: clamp(34px, 4vw, 54px);
+            font-size: 44px;
             font-weight: 650;
             line-height: 1;
             letter-spacing: 0;
@@ -740,6 +740,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             padding: var(--space-xl);
         }
 
+        .stats-header h1 {
+            font-size: 38px;
+        }
+
         .toolbar {
             position: static;
             flex-wrap: wrap;
@@ -768,6 +772,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             align-items: flex-start;
             flex-direction: column;
             gap: var(--space-md);
+
+            h1 {
+                font-size: 34px;
+            }
         }
 
         .overview-card {
