@@ -44,6 +44,8 @@
 		36B3A3E99655C65E7F0A85E1 /* BrowseSelectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC0795F3D34382B40944EEC /* BrowseSelectionState.swift */; };
 		37D7F56FC49A3BE66E6D2FE1 /* NoteFormRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51BF2494E77C8DE09703AE0D /* NoteFormRules.swift */; };
 		37EFBAD41ABD3D60DD2277CB /* TodayStatsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C44B7ECA176D74353199249 /* TodayStatsCard.swift */; };
+		385C201D9E3341DA968D1F1F /* BrowseNoteListRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D84CE75EB255472186D82332 /* BrowseNoteListRow.swift */; };
+		38B32A407E2248E699BA2060 /* BrowseNoteDestinationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E7FD18F9DA471A818C650F /* BrowseNoteDestinationView.swift */; };
 		3937C058C36CFC07479C9394 /* CardAssetScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00409FD1743F643E1EC8B54 /* CardAssetScheme.swift */; };
 		3C66B1BB568B406E80660F0B /* SarasaMonoK-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9371B81F0533F71A2B5F1CD5 /* SarasaMonoK-Regular.ttf */; };
 		3DBB8FC60EC0F3A9504AFDCC /* CardContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AB2D0F3AFE3325F776A993C /* CardContextMenu.swift */; };
@@ -207,6 +209,7 @@
 		3F1AE5EF0D956F5B09A10156 /* SharedKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedKeys.swift; sourceTree = "<group>"; };
 		40004FF1581AB2C0E1BAA1F5 /* ReviewPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPreferences.swift; sourceTree = "<group>"; };
 		4098A4FE947EBC332E04FAF4 /* IntervalsChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntervalsChart.swift; sourceTree = "<group>"; };
+		42E7FD18F9DA471A818C650F /* BrowseNoteDestinationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseNoteDestinationView.swift; sourceTree = "<group>"; };
 		42F54E3E642CDA55377FF8FD /* ReaderCoverImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderCoverImage.swift; sourceTree = "<group>"; };
 		4534EAE6FA1044A00043AD6E /* StatsDualAxisSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsDualAxisSupport.swift; sourceTree = "<group>"; };
 		45BBC9F257075940FFE68C11 /* DecksReviewsChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecksReviewsChart.swift; sourceTree = "<group>"; };
@@ -258,6 +261,7 @@
 		9C73A41D7328E29ACBB3DA36 /* MaintenanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaintenanceView.swift; sourceTree = "<group>"; };
 		9E488279CA6DA481AECC7431 /* AnkountantAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnkountantAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E58808CA6B40C845E6BE2D1 /* DeckDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckDetailView.swift; sourceTree = "<group>"; };
+		D84CE75EB255472186D82332 /* BrowseNoteListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseNoteListRow.swift; sourceTree = "<group>"; };
 		9F36AA7A2AC313EB0C1BA7FB /* NanumMyeongjo-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NanumMyeongjo-Regular.ttf"; sourceTree = "<group>"; };
 		9F6EA651E618D65394037BD7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		A00409FD1743F643E1EC8B54 /* CardAssetScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardAssetScheme.swift; sourceTree = "<group>"; };
@@ -578,6 +582,8 @@
 				137275C17F60AC97C993B692 /* AddImageOcclusionNoteView.swift */,
 				08129796D4BDF5FFB4D6A4F7 /* AddNoteView.swift */,
 				17A79438B7CF0FCFF52F02AE /* BatchTagSheet.swift */,
+				42E7FD18F9DA471A818C650F /* BrowseNoteDestinationView.swift */,
+				D84CE75EB255472186D82332 /* BrowseNoteListRow.swift */,
 				FBC0795F3D34382B40944EEC /* BrowseSelectionState.swift */,
 				0D10959576FDED430DB01DEB /* BrowseSubtitle.swift */,
 				0702B2D394D69AF6B6BC2793 /* BrowseView.swift */,
@@ -788,6 +794,8 @@
 				5A9B254FABDF125BB9A35AED /* BatchTagSheet.swift in Sources */,
 				36B3A3E99655C65E7F0A85E1 /* BrowseSelectionState.swift in Sources */,
 				A5B2C081D87A3A2D77B8CE52 /* BrowseSubtitle.swift in Sources */,
+				38B32A407E2248E699BA2060 /* BrowseNoteDestinationView.swift in Sources */,
+				385C201D9E3341DA968D1F1F /* BrowseNoteListRow.swift in Sources */,
 				B605CD0BE1A7C5BEE7AE222E /* BrowseView.swift in Sources */,
 				3FD9A0E9944EECF7EE3101B1 /* ButtonsChart.swift in Sources */,
 				3937C058C36CFC07479C9394 /* CardAssetScheme.swift in Sources */,

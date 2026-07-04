@@ -38,8 +38,15 @@ struct BrowseView: View {
     @State private var activeTag: String?
     @State private var sortOrder: BrowseSortOrder = .dateDesc
     @State private var notetypeNames: [Int64: String] = [:]
+    @State private var actionErrorMessage: String?
 
     private let pageSize = 50
+
+    private var deleteSelectionTitle: String {
+        let count = selectionState.count
+        let suffix = count == 1 ? "" : "s"
+        return "Delete \(count) note\(suffix)?"
+    }
 
     var body: some View {
         Group {
@@ -54,48 +61,15 @@ struct BrowseView: View {
             } else {
                 List {
                     ForEach(sortedNotes(notes), id: \.id) { note in
-                        HStack {
-                            if selectionState.isSelectMode {
-                                Image(systemName: selectionState.contains(note.id) ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(selectionState.contains(note.id) ? Color.accentColor : Color.secondary)
-                                NoteRowView(note: note, notetypeName: notetypeNames[note.mid])
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        selectionState.toggle(note.id)
-                                    }
-                                    .onAppear {
-                                        if note.sfld == "Loading..." {
-                                            Task { await fetchNoteDetails(id: note.id) }
-                                        }
-                                        if note.id == notes.last?.id {
-                                            Task { await loadNextPage() }
-                                        }
-                                    }
-                            } else {
-                                HStack {
-                                    NavigationLink(value: note) {
-                                        NoteRowView(note: note, notetypeName: notetypeNames[note.mid])
-                                            .onAppear {
-                                                // Lazy-load stub notes when they appear on screen
-                                                if note.sfld == "Loading..." {
-                                                    Task { await fetchNoteDetails(id: note.id) }
-                                                }
-                                                // Paging: load next batch near the end
-                                                if note.id == notes.last?.id {
-                                                    Task { await loadNextPage() }
-                                                }
-                                            }
-                                    }
-                                    NoteContextMenuButton(noteId: note.id) {
-                                        Task { await performSearch() }
-                                    }
-                                }
-                                .contentShape(Rectangle())
-                                .onLongPressGesture(minimumDuration: 0.5) {
-                                    selectionState.enterSelectMode(preselect: note.id)
-                                }
+                        BrowseNoteListRow(
+                            note: note,
+                            notetypeName: notetypeNames[note.mid],
+                            selectionState: $selectionState,
+                            onRowAppear: noteAppeared,
+                            onRefresh: {
+                                Task { await performSearch() }
                             }
-                        }
+                        )
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
                                 pendingSwipeDelete = note
@@ -114,11 +88,7 @@ struct BrowseView: View {
                     }
                 }
                 .navigationDestination(for: NoteRecord.self) { note in
-                    // If tapped a stub, fetch full details first
-                    let resolvedNote = (note.sfld == "Loading...")
-                        ? (try? noteClient.fetch(note.id)) ?? note
-                        : note
-                    NoteEditingDestinationView(note: resolvedNote) {
+                    BrowseNoteDestinationView(note: note) {
                         Task { await performSearch() }
                     }
                 }
@@ -243,8 +213,13 @@ struct BrowseView: View {
             presenting: pendingSwipeDelete
         ) { note in
             Button("Delete", role: .destructive) {
-                Task {
-                    try? noteClient.delete(note.id)
+                Task { @MainActor in
+                    do {
+                        try noteClient.delete(note.id)
+                    } catch {
+                        actionErrorMessage = "Failed to delete note: \(error.localizedDescription)"
+                        return
+                    }
                     pendingSwipeDelete = nil
                     await performSearch()
                 }
@@ -256,7 +231,7 @@ struct BrowseView: View {
             Text("This action cannot be undone.")
         }
         .confirmationDialog(
-            "Delete \(selectionState.count) note\(selectionState.count == 1 ? "" : "s")?",
+            deleteSelectionTitle,
             isPresented: $showDeleteConfirm
         ) {
             Button("Delete", role: .destructive) {
@@ -265,6 +240,18 @@ struct BrowseView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This action cannot be undone.")
+        }
+        .alert(
+            "Browse action failed",
+            isPresented: Binding(
+                get: { actionErrorMessage != nil },
+                set: { if !$0 { actionErrorMessage = nil } }
+            ),
+            presenting: actionErrorMessage
+        ) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { message in
+            Text(message)
         }
         .safeAreaInset(edge: .top) {
             if !allDecks.isEmpty || !allTags.isEmpty {
@@ -284,9 +271,18 @@ struct BrowseView: View {
         .task {
             await loadDecks()
             await performSearch()
-            allTags = ((try? tagClient.getAllTags()) ?? []).sorted()
-            if let pairs = try? notetypesService.getNotetypeNames() {
+            do {
+                allTags = try tagClient.getAllTags().sorted()
+            } catch {
+                allTags = []
+                actionErrorMessage = "Failed to load tags: \(error.localizedDescription)"
+            }
+            do {
+                let pairs = try notetypesService.getNotetypeNames()
                 notetypeNames = Dictionary(uniqueKeysWithValues: pairs.map { ($0.id, $0.name) })
+            } catch {
+                notetypeNames = [:]
+                actionErrorMessage = "Failed to load note type names: \(error.localizedDescription)"
             }
         }
     }
@@ -433,11 +429,28 @@ struct BrowseView: View {
             allDecks = try deckClient.fetchAll()
         } catch {
             allDecks = []
+            actionErrorMessage = "Failed to load deck filters: \(error.localizedDescription)"
+        }
+    }
+
+    private func noteAppeared(_ note: NoteRecord) {
+        if note.sfld == "Loading..." {
+            Task { @MainActor in
+                await fetchNoteDetails(id: note.id)
+            }
+        }
+
+        if note.id == notes.last?.id {
+            Task { @MainActor in
+                await loadNextPage()
+            }
         }
     }
 
     private func performSearch() async {
         isLoading = true
+        defer { isLoading = false }
+
         let query = buildQuery()
         do {
             let results = try noteClient.search(query, nil)
@@ -448,58 +461,64 @@ struct BrowseView: View {
             allNotes = []
             notes = []
             hasMorePages = false
+            actionErrorMessage = "Search failed: \(error.localizedDescription)"
         }
-        isLoading = false
     }
 
-    private func collectCardIDs(for noteIDs: Set<Int64>) -> [Int64] {
+    private func collectCardIDs(for noteIDs: Set<Int64>) throws -> [Int64] {
         var result: [Int64] = []
         for nid in noteIDs {
-            if let cards = try? cardClient.fetchByNote(nid) {
-                result.append(contentsOf: cards.map(\.id))
-            }
+            let cards = try cardClient.fetchByNote(nid)
+            result.append(contentsOf: cards.map(\.id))
         }
         return result
     }
 
     private func suspendSelected() {
         let ids = selectionState.selectedNoteIDs
-        Task {
-            let cardIDs = collectCardIDs(for: ids)
-            for id in cardIDs {
-                try? cardClient.suspend(id)
-            }
-            await MainActor.run {
+        Task { @MainActor in
+            do {
+                let cardIDs = try collectCardIDs(for: ids)
+                for id in cardIDs {
+                    try cardClient.suspend(id)
+                }
                 selectionState.exitSelectMode()
+                await performSearch()
+            } catch {
+                actionErrorMessage = "Suspend failed: \(error.localizedDescription)"
             }
-            await performSearch()
         }
     }
 
     private func flagSelected(_ value: UInt32) {
         let ids = selectionState.selectedNoteIDs
-        Task {
-            let cardIDs = collectCardIDs(for: ids)
-            for id in cardIDs {
-                try? cardClient.flag(id, value)
-            }
-            await MainActor.run {
+        Task { @MainActor in
+            do {
+                let cardIDs = try collectCardIDs(for: ids)
+                for id in cardIDs {
+                    try cardClient.flag(id, value)
+                }
                 selectionState.exitSelectMode()
+                await performSearch()
+            } catch {
+                actionErrorMessage = "Flag failed: \(error.localizedDescription)"
             }
-            await performSearch()
         }
     }
 
     private func deleteSelected() {
         let ids = selectionState.selectedNoteIDs
-        Task {
-            for id in ids {
-                try? noteClient.delete(id)
-            }
-            await MainActor.run {
+        Task { @MainActor in
+            do {
+                for id in ids {
+                    try noteClient.delete(id)
+                }
                 selectionState.exitSelectMode()
+                await performSearch()
+            } catch {
+                actionErrorMessage = "Delete failed: \(error.localizedDescription)"
+                await performSearch()
             }
-            await performSearch()
         }
     }
 
@@ -513,12 +532,19 @@ struct BrowseView: View {
 
     /// Lazy-fetch full note details for a stub and update the arrays in place.
     private func fetchNoteDetails(id: Int64) async {
-        guard let fullNote = try? noteClient.fetch(id) else { return }
-        if let idx = notes.firstIndex(where: { $0.id == id }) {
-            notes[idx] = fullNote
-        }
-        if let idx = allNotes.firstIndex(where: { $0.id == id }) {
-            allNotes[idx] = fullNote
+        do {
+            guard let fullNote = try noteClient.fetch(id) else {
+                actionErrorMessage = "Could not load note details."
+                return
+            }
+            if let idx = notes.firstIndex(where: { $0.id == id }) {
+                notes[idx] = fullNote
+            }
+            if let idx = allNotes.firstIndex(where: { $0.id == id }) {
+                allNotes[idx] = fullNote
+            }
+        } catch {
+            actionErrorMessage = "Failed to load note details: \(error.localizedDescription)"
         }
     }
 
