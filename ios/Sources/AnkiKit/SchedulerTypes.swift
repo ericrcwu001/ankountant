@@ -1,5 +1,7 @@
 package import Foundation
 
+private let topicGapEpsilon = 1e-9
+
 /// Opaque wrapper for a serialized proto SchedulingState. App code holds these
 /// but cannot inspect them; AnkiServices reads/writes the bytes internally.
 public struct SchedulingStateToken: Sendable {
@@ -145,7 +147,7 @@ public struct TopicScoreModel: Sendable, Equatable, Identifiable {
             preconditionTopicEvidenceRange("performance", value: performance, low: performanceLow, high: performanceHigh)
         }
         if !memoryInsufficient && hasPerformanceEvidence {
-            preconditionGap(gap)
+            preconditionGap(gap, memory: memory, performance: performance)
         }
         self.setId = setId
         self.memory = memory
@@ -172,9 +174,10 @@ private func preconditionFraction(_ label: String, _ value: Double) {
     precondition(value >= 0 && value <= 1, "\(label) must be between 0 and 1.")
 }
 
-private func preconditionGap(_ value: Double) {
+private func preconditionGap(_ value: Double, memory: Double, performance: Double) {
     precondition(value.isFinite, "topic gap must be a finite number.")
     precondition(value >= -1 && value <= 1, "topic gap must be between -1 and 1.")
+    precondition(abs(value - (memory - performance)) <= topicGapEpsilon, "topic gap must equal memory minus performance.")
 }
 
 /// The full readiness rollup for a section (band + per-topic scores).

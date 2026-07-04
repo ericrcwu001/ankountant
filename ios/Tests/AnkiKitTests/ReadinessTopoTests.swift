@@ -303,7 +303,7 @@ struct ReadinessTopoTests {
                     setId: "tax_timing",
                     memory: 0.6,
                     performance: 0.7,
-                    gap: 0.1,
+                    gap: -0.1,
                     memoryInsufficient: false,
                     memoryLow: 0.5,
                     memoryHigh: 0.7,

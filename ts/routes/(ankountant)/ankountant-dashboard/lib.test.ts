@@ -123,11 +123,31 @@ test("nonzero performance without a confidence band is rejected", () => {
                 performance: 0.7,
                 gap: 0.1,
                 memoryInsufficient: false,
+                memoryLow: 0.7,
+                memoryHigh: 0.9,
                 performanceLow: 0,
                 performanceHigh: 0,
             }),
         ])
     ).toThrow(/without a confidence band/);
+});
+
+test("topic gap must match memory minus performance", () => {
+    expect(() =>
+        buildTopicRows([
+            new TopicScore({
+                setId: "s",
+                memory: 0.8,
+                performance: 0.7,
+                gap: 0.2,
+                memoryInsufficient: false,
+                memoryLow: 0.7,
+                memoryHigh: 0.9,
+                performanceLow: 0.6,
+                performanceHigh: 0.8,
+            }),
+        ])
+    ).toThrow(/gap must equal memory minus performance/);
 });
 
 test("topic memory without a confidence band is rejected", () => {
@@ -307,6 +327,8 @@ test("evidence view chooses the largest memory-performance gap as next action", 
             performance: 0.52,
             gap: 0.38,
             memoryInsufficient: false,
+            memoryLow: 0.8,
+            memoryHigh: 0.98,
             performanceLow: 0.42,
             performanceHigh: 0.62,
         }),
@@ -316,6 +338,8 @@ test("evidence view chooses the largest memory-performance gap as next action", 
             performance: 0.51,
             gap: 0.19,
             memoryInsufficient: false,
+            memoryLow: 0.6,
+            memoryHigh: 0.8,
             performanceLow: 0.41,
             performanceHigh: 0.61,
         }),
@@ -339,6 +363,8 @@ test("evidence view prioritizes insufficient volume before gap drills", () => {
             performance: 0.52,
             gap: 0.38,
             memoryInsufficient: false,
+            memoryLow: 0.8,
+            memoryHigh: 0.98,
             performanceLow: 0.42,
             performanceHigh: 0.62,
         }),

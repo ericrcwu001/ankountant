@@ -3,6 +3,8 @@
 
 import type { TopicScore } from "@generated/anki/scheduler_pb";
 
+const TOPIC_GAP_EPSILON = 1e-9;
+
 export function hasTopicPerformanceEvidence(topic: TopicScore): boolean {
     const hasConfidenceBand = topic.performanceLow !== 0 || topic.performanceHigh !== 0;
     if (!hasConfidenceBand && topic.performance !== 0) {
@@ -25,7 +27,7 @@ export function validateTopicScoreEvidence(topic: TopicScore): void {
         assertTopicEvidenceRange("performance", topic.performance, topic.performanceLow, topic.performanceHigh);
     }
     if (!topic.memoryInsufficient && hasPerformanceEvidence) {
-        assertGap(topic.gap);
+        assertGap(topic.gap, topic.memory, topic.performance);
     }
 }
 
@@ -56,11 +58,14 @@ function assertFraction(label: string, value: number): void {
     }
 }
 
-function assertGap(value: number): void {
+function assertGap(value: number, memory: number, performance: number): void {
     if (!Number.isFinite(value)) {
         throw new Error("topic gap must be a finite number.");
     }
     if (value < -1 || value > 1) {
         throw new Error("topic gap must be between -1 and 1.");
+    }
+    if (Math.abs(value - (memory - performance)) > TOPIC_GAP_EPSILON) {
+        throw new Error("topic gap must equal memory minus performance.");
     }
 }
