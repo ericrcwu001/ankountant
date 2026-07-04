@@ -64,4 +64,14 @@ struct FarTopicCardTests {
         #expect(!leases.isUnproven)
         #expect(leases.accessibilityLabel == "Leases, sealed performance 52%")
     }
+
+    @Test func confusionSetLabelsUseTreatmentNames() throws {
+        let cards = FarTopicCard.build(from: nil)
+        let leases = try #require(cards.first { $0.setId == "operating_vs_finance_lease" })
+        #expect(leases.confusionSetLabels == ["Operating leases", "Finance leases"])
+
+        let tax = try #require(cards.first { $0.setId == "tax_timing" })
+        #expect(tax.confusionSetLabels == ["Temporary differences", "Permanent items"])
+        #expect(!tax.confusionSetLabels.joined(separator: " ").contains("_"))
+    }
 }

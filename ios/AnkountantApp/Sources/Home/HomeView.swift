@@ -610,8 +610,8 @@ private struct FarTopicDetailView: View {
                 .ankountantFont(.micro)
                 .textCase(.uppercase)
                 .foregroundStyle(palette.textSecondary)
-            FlowLayout(items: topic.tokens) { token in
-                Text(token)
+            FlowLayout(items: topic.confusionSetLabels) { label in
+                Text(label)
                     .ankountantFont(.micro)
                     .foregroundStyle(palette.textSecondary)
                     .padding(.horizontal, 8)
@@ -840,10 +840,12 @@ struct FarTopicCard: Identifiable, Hashable {
     var performanceLabel: String { performance.map { "\($0)%" } ?? "—" }
     var shortLabel: String { label.replacingOccurrences(of: " & ", with: "\n") }
 
-    var tokens: [String] {
-        setId
-            .split(separator: "_")
-            .map { $0.prefix(1).uppercased() + $0.dropFirst() }
+    var confusionSetLabels: [String] {
+        let tags = Self.confusionSetTagsByTopic[setId]
+        guard let tags, !tags.isEmpty else {
+            return [topicDisplayName(setId)]
+        }
+        return tags.map(schemaTagDisplayName)
     }
 
     var accessibilityLabel: String {
@@ -911,5 +913,21 @@ struct FarTopicCard: Identifiable, Hashable {
         Spec(setId: "trading_afs_htm", label: "Investments", cx: 0.69),
         Spec(setId: "tax_timing", label: "Taxes", cx: 0.82),
         Spec(setId: "debt_extinguishment", label: "Debt", cx: 0.94),
+    ]
+
+    private static let confusionSetTagsByTopic: [String: [String]] = [
+        "capitalize_vs_expense": ["ds::cost::capitalize", "ds::cost::expense"],
+        "cash_receivables": ["ds::ar::allowance", "ds::ar::writeoff"],
+        "conceptual_framework": ["ds::concept::relevance", "ds::concept::faithful"],
+        "debt_extinguishment": ["ds::debt::extinguish", "ds::debt::modify"],
+        "financial_statements": ["ds::stmt::operating", "ds::stmt::financing"],
+        "government_nfp": ["ds::govnfp::govtwide", "ds::govnfp::fund"],
+        "intangibles_impairment": ["ds::intangible::finite", "ds::intangible::indefinite"],
+        "inventory_valuation": ["ds::inventory::lcm", "ds::inventory::lcnrv"],
+        "operating_vs_finance_lease": ["ds::lease::operating", "ds::lease::finance"],
+        "pensions_equity": ["ds::pension::service", "ds::pension::interest"],
+        "revrec_step_selection": ["ds::revrec::step4", "ds::revrec::step5"],
+        "tax_timing": ["ds::tax::temporary", "ds::tax::permanent"],
+        "trading_afs_htm": ["ds::securities::trading", "ds::securities::htm"],
     ]
 }
