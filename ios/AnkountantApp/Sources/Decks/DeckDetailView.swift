@@ -46,6 +46,37 @@ struct DeckDetailView: View {
         let url: URL
     }
 
+    private var emptyDeckActions: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("No cards in this deck", systemImage: "tray")
+                .font(.headline)
+
+            Text(emptyDeckDescription)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            if !deck.isFiltered {
+                Button("Add Note", systemImage: "plus") {
+                    showAddNote = true
+                }
+                .buttonStyle(.borderedProminent)
+            }
+
+            Button("Import package", systemImage: "square.and.arrow.down") {
+                showImporter = true
+            }
+            .disabled(importInProgress)
+        }
+        .padding(.vertical, 6)
+    }
+
+    private var emptyDeckDescription: String {
+        if deck.isFiltered {
+            return "Rebuild this custom study deck or import a package to add cards."
+        }
+        return "Add a note or import an Anki package to make this deck studyable."
+    }
+
     private var shortTitle: String {
         String(deck.name.split(separator: "::", omittingEmptySubsequences: true).last ?? Substring(deck.name))
     }
@@ -92,14 +123,17 @@ struct DeckDetailView: View {
             }
 
             Section {
-                Button {
-                    showReview = true
-                } label: {
-                    Label("Study Now", systemImage: "play.fill")
-                        .frame(maxWidth: .infinity)
-                        .font(.headline)
+                if counts.total == 0 {
+                    emptyDeckActions
+                } else {
+                    Button {
+                        showReview = true
+                    } label: {
+                        Label("Study Now", systemImage: "play.fill")
+                            .frame(maxWidth: .infinity)
+                            .font(.headline)
+                    }
                 }
-                .disabled(counts.total == 0)
             }
 
             if deck.isFiltered {
