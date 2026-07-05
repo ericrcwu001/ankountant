@@ -36,6 +36,7 @@ struct ReaderConfigurationView: View {
     @State private var isLoadingNotetypes = true
     @State private var loadError: String?
     @State private var notetypeLoadError: String?
+    @State private var showCreateDeck = false
     @State private var showImport = false
     @State private var importMessage: String?
     @State private var showImportAlert = false
@@ -66,10 +67,14 @@ struct ReaderConfigurationView: View {
                     } description: {
                         Text("Create or import a deck before mapping reader fields.")
                     } actions: {
+                        Button("Create deck", systemImage: "plus") {
+                            showCreateDeck = true
+                        }
+                        .buttonStyle(.borderedProminent)
+
                         Button("Import package", systemImage: "square.and.arrow.down") {
                             showImport = true
                         }
-                        .buttonStyle(.borderedProminent)
                     }
                 } else {
                     Picker("Deck", selection: Binding($deckName)) {
@@ -143,6 +148,12 @@ struct ReaderConfigurationView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") { onDismiss() }
+            }
+        }
+        .sheet(isPresented: $showCreateDeck) {
+            CreateDeckSheet {
+                showCreateDeck = false
+                Task { await loadDecks() }
             }
         }
         .fileImporter(isPresented: $showImport, allowedContentTypes: [.data]) { result in
