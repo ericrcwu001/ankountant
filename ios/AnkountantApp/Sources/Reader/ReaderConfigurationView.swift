@@ -36,6 +36,9 @@ struct ReaderConfigurationView: View {
     @State private var isLoadingNotetypes = true
     @State private var loadError: String?
     @State private var notetypeLoadError: String?
+    @State private var showImport = false
+    @State private var importMessage: String?
+    @State private var showImportAlert = false
 
     var body: some View {
         Form {
@@ -58,11 +61,16 @@ struct ReaderConfigurationView: View {
                         }
                     }
                 } else if decks.isEmpty {
-                    ContentUnavailableView(
-                        "No Decks",
-                        systemImage: "rectangle.stack",
-                        description: Text("Create or import a deck before mapping reader fields.")
-                    )
+                    ContentUnavailableView {
+                        Label("No Decks", systemImage: "rectangle.stack")
+                    } description: {
+                        Text("Create or import a deck before mapping reader fields.")
+                    } actions: {
+                        Button("Import package", systemImage: "square.and.arrow.down") {
+                            showImport = true
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                 } else {
                     Picker("Deck", selection: Binding($deckName)) {
                         Text("Select a deck").tag("")
@@ -92,11 +100,16 @@ struct ReaderConfigurationView: View {
                         }
                     }
                 } else if notetypeOptions.isEmpty {
-                    ContentUnavailableView(
-                        "No Note Types",
-                        systemImage: "rectangle.stack",
-                        description: Text("Create or import a notetype before mapping reader fields.")
-                    )
+                    ContentUnavailableView {
+                        Label("No Note Types", systemImage: "rectangle.stack")
+                    } description: {
+                        Text("Create or import a notetype before mapping reader fields.")
+                    } actions: {
+                        Button("Import package", systemImage: "square.and.arrow.down") {
+                            showImport = true
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                 } else {
                     Picker("Note type", selection: Binding($selectedNotetypeID)) {
                         ForEach(notetypeOptions) { option in
@@ -131,6 +144,14 @@ struct ReaderConfigurationView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") { onDismiss() }
             }
+        }
+        .fileImporter(isPresented: $showImport, allowedContentTypes: [.data]) { result in
+            handleImport(result)
+        }
+        .alert("Import", isPresented: $showImportAlert) {
+            Button("OK") {}
+        } message: {
+            Text(importMessage ?? "")
         }
         .task { await loadData() }
     }
@@ -204,6 +225,28 @@ struct ReaderConfigurationView: View {
             notetypeOptions = []
             $selectedNotetypeID.withLock { $0 = 0 }
             notetypeLoadError = "Failed to load note types: \(error.localizedDescription)"
+        }
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            let ext = url.pathExtension.lowercased()
+            guard ext == "apkg" || ext == "colpkg" else {
+                importMessage = "Unsupported file type. Please select an .apkg or .colpkg file."
+                showImportAlert = true
+                return
+            }
+            do {
+                importMessage = try ImportHelper.importPackage(from: url)
+                Task { await loadData() }
+            } catch {
+                importMessage = "Import failed: \(error.localizedDescription)"
+            }
+            showImportAlert = true
+        case .failure(let error):
+            importMessage = "Could not select file: \(error.localizedDescription)"
+            showImportAlert = true
         }
     }
 
