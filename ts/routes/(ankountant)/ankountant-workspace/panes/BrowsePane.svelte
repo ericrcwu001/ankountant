@@ -20,6 +20,7 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
 
     import { ConfigKey_Bool } from "@generated/anki/config_pb";
     import { BuryOrSuspendCardsRequest_Mode } from "@generated/anki/scheduler_pb";
+    import { bridgeCommand } from "@tslib/bridgecommand";
     import type {
         BrowserColumns_Column,
         BrowserRow,
@@ -332,6 +333,10 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
 
     function showWholeCollection(): void {
         searchFor("");
+    }
+
+    function openImport(): void {
+        bridgeCommand("ankountant:import");
     }
 
     async function toggleNotesMode(next: boolean): Promise<void> {
@@ -891,13 +896,24 @@ column drag-reorder, and rich-media/tag persistence in the editor (Qt-only).
                                 {#if canShowWholeCollection}
                                     <button
                                         type="button"
-                                        class="empty-action secondary"
+                                        class="empty-action"
+                                        class:secondary={hasRecoverableSearch}
                                         data-testid="browse-show-all"
                                         on:click={showWholeCollection}
                                     >
                                         Show whole collection
                                     </button>
                                 {/if}
+                                <button
+                                    type="button"
+                                    class="empty-action"
+                                    class:secondary={hasRecoverableSearch ||
+                                        canShowWholeCollection}
+                                    data-testid="browse-import"
+                                    on:click={openImport}
+                                >
+                                    Import package
+                                </button>
                             </div>
                         {:else}
                             <div

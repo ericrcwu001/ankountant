@@ -123,6 +123,7 @@ test("workspace browse empty search can recover through broader searches", async
     await expect(empty).toContainText("No cards match this search");
     await expect(empty).toContainText("Return to the current deck");
     await expect(empty).toContainText("show the whole collection");
+    await expect(empty.getByRole("button", { name: "Import package" })).toBeVisible();
     await expect(page.getByTestId("browse-search")).toHaveValue(
         "tag:__ankountant_no_results__",
     );
@@ -132,12 +133,35 @@ test("workspace browse empty search can recover through broader searches", async
     await expect(page.getByTestId("browse-search")).toHaveValue("deck:current");
     await expect(empty).toContainText("No cards in the current deck");
     await expect(page.getByTestId("browse-clear-search")).toHaveCount(0);
+    await expect(empty.getByRole("button", { name: "Import package" })).toBeVisible();
 
     await page.getByTestId("browse-show-all").click();
 
     await expect(page.getByTestId("browse-search")).toHaveValue("");
     await expect(empty).toHaveCount(0);
     await expect(page.locator(".browse-row").first()).toBeVisible();
+});
+
+test("workspace browse empty collection can import a package", async ({ page }) => {
+    await page.route("**/_anki/searchCards", async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: "application/binary",
+            body: Buffer.alloc(0),
+        });
+    });
+
+    await page.goto("/ankountant-workspace?initial=browse");
+
+    const empty = page.getByTestId("browse-empty");
+    await expect(empty).toContainText("No cards in the current deck");
+    await expect(empty.getByRole("button", { name: "Import package" })).toBeVisible();
+
+    await page.getByTestId("browse-show-all").click();
+
+    await expect(page.getByTestId("browse-search")).toHaveValue("");
+    await expect(empty).toContainText("No cards available");
+    await expect(empty.getByRole("button", { name: "Import package" })).toBeVisible();
 });
 
 test("workspace TBS pane reveals the answer key after submit", async ({ page, seed }) => {
