@@ -58,6 +58,34 @@ test("home section switcher reloads topic mastery and keeps evidence scoped", as
     await expect(page.getByText("Auditing and Attestation")).toBeVisible();
 });
 
+test("home load failure can retry without leaking backend html", async ({ page }) => {
+    let readinessRequests = 0;
+    await page.route("**/_anki/getReadiness", async (route) => {
+        readinessRequests += 1;
+        if (readinessRequests === 1) {
+            await route.fulfill({
+                status: 500,
+                contentType: "text/html",
+                body: "<!doctype html><title>500 Readiness failed</title><h1>Readiness failed</h1>",
+            });
+        } else {
+            await route.continue();
+        }
+    });
+
+    await page.goto("/ankountant-home");
+
+    const error = page.getByTestId("home-load-error");
+    await expect(error).toContainText(
+        "500 Readiness failed. The study home could not be loaded.",
+    );
+    await expect(error).not.toContainText("<!doctype html>");
+    await error.getByRole("button", { name: "Retry" }).click();
+
+    await expect(page.getByTestId("home")).toBeVisible();
+    await expect.poll(() => readinessRequests).toBeGreaterThan(1);
+});
+
 test("entering an exam date drives the countdown and persists across reloads", async ({ page }) => {
     await page.goto("/ankountant-home");
 
