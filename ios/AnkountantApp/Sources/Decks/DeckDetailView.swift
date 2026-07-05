@@ -390,9 +390,7 @@ struct DeckDetailView: View {
         exportInProgress = true
         defer { exportInProgress = false }
         do {
-            let url = try await Task.detached {
-                try ImportHelper.exportDeck(deckId: deck.id, deckName: deck.name)
-            }.value
+            let url = try await ImportHelper.exportDeckInBackground(deckId: deck.id, deckName: deck.name)
             exportedFile = ExportedFile(url: url)
         } catch {
             exportError = "Failed to export deck: \(error.localizedDescription)"

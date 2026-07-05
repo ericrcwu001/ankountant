@@ -67,6 +67,46 @@ enum ImportHelper {
         withDeckConfigs: Bool = true,
         withMedia: Bool = true
     ) throws -> URL {
+        @Dependency(\.importExportService) var importExportService
+        return try exportDeck(
+            deckId: deckId,
+            deckName: deckName,
+            withScheduling: withScheduling,
+            withDeckConfigs: withDeckConfigs,
+            withMedia: withMedia,
+            exportDeckPackage: importExportService.exportDeckPackage
+        )
+    }
+
+    static func exportDeckInBackground(
+        deckId: Int64,
+        deckName: String,
+        withScheduling: Bool = true,
+        withDeckConfigs: Bool = true,
+        withMedia: Bool = true
+    ) async throws -> URL {
+        @Dependency(\.importExportService) var importExportService
+        let exportDeckPackage = importExportService.exportDeckPackage
+        return try await Task.detached(priority: .userInitiated) {
+            try exportDeck(
+                deckId: deckId,
+                deckName: deckName,
+                withScheduling: withScheduling,
+                withDeckConfigs: withDeckConfigs,
+                withMedia: withMedia,
+                exportDeckPackage: exportDeckPackage
+            )
+        }.value
+    }
+
+    private static func exportDeck(
+        deckId: Int64,
+        deckName: String,
+        withScheduling: Bool,
+        withDeckConfigs: Bool,
+        withMedia: Bool,
+        exportDeckPackage: @Sendable (Int64, String, Bool, Bool, Bool, Bool) throws -> UInt32
+    ) throws -> URL {
         let safeName = deckName
             .replacingOccurrences(of: "::", with: "-")
             .replacingOccurrences(of: "/", with: "-")
@@ -75,8 +115,7 @@ enum ImportHelper {
         let outPath = tempDir.appendingPathComponent(filename)
         try removeExistingFile(at: outPath)
 
-        @Dependency(\.importExportService) var importExportService
-        _ = try importExportService.exportDeckPackage(
+        _ = try exportDeckPackage(
             deckId,
             outPath.path,
             withScheduling,
