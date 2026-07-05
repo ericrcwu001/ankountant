@@ -5,7 +5,7 @@ import Dependencies
 import Sharing
 import SwiftUI
 
-private struct ReaderNotetypeOption: Identifiable, Equatable {
+private struct ReaderNotetypeOption: Identifiable, Equatable, Sendable {
     let id: Int64
     let name: String
     let fieldNames: [String]
@@ -199,7 +199,10 @@ struct ReaderConfigurationView: View {
         defer { isLoadingDecks = false }
 
         do {
-            decks = try deckClient.fetchAll().sorted { $0.name < $1.name }
+            let fetchAllDecks = deckClient.fetchAll
+            decks = try await Task.detached(priority: .userInitiated) {
+                try fetchAllDecks().sorted { $0.name < $1.name }
+            }.value
         } catch {
             decks = []
             loadError = "Failed to load decks: \(error.localizedDescription)"
@@ -212,23 +215,27 @@ struct ReaderConfigurationView: View {
         defer { isLoadingNotetypes = false }
 
         do {
-            let entries = try notetypesService.getNotetypeNames()
-            var options: [ReaderNotetypeOption] = []
-            options.reserveCapacity(entries.count)
-            for entry in entries {
-                let notetype = try notetypesService.getNotetype(entry.id)
-                options.append(
-                    ReaderNotetypeOption(
-                        id: entry.id,
-                        name: entry.name,
-                        fieldNames: notetype.fieldNames
+            let getNotetypeNames = notetypesService.getNotetypeNames
+            let getNotetype = notetypesService.getNotetype
+            notetypeOptions = try await Task.detached(priority: .userInitiated) {
+                let entries = try getNotetypeNames()
+                var options: [ReaderNotetypeOption] = []
+                options.reserveCapacity(entries.count)
+                for entry in entries {
+                    let notetype = try getNotetype(entry.id)
+                    options.append(
+                        ReaderNotetypeOption(
+                            id: entry.id,
+                            name: entry.name,
+                            fieldNames: notetype.fieldNames
+                        )
                     )
-                )
-            }
+                }
 
-            notetypeOptions = options.sorted {
-                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-            }
+                return options.sorted {
+                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                }
+            }.value
             $selectedNotetypeID.withLock {
                 $0 = resolvedSelectedNotetypeID(from: notetypeOptions) ?? 0
             }

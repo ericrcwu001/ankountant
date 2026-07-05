@@ -286,7 +286,10 @@ struct ReaderLibraryView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            books = try readerBookClient.loadBooks(configuration)
+            let loadBooks = readerBookClient.loadBooks
+            books = try await Task.detached(priority: .userInitiated) {
+                try loadBooks(configuration)
+            }.value
             loadError = nil
         } catch {
             loadError = error.localizedDescription
