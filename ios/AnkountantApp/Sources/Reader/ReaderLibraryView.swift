@@ -123,26 +123,33 @@ struct ReaderLibraryView: View {
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    ForEach(BookshelfSortMode.allCases) { mode in
-                        Button {
-                            $sortModeRaw.withLock { $0 = mode.rawValue }
-                        } label: {
-                            if sortMode == mode {
-                                Label(mode.label, systemImage: "checkmark")
-                            } else {
-                                Text(mode.label)
+                if showsBookshelfControls {
+                    Menu {
+                        ForEach(BookshelfSortMode.allCases) { mode in
+                            Button {
+                                $sortModeRaw.withLock { $0 = mode.rawValue }
+                            } label: {
+                                if sortMode == mode {
+                                    Label(mode.label, systemImage: "checkmark")
+                                } else {
+                                    Text(mode.label)
+                                }
                             }
                         }
-                    }
-                    Divider()
-                    Button {
-                        showConfiguration = true
+                        Divider()
+                        Button {
+                            showConfiguration = true
+                        } label: {
+                            Label("Settings", systemImage: "slider.horizontal.3")
+                        }
                     } label: {
-                        Label("Settings", systemImage: "slider.horizontal.3")
+                        Label("Reader options", systemImage: "ellipsis.circle")
+                            .labelStyle(.iconOnly)
                     }
-                } label: {
-                    Label("Reader options", systemImage: "ellipsis.circle")
+                } else {
+                    Button("Reader settings", systemImage: "slider.horizontal.3") {
+                        showConfiguration = true
+                    }
                         .labelStyle(.iconOnly)
                 }
             }
