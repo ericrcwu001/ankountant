@@ -25,11 +25,14 @@ func writeWidgetSnapshot() async {
     @Dependency(\.statsClient) var statsClient
 
     do {
-        // 1. Fetch deck list
-        let decks: [DeckInfo] = try deckClient.fetchAll()
-
-        // 2. Fetch 28-day stats graph for streak + daily counts
-        let graphData: Data = try statsClient.fetchGraphs("", 28)
+        let fetchAllDecks = deckClient.fetchAll
+        let fetchGraphs = statsClient.fetchGraphs
+        let (decks, graphData) = try await Task.detached(priority: .utility) {
+            (
+                try fetchAllDecks(),
+                try fetchGraphs("", 28)
+            )
+        }.value
         let graphs = try Anki_Stats_GraphsResponse(serializedBytes: graphData)
 
         // Helper to total all review types for a day
