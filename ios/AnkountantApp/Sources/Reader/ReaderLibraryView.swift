@@ -170,7 +170,9 @@ struct ReaderLibraryView: View {
         .navigationDestination(for: ReaderRoute.self) { route in
             switch route {
             case .chapters(let book):
-                ChapterListView(book: book, progress: progress)
+                ChapterListView(book: book, progress: progress) {
+                    await reload()
+                }
             }
         }
     }

@@ -4,17 +4,26 @@ import SwiftUI
 struct ChapterListView: View {
     let book: ReaderBook
     let progress: ReaderProgressCoordinator
+    let onConfigurationChanged: () async -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var showConfiguration = false
 
     private var savedProgress: ReaderSavedProgress? { progress.resolved(bookID: book.id) }
 
     var body: some View {
         Group {
             if book.chapters.isEmpty {
-                ContentUnavailableView(
-                    "No Chapters",
-                    systemImage: "doc.text.magnifyingglass",
-                    description: Text("This book has no chapter notes. Check the Reader field mapping or add chapter notes to the selected deck.")
-                )
+                ContentUnavailableView {
+                    Label("No Chapters", systemImage: "doc.text.magnifyingglass")
+                } description: {
+                    Text("This book has no chapter notes. Check the Reader field mapping or add chapter notes to the selected deck.")
+                } actions: {
+                    Button("Reader settings", systemImage: "slider.horizontal.3") {
+                        showConfiguration = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             } else {
                 List(book.chapters) { chapter in
                     NavigationLink(value: chapter) {
@@ -22,6 +31,17 @@ struct ChapterListView: View {
                             chapter: chapter,
                             savedProgress: savedProgress?.chapterID == chapter.id ? savedProgress : nil
                         )
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showConfiguration) {
+            NavigationStack {
+                ReaderConfigurationView {
+                    showConfiguration = false
+                    Task {
+                        await onConfigurationChanged()
+                        await MainActor.run { dismiss() }
                     }
                 }
             }
