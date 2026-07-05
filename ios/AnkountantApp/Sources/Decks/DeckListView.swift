@@ -155,9 +155,12 @@ struct DeckListView: View {
         isLoading = true
         loadErrorMessage = nil
         defer { isLoading = false }
+        let fetchTree = deckClient.fetchTree
 
         do {
-            tree = try deckClient.fetchTree()
+            tree = try await Task.detached(priority: .userInitiated) {
+                try fetchTree()
+            }.value
         } catch {
             tree = []
             loadErrorMessage = "Failed to load decks: \(error.localizedDescription)"
@@ -221,9 +224,13 @@ private struct DeckRowView: View {
             }
             .alert("Delete \"\(node.name)\"?", isPresented: $showDeleteAlert) {
                 Button("Delete", role: .destructive) {
+                    let deleteDeck = deckClient.delete
+                    let deckId = node.id
                     Task {
                         do {
-                            try deckClient.delete(node.id)
+                            try await Task.detached(priority: .userInitiated) {
+                                try deleteDeck(deckId)
+                            }.value
                             await onMutated()
                         } catch {
                             actionError = "Failed to delete deck: \(error.localizedDescription)"
@@ -354,9 +361,13 @@ struct CreateDeckSheet: View {
         isSaving = true
         errorMessage = nil
         defer { isSaving = false }
+        let createDeck = deckClient.create
+        let name = trimmedName
 
         do {
-            _ = try deckClient.create(trimmedName)
+            _ = try await Task.detached(priority: .userInitiated) {
+                try createDeck(name)
+            }.value
             onDone()
         } catch {
             errorMessage = "Failed to create deck: \(error.localizedDescription)"
@@ -422,9 +433,13 @@ private struct RenameDeckSheet: View {
         isSaving = true
         errorMessage = nil
         defer { isSaving = false }
+        let renameDeck = deckClient.rename
+        let name = trimmedName
 
         do {
-            try deckClient.rename(deckId, trimmedName)
+            try await Task.detached(priority: .userInitiated) {
+                try renameDeck(deckId, name)
+            }.value
             onDone()
         } catch {
             errorMessage = "Failed to rename deck: \(error.localizedDescription)"

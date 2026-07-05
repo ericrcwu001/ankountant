@@ -224,8 +224,11 @@ struct StatsDashboardView: View {
     }
 
     private func loadDecks() async {
+        let fetchAll = deckClient.fetchAll
         do {
-            decks = try deckClient.fetchAll()
+            decks = try await Task.detached(priority: .userInitiated) {
+                try fetchAll()
+            }.value
             deckLoadErrorMessage = nil
         } catch {
             decks = []
