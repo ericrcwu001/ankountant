@@ -25,6 +25,17 @@ struct SimulationsHubSelectionTests {
         #expect(simulationShapeAfterLoad(current: .docReview, tasks: tasks, order: order) == .numeric)
     }
 
+    @Test func firstAvailableSimulationShapeSkipsCurrentSelection() {
+        let tasks = [
+            TbsTaskSummary(noteId: 1, shape: .numeric, prompt: "Numeric"),
+            TbsTaskSummary(noteId: 2, shape: .research, prompt: "Research"),
+        ]
+
+        #expect(firstAvailableSimulationShape(excluding: .numeric, tasks: tasks, order: order) == .research)
+        #expect(firstAvailableSimulationShape(excluding: .docReview, tasks: tasks, order: order) == .numeric)
+        #expect(firstAvailableSimulationShape(excluding: .docReview, tasks: [], order: order) == nil)
+    }
+
     @Test func keepsCurrentShapeWhenNoTasksExist() {
         #expect(simulationShapeAfterLoad(current: .docReview, tasks: [], order: order) == .docReview)
     }
@@ -51,6 +62,8 @@ struct SimulationsHubSelectionTests {
         #expect(tbsShapeSegmentLabel(.docReview) == "Review")
         #expect(tbsShapeMenuLabel(.docReview, taskCount: 2) == "Document review · 2 simulations")
         #expect(tbsShapeMenuLabel(.numeric, taskCount: 1) == "Numeric · 1 simulation")
+        #expect(tbsShapeRecoveryButtonLabel(.numeric, taskCount: 2) == "Show numeric simulations")
+        #expect(tbsShapeRecoveryButtonLabel(.docReview, taskCount: 1) == "Show document review simulation")
     }
 
     @Test func tbsTaskCountFiltersByShape() {

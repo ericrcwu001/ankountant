@@ -105,6 +105,21 @@ struct SimulationsHubView: View {
                             Text("No \(tbsShapeDisplayLabel(selectedShape).lowercased()) simulations in this profile.")
                                 .ankountantFont(.body)
                                 .foregroundStyle(palette.textSecondary)
+                            if let recoveryShape = firstAvailableSimulationShape(
+                                excluding: selectedShape,
+                                tasks: tasks,
+                                order: shapeOrder
+                            ) {
+                                Button(
+                                    tbsShapeRecoveryButtonLabel(
+                                        recoveryShape,
+                                        taskCount: tbsTaskCount(for: recoveryShape, in: tasks)
+                                    ),
+                                    systemImage: "arrow.right.circle"
+                                ) {
+                                    selectedShape = recoveryShape
+                                }
+                            }
                             Button("Import package", systemImage: "square.and.arrow.down") {
                                 showImport = true
                             }
@@ -338,6 +353,16 @@ func simulationShapeAfterLoad(
     return order.first(where: { shape in tasks.contains { $0.shape == shape } }) ?? current
 }
 
+func firstAvailableSimulationShape(
+    excluding current: TbsShape,
+    tasks: [TbsTaskSummary],
+    order: [TbsShape]
+) -> TbsShape? {
+    order.first { candidate in
+        candidate != current && tasks.contains { $0.shape == candidate }
+    }
+}
+
 func availableConfusionSections(
     _ counts: [CPASection: Int],
     order: [CPASection]
@@ -377,6 +402,11 @@ func tbsShapeCountLabel(_ count: Int) -> String {
 
 func tbsShapeMenuLabel(_ shape: TbsShape, taskCount: Int) -> String {
     "\(tbsShapeDisplayLabel(shape)) · \(tbsShapeCountLabel(taskCount))"
+}
+
+func tbsShapeRecoveryButtonLabel(_ shape: TbsShape, taskCount: Int) -> String {
+    let noun = taskCount == 1 ? "simulation" : "simulations"
+    return "Show \(tbsShapeDisplayLabel(shape).lowercased()) \(noun)"
 }
 
 func simulationsHubHasContent(tasks: [TbsTaskSummary], allConfusionCount: Int) -> Bool {
