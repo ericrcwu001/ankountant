@@ -13,6 +13,7 @@ struct MediaCheckResultView: View {
     @State private var isTrashingUnused = false
     @State private var isDeletingTrash = false
     @State private var isRestoringTrash = false
+    @State private var loadErrorMessage: String?
     @State private var actionMessage: String?
     @State private var showActionAlert = false
 
@@ -22,6 +23,18 @@ struct MediaCheckResultView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(palette.background)
+            } else if let loadErrorMessage {
+                ContentUnavailableView {
+                    Label("Could Not Check Media", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(loadErrorMessage)
+                } actions: {
+                    Button("Retry", systemImage: "arrow.clockwise") {
+                        Task { await runMediaCheck() }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(palette.background)
             } else if let result = currentResult {
                 contentList(result: result)
             }
@@ -167,6 +180,7 @@ struct MediaCheckResultView: View {
 
     private func runMediaCheck() async {
         isLoading = true
+        loadErrorMessage = nil
         let capturedClient = mediaClient
         do {
             let result = try await Task.detached {
@@ -174,8 +188,8 @@ struct MediaCheckResultView: View {
             }.value
             currentResult = result
         } catch {
-            actionMessage = error.localizedDescription
-            showActionAlert = true
+            currentResult = nil
+            loadErrorMessage = "Failed to check media: \(error.localizedDescription)"
         }
         isLoading = false
     }
