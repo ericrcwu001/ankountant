@@ -232,6 +232,14 @@ Section collapse is kept local (not yet persisted to col config).
         {#if message}
             <p class="hint detail">{message}</p>
         {/if}
+        <button
+            type="button"
+            class="retry-sidebar"
+            data-testid="sidebar-retry"
+            on:click={() => void load()}
+        >
+            Retry sidebar
+        </button>
     {:else}
         {#if message}
             <p class="hint detail" role="alert">{message}</p>
@@ -425,6 +433,30 @@ Section collapse is kept local (not yet persisted to col config).
         padding: var(--space-lg);
         color: var(--fg-subtle);
         font-size: var(--type-caption-size);
+    }
+
+    .retry-sidebar {
+        align-self: flex-start;
+        min-height: 36px;
+        margin: 0 var(--space-lg);
+        padding: 0 var(--space-md);
+        border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+        border-radius: var(--border-radius);
+        background: var(--accent-tint);
+        color: var(--accent);
+        font: inherit;
+        font-size: var(--type-caption-size);
+        font-weight: 700;
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--accent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
     }
 
     .sections {

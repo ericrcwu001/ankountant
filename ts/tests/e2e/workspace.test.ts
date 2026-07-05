@@ -79,6 +79,33 @@ test("workspace panes do not leak backend html on load failure", async ({ page }
     await expect(paneState).not.toContainText("don&#39;t");
 });
 
+test("workspace browse sidebar load failure can retry", async ({ page, seed }) => {
+    expect(seed.sealedItems).toBeGreaterThan(0);
+    let deckTreeRequests = 0;
+    await page.route("**/_anki/deckTree", async (route) => {
+        deckTreeRequests += 1;
+        if (deckTreeRequests === 1) {
+            await route.fulfill({
+                status: 500,
+                contentType: "text/plain",
+                body: "deck tree failed",
+            });
+        } else {
+            await route.continue();
+        }
+    });
+
+    await page.goto("/ankountant-workspace?initial=browse");
+
+    const sidebar = page.getByTestId("browse-sidebar");
+    await expect(sidebar).toContainText("Couldn’t load the sidebar.");
+    await expect(sidebar).toContainText("500: deck tree failed");
+    await sidebar.getByRole("button", { name: "Retry sidebar" }).click();
+
+    await expect(page.getByTestId("whole-collection")).toBeVisible();
+    await expect.poll(() => deckTreeRequests).toBeGreaterThan(1);
+});
+
 test("workspace add pane exposes package import", async ({ page }) => {
     await page.goto("/ankountant-workspace?initial=add");
 
