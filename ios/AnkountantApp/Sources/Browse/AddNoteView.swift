@@ -60,7 +60,7 @@ struct AddNoteView: View {
                         }
                     }
                     .onChange(of: selectedNotetypeId) {
-                        loadFields()
+                        Task { await loadFields() }
                     }
                 }
 
@@ -203,7 +203,10 @@ struct AddNoteView: View {
         }
 
         do {
-            decks = try deckClient.fetchAll()
+            let fetchAllDecks = deckClient.fetchAll
+            decks = try await Task.detached(priority: .userInitiated) {
+                try fetchAllDecks()
+            }.value
             guard !decks.isEmpty else {
                 loadErrorMessage = Self.noDecksMessage
                 return
@@ -215,7 +218,10 @@ struct AddNoteView: View {
                 selectedDeckId = first.id
             }
 
-            notetypeNames = try notetypesService.getNotetypeNames()
+            let getNotetypeNames = notetypesService.getNotetypeNames
+            notetypeNames = try await Task.detached(priority: .userInitiated) {
+                try getNotetypeNames()
+            }.value
 
             let chosen = initialDraft?.notetypeID
                 .flatMap { id in notetypeNames.first(where: { $0.id == id }) }
@@ -227,7 +233,7 @@ struct AddNoteView: View {
             }
 
             selectedNotetypeId = chosen.id
-            try loadFields(for: chosen.id)
+            try await loadFields(for: chosen.id)
         } catch {
             fieldNames = []
             fieldValues = []
@@ -235,10 +241,10 @@ struct AddNoteView: View {
         }
     }
 
-    private func loadFields() {
+    private func loadFields() async {
         guard selectedNotetypeId != 0 else { return }
         do {
-            try loadFields(for: selectedNotetypeId)
+            try await loadFields(for: selectedNotetypeId)
             loadErrorMessage = nil
         } catch {
             fieldNames = []
@@ -272,8 +278,11 @@ struct AddNoteView: View {
         }
     }
 
-    private func loadFields(for notetypeId: Int64) throws {
-        let notetype = try notetypesService.getNotetype(notetypeId)
+    private func loadFields(for notetypeId: Int64) async throws {
+        let getNotetype = notetypesService.getNotetype
+        let notetype = try await Task.detached(priority: .userInitiated) {
+            try getNotetype(notetypeId)
+        }.value
         fieldNames = notetype.fieldNames
         fieldValues = NoteFormRules.fieldValues(for: fieldNames, draft: initialDraft)
     }
@@ -287,12 +296,20 @@ struct AddNoteView: View {
         isSaving = true
         saveErrorMessage = nil
         defer { isSaving = false }
+        let newNote = notesService.newNote
+        let addNote = notesService.addNote
+        let notetypeId = selectedNotetypeId
+        let deckId = selectedDeckId
+        let fields = fieldValues
+        let normalizedTags = NoteFormRules.normalizedTags(from: tags)
 
         do {
-            var template = try notesService.newNote(selectedNotetypeId)
-            template.fields = fieldValues
-            template.tags = NoteFormRules.normalizedTags(from: tags)
-            try notesService.addNote(template, selectedDeckId)
+            try await Task.detached(priority: .userInitiated) {
+                var template = try newNote(notetypeId)
+                template.fields = fields
+                template.tags = normalizedTags
+                try addNote(template, deckId)
+            }.value
             onSave()
             dismiss()
         } catch {
