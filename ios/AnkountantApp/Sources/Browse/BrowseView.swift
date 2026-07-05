@@ -206,9 +206,13 @@ struct BrowseView: View {
             presenting: pendingSwipeDelete
         ) { note in
             Button("Delete", role: .destructive) {
+                let deleteNote = noteClient.delete
+                let noteId = note.id
                 Task { @MainActor in
                     do {
-                        try noteClient.delete(note.id)
+                        try await Task.detached(priority: .userInitiated) {
+                            try deleteNote(noteId)
+                        }.value
                     } catch {
                         actionErrorMessage = "Failed to delete note: \(error.localizedDescription)"
                         return
@@ -264,8 +268,8 @@ struct BrowseView: View {
         .task {
             await loadDecks()
             await performSearch()
-            loadTags()
-            loadNotetypeNames()
+            await loadTags()
+            await loadNotetypeNames()
         }
     }
 
@@ -565,26 +569,35 @@ struct BrowseView: View {
     // MARK: - Data Loading
 
     private func loadDecks() async {
+        let fetchAll = deckClient.fetchAll
         do {
-            allDecks = try deckClient.fetchAll()
+            allDecks = try await Task.detached(priority: .userInitiated) {
+                try fetchAll()
+            }.value
         } catch {
             allDecks = []
             actionErrorMessage = "Failed to load deck filters: \(error.localizedDescription)"
         }
     }
 
-    private func loadTags() {
+    private func loadTags() async {
+        let getAllTags = tagClient.getAllTags
         do {
-            allTags = try tagClient.getAllTags().sorted()
+            allTags = try await Task.detached(priority: .userInitiated) {
+                try getAllTags().sorted()
+            }.value
         } catch {
             allTags = []
             actionErrorMessage = "Failed to load tags: \(error.localizedDescription)"
         }
     }
 
-    private func loadNotetypeNames() {
+    private func loadNotetypeNames() async {
+        let getNotetypeNames = notetypesService.getNotetypeNames
         do {
-            let pairs = try notetypesService.getNotetypeNames()
+            let pairs = try await Task.detached(priority: .userInitiated) {
+                try getNotetypeNames()
+            }.value
             notetypeNames = Dictionary(uniqueKeysWithValues: pairs.map { ($0.id, $0.name) })
         } catch {
             notetypeNames = [:]
@@ -606,8 +619,8 @@ struct BrowseView: View {
                     importMessage = try await ImportHelper.importPackageInBackground(from: url)
                     await loadDecks()
                     await performSearch()
-                    loadTags()
-                    loadNotetypeNames()
+                    await loadTags()
+                    await loadNotetypeNames()
                 } catch {
                     importMessage = "Import failed: \(error.localizedDescription)"
                 }
@@ -645,8 +658,11 @@ struct BrowseView: View {
         }
 
         let query = buildQuery()
+        let searchNotes = noteClient.search
         do {
-            let results = try noteClient.search(query, nil)
+            let results = try await Task.detached(priority: .userInitiated) {
+                try searchNotes(query, nil)
+            }.value
             guard generation == searchGeneration else { return }
             allNotes = results
             notes = Array(results.prefix(pageSize))
@@ -660,23 +676,18 @@ struct BrowseView: View {
         }
     }
 
-    private func collectCardIDs(for noteIDs: Set<Int64>) throws -> [Int64] {
-        var result: [Int64] = []
-        for nid in noteIDs {
-            let cards = try cardClient.fetchByNote(nid)
-            result.append(contentsOf: cards.map(\.id))
-        }
-        return result
-    }
-
     private func suspendSelected() {
         let ids = selectionState.selectedNoteIDs
+        let fetchByNote = cardClient.fetchByNote
+        let suspend = cardClient.suspend
         Task { @MainActor in
             do {
-                let cardIDs = try collectCardIDs(for: ids)
-                for id in cardIDs {
-                    try cardClient.suspend(id)
-                }
+                try await Task.detached(priority: .userInitiated) {
+                    let cardIDs = try collectCardIDs(for: ids, fetchByNote: fetchByNote)
+                    for id in cardIDs {
+                        try suspend(id)
+                    }
+                }.value
                 selectionState.exitSelectMode()
                 await performSearch()
             } catch {
@@ -687,12 +698,16 @@ struct BrowseView: View {
 
     private func flagSelected(_ value: UInt32) {
         let ids = selectionState.selectedNoteIDs
+        let fetchByNote = cardClient.fetchByNote
+        let flag = cardClient.flag
         Task { @MainActor in
             do {
-                let cardIDs = try collectCardIDs(for: ids)
-                for id in cardIDs {
-                    try cardClient.flag(id, value)
-                }
+                try await Task.detached(priority: .userInitiated) {
+                    let cardIDs = try collectCardIDs(for: ids, fetchByNote: fetchByNote)
+                    for id in cardIDs {
+                        try flag(id, value)
+                    }
+                }.value
                 selectionState.exitSelectMode()
                 await performSearch()
             } catch {
@@ -703,11 +718,14 @@ struct BrowseView: View {
 
     private func deleteSelected() {
         let ids = selectionState.selectedNoteIDs
+        let deleteNote = noteClient.delete
         Task { @MainActor in
             do {
-                for id in ids {
-                    try noteClient.delete(id)
-                }
+                try await Task.detached(priority: .userInitiated) {
+                    for id in ids {
+                        try deleteNote(id)
+                    }
+                }.value
                 selectionState.exitSelectMode()
                 await performSearch()
             } catch {
@@ -727,8 +745,12 @@ struct BrowseView: View {
 
     /// Lazy-fetch full note details for a stub and update the arrays in place.
     private func fetchNoteDetails(id: Int64) async {
+        let fetchNote = noteClient.fetch
         do {
-            guard let fullNote = try noteClient.fetch(id) else {
+            let fullNote = try await Task.detached(priority: .userInitiated) {
+                try fetchNote(id)
+            }.value
+            guard let fullNote else {
                 actionErrorMessage = "Could not load note details."
                 return
             }
@@ -756,6 +778,18 @@ struct BrowseView: View {
         }
         return parts.joined(separator: " ")
     }
+}
+
+func collectCardIDs(
+    for noteIDs: Set<Int64>,
+    fetchByNote: @Sendable (_ noteId: Int64) throws -> [CardRecord]
+) throws -> [Int64] {
+    var result: [Int64] = []
+    for nid in noteIDs {
+        let cards = try fetchByNote(nid)
+        result.append(contentsOf: cards.map(\.id))
+    }
+    return result
 }
 
 // MARK: - NoteContextMenuButton
@@ -795,23 +829,26 @@ struct NoteContextMenuButton: View {
         }
         .alert("Card actions unavailable", isPresented: $showCardActionError) {
             Button("Retry") {
-                loadCardActionState()
+                Task { await loadCardActionState() }
             }
             Button("OK", role: .cancel) {}
         } message: {
             Text(cardActionError ?? "Unable to load card actions for this note.")
         }
         .task(id: noteId) {
-            loadCardActionState()
+            await loadCardActionState()
         }
     }
 
-    private func loadCardActionState() {
+    private func loadCardActionState() async {
         firstCardId = nil
         cardActionError = nil
         showCardActionError = false
+        let fetchByNote = cardClient.fetchByNote
         do {
-            let cards = try cardClient.fetchByNote(noteId)
+            let cards = try await Task.detached(priority: .userInitiated) {
+                try fetchByNote(noteId)
+            }.value
             guard let firstCard = cards.first else {
                 cardActionError = "This note has no cards."
                 return
