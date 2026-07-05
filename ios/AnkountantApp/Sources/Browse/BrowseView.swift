@@ -275,7 +275,7 @@ struct BrowseView: View {
         } else if notes.isEmpty && !isLoading && trimmedSearchText.isEmpty && hasActiveFilter {
             filteredEmptyState
         } else if notes.isEmpty && !isLoading {
-            ContentUnavailableView.search(text: searchText)
+            searchEmptyState
         } else {
             notesList
         }
@@ -305,9 +305,7 @@ struct BrowseView: View {
             Text(activeFilterDescription)
         } actions: {
             Button("Clear Filters") {
-                parentDeck = nil
-                activeDeck = nil
-                activeTag = nil
+                clearFilters()
             }
             .buttonStyle(.borderedProminent)
 
@@ -319,6 +317,40 @@ struct BrowseView: View {
                 showImport = true
             }
         }
+    }
+
+    private var searchEmptyState: some View {
+        ContentUnavailableView {
+            Label("No notes found", systemImage: "magnifyingglass")
+        } description: {
+            Text(searchEmptyDescription)
+        } actions: {
+            Button("Clear Search", systemImage: "xmark.circle") {
+                searchText = ""
+            }
+            .buttonStyle(.borderedProminent)
+
+            if hasActiveFilter {
+                Button("Clear Filters", systemImage: "line.3.horizontal.decrease.circle") {
+                    clearFilters()
+                }
+            }
+
+            Button("Add Note", systemImage: "plus") {
+                showAddNote = true
+            }
+
+            Button("Import package", systemImage: "square.and.arrow.down") {
+                showImport = true
+            }
+        }
+    }
+
+    private var searchEmptyDescription: String {
+        if hasActiveFilter {
+            return "No notes match \"\(trimmedSearchText)\" in the current filter."
+        }
+        return "No notes match \"\(trimmedSearchText)\"."
     }
 
     private var notesList: some View {
@@ -494,6 +526,12 @@ struct BrowseView: View {
 
     private func shortName(_ fullName: String) -> String {
         String(fullName.split(separator: "::").last ?? Substring(fullName))
+    }
+
+    private func clearFilters() {
+        parentDeck = nil
+        activeDeck = nil
+        activeTag = nil
     }
 
     // MARK: - Data Loading
