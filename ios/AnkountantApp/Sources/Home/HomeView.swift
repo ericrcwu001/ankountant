@@ -444,10 +444,17 @@ struct HomeView: View {
     }
 
     private func saveExamDate(_ date: Date) {
-        do {
-            try examConfigClient.saveExamDate(section, Self.isoFormatter.string(from: date))
-        } catch {
-            loadError = "Could not save exam date: \(error.localizedDescription)"
+        let saveExamDate = examConfigClient.saveExamDate
+        let section = section
+        let isoDate = Self.isoFormatter.string(from: date)
+        Task {
+            do {
+                try await Task.detached(priority: .userInitiated) {
+                    try saveExamDate(section, isoDate)
+                }.value
+            } catch {
+                loadError = "Could not save exam date: \(error.localizedDescription)"
+            }
         }
     }
 
@@ -484,7 +491,12 @@ struct HomeView: View {
     private func load() async {
         loadError = nil
         do {
-            if let iso = try examConfigClient.loadExamDate(section),
+            let loadExamDate = examConfigClient.loadExamDate
+            let section = section
+            let iso = try await Task.detached(priority: .userInitiated) {
+                try loadExamDate(section)
+            }.value
+            if let iso,
                !iso.isEmpty,
                let parsed = Self.isoFormatter.date(from: iso) {
                 examDate = parsed
