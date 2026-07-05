@@ -47,11 +47,16 @@ chooser opens on that note's shape and section.
     let fields: string[] = initialFields;
     let tags: string[] = initialTags;
     let message = "";
+    let availableAlternative: LoadedAlternative | null = null;
     // Guards against out-of-order responses when the learner clicks quickly.
     let loadSeq = 0;
 
     $: selectedLabel = TBS_SHAPES.find((s) => s.shape === selected)?.label ?? "TBS";
     $: selectedBlurb = TBS_SHAPES.find((s) => s.shape === selected)?.blurb ?? "";
+    $: availableAlternativeLabel = availableAlternative
+        ? (TBS_SHAPES.find((s) => s.shape === availableAlternative?.shape)?.label ??
+          "available simulation")
+        : "";
     $: selectedSectionLabel = sectionChoiceLabel(selectedSection);
     $: emptySectionLabel =
         selectedSection === ALL_SECTIONS ? "all sections" : selectedSectionLabel;
@@ -65,6 +70,10 @@ chooser opens on that note's shape and section.
         model: TbsModel;
         fields: string[];
         tags: string[];
+    }
+
+    interface LoadedAlternative extends LoadedShape {
+        shape: TbsShape;
     }
 
     async function fetchShape(
@@ -87,7 +96,24 @@ chooser opens on that note's shape and section.
         return null;
     }
 
+    async function fetchAvailableAlternative(
+        missingShape: TbsShape,
+        sectionChoice: SectionChoice,
+    ): Promise<LoadedAlternative | null> {
+        for (const shape of tbsShapeSearchOrder(missingShape)) {
+            if (shape === missingShape) {
+                continue;
+            }
+            const loaded = await fetchShape(shape, sectionChoice);
+            if (loaded) {
+                return { shape, ...loaded };
+            }
+        }
+        return null;
+    }
+
     function applyLoadedShape(shape: TbsShape, loaded: LoadedShape): void {
+        availableAlternative = null;
         selected = shape;
         noteId = loaded.noteId;
         model = loaded.model;
@@ -97,6 +123,7 @@ chooser opens on that note's shape and section.
     }
 
     function clearLoadedShape(): void {
+        availableAlternative = null;
         noteId = 0n;
         model = null;
         fields = [];
@@ -119,6 +146,13 @@ chooser opens on that note's shape and section.
                 return;
             }
             if (!loaded) {
+                availableAlternative = await fetchAvailableAlternative(
+                    shape,
+                    sectionChoice,
+                );
+                if (seq !== loadSeq) {
+                    return;
+                }
                 phase = "empty";
                 return;
             }
@@ -180,6 +214,13 @@ chooser opens on that note's shape and section.
 
     function openImport(): void {
         bridgeCommand("ankountant:import");
+    }
+
+    function showAvailableAlternative(): void {
+        if (!availableAlternative) {
+            return;
+        }
+        applyLoadedShape(availableAlternative.shape, availableAlternative);
     }
 
     onMount(() => {
@@ -258,6 +299,15 @@ chooser opens on that note's shape and section.
                         Import package
                     </button>
                     <a class="state-link" href={readinessHref}>Readiness evidence</a>
+                    {#if availableAlternative}
+                        <button
+                            type="button"
+                            class="state-link"
+                            on:click={showAvailableAlternative}
+                        >
+                            Show {availableAlternativeLabel}
+                        </button>
+                    {/if}
                 </div>
             </div>
         {:else}

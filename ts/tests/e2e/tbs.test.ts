@@ -146,6 +146,27 @@ test("the TBS chooser empty state keeps next steps visible", async ({ page }) =>
     );
 });
 
+test("the TBS chooser suggests an available type when the selected type is empty", async ({ page, seed }) => {
+    expect(seed.sealedJeTbs).toBeGreaterThan(0);
+
+    await page.goto("/ankountant-tbs");
+    await expect(page.getByTestId("tbs-surface")).toBeVisible();
+
+    await page.getByTestId("tbs-section-reg").click();
+
+    const empty = page.getByTestId("tbs-empty");
+    await expect(empty).toContainText("No Journal Entry simulation found");
+    const switchAction = empty.getByRole("button", { name: /^Show / });
+    await expect(switchAction).toBeVisible();
+
+    await switchAction.click();
+
+    await expect(page.getByTestId("tbs-empty")).toHaveCount(0);
+    await expect(
+        page.locator("[data-testid=\"exam-shell\"], [data-testid=\"tbs-surface\"]").first(),
+    ).toBeVisible();
+});
+
 test("the TBS surface exposes NO Again/Hard/Good/Easy buttons (A52/B4-D3)", async ({ page, seed }) => {
     await page.goto(`/ankountant-tbs?note=${seed.sealedTbsNoteIds[0]}`);
     await expect(page.getByTestId("tbs-surface")).toBeVisible();
