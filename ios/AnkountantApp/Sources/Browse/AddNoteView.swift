@@ -20,10 +20,16 @@ struct AddNoteView: View {
     @State private var isSaving = false
     @State private var loadErrorMessage: String?
     @State private var saveErrorMessage: String?
+    @State private var showImport = false
+    @State private var importMessage: String?
+    @State private var showImportAlert = false
 
     let preselectedDeckId: Int64?
     let initialDraft: AddNoteDraft?
     let onSave: () -> Void
+
+    private static let noDecksMessage = "No decks are available."
+    private static let noNotetypesMessage = "No note types are available."
 
     init(
         preselectedDeckId: Int64? = nil,
@@ -84,6 +90,11 @@ struct AddNoteView: View {
                             Button("Retry") {
                                 Task { await loadData() }
                             }
+                            if localContentMissing {
+                                Button("Import package", systemImage: "square.and.arrow.down") {
+                                    showImport = true
+                                }
+                            }
                         }
                     }
                 }
@@ -121,6 +132,14 @@ struct AddNoteView: View {
             .task {
                 await loadData()
             }
+            .fileImporter(isPresented: $showImport, allowedContentTypes: [.data]) { result in
+                handleImport(result)
+            }
+            .alert("Import", isPresented: $showImportAlert) {
+                Button("OK") {}
+            } message: {
+                Text(importMessage ?? "")
+            }
         }
     }
 
@@ -155,6 +174,10 @@ struct AddNoteView: View {
         )
     }
 
+    private var localContentMissing: Bool {
+        loadErrorMessage == Self.noDecksMessage || loadErrorMessage == Self.noNotetypesMessage
+    }
+
     private func loadData() async {
         loadErrorMessage = nil
         saveErrorMessage = nil
@@ -166,7 +189,7 @@ struct AddNoteView: View {
         do {
             decks = try deckClient.fetchAll()
             guard !decks.isEmpty else {
-                loadErrorMessage = "No decks are available."
+                loadErrorMessage = Self.noDecksMessage
                 return
             }
 
@@ -183,7 +206,7 @@ struct AddNoteView: View {
                 ?? notetypeNames.first
 
             guard let chosen else {
-                loadErrorMessage = "No note types are available."
+                loadErrorMessage = Self.noNotetypesMessage
                 return
             }
 
@@ -205,6 +228,31 @@ struct AddNoteView: View {
             fieldNames = []
             fieldValues = []
             loadErrorMessage = "Failed to load note fields: \(error.localizedDescription)"
+        }
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            let ext = url.pathExtension.lowercased()
+            guard ext == "apkg" || ext == "colpkg" else {
+                importMessage = "Unsupported file type. Please select an .apkg or .colpkg file."
+                showImportAlert = true
+                return
+            }
+            do {
+                importMessage = try ImportHelper.importPackage(from: url)
+                Task {
+                    await loadData()
+                    onSave()
+                }
+            } catch {
+                importMessage = "Import failed: \(error.localizedDescription)"
+            }
+            showImportAlert = true
+        case .failure(let error):
+            importMessage = "Could not select file: \(error.localizedDescription)"
+            showImportAlert = true
         }
     }
 

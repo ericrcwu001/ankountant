@@ -24,9 +24,14 @@ struct AddImageOcclusionNoteView: View {
     @State private var saveErrorMessage: String?
     @State private var imageURL: URL?
     @State private var showOcclusionEditor = false
+    @State private var showImport = false
+    @State private var importMessage: String?
+    @State private var showImportAlert = false
 
     let onSave: () -> Void
     let preselectedDeckId: Int64?
+
+    private static let noDecksMessage = "No decks are available."
 
     init(onSave: @escaping () -> Void, preselectedDeckId: Int64? = nil) {
         self.onSave = onSave
@@ -109,8 +114,23 @@ struct AddImageOcclusionNoteView: View {
 
                 if let loadErrorMessage {
                     Section {
-                        Text(loadErrorMessage)
-                            .ankountantStatusText(.danger, font: .caption)
+                        if localContentMissing {
+                            ContentUnavailableView {
+                                Label("Could Not Load Decks", systemImage: "exclamationmark.triangle")
+                            } description: {
+                                Text(loadErrorMessage)
+                            } actions: {
+                                Button("Retry") {
+                                    Task { await loadDecks() }
+                                }
+                                Button("Import package", systemImage: "square.and.arrow.down") {
+                                    showImport = true
+                                }
+                            }
+                        } else {
+                            Text(loadErrorMessage)
+                                .ankountantStatusText(.danger, font: .caption)
+                        }
                     }
                 }
 
@@ -167,6 +187,14 @@ struct AddImageOcclusionNoteView: View {
                     }
                 }
             }
+            .fileImporter(isPresented: $showImport, allowedContentTypes: [.data]) { result in
+                handleImport(result)
+            }
+            .alert("Import", isPresented: $showImportAlert) {
+                Button("OK") {}
+            } message: {
+                Text(importMessage ?? "")
+            }
         }
     }
 
@@ -200,6 +228,10 @@ struct AddImageOcclusionNoteView: View {
         return nil
     }
 
+    private var localContentMissing: Bool {
+        loadErrorMessage == Self.noDecksMessage
+    }
+
     @MainActor
     private func loadDecks() async {
         loadErrorMessage = nil
@@ -216,7 +248,7 @@ struct AddImageOcclusionNoteView: View {
 
         guard !decks.isEmpty else {
             selectedDeckId = 0
-            loadErrorMessage = "No decks are available."
+            loadErrorMessage = Self.noDecksMessage
             return
         }
 
@@ -226,6 +258,31 @@ struct AddImageOcclusionNoteView: View {
         }
 
         selectedDeckId = decks[0].id
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            let ext = url.pathExtension.lowercased()
+            guard ext == "apkg" || ext == "colpkg" else {
+                importMessage = "Unsupported file type. Please select an .apkg or .colpkg file."
+                showImportAlert = true
+                return
+            }
+            do {
+                importMessage = try ImportHelper.importPackage(from: url)
+                Task {
+                    await loadDecks()
+                    onSave()
+                }
+            } catch {
+                importMessage = "Import failed: \(error.localizedDescription)"
+            }
+            showImportAlert = true
+        case .failure(let error):
+            importMessage = "Could not select file: \(error.localizedDescription)"
+            showImportAlert = true
+        }
     }
 
     @MainActor
