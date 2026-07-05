@@ -159,7 +159,7 @@ struct HeatmapChartOptimized: View {
         let grid = makeGrid()
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Reviews")
+                Text("Consistency")
                     .ankountantFont(.sectionHeading)
                     .foregroundStyle(palette.textPrimary)
                 Spacer()
@@ -194,7 +194,7 @@ struct HeatmapChartOptimized: View {
                     StatsEmptyChartView(
                         title: "No reviews yet",
                         systemImage: "calendar",
-                        description: "Review cards to build this evidence heatmap.",
+                        description: "Review cards to show daily consistency.",
                         height: 110
                     )
                 }

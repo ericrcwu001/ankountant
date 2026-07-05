@@ -24,6 +24,7 @@ client-side shortcut back to the shell home (mirrors the sidebar's Dashboard).
         deserialize,
         ensureSurface,
         isSurfaceKind,
+        launchLayout,
         MAX_PANES,
         serialize,
         setRatioAt,
@@ -35,6 +36,7 @@ client-side shortcut back to the shell home (mirrors the sidebar's Dashboard).
     import TileView from "./TileView.svelte";
 
     export let initialSurface: SurfaceKind | undefined = undefined;
+    export let singleSurface: SurfaceKind | undefined = undefined;
 
     const STORAGE_KEY = "ankountant.workspace.layout.v1";
 
@@ -47,6 +49,7 @@ client-side shortcut back to the shell home (mirrors the sidebar's Dashboard).
     $: leaves = countLeaves(tree);
     $: canSplit = leaves < MAX_PANES;
     $: canClose = leaves > 1;
+    $: isSingleSurface = singleSurface !== undefined;
 
     const actions: WorkspaceActions = {
         split: (path, dir, surface, side) => {
@@ -97,17 +100,17 @@ client-side shortcut back to the shell home (mirrors the sidebar's Dashboard).
 
     onMount(() => {
         let restored: TileNode | null = null;
-        try {
-            restored = deserialize(localStorage.getItem(STORAGE_KEY));
-        } catch (error) {
-            layoutError = `Saved workspace layout could not be loaded: ${errorMessage(error)}`;
+        if (singleSurface) {
             layoutPersistenceEnabled = false;
+        } else {
+            try {
+                restored = deserialize(localStorage.getItem(STORAGE_KEY));
+            } catch (error) {
+                layoutError = `Saved workspace layout could not be loaded: ${errorMessage(error)}`;
+                layoutPersistenceEnabled = false;
+            }
         }
-        if (restored) {
-            tree = initialSurface ? ensureSurface(restored, initialSurface) : restored;
-        } else if (initialSurface) {
-            tree = defaultLayout(initialSurface);
-        }
+        tree = launchLayout(restored, initialSurface, singleSurface);
         mounted = true;
 
         // Lets Qt add/focus a surface in the already-open workspace, mirroring
@@ -130,47 +133,49 @@ client-side shortcut back to the shell home (mirrors the sidebar's Dashboard).
 </script>
 
 <div class="workspace" data-testid="ankountant-workspace">
-    <header class="ws-toolbar">
-        <button
-            type="button"
-            class="ws-exit"
-            on:click={goHome}
-            aria-label="Back to Ankountant home"
-        >
-            ← Home
-        </button>
-        <span class="ws-title">Study Workspace</span>
-
-        <div class="ws-tools">
-            <div class="ws-add">
-                <select bind:value={addKind} aria-label="Surface to add">
-                    {#each SURFACE_KINDS as kind (kind)}
-                        <option value={kind}>{SURFACES[kind].label}</option>
-                    {/each}
-                </select>
-                <button
-                    type="button"
-                    class="ws-add-btn"
-                    disabled={!canSplit}
-                    on:click={addSurface}
-                    data-testid="add-pane"
-                >
-                    + Add pane
-                </button>
-            </div>
+    {#if !isSingleSurface}
+        <header class="ws-toolbar">
             <button
                 type="button"
-                class="ws-reset"
-                on:click={resetLayout}
-                title="Reset layout"
+                class="ws-exit"
+                on:click={goHome}
+                aria-label="Back to Ankountant home"
             >
-                Reset
+                ← Home
             </button>
-            <span class="ws-count" class:full={!canSplit} title="Open panes">
-                {leaves}/{MAX_PANES}
-            </span>
-        </div>
-    </header>
+            <span class="ws-title">Study Workspace</span>
+
+            <div class="ws-tools">
+                <div class="ws-add">
+                    <select bind:value={addKind} aria-label="Surface to add">
+                        {#each SURFACE_KINDS as kind (kind)}
+                            <option value={kind}>{SURFACES[kind].label}</option>
+                        {/each}
+                    </select>
+                    <button
+                        type="button"
+                        class="ws-add-btn"
+                        disabled={!canSplit}
+                        on:click={addSurface}
+                        data-testid="add-pane"
+                    >
+                        + Add pane
+                    </button>
+                </div>
+                <button
+                    type="button"
+                    class="ws-reset"
+                    on:click={resetLayout}
+                    title="Reset layout"
+                >
+                    Reset
+                </button>
+                <span class="ws-count" class:full={!canSplit} title="Open panes">
+                    {leaves}/{MAX_PANES}
+                </span>
+            </div>
+        </header>
+    {/if}
 
     {#if layoutError}
         <div class="ws-error" role="alert" data-testid="workspace-layout-error">

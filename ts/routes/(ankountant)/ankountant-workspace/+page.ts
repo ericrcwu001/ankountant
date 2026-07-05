@@ -9,5 +9,11 @@ import { isSurfaceKind } from "./workspace-layout";
 export const load = (({ url }) => {
     const raw = url.searchParams.get("initial") ?? "";
     const initial = isSurfaceKind(raw) ? raw : undefined;
-    return { initial };
+    const singleRaw = url.searchParams.get("single") ?? "";
+    const single = isSurfaceKind(singleRaw) ? singleRaw : undefined;
+    return {
+        initial: single ?? initial,
+        single,
+        launchKey: url.search,
+    };
 }) satisfies PageLoad;

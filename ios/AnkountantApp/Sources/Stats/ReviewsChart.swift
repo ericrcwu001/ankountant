@@ -6,14 +6,15 @@ import AnkiProto
 struct ReviewsChart: View {
     let reviews: Anki_Stats_GraphsResponse.ReviewCountsAndTimes
     let period: StatsPeriod
+    @Environment(\.palette) private var palette
 
     private typealias Reviews = Anki_Stats_GraphsResponse.ReviewCountsAndTimes.Reviews
 
     private static let types: [(name: String, keyPath: KeyPath<Reviews, UInt32>)] = [
         ("Learn", \.learn),
         ("Relearn", \.relearn),
-        ("Young", \.young),
-        ("Mature", \.mature),
+        (StatsCardStateLabels.shortInterval, \.young),
+        (StatsCardStateLabels.longInterval, \.mature),
         ("Filtered", \.filtered),
     ]
 
@@ -27,13 +28,11 @@ struct ReviewsChart: View {
     private struct Model {
         var series: [Series] = []
         var total = 0
-        var uniqueDays = 0
-        var avgPerDay: Double { uniqueDays == 0 ? 0 : Double(total) / Double(uniqueDays) }
+        var activeDays = 0
+        var spanDays = 1
+        var avgPerDay: Double { Double(total) / Double(max(spanDays, 1)) }
     }
 
-    /// Aggregates the raw per-day review counts once per render. Days are binned
-    /// into a bounded number of buckets so long time frames ("All Time") don't
-    /// emit thousands of marks and freeze the main thread during layout.
     private func buildModel() -> Model {
         let maxDay = period.days
         var validDays: [(day: Int, rev: Reviews)] = []
@@ -41,7 +40,7 @@ struct ReviewsChart: View {
         var total = 0
         for (dayOffset, rev) in reviews.count {
             let day = Int(dayOffset)
-            guard day <= 0, abs(day) <= maxDay else { continue }
+            guard day <= 0, abs(day) < maxDay else { continue }
             let dayTotal = Int(rev.learn) + Int(rev.relearn) + Int(rev.young)
                 + Int(rev.mature) + Int(rev.filtered)
             guard dayTotal > 0 else { continue }
@@ -52,7 +51,8 @@ struct ReviewsChart: View {
 
         var model = Model()
         model.total = total
-        model.uniqueDays = validDays.count
+        model.activeDays = validDays.count
+        model.spanDays = period == .all ? max(1, abs(minDay) + 1) : period.days
         guard !validDays.isEmpty else { return model }
 
         let size = StatsSeriesBinning.bucketSize(forSpanDays: (0 - minDay) + 1)
@@ -80,8 +80,13 @@ struct ReviewsChart: View {
 
     var body: some View {
         let model = buildModel()
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Reviews").ankountantFont(.bodyEmphasis)
+        VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
+            VStack(alignment: .leading, spacing: AnkountantSpacing.xs) {
+                Text("Review Volume").ankountantFont(.bodyEmphasis)
+                Text("Daily work by card stage")
+                    .ankountantFont(.caption)
+                    .foregroundStyle(palette.textSecondary)
+            }
 
             if model.series.isEmpty {
                 StatsEmptyChartView(
@@ -98,10 +103,10 @@ struct ReviewsChart: View {
                     .foregroundStyle(by: .value("Type", entry.type))
                 }
                 .chartForegroundStyleScale([
-                    "Learn": Color.blue,
-                    "Relearn": Color.orange,
-                    "Young": Color.green,
-                    "Mature": Color.purple,
+                    "Learn": palette.stateNew,
+                    "Relearn": palette.stateLearn,
+                    StatsCardStateLabels.shortInterval: palette.stateReview,
+                    StatsCardStateLabels.longInterval: palette.accent,
                     "Filtered": Color.gray,
                 ])
                 .chartXAxis {
@@ -113,20 +118,28 @@ struct ReviewsChart: View {
                 .frame(height: 180)
             }
 
-            HStack(spacing: 16) {
-                footerItem("Total", value: "\(model.total)")
-                footerItem("Avg/day", value: String(format: "%.1f", model.avgPerDay))
+            LazyVGrid(columns: footerColumns, alignment: .leading, spacing: AnkountantSpacing.md) {
+                footerItem("Reviews", value: "\(model.total)")
+                footerItem("Avg/day", value: formatDecimal(model.avgPerDay))
+                footerItem("Active days", value: "\(model.activeDays)")
             }
-            .font(.caption2)
         }
         .ankountantCard()
     }
 
+    private var footerColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 92), spacing: AnkountantSpacing.md)]
+    }
+
     private func footerItem(_ label: String, value: String) -> some View {
-        VStack(spacing: 2) {
-            Text(value).font(.caption.weight(.semibold).monospacedDigit())
-            Text(label).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: AnkountantSpacing.xxs) {
+            Text(value).ankountantFont(.captionBold).monospacedDigit()
+            Text(label).ankountantFont(.micro).foregroundStyle(palette.textSecondary)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func formatDecimal(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(1)))
     }
 }

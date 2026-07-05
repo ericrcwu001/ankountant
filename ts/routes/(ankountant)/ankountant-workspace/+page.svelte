@@ -9,4 +9,6 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     export let data: PageData;
 </script>
 
-<Workspace initialSurface={data.initial} />
+{#key data.launchKey}
+    <Workspace initialSurface={data.initial} singleSurface={data.single} />
+{/key}

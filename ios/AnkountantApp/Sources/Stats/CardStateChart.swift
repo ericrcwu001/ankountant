@@ -11,7 +11,7 @@ struct CardStateChart: View {
             ("New", breakdown.newCount, .blue),
             ("Learning", breakdown.learningCount, .orange),
             ("Review", breakdown.reviewCount, .green),
-            ("Suspended", breakdown.suspendedCount, .gray),
+            (StatsCardStateLabels.paused, breakdown.suspendedCount, .gray),
         ].filter { $0.1 > 0 }
     }
 

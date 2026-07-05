@@ -24,14 +24,13 @@ struct ButtonsChart: View {
     }
 
     private let buttonLabels = ["Again", "Hard", "Good", "Easy"]
-    private let cardTypes = ["Learning", "Young", "Mature"]
 
     private var entries: [ButtonEntry] {
         let bc = buttonCounts
         let sources: [(String, [UInt32])] = [
             ("Learning", bc.learning),
-            ("Young", bc.young),
-            ("Mature", bc.mature),
+            (StatsCardStateLabels.shortInterval, bc.young),
+            (StatsCardStateLabels.longInterval, bc.mature),
         ]
         var result: [ButtonEntry] = []
         for (typeName, counts) in sources {
@@ -68,8 +67,8 @@ struct ButtonsChart: View {
                 }
                 .chartForegroundStyleScale([
                     "Learning": Color.blue,
-                    "Young": Color.green,
-                    "Mature": Color.purple,
+                    StatsCardStateLabels.shortInterval: Color.green,
+                    StatsCardStateLabels.longInterval: Color.purple,
                 ])
                 .frame(height: 180)
             }

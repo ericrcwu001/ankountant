@@ -3,7 +3,7 @@ Copyright: Ankitects Pty Ltd and contributors
 License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 Shell chrome for the Ankountant surfaces. A fixed navy left sidebar (brand mark,
-primary navigation, focus + profile) frames the light study surfaces to its
+primary navigation, and profile) frames the light study surfaces to its
 right. Routes live in a SvelteKit route group `(ankountant)/` so they share this
 chrome without changing their flat URLs. On launch the classic Qt chrome is
 hidden and this loads full-window (qt/aqt/main.py). Styled with the Ledger design
@@ -40,7 +40,6 @@ tokens (--accent = Ink Navy).
         settings:
             '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"/>',
         sync: '<path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-7.4-3.9"/><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 7.4 3.9"/><path d="M21 4v4h-4"/><path d="M3 20v-4h4"/>',
-        flame: '<path d="M12 3s4.4 3.2 4.4 7.6a4.4 4.4 0 0 1-8.8 0c0-1 .3-1.9.9-2.7.4 1.6 1.7 2.1 1.7 2.1s-.9-2.5.2-4.3c.6-1 1.6-2 1.6-2.7z"/>',
         chevron: '<path d="M6 9.5l6 6 6-6"/>',
     };
 
@@ -61,7 +60,7 @@ tokens (--accent = Ink Navy).
         {
             id: "browse",
             label: "Browse",
-            href: "/ankountant-workspace?initial=browse",
+            href: "/ankountant-workspace?initial=browse&single=browse",
         },
         { id: "sync", label: "Sync", href: "/ankountant-sync" },
         { id: "settings", label: "Settings", href: settingsHref },
@@ -158,24 +157,6 @@ tokens (--accent = Ink Navy).
         </nav>
 
         <div class="sidebar-foot">
-            <div class="focus-card" aria-label="Study focus">
-                <div class="focus-row">
-                    <span class="focus-name">
-                        <svg
-                            class="focus-icon"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            aria-hidden="true"
-                        >
-                            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                            {@html icons.flame}
-                        </svg>
-                        Focus
-                    </span>
-                    <span class="focus-count">5 sections</span>
-                </div>
-            </div>
-
             <button
                 type="button"
                 class="profile"
@@ -326,40 +307,6 @@ tokens (--accent = Ink Navy).
         flex-direction: column;
         gap: var(--space-md);
         padding-top: var(--space-lg);
-    }
-
-    .focus-card {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-sm);
-        padding: 0 var(--space-xs);
-    }
-
-    .focus-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .focus-name {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        font-size: 13.5px;
-        font-weight: 500;
-        color: rgba(255, 255, 255, 0.82);
-    }
-
-    .focus-icon {
-        width: 15px;
-        height: 15px;
-        color: #e08a2e;
-    }
-
-    .focus-count {
-        font-size: 13.5px;
-        font-weight: 700;
-        color: #fff;
     }
 
     .profile {

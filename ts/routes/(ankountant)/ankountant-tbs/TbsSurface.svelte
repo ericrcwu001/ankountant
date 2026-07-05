@@ -9,7 +9,19 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     import type { ConfidenceLevel } from "$lib/components/ConfidenceGate.svelte";
     import ConfidenceGate from "$lib/components/ConfidenceGate.svelte";
 
-    import type { JeLineInput, NumericCellInput, TbsModel } from "./lib";
+    import LearningFeedbackPanel from "../LearningFeedbackPanel.svelte";
+    import {
+        learningFeedbackDepthForOutcome,
+        learningFeedbackErrorMessage,
+        maybeGenerateLearningFeedback,
+        shouldGenerateLearningFeedback,
+        type LearningFeedbackConfidence,
+        type LearningFeedbackOutcome,
+        type LearningFeedbackPanelState,
+        type LearningFeedbackRequest,
+        type LearningFeedbackSource,
+    } from "../learning-feedback";
+    import type { JeLineInput, NumericCellInput, RevealModel, TbsModel } from "./lib";
     import {
         buildRevealModel,
         buildJeSubmission,
@@ -76,6 +88,8 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     let confidence: ConfidenceLevel | null = null;
     let submitting = false;
     let submitError: string | null = null;
+    let learningFeedbackState: LearningFeedbackPanelState | null = null;
+    let learningFeedbackRequestId = 0;
 
     $: resultById = new Map((results ?? []).map((r) => [r.id, r]));
     $: answerInputsLocked = submitting || results !== null;
@@ -92,6 +106,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         if (confidence === null || submitting || results !== null || !answersComplete) {
             return;
         }
+        const submittedConfidence = confidence;
         submitting = true;
         submitError = null;
         try {
@@ -111,11 +126,206 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             );
             results = resp.steps;
             total = resp.totalCredit;
+            const nextReveal = buildRevealModel(fields, tags);
+            const outcome = learningFeedbackOutcome(resp.steps);
+            if (shouldGenerateLearningFeedback(submittedConfidence, outcome)) {
+                void requestLearningFeedback(
+                    resp.steps,
+                    nextReveal,
+                    submittedConfidence,
+                    outcome,
+                );
+            }
         } catch (error) {
             submitError = error instanceof Error ? error.message : String(error);
         } finally {
             submitting = false;
         }
+    }
+
+    async function requestLearningFeedback(
+        sourceResults: StepResult[] | null = results,
+        sourceReveal: RevealModel | null = reveal,
+        sourceConfidence: LearningFeedbackConfidence | null = confidence,
+        sourceOutcome: LearningFeedbackOutcome | null = sourceResults
+            ? learningFeedbackOutcome(sourceResults)
+            : null,
+    ): Promise<void> {
+        if (
+            !sourceResults ||
+            !sourceReveal ||
+            sourceConfidence === null ||
+            sourceOutcome === null ||
+            !shouldGenerateLearningFeedback(sourceConfidence, sourceOutcome)
+        ) {
+            learningFeedbackState = null;
+            return;
+        }
+        const requestId = ++learningFeedbackRequestId;
+        learningFeedbackState = { phase: "loading" };
+        try {
+            const feedback = await maybeGenerateLearningFeedback(
+                buildLearningFeedbackRequest(
+                    sourceResults,
+                    sourceReveal,
+                    sourceConfidence,
+                    sourceOutcome,
+                ),
+            );
+            if (requestId !== learningFeedbackRequestId) {
+                return;
+            }
+            learningFeedbackState = { phase: "ready", feedback };
+        } catch (error) {
+            if (requestId !== learningFeedbackRequestId) {
+                return;
+            }
+            learningFeedbackState = {
+                phase: "error",
+                message: learningFeedbackErrorMessage(error),
+            };
+        }
+    }
+
+    function retryLearningFeedback(): void {
+        void requestLearningFeedback();
+    }
+
+    function hasWrongResults(sourceResults: readonly StepResult[]): boolean {
+        return sourceResults.some((result) => !result.correct);
+    }
+
+    function buildLearningFeedbackRequest(
+        sourceResults: readonly StepResult[],
+        sourceReveal: RevealModel,
+        sourceConfidence: LearningFeedbackConfidence,
+        sourceOutcome: LearningFeedbackOutcome,
+    ): LearningFeedbackRequest {
+        const resultMap = new Map(sourceResults.map((result) => [result.id, result]));
+        const correctById = new Map(
+            sourceReveal.steps.map((step) => [step.id, step.correctText]),
+        );
+        const focusSteps = model.steps
+            .filter(
+                (step) =>
+                    sourceOutcome === "correct" ||
+                    resultMap.get(step.id)?.correct === false,
+            )
+            .map((step) => ({
+                id: step.id,
+                label: step.label,
+                userAnswer: userAnswerForStep(step.id),
+                correctAnswer: correctById.get(step.id) ?? "",
+            }));
+        return {
+            title: `${title} feedback`,
+            confidence: sourceConfidence,
+            outcome: sourceOutcome,
+            feedbackDepth: learningFeedbackDepthForOutcome(
+                sourceConfidence,
+                sourceOutcome,
+            ),
+            question: [
+                model.prompt,
+                `Mode: ${shape}`,
+                `Section: ${model.section}`,
+                sourceOutcome === "correct"
+                    ? "Focus: all steps were correct, but confidence was Guess."
+                    : `Missed steps: ${focusSteps.map((step) => step.label).join(", ")}`,
+            ].join("\n"),
+            userAnswer: focusSteps
+                .map((step) => `${step.label}: ${step.userAnswer || "blank"}`)
+                .join("\n"),
+            correctAnswer: focusSteps
+                .map((step) => `${step.label}: ${step.correctAnswer}`)
+                .join("\n"),
+            sources: buildLearningFeedbackSources(sourceReveal, correctById),
+        };
+    }
+
+    function userAnswerForStep(stepId: string): string {
+        if (shape === "numeric") {
+            return numericCells.find((cell) => cell.id === stepId)?.value.trim() ?? "";
+        }
+        const line = jeLines.find((entry) => entry.id === stepId);
+        if (!line) {
+            return "";
+        }
+        if (line.noEntry) {
+            return "No entry";
+        }
+        return [line.side.toUpperCase(), line.account.trim(), line.amount.trim()]
+            .filter(Boolean)
+            .join(" ");
+    }
+
+    function learningFeedbackOutcome(
+        sourceResults: readonly StepResult[],
+    ): LearningFeedbackOutcome {
+        return hasWrongResults(sourceResults) ? "incorrect" : "correct";
+    }
+
+    function buildLearningFeedbackSources(
+        sourceReveal: RevealModel,
+        correctById: Map<string, string>,
+    ): LearningFeedbackSource[] {
+        return compactSources([
+            {
+                id: "prompt",
+                title: "Prompt",
+                body: model.prompt,
+            },
+            {
+                id: "answer-key",
+                title: "Answer key",
+                body: model.steps
+                    .map((step) => `${step.label}: ${correctById.get(step.id) ?? ""}`)
+                    .join("\n"),
+            },
+            {
+                id: "source-passage",
+                title: "Source passage",
+                body: sourceReveal.source,
+            },
+            ...model.exhibits.map((exhibit, index) => ({
+                id: `exhibit-${exhibit.id?.trim() || index + 1}`,
+                title: exhibit.title,
+                body: exhibitBody(exhibit),
+            })),
+        ]);
+    }
+
+    function exhibitBody(exhibit: TbsModel["exhibits"][number]): string {
+        if (exhibit.body.trim()) {
+            return exhibit.body;
+        }
+        if (exhibit.columns && exhibit.rows) {
+            return [
+                exhibit.columns.join(" | "),
+                ...exhibit.rows.map((row) => row.join(" | ")),
+            ].join("\n");
+        }
+        return "";
+    }
+
+    function compactSources(
+        sources: LearningFeedbackSource[],
+    ): LearningFeedbackSource[] {
+        const seen = new Set<string>();
+        const compacted: LearningFeedbackSource[] = [];
+        for (const source of sources) {
+            const id = source.id.trim();
+            if (!id || seen.has(id) || !source.body.trim()) {
+                continue;
+            }
+            seen.add(id);
+            compacted.push({
+                id,
+                title: source.title.trim() || id,
+                body: source.body.trim(),
+            });
+        }
+        return compacted;
     }
 </script>
 
@@ -359,6 +569,12 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             {/if}
             {#if results && reveal}
                 <ResultsLayer {reveal} {results} />
+            {/if}
+            {#if learningFeedbackState}
+                <LearningFeedbackPanel
+                    state={learningFeedbackState}
+                    retry={retryLearningFeedback}
+                />
             {/if}
         </div>
 

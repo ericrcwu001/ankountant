@@ -5,7 +5,7 @@ import { activeShellNavId, type ShellNavItem } from "./shell-nav";
 const nav: ShellNavItem[] = [
     { id: "dashboard", href: "/ankountant-home" },
     { id: "study", href: "/ankountant-workspace" },
-    { id: "browse", href: "/ankountant-workspace?initial=browse" },
+    { id: "browse", href: "/ankountant-workspace?initial=browse&single=browse" },
     { id: "settings", href: "/ankountant-settings" },
 ];
 
@@ -14,13 +14,15 @@ test("path-only workspace route selects Study", () => {
 });
 
 test("browse query route wins over the path-only Study route", () => {
-    expect(activeShellNavId(nav, "/ankountant-workspace", "?initial=browse")).toBe("browse");
+    expect(activeShellNavId(nav, "/ankountant-workspace", "?initial=browse&single=browse")).toBe("browse");
 });
 
 test("browse match tolerates extra query params", () => {
-    expect(activeShellNavId(nav, "/ankountant-workspace", "?initial=browse&mode=cards&page=2")).toBe(
-        "browse",
-    );
+    expect(activeShellNavId(
+        nav,
+        "/ankountant-workspace",
+        "?initial=browse&single=browse&mode=cards&page=2",
+    )).toBe("browse");
 });
 
 test("settings route selects Settings", () => {

@@ -8,13 +8,19 @@
 
 ## Seed content (author as part of Phase A)
 
-FAR, sized to exercise every rubric and cross the abstain thresholds on demand:
+The demo seed (`rslib/src/ankountant/seed.rs` + `seed_content.json`, loaded by the `LoadFarSeed` RPC) is **FAR-deep and five-section-wide**: FAR carries the full rubric-exercising content, and AUD/REG/TCP/ISC add enough that the summit dashboard shows a real readiness range for all five visible sections (BAR is seeded structurally only, not shown). Every layer rides ordinary Anki objects (FR-5).
 
-- **4 CONFUSABLE sets:** capitalize vs expense; operating vs finance lease; rev-rec step selection; trading vs AFS vs HTM.
-- **Per set:** 3 study recall cards (tag some `cog::rote`, some `cog::applied` to exercise A2) + **≥6 sealed MCQs** → ≥24 sealed items total, so 20 sealed attempts is reachable and coverage can be dialed above/below 60%.
-- **Sealed TBS:** 3 journal-entry + 2 numeric (playable via B4); optionally 1 research + 1 doc-review stored-only (A9 AC3).
-- ~15–20 `cog::rote` recall cards total across sets.
-- Playwright e2e fixture must load this seed (ship a `FAR-seed.apkg` or a SQL/`col`-config seed builder the fixture imports before each spec).
+**FAR — deep core**, sized to exercise every rubric and cross the abstain thresholds on demand:
+
+- **13-topic CONFUSABLE map** (one set per Home summit topic). The first four are the anchor sets the grading + e2e tests pin by index: capitalize vs expense; operating vs finance lease; rev-rec step selection; trading vs AFS vs HTM.
+- **~100 real recall cards** across the topics (tagged `cog::rote` / `cog::applied` to exercise A2) so Memory is measurable per topic.
+- **≥6 sealed MCQs per set**, plus the pinned anchor **journal-entry + numeric TBS** (A10 + e2e pin these), extra worked JE/numeric TBS, and section-agnostic research/doc-review items — comfortably clearing A5's ≥20-sealed-attempt / ≥60%-coverage thresholds so abstain can be dialed either way.
+
+**AUD / REG / TCP / ISC — summit breadth:** 6 confusion sets each, with study recall cards, sealed MCQs, and section-agnostic TBS (research / doc-review / numeric / journal-entry), so every visible section reports a real Memory/Performance/Readiness signal. **38 confusion sets total** across the six sections (BAR contributes 1, structural only).
+
+**Demo history** (opt-in `with_history`): fake review revlog + sealed Attempt Log notes and exam dates for all five visible sections, so a fresh profile opens on a lived-in summit with an honest band and the per-topic give-up rule.
+
+- Playwright e2e fixture loads this seed via the `LoadFarSeed` RPC (a SQL/`col`-config seed builder run before each spec).
 
 ## Cut order (if the night runs short — cut last-to-first)
 

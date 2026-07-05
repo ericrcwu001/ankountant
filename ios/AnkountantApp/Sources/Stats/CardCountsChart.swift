@@ -12,9 +12,9 @@ struct CardCountsChart: View {
             ("New", Int(c.newCards), .cyan),
             ("Learning", Int(c.learn), .blue),
             ("Relearning", Int(c.relearn), .orange),
-            ("Young", Int(c.young), .green),
-            ("Mature", Int(c.mature), .purple),
-            ("Suspended", Int(c.suspended), .gray),
+            (StatsCardStateLabels.shortInterval, Int(c.young), .green),
+            (StatsCardStateLabels.longInterval, Int(c.mature), .purple),
+            (StatsCardStateLabels.paused, Int(c.suspended), .gray),
             ("Buried", Int(c.buried), .brown),
         ].filter { $0.count > 0 }
     }

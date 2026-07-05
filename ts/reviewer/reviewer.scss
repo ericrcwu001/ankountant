@@ -102,6 +102,109 @@ button {
     margin: 1em 0.5em;
 }
 
+#ankountant-learning-feedback {
+    display: grid;
+    gap: 14px;
+    max-width: 720px;
+    margin: 28px auto 0;
+    padding: 18px 20px;
+    text-align: start;
+    background: var(--canvas-elevated);
+    border: 1px solid var(--border-subtle);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--border-radius-medium);
+    box-shadow: var(--elevation-e1);
+}
+
+#ankountant-learning-feedback.error {
+    border-left-color: var(--fg-error);
+}
+
+.ankountant-feedback-head {
+    display: grid;
+    gap: 4px;
+}
+
+.ankountant-feedback-head span,
+#ankountant-learning-feedback dt,
+.ankountant-feedback-sources span {
+    color: var(--fg-subtle);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.ankountant-feedback-head h2 {
+    margin: 0;
+    color: var(--fg);
+    font-size: 17px;
+    line-height: 1.3;
+}
+
+#ankountant-learning-feedback p,
+#ankountant-learning-feedback dl,
+#ankountant-learning-feedback dd {
+    margin: 0;
+}
+
+#ankountant-learning-feedback p,
+#ankountant-learning-feedback dd {
+    color: var(--fg);
+    line-height: 1.5;
+}
+
+#ankountant-learning-feedback.error p {
+    color: var(--fg-error);
+}
+
+#ankountant-learning-feedback dl {
+    display: grid;
+    gap: 12px;
+}
+
+#ankountant-learning-feedback dt {
+    margin: 0 0 4px;
+}
+
+.ankountant-feedback-sources {
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 13px;
+}
+
+.ankountant-feedback-sources span {
+    margin-right: 6px;
+}
+
+.ankountant-feedback-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+#ankountant-learning-feedback button {
+    min-height: 36px;
+    margin: 0;
+    padding: 0 16px;
+    color: var(--canvas);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: var(--border-radius);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+#ankountant-learning-feedback button:hover {
+    background: var(--accent-strong);
+    border-color: var(--accent-strong);
+}
+
+#ankountant-learning-feedback button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
 .replay-button {
     text-decoration: none;
     display: inline-flex;

@@ -33,6 +33,7 @@ from anki.collection import OpChangesOnly, Progress, SearchNode
 from anki.decks import UpdateDeckConfigs, UpdateDeckConfigsMode
 from anki.scheduler.v3 import SchedulingStatesWithContext, SetSchedulingStatesRequest
 from anki.utils import dev_mode
+from aqt import ankountant_learning_feedback as learning_feedback
 from aqt.changenotetype import ChangeNotetypeDialog
 from aqt.deckoptions import DeckOptionsDialog
 from aqt.operations import on_op_finished
@@ -771,6 +772,57 @@ def set_ankountant_sync_settings() -> bytes:
     return b""
 
 
+def _json_request_payload(name: str) -> object:
+    try:
+        return json.loads(request.data.decode("utf8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{name} must be valid JSON") from exc
+
+
+def _require_open_profile() -> dict:
+    profile = aqt.mw.pm.profile
+    if profile is None:
+        raise ValueError("profile is not open")
+    return profile
+
+
+def get_ankountant_learning_feedback_settings() -> bytes:
+    return json.dumps(
+        learning_feedback.get_learning_feedback_settings(_require_open_profile())
+    ).encode("utf8")
+
+
+def set_ankountant_learning_feedback_settings() -> bytes:
+    settings = learning_feedback.set_learning_feedback_settings(
+        _require_open_profile(),
+        _json_request_payload("learning feedback settings payload"),
+    )
+    return json.dumps(settings).encode("utf8")
+
+
+def save_ankountant_learning_feedback_api_key() -> bytes:
+    settings = learning_feedback.save_learning_feedback_api_key(
+        _require_open_profile(),
+        _json_request_payload("OpenAI API key payload"),
+    )
+    return json.dumps(settings).encode("utf8")
+
+
+def delete_ankountant_learning_feedback_api_key() -> bytes:
+    settings = learning_feedback.delete_learning_feedback_api_key(
+        _require_open_profile()
+    )
+    return json.dumps(settings).encode("utf8")
+
+
+def generate_ankountant_learning_feedback() -> bytes:
+    feedback = learning_feedback.generate_learning_feedback(
+        _require_open_profile(),
+        _json_request_payload("learning feedback request payload"),
+    )
+    return json.dumps(feedback).encode("utf8")
+
+
 post_handler_list = [
     congrats_info,
     get_deck_configs_for_update,
@@ -789,6 +841,11 @@ post_handler_list = [
     save_custom_colours,
     get_ankountant_sync_settings,
     set_ankountant_sync_settings,
+    get_ankountant_learning_feedback_settings,
+    set_ankountant_learning_feedback_settings,
+    save_ankountant_learning_feedback_api_key,
+    delete_ankountant_learning_feedback_api_key,
+    generate_ankountant_learning_feedback,
 ]
 
 

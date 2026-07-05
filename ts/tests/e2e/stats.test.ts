@@ -3,6 +3,10 @@
 
 import { expect, test } from "./fixtures";
 
+function numericText(text: string | null): number {
+    return Number((text ?? "").replace(/[^\d]/g, ""));
+}
+
 test("stats: empty analytics view points to import and collection", async ({ page, seedWithHistory }) => {
     expect(seedWithHistory.sealedItems).toBeGreaterThan(0);
     await page.goto("/ankountant-stats");
@@ -23,6 +27,26 @@ test("stats: empty analytics view points to import and collection", async ({ pag
     await empty.getByRole("button", { name: "Show collection" }).click();
     await expect(page.getByLabel("Statistics overview")).toBeVisible();
     await expect(page.getByTestId("stats-empty")).toHaveCount(0);
+});
+
+test("stats: review summary uses available history", async ({ page, seedWithHistory }) => {
+    expect(seedWithHistory.sealedItems).toBeGreaterThan(0);
+    await page.goto("/ankountant-stats");
+
+    const summary = page.getByTestId("stats-review-summary");
+    await expect(summary).toBeVisible();
+    await expect.poll(async () => numericText(await summary.getByTestId("stats-reviewed").textContent()))
+        .toBeGreaterThan(0);
+    await expect(summary.getByTestId("stats-time")).not.toHaveText("0m");
+    await expect(summary.getByTestId("stats-accuracy")).not.toHaveText("--");
+    await expect.poll(async () => {
+        const values = await Promise.all([
+            summary.getByTestId("stats-new-count").textContent(),
+            summary.getByTestId("stats-learning-count").textContent(),
+            summary.getByTestId("stats-review-count").textContent(),
+        ]);
+        return values.some((value) => numericText(value) > 0);
+    }).toBe(true);
 });
 
 test("stats: analytics page scrolls in the Ankountant shell body", async ({ page, seedWithHistory }) => {

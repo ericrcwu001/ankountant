@@ -39,14 +39,18 @@
 		2829D1BD2656FB41A2B2A0AA /* ImportHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94F9759DA9327F20A091BA0B /* ImportHelper.swift */; };
 		28CE378ABCE0FD30D16621F8 /* ConfidenceGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44BB45DC4E32708D410B6DC /* ConfidenceGateView.swift */; };
 		2A077612C4E6BA4C2550673A /* MaintenanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C73A41D7328E29ACBB3DA36 /* MaintenanceView.swift */; };
+		2B23FB0BE6840F7CD4F1190A /* StatsCardStateLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E68F19B8130537FD1CBD33E /* StatsCardStateLabels.swift */; };
 		2B661D49EC1F69741869FFA8 /* Sharing in Frameworks */ = {isa = PBXBuildFile; productRef = 16BD10D6E7445311256D4913 /* Sharing */; };
 		2C968DC479B2689273F76B09 /* LoginSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C820A3ABA12F9F58FA97D306 /* LoginSheet.swift */; };
 		2DAD4423E03036AC17E33FF7 /* NotetypeFieldManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C52C23874A927C3190A7F399 /* NotetypeFieldManagerView.swift */; };
 		2EB2C2F5F40660B2D1C3542A /* ReadinessComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DDE196C3D244E15CD2994B /* ReadinessComponents.swift */; };
+		2FFC9F817B391C846380560A /* ProgressRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8038B7CBECC0F092C5C96C9 /* ProgressRing.swift */; };
 		31E94D1BC14C9BFB7F7F9E59 /* ChapterListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34C15FC44A3950774F64B9F2 /* ChapterListView.swift */; };
 		3523C44227BF41C6FF4F9A36 /* PeriodPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17C9ABE3F15DEC56F0A0D5F7 /* PeriodPicker.swift */; };
 		3647426F74984A0CC1DC7851 /* RetentionChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F32BDCF4F6BF1D221409085 /* RetentionChart.swift */; };
 		36B3A3E99655C65E7F0A85E1 /* BrowseSelectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC0795F3D34382B40944EEC /* BrowseSelectionState.swift */; };
+		37730A70ABFF4E4A0820CF16 /* ProgressOverviewCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8238163D5CA23812C12C9E04 /* ProgressOverviewCard.swift */; };
+		378B4BB552511D469639A81C /* ProgressOverviewRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAA948C2242681CD08AF038E /* ProgressOverviewRow.swift */; };
 		37EFBAD41ABD3D60DD2277CB /* TodayStatsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C44B7ECA176D74353199249 /* TodayStatsCard.swift */; };
 		3937C058C36CFC07479C9394 /* CardAssetScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00409FD1743F643E1EC8B54 /* CardAssetScheme.swift */; };
 		3C66B1BB568B406E80660F0B /* SarasaMonoK-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9371B81F0533F71A2B5F1CD5 /* SarasaMonoK-Regular.ttf */; };
@@ -122,6 +126,7 @@
 		C533F96A24E70364C246FBC9 /* SectionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6EE749922E47469613214E3 /* SectionDetailView.swift */; };
 		CF253A10F98C2E77CBB2D219 /* BrowseNoteDestinationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 835FB99010478142E01C9375 /* BrowseNoteDestinationView.swift */; };
 		D127837E7EEBC1CAFF12465E /* AnkountantCardWeb in Frameworks */ = {isa = PBXBuildFile; productRef = 83324CEEC86005CA2C82927B /* AnkountantCardWeb */; };
+		D14E2ED65A0C088924CB15F7 /* StudyHealthCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 277428DFC1085D4DABC9C2BD /* StudyHealthCard.swift */; };
 		D25B9F62F23AB580CC6A7DEE /* ReaderConfigurationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C7EE7066EFCB9753653726 /* ReaderConfigurationView.swift */; };
 		D2D84E8185221D59E95C3FE1 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6370F065E997C80B8E88FF /* WidgetSnapshot.swift */; };
 		D3D66A5DBB118EF849CD3096 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E37D21F1CA0E3CC0FD07D068 /* ReviewView.swift */; };
@@ -208,6 +213,7 @@
 		1F7DF531533DB31B567BEC32 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		23AD9325BFCF67C92CE70E87 /* mathjax */ = {isa = PBXFileReference; lastKnownFileType = folder; name = mathjax; path = Resources/mathjax; sourceTree = SOURCE_ROOT; };
 		25EE7EA28FBFE27A35C1D67A /* EaseChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EaseChart.swift; sourceTree = "<group>"; };
+		277428DFC1085D4DABC9C2BD /* StudyHealthCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyHealthCard.swift; sourceTree = "<group>"; };
 		27F4EC04E074574326D3C9E0 /* ReaderFontOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderFontOption.swift; sourceTree = "<group>"; };
 		293E60E64D267659C3490186 /* ResearchTaskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchTaskView.swift; sourceTree = "<group>"; };
 		2C1786A1B882DB3B5924AE56 /* BrowseNoteListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseNoteListRow.swift; sourceTree = "<group>"; };
@@ -260,6 +266,7 @@
 		800B27D907AFFC04B99E07C5 /* ReaderConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderConfiguration.swift; sourceTree = "<group>"; };
 		80C103EE6A9579491EF808A8 /* CardWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardWebView.swift; sourceTree = "<group>"; };
 		8225F35818823937B06A2E1E /* AnkountantReader */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AnkountantReader; path = ../AnkountantReader; sourceTree = SOURCE_ROOT; };
+		8238163D5CA23812C12C9E04 /* ProgressOverviewCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressOverviewCard.swift; sourceTree = "<group>"; };
 		827944E7BB39D4C900F6DA1F /* DeckTemplateListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckTemplateListView.swift; sourceTree = "<group>"; };
 		835FB99010478142E01C9375 /* BrowseNoteDestinationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseNoteDestinationView.swift; sourceTree = "<group>"; };
 		8676506F499FBA5117D16AA9 /* SyncCoordinatorTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCoordinatorTypes.swift; sourceTree = "<group>"; };
@@ -277,6 +284,7 @@
 		9C73A41D7328E29ACBB3DA36 /* MaintenanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaintenanceView.swift; sourceTree = "<group>"; };
 		9E488279CA6DA481AECC7431 /* AnkountantAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AnkountantAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E58808CA6B40C845E6BE2D1 /* DeckDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckDetailView.swift; sourceTree = "<group>"; };
+		9E68F19B8130537FD1CBD33E /* StatsCardStateLabels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsCardStateLabels.swift; sourceTree = "<group>"; };
 		9F36AA7A2AC313EB0C1BA7FB /* NanumMyeongjo-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NanumMyeongjo-Regular.ttf"; sourceTree = "<group>"; };
 		9F6EA651E618D65394037BD7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		A00409FD1743F643E1EC8B54 /* CardAssetScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardAssetScheme.swift; sourceTree = "<group>"; };
@@ -299,6 +307,7 @@
 		C628C5CAB5E712899BCCDC3A /* LookupAudioSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LookupAudioSupport.swift; sourceTree = "<group>"; };
 		C71A30A1FCAAAACB32C3505C /* StatsChartTooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsChartTooltip.swift; sourceTree = "<group>"; };
 		C820A3ABA12F9F58FA97D306 /* LoginSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginSheet.swift; sourceTree = "<group>"; };
+		CAA948C2242681CD08AF038E /* ProgressOverviewRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressOverviewRow.swift; sourceTree = "<group>"; };
 		CD4E24076B14FC2B56965852 /* DeckListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckListView.swift; sourceTree = "<group>"; };
 		D101BE4DB08171D002FE24E3 /* ReviewToolbarChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewToolbarChrome.swift; sourceTree = "<group>"; };
 		D103B6F3093222B871952D04 /* ReadinessScoreTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadinessScoreTile.swift; sourceTree = "<group>"; };
@@ -316,6 +325,7 @@
 		EE64EDD4A9088D302CAC8F29 /* ReviewCompletionSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCompletionSummary.swift; sourceTree = "<group>"; };
 		EF0D840A187EB6B0407B7CA9 /* WidgetSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotStore.swift; sourceTree = "<group>"; };
 		F4AFF84F476980B81B28165F /* NoteFieldHTMLPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteFieldHTMLPreview.swift; sourceTree = "<group>"; };
+		F8038B7CBECC0F092C5C96C9 /* ProgressRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressRing.swift; sourceTree = "<group>"; };
 		F874AE64A90478C5F986B48D /* AnkiBackedDictionaryConfigStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnkiBackedDictionaryConfigStore.swift; sourceTree = "<group>"; };
 		F9825D34333DC1375B4C5DE2 /* SimulationsHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationsHubView.swift; sourceTree = "<group>"; };
 		FA43BB58E717B2FDA85D3652 /* AnkiMobileAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnkiMobileAttributionView.swift; sourceTree = "<group>"; };
@@ -513,14 +523,19 @@
 				A4B9A0504FDE82230AE7DF69 /* HourlyChart.swift */,
 				4098A4FE947EBC332E04FAF4 /* IntervalsChart.swift */,
 				17C9ABE3F15DEC56F0A0D5F7 /* PeriodPicker.swift */,
+				8238163D5CA23812C12C9E04 /* ProgressOverviewCard.swift */,
+				CAA948C2242681CD08AF038E /* ProgressOverviewRow.swift */,
+				F8038B7CBECC0F092C5C96C9 /* ProgressRing.swift */,
 				1F32BDCF4F6BF1D221409085 /* RetentionChart.swift */,
 				D258D7966A8B17796C5A10B4 /* RetrievabilityChart.swift */,
 				3648F706A4B00C12E555D205 /* ReviewsChart.swift */,
+				9E68F19B8130537FD1CBD33E /* StatsCardStateLabels.swift */,
 				C71A30A1FCAAAACB32C3505C /* StatsChartTooltip.swift */,
 				76498456E40F8B3ABB528ED6 /* StatsDashboardView.swift */,
 				4534EAE6FA1044A00043AD6E /* StatsDualAxisSupport.swift */,
 				3523036C718537D7301D340E /* StatsEmptyChartView.swift */,
 				E12D118F96CA7073B383214A /* StatsSeriesBinning.swift */,
+				277428DFC1085D4DABC9C2BD /* StudyHealthCard.swift */,
 				8C44B7ECA176D74353199249 /* TodayStatsCard.swift */,
 			);
 			path = Stats;
@@ -887,6 +902,9 @@
 				E35B1B00CAF72E00268EA049 /* OnboardingView.swift in Sources */,
 				3523C44227BF41C6FF4F9A36 /* PeriodPicker.swift in Sources */,
 				93A9837AD81489784E8FD0B5 /* ProfilePickerMenu.swift in Sources */,
+				37730A70ABFF4E4A0820CF16 /* ProgressOverviewCard.swift in Sources */,
+				378B4BB552511D469639A81C /* ProgressOverviewRow.swift in Sources */,
+				2FFC9F817B391C846380560A /* ProgressRing.swift in Sources */,
 				EB62F17A4C0C85753533739B /* RangeHeroChart.swift in Sources */,
 				FAFFE95A269146BB3F792779 /* ReaderConfiguration.swift in Sources */,
 				D25B9F62F23AB580CC6A7DEE /* ReaderConfigurationView.swift in Sources */,
@@ -923,11 +941,13 @@
 				168430A4D1DC854E0521F57C /* SharedKeys.swift in Sources */,
 				E8118ABF27683C22F3C4DDCB /* SimulationSupportViews.swift in Sources */,
 				0DCE693CE6028ECB6501763E /* SimulationsHubView.swift in Sources */,
+				2B23FB0BE6840F7CD4F1190A /* StatsCardStateLabels.swift in Sources */,
 				73F012415CFD5E73B53FA859 /* StatsChartTooltip.swift in Sources */,
 				131C1810800A205DF9842A31 /* StatsDashboardView.swift in Sources */,
 				F22916D35B6B5A6DD606C61B /* StatsDualAxisSupport.swift in Sources */,
 				762879B37FBCFB75EC59A86C /* StatsEmptyChartView.swift in Sources */,
 				EB19474970AE41C8005721EC /* StatsSeriesBinning.swift in Sources */,
+				D14E2ED65A0C088924CB15F7 /* StudyHealthCard.swift in Sources */,
 				89C4E72568B6931F2D99ADC4 /* SyncCoordinator.swift in Sources */,
 				640F39899D4FC4A3AB49145E /* SyncCoordinatorTypes.swift in Sources */,
 				07CD76661C50006F2C618BE6 /* SyncSettingsView.swift in Sources */,

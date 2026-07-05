@@ -35,24 +35,6 @@ desktop sync flow (login prompt, direction choice, progress, error dialogs).
             body: "Hidden attempt notes and sync-safe settings travel with the collection, so scoring abstains consistently.",
         },
     ];
-
-    const proofRows = [
-        [
-            "Offline split",
-            "10 phone reviews + 10 desktop reviews",
-            "All 20 revlog entries after sync",
-        ],
-        [
-            "Same-card conflict",
-            "One card answered on both devices offline",
-            "Both revlogs preserved; card state winner recorded",
-        ],
-        [
-            "Mid-sync failure",
-            "Network drops during sync",
-            "Next sync resumes without a local score reset",
-        ],
-    ];
 </script>
 
 <div class="sync-screen" data-testid="sync">
@@ -124,43 +106,6 @@ desktop sync flow (login prompt, direction choice, progress, error dialogs).
                 {/each}
             </ul>
         </section>
-
-        <section class="conflict-rule" data-testid="sync-conflict-rule">
-            <p class="label">Conflict rule</p>
-            <strong>
-                Review logs merge additively; destructive full-sync choices are
-                explicit, never automatic.
-            </strong>
-            <span>
-                For same-card offline tests, keep both revlog rows and record the
-                winning card state after the native sync flow completes.
-            </span>
-        </section>
-
-        <section class="proof-table" data-testid="sync-proof">
-            <div class="proof-heading">
-                <h2>Proof Run</h2>
-                <span>Speedrun 7b</span>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Case</th>
-                        <th>Action</th>
-                        <th>Pass condition</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {#each proofRows as row (row[0])}
-                        <tr>
-                            <th scope="row">{row[0]}</th>
-                            <td>{row[1]}</td>
-                            <td>{row[2]}</td>
-                        </tr>
-                    {/each}
-                </tbody>
-            </table>
-        </section>
     </div>
 </div>
 
@@ -169,7 +114,6 @@ desktop sync flow (login prompt, direction choice, progress, error dialogs).
         --accent: #24546a;
         --accent-strong: #193c4d;
         --olive: #4d653d;
-        --amber: #aa6427;
         --fg: #172033;
         --fg-subtle: #536174;
         --fg-faint: #7a8493;
@@ -196,9 +140,7 @@ desktop sync flow (login prompt, direction choice, progress, error dialogs).
     }
 
     .sync-command,
-    .sync-path,
-    .conflict-rule,
-    .proof-table {
+    .sync-path {
         box-sizing: border-box;
         background: var(--panel);
         border: 1px solid var(--border-subtle);
@@ -219,34 +161,6 @@ desktop sync flow (login prompt, direction choice, progress, error dialogs).
     .sync-path {
         padding: clamp(20px, 2.6vw, 30px);
         border-top: 5px solid var(--olive);
-    }
-
-    .conflict-rule {
-        grid-column: 1 / -1;
-        padding: 18px 22px;
-        display: grid;
-        grid-template-columns: 150px minmax(240px, 1fr) minmax(220px, 0.9fr);
-        gap: 16px;
-        align-items: center;
-        border-left: 5px solid var(--amber);
-
-        strong {
-            font-size: 16px;
-            line-height: 1.35;
-            color: var(--fg);
-        }
-
-        span {
-            font-size: 13.5px;
-            line-height: 1.5;
-            color: var(--fg-subtle);
-        }
-    }
-
-    .proof-table {
-        grid-column: 1 / -1;
-        padding: 22px;
-        overflow-x: auto;
     }
 
     .badge {
@@ -292,8 +206,7 @@ desktop sync flow (login prompt, direction choice, progress, error dialogs).
         color: var(--fg);
     }
 
-    .eyebrow,
-    .label {
+    .eyebrow {
         margin: 0;
         font-size: 11px;
         font-weight: 700;
@@ -395,72 +308,17 @@ desktop sync flow (login prompt, direction choice, progress, error dialogs).
         }
     }
 
-    .proof-heading {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 14px;
-
-        span {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--amber);
-        }
-    }
-
-    table {
-        width: 100%;
-        min-width: 720px;
-        border-collapse: collapse;
-        font-size: 13px;
-        line-height: 1.45;
-    }
-
-    th,
-    td {
-        padding: 12px 14px;
-        border-top: 1px solid var(--border-subtle);
-        text-align: left;
-        vertical-align: top;
-    }
-
-    thead th {
-        border-top: 0;
-        color: var(--fg-faint);
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
-
-    tbody th {
-        width: 24%;
-        color: var(--fg);
-        font-weight: 700;
-    }
-
-    tbody td {
-        color: var(--fg-subtle);
-    }
-
     @media (max-width: 780px) {
         .sync-screen {
             padding: 16px;
         }
 
-        .sync-shell,
-        .conflict-rule {
+        .sync-shell {
             grid-template-columns: 1fr;
         }
 
         .sync-command {
             min-height: 360px;
-        }
-
-        .conflict-rule,
-        .proof-table {
-            padding: 18px;
         }
 
         h1 {

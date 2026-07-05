@@ -85,19 +85,19 @@ statistics-today-title = Today
 statistics-today-again-count = Again count:
 statistics-today-type-counts = Learn: { $learnCount }, Review: { $reviewCount }, Relearn: { $relearnCount }, Filtered: { $filteredCount }
 statistics-today-no-cards = No cards have been studied today.
-statistics-today-no-mature-cards = No mature cards were studied today.
-statistics-today-correct-mature = Correct answers on mature cards: { $correct }/{ $total } ({ $percent }%)
+statistics-today-no-mature-cards = No long interval cards were studied today.
+statistics-today-correct-mature = Correct answers on long interval cards: { $correct }/{ $total } ({ $percent }%)
 statistics-counts-total-cards = Total
 statistics-counts-new-cards = New
-statistics-counts-young-cards = Young
-statistics-counts-mature-cards = Mature
-statistics-counts-suspended-cards = Suspended
+statistics-counts-young-cards = Short interval
+statistics-counts-mature-cards = Long interval
+statistics-counts-suspended-cards = Paused
 statistics-counts-buried-cards = Buried
 statistics-counts-filtered-cards = Filtered
 statistics-counts-learning-cards = Learning
 statistics-counts-relearning-cards = Relearning
 statistics-counts-title = Card Counts
-statistics-counts-separate-suspended-buried-cards = Separate suspended/buried cards
+statistics-counts-separate-suspended-buried-cards = Separate paused/buried cards
 
 ## Retention represents your actual retention from past reviews, in
 ## comparison to the "desired retention" setting of FSRS, which forecasts
@@ -123,9 +123,9 @@ statistics-true-retention-total = Total
 statistics-true-retention-count = Count
 statistics-true-retention-retention = Retention
 # This will usually be the same as statistics-counts-young-cards
-statistics-true-retention-young = Young
+statistics-true-retention-young = Short interval
 # This will usually be the same as statistics-counts-mature-cards
-statistics-true-retention-mature = Mature
+statistics-true-retention-mature = Long interval
 statistics-true-retention-all = All
 statistics-true-retention-today = Today
 statistics-true-retention-yesterday = Yesterday

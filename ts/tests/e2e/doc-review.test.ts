@@ -18,6 +18,9 @@ test("doc-review: document with blanks + co-visible exhibits + partial credit (T
     await expect(blanks.first()).toBeVisible();
     const n = await blanks.count();
     expect(n).toBeGreaterThanOrEqual(3);
+    const originals = page.getByTestId("dr-blank-original");
+    await expect(originals.first()).toContainText("at the point the contract is signed");
+    expect(await originals.count()).toBe(n);
 
     // Exhibits are the default tool and co-visible with the document (C13).
     await expect(page.getByTestId("exhibits")).toBeVisible();

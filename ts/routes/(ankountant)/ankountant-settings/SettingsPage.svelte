@@ -13,6 +13,14 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
     import { DEFAULT_SUMMIT_SECTION, SUMMIT_SECTIONS } from "../ankountant-home/summit";
     import {
+        DEFAULT_LEARNING_FEEDBACK_MODEL,
+        deleteLearningFeedbackApiKey,
+        loadLearningFeedbackSettings,
+        saveLearningFeedbackApiKey,
+        saveLearningFeedbackSettings,
+        type LearningFeedbackSettings,
+    } from "../learning-feedback";
+    import {
         loadExamDates,
         loadPreferencesDraft,
         loadSyncSettings,
@@ -33,8 +41,13 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     let preferences: Preferences | undefined;
     let draft: PreferencesDraft | undefined;
     let syncSettings: SyncSettings | undefined;
+    let learningFeedbackSettings: LearningFeedbackSettings | undefined;
     let examDates: Record<string, string> = {};
     let selectedExamSection = DEFAULT_SUMMIT_SECTION;
+    let apiKey = "";
+    let apiKeyState: "idle" | "saving" | "saved" | "deleting" | "deleted" | "error" =
+        "idle";
+    let apiKeyMessage = "";
     let phase: "loading" | "ready" | "error" = "loading";
     let saveState: "idle" | "saving" | "saved" | "error" = "idle";
     let message = "";
@@ -48,16 +61,20 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     async function load(): Promise<void> {
         phase = "loading";
         message = "";
+        apiKeyMessage = "";
         try {
-            const [preferencesData, syncData, dateData] = await Promise.all([
-                loadPreferencesDraft(),
-                loadSyncSettings(),
-                loadExamDates(),
-            ]);
+            const [preferencesData, syncData, dateData, learningFeedbackData] =
+                await Promise.all([
+                    loadPreferencesDraft(),
+                    loadSyncSettings(),
+                    loadExamDates(),
+                    loadLearningFeedbackSettings(),
+                ]);
             preferences = preferencesData.preferences;
             draft = preferencesData.draft;
             syncSettings = syncData;
             examDates = dateData;
+            learningFeedbackSettings = learningFeedbackData;
             phase = "ready";
         } catch (error) {
             phase = "error";
@@ -82,6 +99,71 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             throw new Error("Sync settings are not loaded.");
         }
         await saveWithState(async () => saveSyncSettings(syncSettings as SyncSettings));
+    }
+
+    async function saveLearningFeedback(): Promise<void> {
+        if (!learningFeedbackSettings) {
+            throw new Error("Learning feedback settings are not loaded.");
+        }
+        const model = learningFeedbackSettings.model.trim();
+        if (model === "") {
+            saveState = "error";
+            message = "AI feedback model is required.";
+            return;
+        }
+        const enabled = learningFeedbackSettings.enabled;
+        await saveWithState(async () => {
+            learningFeedbackSettings = await saveLearningFeedbackSettings({
+                enabled,
+                model,
+            });
+        });
+    }
+
+    async function saveApiKey(): Promise<void> {
+        const trimmed = apiKey.trim();
+        if (trimmed === "") {
+            apiKeyState = "error";
+            apiKeyMessage = "Enter an API key before saving.";
+            return;
+        }
+        apiKeyState = "saving";
+        apiKeyMessage = "";
+        try {
+            await saveLearningFeedbackApiKey(trimmed);
+            apiKey = "";
+            if (learningFeedbackSettings) {
+                learningFeedbackSettings = {
+                    ...learningFeedbackSettings,
+                    apiKeySaved: true,
+                };
+            }
+            apiKeyState = "saved";
+            apiKeyMessage = "API key saved.";
+        } catch (error) {
+            apiKeyState = "error";
+            apiKeyMessage = errorMessage(error);
+        }
+    }
+
+    async function deleteApiKey(): Promise<void> {
+        apiKeyState = "deleting";
+        apiKeyMessage = "";
+        try {
+            await deleteLearningFeedbackApiKey();
+            apiKey = "";
+            if (learningFeedbackSettings) {
+                learningFeedbackSettings = {
+                    ...learningFeedbackSettings,
+                    apiKeySaved: false,
+                };
+            }
+            apiKeyState = "deleted";
+            apiKeyMessage = "API key cleared.";
+        } catch (error) {
+            apiKeyState = "error";
+            apiKeyMessage = errorMessage(error);
+        }
     }
 
     async function saveReadiness(): Promise<void> {
@@ -155,7 +237,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     Retry
                 </button>
             </section>
-        {:else if draft && syncSettings}
+        {:else if draft && syncSettings && learningFeedbackSettings}
             {#if section === "overview"}
                 <section class="settings-grid" aria-label="Settings sections">
                     {#each settingsSections as item (item.id)}
@@ -288,6 +370,84 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                         />
                         <span>Enable FSRS short-term with steps</span>
                     </label>
+                    <div class="settings-subsection">
+                        <div class="subsection-heading">
+                            <div>
+                                <h3>AI feedback</h3>
+                                <p>
+                                    Generate grounded feedback after missed review, TBS,
+                                    and confusion answers.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                class="secondary-action"
+                                onclick={saveLearningFeedback}
+                            >
+                                Save feedback settings
+                            </button>
+                        </div>
+                        <label class="check-row">
+                            <input
+                                type="checkbox"
+                                bind:checked={learningFeedbackSettings.enabled}
+                            />
+                            <span>Enable AI feedback after wrong answers</span>
+                        </label>
+                        <label>
+                            <span>Model</span>
+                            <input
+                                type="text"
+                                placeholder={DEFAULT_LEARNING_FEEDBACK_MODEL}
+                                bind:value={learningFeedbackSettings.model}
+                            />
+                        </label>
+                        <label>
+                            <span>OpenAI API key</span>
+                            <input
+                                type="password"
+                                autocomplete="off"
+                                placeholder={learningFeedbackSettings.apiKeySaved
+                                    ? "Saved key on file"
+                                    : "No key saved"}
+                                bind:value={apiKey}
+                            />
+                        </label>
+                        <div class="key-actions">
+                            <button
+                                type="button"
+                                class="secondary-action"
+                                disabled={apiKeyState === "saving" ||
+                                    apiKeyState === "deleting"}
+                                onclick={saveApiKey}
+                            >
+                                {apiKeyState === "saving"
+                                    ? "Saving key..."
+                                    : "Save key"}
+                            </button>
+                            <button
+                                type="button"
+                                class="danger-action"
+                                disabled={apiKeyState === "saving" ||
+                                    apiKeyState === "deleting" ||
+                                    !learningFeedbackSettings.apiKeySaved}
+                                onclick={deleteApiKey}
+                            >
+                                {apiKeyState === "deleting"
+                                    ? "Clearing key..."
+                                    : "Clear key"}
+                            </button>
+                            <span class="key-status" aria-live="polite">
+                                {#if apiKeyMessage}
+                                    {apiKeyMessage}
+                                {:else if learningFeedbackSettings.apiKeySaved}
+                                    API key saved.
+                                {:else}
+                                    No API key saved.
+                                {/if}
+                            </span>
+                        </div>
+                    </div>
                 </section>
             {:else if section === "editing"}
                 <section class="settings-panel" data-testid="settings-editing">
@@ -639,6 +799,35 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         border-bottom: 1px solid var(--border-subtle);
     }
 
+    .settings-subsection {
+        display: grid;
+        gap: 18px;
+        margin-top: 8px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .subsection-heading {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .subsection-heading h3 {
+        margin: 0;
+        color: var(--accent-strong);
+        font-size: 18px;
+        line-height: 1.25;
+    }
+
+    .subsection-heading p {
+        margin: 4px 0 0;
+        color: var(--fg-subtle);
+        font-size: 14px;
+        line-height: 1.45;
+    }
+
     label {
         display: grid;
         grid-template-columns: minmax(190px, 0.42fr) minmax(220px, 0.58fr);
@@ -706,6 +895,54 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         background: #102f3f;
     }
 
+    .secondary-action,
+    .danger-action {
+        min-height: 38px;
+        padding: 0 14px;
+        border-radius: 8px;
+        background: #fff;
+        font-size: 14px;
+        font-weight: 750;
+        box-shadow: none;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .secondary-action {
+        border: 1px solid #9eb0a1;
+        color: var(--accent-strong);
+    }
+
+    .danger-action {
+        border: 1px solid #c9a19b;
+        color: #8f332b;
+    }
+
+    .secondary-action:hover:not([disabled]),
+    .danger-action:hover:not([disabled]) {
+        background: #f6f8f4;
+    }
+
+    .secondary-action[disabled],
+    .danger-action[disabled] {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .key-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding-left: calc(42% + 18px);
+    }
+
+    .key-status {
+        color: var(--fg-subtle);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
     .save-status {
         grid-area: status;
         min-height: 22px;
@@ -748,12 +985,18 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
         .settings-nav,
         label,
+        .subsection-heading,
         .panel-heading {
             grid-template-columns: 1fr;
         }
 
-        .panel-heading {
+        .panel-heading,
+        .subsection-heading {
             align-items: stretch;
+        }
+
+        .key-actions {
+            padding-left: 0;
         }
     }
 </style>

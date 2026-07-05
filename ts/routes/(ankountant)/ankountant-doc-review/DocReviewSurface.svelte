@@ -97,13 +97,16 @@ Never renders which option is correct before submit (options carry no key).
                         data-testid="dr-blank"
                         data-blank-id={seg.blankId}
                     >
+                        <span class="blank-original" data-testid="dr-blank-original">
+                            {seg.original}
+                        </span>
                         <select
                             class="blank-select"
                             data-testid="dr-blank-select"
                             data-blank-id={seg.blankId}
                             bind:value={answers[seg.blankId]}
                             disabled={answerInputsLocked}
-                            aria-label={step?.label ?? seg.blankId}
+                            aria-label={`Treatment for ${step?.label ?? seg.original}`}
                         >
                             <option value="">Select…</option>
                             {#each step?.options ?? [] as opt (opt.id)}
@@ -192,8 +195,18 @@ Never renders which option is correct before submit (options carry no key).
     .blank {
         display: inline-flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: var(--space-xs);
+        max-width: 100%;
         white-space: normal;
+    }
+
+    .blank-original {
+        padding: 1px var(--space-xs);
+        color: var(--fg);
+        background: var(--accent-tint);
+        border-radius: var(--border-radius);
+        font-weight: 600;
     }
 
     .blank-select {

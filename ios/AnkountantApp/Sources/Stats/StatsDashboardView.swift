@@ -116,16 +116,19 @@ struct StatsDashboardView: View {
     private func filterCapsule(icon: String, label: String, accessibilityLabel: String) -> some View {
         HStack(spacing: 4) {
             Image(systemName: icon)
-                .font(.caption2)
+                .font(.caption)
             Text(label)
-                .fontWeight(.medium)
+                .ankountantFont(.captionBold)
             Image(systemName: "chevron.up.chevron.down")
-                .font(.system(size: 8))
+                .font(.caption)
         }
-        .font(.subheadline)
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Color(.secondarySystemFill))
+        .frame(minHeight: 44)
+        .background(palette.surfaceElevated)
+        .overlay {
+            Capsule().stroke(palette.borderSubtle, lineWidth: 1)
+        }
         .clipShape(Capsule())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
@@ -149,16 +152,10 @@ struct StatsDashboardView: View {
 
         PeriodStatsCard(period: period, today: graphs.today, reviews: graphs.reviews)
         FutureDueChart(futureDue: graphs.futureDue, period: period)
+        RetentionChart(trueRetention: graphs.trueRetention)
+        StudyHealthCard(graphs: graphs)
         HeatmapChartOptimized(reviews: graphs.reviews)
         ReviewsChart(reviews: graphs.reviews, period: period)
-        CardCountsChart(cardCounts: graphs.cardCounts)
-        IntervalsChart(intervals: graphs.intervals)
-        EaseChart(eases: graphs.eases)
-        HourlyChart(hours: graphs.hours, period: period)
-        ButtonsChart(buttons: graphs.buttons, period: period)
-        AddedChart(added: graphs.added, period: period)
-        RetentionChart(trueRetention: graphs.trueRetention)
-        RetrievabilityChart(retrievability: graphs.retrievability)
     }
 
     private var emptyAnalyticsState: some View {
@@ -285,157 +282,5 @@ struct StatsDashboardView: View {
             importMessage = "Could not select file: \(error.localizedDescription)"
             showImportAlert = true
         }
-    }
-}
-
-private struct ProgressOverviewCard: View {
-    let graphs: Anki_Stats_GraphsResponse
-    @Environment(\.palette) private var palette
-
-    private var counts: Anki_Stats_GraphsResponse.CardCounts.Counts {
-        graphs.cardCounts.excludingInactive
-    }
-
-    private var activeCards: UInt32 {
-        counts.newCards + counts.learn + counts.relearn + counts.young + counts.mature
-    }
-
-    private var masteredFraction: Double {
-        guard activeCards > 0 else { return 0 }
-        return Double(counts.mature) / Double(activeCards)
-    }
-
-    private var retentionFraction: Double? {
-        let retention = graphs.trueRetention.month
-        let passed = retention.youngPassed + retention.maturePassed
-        let total = passed + retention.youngFailed + retention.matureFailed
-        guard total > 0 else { return nil }
-        return Double(passed) / Double(total)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: AnkountantSpacing.lg) {
-            HStack(alignment: .center, spacing: AnkountantSpacing.lg) {
-                ProgressRing(fraction: masteredFraction)
-                    .frame(width: 118, height: 118)
-                VStack(alignment: .leading, spacing: AnkountantSpacing.xs) {
-                    Text("Progress")
-                        .ankountantFont(.displayHero)
-                        .foregroundStyle(palette.textPrimary)
-                    Text("\(Int((masteredFraction * 100).rounded()))% mastered")
-                        .ankountantFont(.bodyEmphasis)
-                        .foregroundStyle(palette.textSecondary)
-                    Text("\(formatNumber(activeCards)) active cards")
-                        .ankountantFont(.caption)
-                        .foregroundStyle(palette.textTertiary)
-                }
-                Spacer(minLength: 0)
-            }
-
-            VStack(spacing: 0) {
-                ProgressOverviewRow(
-                    icon: "checkmark.seal",
-                    title: "Cards mastered",
-                    value: formatNumber(counts.mature)
-                )
-                Divider()
-                ProgressOverviewRow(
-                    icon: "target",
-                    title: "Month retention",
-                    value: retentionFraction.map(formatPercent) ?? "--"
-                )
-                Divider()
-                ProgressOverviewRow(
-                    icon: "clock.arrow.circlepath",
-                    title: "Reviewed today",
-                    value: formatNumber(graphs.today.answerCount)
-                )
-                Divider()
-                ProgressOverviewRow(
-                    icon: "calendar",
-                    title: "Daily load",
-                    value: formatNumber(graphs.futureDue.dailyLoad)
-                )
-            }
-            .background(palette.surfaceElevated, in: RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: AnkountantRadius.card, style: .continuous)
-                    .stroke(palette.borderSubtle, lineWidth: 1)
-            )
-        }
-        .padding(AnkountantSpacing.lg)
-        .background(
-            LinearGradient(
-                colors: [palette.surfaceElevated, palette.surface],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
-            in: RoundedRectangle(cornerRadius: AnkountantRadius.container, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: AnkountantRadius.container, style: .continuous)
-                .stroke(palette.borderSubtle, lineWidth: 1)
-        )
-    }
-
-    private func formatPercent(_ value: Double) -> String {
-        "\(Int((value * 100).rounded()))%"
-    }
-
-    private func formatNumber(_ value: UInt32) -> String {
-        value.formatted(.number)
-    }
-}
-
-private struct ProgressRing: View {
-    let fraction: Double
-    @Environment(\.palette) private var palette
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(palette.borderSubtle, lineWidth: 14)
-            Circle()
-                .trim(from: 0, to: min(max(fraction, 0), 1))
-                .stroke(palette.accent, style: StrokeStyle(lineWidth: 14, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-            VStack(spacing: 2) {
-                Text("\(Int((fraction * 100).rounded()))")
-                    .ankountantFont(.sectionHeading)
-                    .monospacedDigit()
-                    .foregroundStyle(palette.textPrimary)
-                Text("%")
-                    .ankountantFont(.micro)
-                    .foregroundStyle(palette.textSecondary)
-            }
-        }
-        .accessibilityLabel("Progress \(Int((fraction * 100).rounded())) percent")
-    }
-}
-
-private struct ProgressOverviewRow: View {
-    let icon: String
-    let title: String
-    let value: String
-    @Environment(\.palette) private var palette
-
-    var body: some View {
-        HStack(spacing: AnkountantSpacing.md) {
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(palette.accent)
-                .frame(width: 34, height: 34)
-                .background(palette.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            Text(title)
-                .ankountantFont(.body)
-                .foregroundStyle(palette.textPrimary)
-            Spacer()
-            Text(value)
-                .ankountantFont(.bodyEmphasis)
-                .monospacedDigit()
-                .foregroundStyle(palette.textPrimary)
-        }
-        .padding(.horizontal, AnkountantSpacing.md)
-        .padding(.vertical, AnkountantSpacing.sm)
     }
 }

@@ -16,7 +16,7 @@ export const settingsSections = [
     {
         id: "review",
         title: "Review Session",
-        body: "Answer buttons, audio behavior, limits, and FSRS runtime toggles.",
+        body: "Answer buttons, audio behavior, limits, FSRS runtime toggles, and AI feedback.",
     },
     {
         id: "editing",

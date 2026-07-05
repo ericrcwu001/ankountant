@@ -14,6 +14,7 @@ import {
     ensureSurface,
     hasSurface,
     isSurfaceKind,
+    launchLayout,
     MAX_PANES,
     MIN_RATIO,
     nodeAt,
@@ -107,6 +108,13 @@ test("hasSurface / ensureSurface", () => {
     expect(hasSurface(withTbs, "tbs")).toBe(true);
     // Already present -> unchanged reference.
     expect(ensureSurface(withTbs, "tbs")).toBe(withTbs);
+});
+
+test("launchLayout uses a single surface instead of restored panes", () => {
+    const restored = splitAt(defaultLayout("confusion"), [], "row", "dashboard");
+    const tree = launchLayout(restored, "browse", "browse");
+    expect(tree.type).toBe("leaf");
+    expect(tree).toMatchObject({ surface: "browse" });
 });
 
 test("serialize/deserialize round-trips a tree", () => {

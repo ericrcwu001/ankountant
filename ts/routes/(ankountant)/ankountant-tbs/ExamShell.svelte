@@ -46,35 +46,38 @@ section; the Literature tab is scoped to the note's section.
     data-shape={model.shape}
     data-section={model.section}
 >
-    <header class="exam-head">
-        <div class="title-row">
-            <h1>{title}</h1>
-            <span class="section-chip" data-testid="exam-section">{model.section}</span>
-        </div>
-        <!-- Requirement tabs (single requirement today; multi-part items add tabs). -->
-        <div class="req-tabs" role="tablist" aria-label="Requirements">
-            <button
-                type="button"
-                role="tab"
-                class="req-tab active"
-                aria-selected="true"
-                data-testid="requirement-tab"
-            >
-                Requirement 1
-            </button>
-        </div>
-        {#if model.prompt}
-            <p class="prompt" data-testid="exam-prompt">{model.prompt}</p>
-        {/if}
-    </header>
+    <div class="exam-layout">
+        <section class="exam-work">
+            <header class="exam-head">
+                <div class="title-row">
+                    <h1>{title}</h1>
+                    <span class="section-chip" data-testid="exam-section">
+                        {model.section}
+                    </span>
+                </div>
+                <div class="req-tabs" role="tablist" aria-label="Requirements">
+                    <button
+                        type="button"
+                        role="tab"
+                        class="req-tab active"
+                        aria-selected="true"
+                        data-testid="requirement-tab"
+                    >
+                        Requirement 1
+                    </button>
+                </div>
+                {#if model.prompt}
+                    <p class="prompt" data-testid="exam-prompt">{model.prompt}</p>
+                {/if}
+            </header>
 
-    <div class="exam-body">
-        <div class="exam-response" data-testid="exam-response">
-            <div class="gate">
-                <ConfidenceGate {committed} {onCommit} />
+            <div class="exam-response" data-testid="exam-response">
+                <div class="gate">
+                    <ConfidenceGate {committed} {onCommit} />
+                </div>
+                <slot />
             </div>
-            <slot />
-        </div>
+        </section>
 
         <aside class="exam-tools" data-testid="exam-tools">
             <div class="tool-tabs" role="tablist" aria-label="Reference tools">
@@ -118,6 +121,21 @@ section; the Literature tab is scoped to the note's section.
         min-height: 0;
         padding: var(--space-lg);
         color: var(--fg);
+    }
+
+    .exam-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 3fr) minmax(22rem, 2fr);
+        gap: var(--space-lg);
+        flex: 1;
+        min-height: 0;
+    }
+
+    .exam-work {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 0;
     }
 
     .exam-head {
@@ -181,18 +199,11 @@ section; the Literature tab is scoped to the note's section.
         max-width: 66ch;
     }
 
-    .exam-body {
-        display: flex;
-        gap: var(--space-lg);
-        align-items: stretch;
-        flex: 1;
-        min-height: 0;
-    }
-
     // Left: the work area. Its own scroll so the tools stay put (C13).
     .exam-response {
-        flex: 3;
+        flex: 1;
         min-width: 0;
+        min-height: 0;
         overflow: auto;
         display: flex;
         flex-direction: column;
@@ -201,7 +212,6 @@ section; the Literature tab is scoped to the note's section.
 
     // Right: tabbed reference tools, co-visible with the response.
     .exam-tools {
-        flex: 2;
         min-width: 0;
         display: flex;
         flex-direction: column;
@@ -249,5 +259,19 @@ section; the Literature tab is scoped to the note's section.
 
     .gate {
         margin-bottom: var(--space-xs);
+    }
+
+    @media (max-width: 760px) {
+        .exam-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .exam-tools {
+            min-height: 24rem;
+            border-left: 0;
+            border-top: 1px solid var(--border-subtle);
+            padding-left: 0;
+            padding-top: var(--space-lg);
+        }
     }
 </style>

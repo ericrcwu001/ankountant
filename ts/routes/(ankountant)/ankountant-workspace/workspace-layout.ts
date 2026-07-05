@@ -210,6 +210,20 @@ export function ensureSurface(tree: TileNode, surface: SurfaceKind): TileNode {
     return hasSurface(tree, surface) ? tree : addPane(tree, surface);
 }
 
+export function launchLayout(
+    restored: TileNode | null,
+    initialSurface: SurfaceKind | undefined,
+    singleSurface: SurfaceKind | undefined,
+): TileNode {
+    if (singleSurface) {
+        return defaultLayout(singleSurface);
+    }
+    if (restored) {
+        return initialSurface ? ensureSurface(restored, initialSurface) : restored;
+    }
+    return defaultLayout(initialSurface ?? "dashboard");
+}
+
 export function serialize(tree: TileNode): string {
     return JSON.stringify(tree);
 }

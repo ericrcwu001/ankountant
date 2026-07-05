@@ -26,18 +26,25 @@ struct PeriodStatsCard: View {
         var relearn: Int = 0
         var young: Int = 0
         var mature: Int = 0
+        var activeDays: Int = 0
+        var spanDays: Int = 1
     }
 
     private var aggregated: Aggregated {
         var agg = Aggregated()
         let limit = period.days
+        var earliestDay = 0
         for (dayOffset, rev) in reviews.count {
             let day = Int(dayOffset)
             guard day <= 0, abs(day) < limit else { continue }
+            let dayTotal = Int(rev.learn) + Int(rev.relearn) + Int(rev.young) + Int(rev.mature)
+            guard dayTotal > 0 else { continue }
             agg.learn += Int(rev.learn)
             agg.relearn += Int(rev.relearn)
             agg.young += Int(rev.young)
             agg.mature += Int(rev.mature)
+            agg.activeDays += 1
+            earliestDay = min(earliestDay, day)
         }
         for (dayOffset, t) in reviews.time {
             let day = Int(dayOffset)
@@ -45,6 +52,7 @@ struct PeriodStatsCard: View {
             agg.timeMillis += UInt64(t.learn) + UInt64(t.relearn) + UInt64(t.young) + UInt64(t.mature) + UInt64(t.filtered)
         }
         agg.total = agg.learn + agg.relearn + agg.young + agg.mature
+        agg.spanDays = period == .all ? max(1, abs(earliestDay) + 1) : period.days
         return agg
     }
 
@@ -61,70 +69,70 @@ struct PeriodStatsCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(periodTitle)
-                .ankountantFont(.captionBold)
-                .foregroundStyle(palette.textSecondary)
-                .textCase(.uppercase)
+        VStack(alignment: .leading, spacing: AnkountantSpacing.md) {
+            HStack {
+                Text("Study Activity")
+                    .ankountantFont(.bodyEmphasis)
+                    .foregroundStyle(palette.textPrimary)
+                Spacer()
+                Text(periodTitle)
+                    .ankountantFont(.captionBold)
+                    .foregroundStyle(palette.textSecondary)
+                    .textCase(.uppercase)
+            }
 
             if period == .day {
-                HStack {
-                    statItem(title: "Reviewed", value: "\(today.answerCount)", color: .primary)
-                    Spacer()
-                    statItem(title: "Time", value: formatMillis(UInt64(today.answerMillis)), color: .primary)
-                    Spacer()
-                    statItem(title: "Correct", value: todayAccuracy, color: .green)
-                    Spacer()
-                    statItem(title: "Mature%", value: todayMatureAccuracy, color: .purple)
+                LazyVGrid(columns: metricColumns, alignment: .leading, spacing: AnkountantSpacing.md) {
+                    statItem(title: "Reviewed", value: "\(today.answerCount)", color: palette.textPrimary)
+                    statItem(title: "Study time", value: formatMillis(UInt64(today.answerMillis)), color: palette.textPrimary)
+                    statItem(title: "Correct", value: todayAccuracy, color: palette.positive)
+                    statItem(title: StatsCardStateLabels.longInterval, value: todayMatureAccuracy, color: palette.accent)
                 }
                 Divider()
-                HStack {
-                    statBadge("New", count: today.learnCount, color: .cyan)
-                    Spacer()
-                    statBadge("Relearn", count: today.relearnCount, color: .orange)
-                    Spacer()
-                    statBadge("Review", count: today.reviewCount, color: .green)
-                    Spacer()
-                    statBadge("Again", count: today.answerCount - today.correctCount, color: .red)
+                LazyVGrid(columns: metricColumns, alignment: .leading, spacing: AnkountantSpacing.md) {
+                    statBadge("New", count: today.learnCount, color: palette.stateNew)
+                    statBadge("Relearn", count: today.relearnCount, color: palette.stateLearn)
+                    statBadge("Review", count: today.reviewCount, color: palette.stateReview)
+                    statBadge("Again", count: today.answerCount - today.correctCount, color: palette.danger)
                 }
             } else {
                 let agg = aggregated
-                HStack {
-                    statItem(title: "Reviewed", value: "\(agg.total)", color: .primary)
-                    Spacer()
-                    statItem(title: "Time", value: formatMillis(agg.timeMillis), color: .primary)
-                    Spacer()
-                    statItem(title: "Young", value: "\(agg.young)", color: .green)
-                    Spacer()
-                    statItem(title: "Mature", value: "\(agg.mature)", color: .purple)
+                LazyVGrid(columns: metricColumns, alignment: .leading, spacing: AnkountantSpacing.md) {
+                    statItem(title: "Reviewed", value: "\(agg.total)", color: palette.textPrimary)
+                    statItem(title: "Study time", value: formatMillis(agg.timeMillis), color: palette.textPrimary)
+                    statItem(title: "Avg/day", value: formatDecimal(Double(agg.total) / Double(max(agg.spanDays, 1))), color: palette.accent)
+                    statItem(title: "Active days", value: "\(agg.activeDays)", color: palette.textPrimary)
                 }
                 Divider()
-                HStack {
-                    statBadge("New", count: UInt32(agg.learn), color: .cyan)
-                    Spacer()
-                    statBadge("Relearn", count: UInt32(agg.relearn), color: .orange)
-                    Spacer()
-                    statBadge("Young", count: UInt32(agg.young), color: .green)
-                    Spacer()
-                    statBadge("Mature", count: UInt32(agg.mature), color: .purple)
+                LazyVGrid(columns: metricColumns, alignment: .leading, spacing: AnkountantSpacing.md) {
+                    statBadge("New", count: UInt32(agg.learn), color: palette.stateNew)
+                    statBadge("Relearn", count: UInt32(agg.relearn), color: palette.stateLearn)
+                    statBadge(StatsCardStateLabels.shortInterval, count: UInt32(agg.young), color: palette.stateReview)
+                    statBadge(StatsCardStateLabels.longInterval, count: UInt32(agg.mature), color: palette.accent)
                 }
             }
         }
         .ankountantCard(elevated: true)
     }
 
+    private var metricColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 92), spacing: AnkountantSpacing.md)]
+    }
+
     private func statItem(title: String, value: String, color: Color) -> some View {
-        VStack(spacing: AnkountantSpacing.xxs) {
+        VStack(alignment: .leading, spacing: AnkountantSpacing.xxs) {
             Text(value).ankountantFont(.sectionHeading).foregroundStyle(color)
             Text(title).ankountantFont(.caption).foregroundStyle(palette.textSecondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func statBadge(_ title: String, count: UInt32, color: Color) -> some View {
-        VStack(spacing: AnkountantSpacing.xxs) {
+        VStack(alignment: .leading, spacing: AnkountantSpacing.xxs) {
             Text("\(count)").ankountantFont(.bodyEmphasis).foregroundStyle(color)
             Text(title).ankountantFont(.micro).foregroundStyle(palette.textSecondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func formatMillis(_ ms: UInt64) -> String {
@@ -133,5 +141,9 @@ struct PeriodStatsCard: View {
         let minutes = seconds / 60
         if minutes < 60 { return "\(minutes)m" }
         return "\(minutes / 60)h \(minutes % 60)m"
+    }
+
+    private func formatDecimal(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(1)))
     }
 }

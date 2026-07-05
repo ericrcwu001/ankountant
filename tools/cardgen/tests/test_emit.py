@@ -311,6 +311,75 @@ def test_emit_writes_confusable_patch_for_mcq(cfg: RunConfig) -> None:
     assert "ds::cost::capitalize" in entry["tags"]
 
 
+def test_emit_uses_ds_tag_as_generated_mcq_set_id() -> None:
+    c = RunConfig(run_id="test-emit-mcq-ds-ws", sections=["REG"], offline=True)
+    if c.out_dir.exists():
+        shutil.rmtree(c.out_dir)
+    write_jsonl(
+        c.stage_dir("09-dedup") / "kept.jsonl",
+        [
+            {
+                "item_id": "reg-mcq-student-loan",
+                "section": "REG",
+                "card_type": "mcq",
+                "payload": {
+                    "prompt": "For 2025, what MAGI range phases out student loan interest for single filers?",
+                    "answer_key": "MAGI $85,000 to $100,000",
+                    "ds_tag": "ds::student-loan-interest-phaseout",
+                    "treatments": [
+                        "MAGI $85,000 to $100,000",
+                        "MAGI $70,000 to $90,000",
+                    ],
+                },
+                "source_passage": "MAGI is between $85,000 and $100,000.",
+                "source_id": "irs_p970",
+                "locator": "p30",
+                "citation": "IRS Pub 970",
+                "gen_method": _GEN_METHOD,
+                "tags": ["sec::REG", "topic::adjustments_deductions_and_qbi", "ds::student-loan-interest-phaseout"],
+                "bucket": "correct_useful",
+            },
+            {
+                "item_id": "reg-mcq-ira",
+                "section": "REG",
+                "card_type": "mcq",
+                "payload": {
+                    "prompt": "For 2025, what MAGI range phases out the spousal IRA deduction?",
+                    "answer_key": "MAGI $236,000 to $246,000",
+                    "ds_tag": "ds::ira-deduction-spouse-covered-phaseout",
+                    "treatments": [
+                        "MAGI $236,000 to $246,000",
+                        "MAGI $200,000 to $220,000",
+                    ],
+                },
+                "source_passage": "More than $236,000 but less than $246,000.",
+                "source_id": "irs_p17",
+                "locator": "p83",
+                "citation": "IRS Pub 17",
+                "gen_method": _GEN_METHOD,
+                "tags": ["sec::REG", "topic::adjustments_deductions_and_qbi", "ds::ira-deduction-spouse-covered-phaseout"],
+                "bucket": "correct_useful",
+            },
+        ],
+    )
+
+    emit.run(c)
+
+    patch = json.loads((c.out_dir / "confusable_patch.json").read_text(encoding="utf-8"))
+    assert set(patch) == {
+        "student_loan_interest_phaseout",
+        "ira_deduction_spouse_covered_phaseout",
+    }
+    assert patch["student_loan_interest_phaseout"]["treatments"] == [
+        "MAGI $85,000 to $100,000",
+        "MAGI $70,000 to $90,000",
+    ]
+    assert patch["ira_deduction_spouse_covered_phaseout"]["treatments"] == [
+        "MAGI $236,000 to $246,000",
+        "MAGI $200,000 to $220,000",
+    ]
+
+
 def test_emit_writes_coverage_report(cfg: RunConfig) -> None:
     emit.run(cfg)
 

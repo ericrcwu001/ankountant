@@ -4,6 +4,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 -->
 <script lang="ts">
     import type {
+        GraphsResponse_Buttons_ButtonCounts,
         GraphsResponse,
         GraphsResponse_CardCounts_Counts,
         GraphsResponse_ReviewCountsAndTimes_Reviews,
@@ -39,6 +40,16 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     let scope: Scope = "collection";
     let history: History = "year";
     let customSearch = "";
+
+    interface ReviewSummary {
+        reviewed: number;
+        reviewedMillis: number;
+        accuracy: number | null;
+        newCount: number;
+        learningCount: number;
+        reviewCount: number;
+        againCount: number;
+    }
 
     const charts: Component<any>[] = [
         CardCounts,
@@ -143,22 +154,6 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         return data.futureDue!.dailyLoad;
     }
 
-    function reviewedMillisToday(data: GraphsResponse): number {
-        return data.today!.answerMillis;
-    }
-
-    function newToday(data: GraphsResponse): number {
-        return data.today!.learnCount;
-    }
-
-    function learningToday(data: GraphsResponse): number {
-        return data.today!.relearnCount;
-    }
-
-    function reviewToday(data: GraphsResponse): number {
-        return data.today!.reviewCount;
-    }
-
     function masteredFraction(data: GraphsResponse): number {
         const active = activeCards(data);
         if (!active) {
@@ -175,17 +170,51 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         return total ? passed / total : null;
     }
 
-    function todayAccuracy(data: GraphsResponse): number | null {
-        const today = data.today!;
-        if (!today.answerCount) {
-            return null;
+    function reviewSummary(data: GraphsResponse): ReviewSummary {
+        const summary: ReviewSummary = {
+            reviewed: 0,
+            reviewedMillis: 0,
+            accuracy: null,
+            newCount: 0,
+            learningCount: 0,
+            reviewCount: 0,
+            againCount: 0,
+        };
+        for (const reviews of Object.values(data.reviews!.count)) {
+            summary.newCount += reviews.learn;
+            summary.learningCount += reviews.relearn + reviews.filtered;
+            summary.reviewCount += reviews.young + reviews.mature;
+            summary.reviewed += reviewTotal(reviews);
         }
-        return today.correctCount / today.answerCount;
+        for (const reviewTime of Object.values(data.reviews!.time)) {
+            summary.reviewedMillis += reviewTotal(reviewTime);
+        }
+
+        const buttons = historyButtonCounts(data);
+        const buttonTotal = buttonCountTotal(buttons);
+        summary.againCount = buttonAt(buttons.learning, 0) +
+            buttonAt(buttons.young, 0) +
+            buttonAt(buttons.mature, 0);
+        if (buttonTotal > 0) {
+            summary.accuracy = (buttonTotal - summary.againCount) / buttonTotal;
+        }
+        return summary;
     }
 
-    function answerAgainCount(data: GraphsResponse): number {
-        const today = data.today!;
-        return Math.max(0, today.answerCount - today.correctCount);
+    function historyButtonCounts(data: GraphsResponse): GraphsResponse_Buttons_ButtonCounts {
+        return history === "year" ? data.buttons!.oneYear! : data.buttons!.allTime!;
+    }
+
+    function buttonCountTotal(counts: GraphsResponse_Buttons_ButtonCounts): number {
+        return totalCount(counts.learning) + totalCount(counts.young) + totalCount(counts.mature);
+    }
+
+    function totalCount(values: number[]): number {
+        return values.reduce((total, value) => total + value, 0);
+    }
+
+    function buttonAt(values: number[], index: number): number {
+        return values[index] ?? 0;
     }
 
     function analyticsEvidenceIsEmpty(data: GraphsResponse): boolean {
@@ -363,36 +392,51 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     </div>
                 </section>
 
-                <section class="today-card" aria-label="Today's review summary">
+                {@const summary = reviewSummary(sourceData)}
+                <section
+                    class="today-card"
+                    aria-label="Review summary"
+                    data-testid="stats-review-summary"
+                >
                     <div>
-                        <span>{formatNumber(reviewedToday(sourceData))}</span>
+                        <span data-testid="stats-reviewed">
+                            {formatNumber(summary.reviewed)}
+                        </span>
                         <span class="metric-label">Reviewed</span>
                     </div>
                     <div>
-                        <span>{formatMinutes(reviewedMillisToday(sourceData))}</span>
+                        <span data-testid="stats-time">
+                            {formatMinutes(summary.reviewedMillis)}
+                        </span>
                         <span class="metric-label">Time</span>
                     </div>
                     <div>
-                        <span class="positive">
-                            {formatPercent(todayAccuracy(sourceData))}
+                        <span class="positive" data-testid="stats-accuracy">
+                            {formatPercent(summary.accuracy)}
                         </span>
                         <span class="metric-label">Accuracy</span>
                     </div>
                     <div>
-                        <span>{formatNumber(newToday(sourceData))}</span>
+                        <span data-testid="stats-new-count">
+                            {formatNumber(summary.newCount)}
+                        </span>
                         <span class="metric-label">New</span>
                     </div>
                     <div>
-                        <span>{formatNumber(learningToday(sourceData))}</span>
+                        <span data-testid="stats-learning-count">
+                            {formatNumber(summary.learningCount)}
+                        </span>
                         <span class="metric-label">Learning</span>
                     </div>
                     <div>
-                        <span>{formatNumber(reviewToday(sourceData))}</span>
+                        <span data-testid="stats-review-count">
+                            {formatNumber(summary.reviewCount)}
+                        </span>
                         <span class="metric-label">Review</span>
                     </div>
                     <div>
-                        <span class="danger">
-                            {formatNumber(answerAgainCount(sourceData))}
+                        <span class="danger" data-testid="stats-again-count">
+                            {formatNumber(summary.againCount)}
                         </span>
                         <span class="metric-label">Again</span>
                     </div>

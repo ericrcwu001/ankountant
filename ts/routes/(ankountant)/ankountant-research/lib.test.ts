@@ -34,3 +34,15 @@ test("searchCorpus does a client-side substring/keyword match over the section",
     // no match
     expect(searchCorpus(far, "zzz-not-a-cite")).toHaveLength(0);
 });
+
+test("generated CPA-bank research citations are searchable", () => {
+    const aud = corpusForSection("AUD");
+    const persuasive = searchCorpus(aud, "less than persuasive");
+    expect(persuasive.some((e) => e.citation === "AU-C 500")).toBe(true);
+
+    const isc = corpusForSection("ISC");
+    const physicalAccess = searchCorpus(isc, "physical access authorizations");
+    expect(physicalAccess.some((e) => e.citation === "NIST SP 800-53 PE-3")).toBe(
+        true,
+    );
+});

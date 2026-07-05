@@ -131,7 +131,13 @@ def _sec_tag_of(cand: Candidate) -> str:
 
 def _set_id_of(cand: Candidate) -> str:
     """The sealed-bank set id: payload ``set_id`` else slug of the topic."""
-    return cand.payload.get("set_id") or slugify(_topic_of(cand))
+    if cand.payload.get("set_id"):
+        return cand.payload["set_id"]
+    if cand.card_type == MCQ:
+        ds_tag = _ds_tag_of(cand)
+        if ds_tag:
+            return slugify(ds_tag.removeprefix("ds::"))
+    return slugify(_topic_of(cand))
 
 
 def _candidate_from_row(row: dict) -> tuple[Candidate, str]:

@@ -61,7 +61,11 @@ function parseFormattedNumber(raw: string): number | null {
     if (!Number.isFinite(value)) {
         return null;
     }
-    return percentCount === 1 ? value / 100 : value;
+    return normalizeNumber(percentCount === 1 ? value / 100 : value);
+}
+
+function normalizeNumber(value: number): number {
+    return Math.round(value * 1e12) / 1e12;
 }
 
 function tokenize(input: string): Tok[] | null {
@@ -338,7 +342,10 @@ export function evalCell(
         return { ok: false, error: "#SYNTAX" };
     }
     try {
-        return { ok: true, value: new Parser(toks, resolveRaw, seen).parse() };
+        return {
+            ok: true,
+            value: normalizeNumber(new Parser(toks, resolveRaw, seen).parse()),
+        };
     } catch (e) {
         return { ok: false, error: e instanceof Error ? e.message : "#ERR" };
     }

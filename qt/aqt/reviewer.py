@@ -10,6 +10,7 @@ from collections.abc import Callable, Generator, Sequence
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import partial
+from html import escape
 from typing import Any, Literal, Match, Union, cast
 
 import aqt
@@ -31,6 +32,7 @@ from anki.tags import MARKED_TAG
 from anki.types import assert_exhaustive
 from anki.utils import is_mac
 from aqt import AnkiQt, gui_hooks
+from aqt import ankountant_learning_feedback as learning_feedback
 from aqt.browser.card_info import PreviousReviewerCardInfo, ReviewerCardInfo
 from aqt.deckoptions import confirm_deck_then_display_options
 from aqt.operations.card import set_card_flag
@@ -173,6 +175,7 @@ class Reviewer:
         # Ankountant B1: pre-reveal confidence gate state (reset per question).
         self._ankountant_confidence: str | None = None
         self._ankountant_gate_active = False
+        self._ankountant_feedback_card_id: CardId | None = None
         gui_hooks.av_player_did_end_playing.append(self._on_av_player_did_end_playing)
 
     def show(self) -> None:
@@ -379,6 +382,7 @@ class Reviewer:
         # Ankountant: re-arm the confidence gate for the new question.
         self._ankountant_confidence = None
         self._ankountant_gate_active = False
+        self._ankountant_feedback_card_id = None
         self.typedAnswer: str | None = None
         c = self.card
         # grab the question and play audio
@@ -584,8 +588,185 @@ class Reviewer:
     def _after_answering(self, ease: Literal[1, 2, 3, 4]) -> None:
         gui_hooks.reviewer_did_answer_card(self, self.card, ease)
         self._answeredIds.append(self.card.id)
+        self._finish_after_answering(ease)
+
+    def _finish_after_answering(self, ease: Literal[1, 2, 3, 4]) -> None:
+        if ease == 1 and self._maybe_show_ankountant_learning_feedback(ease):
+            return
         if not self.check_timebox():
             self.nextCard()
+
+    def _maybe_show_ankountant_learning_feedback(
+        self, ease: Literal[1, 2, 3, 4]
+    ) -> bool:
+        try:
+            profile = self._ankountant_learning_feedback_profile()
+        except Exception as exc:
+            if self.check_timebox():
+                return True
+            self._show_ankountant_feedback_error(str(exc))
+            return True
+
+        if profile is None:
+            return False
+        if self.check_timebox():
+            return True
+        self._begin_ankountant_learning_feedback(ease, profile)
+        return True
+
+    def _ankountant_learning_feedback_profile(self) -> dict[str, Any] | None:
+        profile = self.mw.pm.profile
+        if profile is None:
+            raise ValueError("profile is not open")
+        settings = learning_feedback.get_learning_feedback_settings(profile)
+        if not settings["enabled"]:
+            return None
+        return dict(profile)
+
+    def _begin_ankountant_learning_feedback(
+        self, ease: Literal[1, 2, 3, 4], profile: dict[str, Any]
+    ) -> None:
+        assert self.card is not None
+        card_id = self.card.id
+        self._ankountant_feedback_card_id = card_id
+        self._clear_auto_advance_timers()
+        try:
+            payload = self._ankountant_learning_feedback_payload(ease)
+        except Exception as exc:
+            self._show_ankountant_feedback_error(str(exc))
+            return
+
+        self._show_ankountant_feedback_loading()
+
+        def generate(_col: Any) -> dict[str, Any]:
+            return learning_feedback.generate_learning_feedback(profile, payload)
+
+        aqt.operations.QueryOp(
+            parent=self.mw,
+            op=generate,
+            success=lambda feedback: self._show_ankountant_feedback_ready(
+                card_id, feedback
+            ),
+        ).failure(
+            lambda exc: self._show_ankountant_feedback_failure(card_id, exc)
+        ).without_collection().run_in_background()
+
+    def _ankountant_learning_feedback_payload(
+        self, ease: Literal[1, 2, 3, 4]
+    ) -> dict[str, Any]:
+        assert self.card is not None
+        note = self.card.note()
+        return learning_feedback.build_reviewer_learning_feedback_request(
+            question_html=self.card.question(),
+            answer_html=self.card.answer(),
+            note_fields=note.items(),
+            ease=ease,
+            typed_answer=self.typedAnswer,
+            confidence=self._ankountant_confidence,
+        )
+
+    def _show_ankountant_feedback_ready(
+        self, card_id: CardId, feedback: dict[str, Any]
+    ) -> None:
+        if not self._ankountant_feedback_is_current(card_id):
+            return
+        self._render_ankountant_feedback(
+            self._ankountant_feedback_ready_html(feedback),
+            error=False,
+        )
+
+    def _show_ankountant_feedback_failure(
+        self, card_id: CardId, error: Exception
+    ) -> None:
+        if not self._ankountant_feedback_is_current(card_id):
+            return
+        self._show_ankountant_feedback_error(str(error))
+
+    def _show_ankountant_feedback_loading(self) -> None:
+        self._render_ankountant_feedback(
+            self._ankountant_feedback_shell_html(
+                title="Reviewing missed concept",
+                body="<p>Generating grounded feedback from this card.</p>",
+            ),
+            error=False,
+        )
+
+    def _show_ankountant_feedback_error(self, message: str) -> None:
+        self._render_ankountant_feedback(
+            self._ankountant_feedback_shell_html(
+                title="Feedback unavailable",
+                body=f"<p>{escape(message)}</p>",
+            ),
+            error=True,
+        )
+
+    def _ankountant_feedback_ready_html(self, feedback: dict[str, Any]) -> str:
+        return self._ankountant_feedback_shell_html(
+            title=str(feedback["title"]),
+            body="""
+<dl>
+    <div><dt>Why this was wrong</dt><dd>{why_wrong}</dd></div>
+    <div><dt>Correct approach</dt><dd>{correct_approach}</dd></div>
+    <div><dt>Remember</dt><dd>{remember}</dd></div>
+</dl>
+<p class="ankountant-feedback-sources"><span>Sources</span>{sources}</p>
+""".format(
+                why_wrong=escape(str(feedback["whyWrong"])),
+                correct_approach=escape(str(feedback["correctApproach"])),
+                remember=escape(str(feedback["remember"])),
+                sources=escape(", ".join(feedback["sourceIds"])),
+            ),
+        )
+
+    def _ankountant_feedback_shell_html(self, *, title: str, body: str) -> str:
+        return f"""
+<div class="ankountant-feedback-head">
+    <span>AI feedback</span>
+    <h2>{escape(title)}</h2>
+</div>
+{body}
+<div class="ankountant-feedback-actions">
+    <button type="button" data-ankountant-continue>Continue</button>
+</div>
+"""
+
+    def _render_ankountant_feedback(self, html: str, *, error: bool) -> None:
+        class_name = "ankountant-learning-feedback"
+        if error:
+            class_name += " error"
+        self.web.eval(
+            """
+(() => {
+    const qa = document.getElementById("qa");
+    if (!qa) return;
+    document.getElementById("ankountant-learning-feedback")?.remove();
+    const panel = document.createElement("section");
+    panel.id = "ankountant-learning-feedback";
+    panel.className = %s;
+    panel.innerHTML = %s;
+    qa.appendChild(panel);
+    panel.querySelector("[data-ankountant-continue]")?.addEventListener("click", () => {
+        pycmd("ankountant_feedback_continue");
+    });
+})();
+"""
+            % (json.dumps(class_name), json.dumps(html))
+        )
+
+    def _ankountant_feedback_is_current(self, card_id: CardId) -> bool:
+        return (
+            self.mw.state == "review"
+            and self.state == "transition"
+            and self.card is not None
+            and self.card.id == card_id
+            and self._ankountant_feedback_card_id == card_id
+        )
+
+    def _continue_after_ankountant_feedback(self) -> None:
+        if self.mw.state != "review" or self.state != "transition":
+            return
+        self._ankountant_feedback_card_id = None
+        self.nextCard()
 
     # Handlers
     ############################################################
@@ -708,13 +889,19 @@ class Reviewer:
             self.web.update()
         elif url == "statesMutated":
             self._states_mutated = True
-        elif url == "ankountant_gate_ready":
-            # The confidence gate rendered; arm the reveal block.
+        elif url.startswith("ankountant_"):
+            self._handle_ankountant_link(url)
+        else:
+            print("unrecognized anki link:", url)
+
+    def _handle_ankountant_link(self, url: str) -> None:
+        if url == "ankountant_gate_ready":
             self._ankountant_gate_active = True
         elif url.startswith("ankountant_ans:"):
-            # Confidence committed pre-reveal -> record it and reveal.
             self._ankountant_confidence = url[len("ankountant_ans:") :]
             self._getTypedAnswer()
+        elif url == "ankountant_feedback_continue":
+            self._continue_after_ankountant_feedback()
         else:
             print("unrecognized anki link:", url)
 

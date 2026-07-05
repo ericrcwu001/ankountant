@@ -1,18 +1,22 @@
 // Copyright: Ankitects Pty Ltd and contributors
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
-//! F016 — the FAR demo seed. Two layers on ordinary Anki objects (FR-5):
+//! F016 — the demo seed. FAR-deep and five-section-wide (the `LoadFarSeed` name
+//! is historical). Two layers on ordinary Anki objects (FR-5):
 //!
-//! 1. **Content** (always): ~130 real CPA-FAR recall cards, real "which
-//!    treatment?" MCQs for the FAR confusion sets, the anchor JE/numeric TBS
-//!    the grading tests pin, plus a few extra worked TBS — all authored offline
-//!    (a build-time author + independent fact-check pass; see
+//! 1. **Content** (always): FAR's full 13-topic confusion map — ~100 real
+//!    CPA-FAR recall cards, real "which treatment?" MCQs per set, the anchor
+//!    JE/numeric TBS the grading tests pin, plus extra worked TBS — and, for
+//!    summit breadth, AUD/REG/TCP/ISC confusion sets with recall cards, sealed
+//!    MCQs, and section-agnostic TBS (BAR is seeded structurally only). All
+//!    authored offline (a build-time author + independent fact-check pass; see
 //!    `docs_ankountant/rag/`) and embedded from `seed_content.json`.
 //! 2. **History** (opt-in, `with_history`): fake review revlog + sealed Attempt
-//!    Log notes so the demo profile shows a running review loop, an honest
-//!    readiness *band*, and the per-topic *give-up* rule (one set is left
-//!    deliberately under-covered). Off by default so the e2e fixture and the
-//!    A4/A5 threshold tests control history themselves.
+//!    Log notes across all five visible sections so the demo profile shows a
+//!    running review loop, an honest readiness *band*, and the per-topic
+//!    *give-up* rule (one set is left deliberately under-covered). Off by
+//!    default so the e2e fixture and the A4/A5 threshold tests control history
+//!    themselves.
 //!
 //! Reachable from the Rust test suite AND from the `LoadFarSeed` RPC (F016).
 

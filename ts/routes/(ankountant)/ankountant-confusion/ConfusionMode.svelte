@@ -14,6 +14,18 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
     import type { ConfidenceLevel } from "$lib/components/ConfidenceGate.svelte";
     import ConfidenceGate from "$lib/components/ConfidenceGate.svelte";
 
+    import LearningFeedbackPanel from "../LearningFeedbackPanel.svelte";
+    import {
+        learningFeedbackDepthForOutcome,
+        learningFeedbackErrorMessage,
+        maybeGenerateLearningFeedback,
+        shouldGenerateLearningFeedback,
+        type LearningFeedbackConfidence,
+        type LearningFeedbackOutcome,
+        type LearningFeedbackPanelState,
+        type LearningFeedbackRequest,
+        type LearningFeedbackSource,
+    } from "../learning-feedback";
     import type { ConfusionRevealModel } from "./lib";
     import {
         buildChoiceSubmission,
@@ -33,6 +45,9 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
     let submitting = false;
     let submitError: string | null = null;
     let revealError: string | null = null;
+    let selectedTreatment: string | null = null;
+    let learningFeedbackState: LearningFeedbackPanelState | null = null;
+    let learningFeedbackRequestId = 0;
 
     $: current = items[index];
     $: phase = confusionQueuePhase(index, items.length);
@@ -66,10 +81,14 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
             return;
         }
         const answered = current;
+        const submittedConfidence = confidence;
         submitting = true;
         submitError = null;
         reveal = null;
         revealError = null;
+        selectedTreatment = treatment;
+        learningFeedbackState = null;
+        learningFeedbackRequestId += 1;
         try {
             const resp = await submitPerformanceAttempt(
                 {
@@ -81,12 +100,34 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
                 },
                 { alertOnError: false },
             );
-            lastCorrect = resp.totalCredit >= 1;
+            const correct = resp.totalCredit >= 1;
+            const outcome = learningFeedbackOutcome(correct);
+            lastCorrect = correct;
             try {
                 const note = await getNote({ nid: answered.noteId });
-                reveal = buildConfusionRevealModel(note.fields, answered.setId);
+                const nextReveal = buildConfusionRevealModel(
+                    note.fields,
+                    answered.setId,
+                );
+                reveal = nextReveal;
+                if (shouldGenerateLearningFeedback(submittedConfidence, outcome)) {
+                    void requestLearningFeedback(
+                        answered,
+                        treatment,
+                        nextReveal,
+                        submittedConfidence,
+                        outcome,
+                    );
+                }
             } catch (error) {
-                revealError = error instanceof Error ? error.message : String(error);
+                const message = error instanceof Error ? error.message : String(error);
+                revealError = message;
+                if (shouldGenerateLearningFeedback(submittedConfidence, outcome)) {
+                    learningFeedbackState = {
+                        phase: "error",
+                        message: `AI feedback unavailable because the correct treatment source could not be loaded: ${message}`,
+                    };
+                }
             }
         } catch (error) {
             submitError = error instanceof Error ? error.message : String(error);
@@ -102,7 +143,131 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
         reveal = null;
         submitError = null;
         revealError = null;
+        selectedTreatment = null;
+        learningFeedbackState = null;
+        learningFeedbackRequestId += 1;
         itemStartedAt = Date.now();
+    }
+
+    async function requestLearningFeedback(
+        answered = current,
+        treatment: string | null = selectedTreatment,
+        sourceReveal: ConfusionRevealModel | null = reveal,
+        sourceConfidence: LearningFeedbackConfidence | null = confidence,
+        sourceOutcome: LearningFeedbackOutcome | null = lastCorrect === null
+            ? null
+            : learningFeedbackOutcome(lastCorrect),
+    ): Promise<void> {
+        if (
+            !answered ||
+            treatment === null ||
+            sourceReveal === null ||
+            sourceConfidence === null ||
+            sourceOutcome === null ||
+            !shouldGenerateLearningFeedback(sourceConfidence, sourceOutcome)
+        ) {
+            learningFeedbackState = null;
+            return;
+        }
+        const requestId = ++learningFeedbackRequestId;
+        learningFeedbackState = { phase: "loading" };
+        try {
+            const feedback = await maybeGenerateLearningFeedback(
+                buildLearningFeedbackRequest(
+                    answered,
+                    treatment,
+                    sourceReveal,
+                    sourceConfidence,
+                    sourceOutcome,
+                ),
+            );
+            if (requestId !== learningFeedbackRequestId) {
+                return;
+            }
+            learningFeedbackState = { phase: "ready", feedback };
+        } catch (error) {
+            if (requestId !== learningFeedbackRequestId) {
+                return;
+            }
+            learningFeedbackState = {
+                phase: "error",
+                message: learningFeedbackErrorMessage(error),
+            };
+        }
+    }
+
+    function retryLearningFeedback(): void {
+        void requestLearningFeedback();
+    }
+
+    function buildLearningFeedbackRequest(
+        answered: ConfusionItem,
+        treatment: string,
+        sourceReveal: ConfusionRevealModel,
+        sourceConfidence: LearningFeedbackConfidence,
+        sourceOutcome: LearningFeedbackOutcome,
+    ): LearningFeedbackRequest {
+        const prompt = stripConfusionSlug(answered.prompt);
+        return {
+            title: `${sourceReveal.topicLabel} feedback`,
+            confidence: sourceConfidence,
+            outcome: sourceOutcome,
+            feedbackDepth: learningFeedbackDepthForOutcome(
+                sourceConfidence,
+                sourceOutcome,
+            ),
+            question: [
+                prompt,
+                `Choices: ${answered.treatments.join(", ")}`,
+                `Topic: ${sourceReveal.topicLabel}`,
+                sourceReveal.schemaLabel ? `Basis: ${sourceReveal.schemaLabel}` : "",
+            ]
+                .filter(Boolean)
+                .join("\n"),
+            userAnswer: treatment,
+            correctAnswer: sourceReveal.correctText,
+            sources: compactSources([
+                {
+                    id: "prompt",
+                    title: "Prompt",
+                    body: prompt,
+                },
+                {
+                    id: "correct-treatment",
+                    title: "Correct treatment",
+                    body: sourceReveal.correctText,
+                },
+                {
+                    id: "source-passage",
+                    title: "Source passage",
+                    body: sourceReveal.source,
+                },
+            ]),
+        };
+    }
+
+    function learningFeedbackOutcome(correct: boolean): LearningFeedbackOutcome {
+        return correct ? "correct" : "incorrect";
+    }
+
+    function compactSources(
+        sources: LearningFeedbackSource[],
+    ): LearningFeedbackSource[] {
+        const seen = new Set<string>();
+        const compacted: LearningFeedbackSource[] = [];
+        for (const source of sources) {
+            const id = source.id.trim();
+            if (!id || seen.has(id) || !source.body.trim()) {
+                continue;
+            }
+            seen.add(id);
+            compacted.push({
+                id,
+                title: source.title.trim() || id,
+                body: source.body.trim(),
+            });
+        }
+        return compacted;
     }
 </script>
 
@@ -234,6 +399,12 @@ item, and submitting each choice via SubmitPerformanceAttempt(mode=confusion).
                             shown:
                             {revealError}
                         </p>
+                    {/if}
+                    {#if learningFeedbackState}
+                        <LearningFeedbackPanel
+                            state={learningFeedbackState}
+                            retry={retryLearningFeedback}
+                        />
                     {/if}
                     <div class="feedback-actions">
                         <button

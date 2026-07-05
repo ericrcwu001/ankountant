@@ -6,16 +6,18 @@
 
 import type { CorpusEntry } from "./corpus";
 import { CORPUS } from "./corpus";
+import { GENERATED_CORPUS } from "./generated-corpus";
 
 export type { CorpusEntry } from "./corpus";
 
 export function corpusForSection(section: string): CorpusEntry[] {
     const code = section.trim().toUpperCase();
-    const entries = CORPUS[code];
-    if (!entries) {
+    const base = CORPUS[code];
+    const generated = GENERATED_CORPUS[code] ?? [];
+    if (!base) {
         throw new Error(`Unknown CPA section: ${code}`);
     }
-    return entries;
+    return [...base, ...generated];
 }
 
 /**
