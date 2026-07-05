@@ -3,13 +3,22 @@
 
 import { buildConfusionQueue } from "@generated/backend";
 
+import { readableBackendError } from "../backendError";
 import type { PageLoad } from "./$types";
 import { selectedConfusionSection } from "./lib";
 
 export const load = (async ({ url }) => {
     const section = selectedConfusionSection(url.searchParams.get("section"));
-    // A3 returns an already label-stripped, interleaved queue (B3-D1). We never
-    // fetch topic/deck labels for these items (B2-D1 / A44).
-    const resp = await buildConfusionQueue({ section, maxItems: 60 });
-    return { items: resp.items, section };
+    try {
+        // A3 returns an already label-stripped, interleaved queue (B3-D1). We never
+        // fetch topic/deck labels for these items (B2-D1 / A44).
+        const resp = await buildConfusionQueue({ section, maxItems: 60 });
+        return { items: resp.items, section };
+    } catch (error) {
+        return {
+            items: [],
+            section,
+            loadError: readableBackendError(error, "The confusion drill could not be loaded."),
+        };
+    }
 }) satisfies PageLoad;

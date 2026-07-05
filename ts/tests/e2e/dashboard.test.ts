@@ -86,6 +86,38 @@ test("section switcher reloads the dashboard for the selected CPA section", asyn
     );
 });
 
+test("dashboard load failure can retry without leaking backend html", async ({ page }) => {
+    let readinessRequests = 0;
+    await page.route("**/_anki/getReadiness", async (route) => {
+        readinessRequests += 1;
+        if (readinessRequests === 1) {
+            await route.fulfill({
+                status: 503,
+                contentType: "text/html",
+                body: "<!doctype html><title>503 Evidence unavailable</title><h1>Evidence unavailable</h1>",
+            });
+        } else {
+            await route.continue();
+        }
+    });
+
+    await page.goto("/ankountant-dashboard");
+
+    const error = page.getByTestId("dashboard-load-error");
+    await expect(error).toContainText(
+        "503 Evidence unavailable. Readiness evidence could not be loaded.",
+    );
+    await expect(error).not.toContainText("<!doctype html>");
+    await expect(error.getByRole("link", { name: "Study home" })).toHaveAttribute(
+        "href",
+        "/ankountant-home",
+    );
+    await error.getByRole("button", { name: "Retry" }).click();
+
+    await expect(page.getByTestId("dashboard")).toBeVisible();
+    await expect.poll(() => readinessRequests).toBeGreaterThan(1);
+});
+
 test("gap >= 0.25 renders the gap row with the gap-warning class (A56)", async ({ page, seedWithHistory }) => {
     expect(seedWithHistory.confusionSets).toBeGreaterThanOrEqual(4);
     await page.goto("/ankountant-dashboard");

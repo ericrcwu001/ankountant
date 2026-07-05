@@ -54,6 +54,34 @@ test("BAR deep link shows the section-specific empty confusion state", async ({ 
     await expect(page.getByTestId("confusion-item")).toHaveCount(0);
 });
 
+test("confusion load failure can retry without leaking backend html", async ({ page }) => {
+    let queueRequests = 0;
+    await page.route("**/_anki/buildConfusionQueue", async (route) => {
+        queueRequests += 1;
+        if (queueRequests === 1) {
+            await route.fulfill({
+                status: 503,
+                contentType: "text/html",
+                body: "<!doctype html><title>503 Queue unavailable</title><h1>Queue unavailable</h1>",
+            });
+        } else {
+            await route.continue();
+        }
+    });
+
+    await page.goto("/ankountant-confusion");
+
+    const error = page.getByTestId("confusion-load-error");
+    await expect(error).toContainText(
+        "503 Queue unavailable. The confusion drill could not be loaded.",
+    );
+    await expect(error).not.toContainText("<!doctype html>");
+    await error.getByRole("button", { name: "Retry" }).click();
+
+    await expect(page.getByTestId("confusion-item")).toBeVisible();
+    await expect.poll(() => queueRequests).toBeGreaterThan(1);
+});
+
 test("selecting a treatment scores it and reveals the correct treatment (A45/B2-D2)", async ({ page }) => {
     await page.goto("/ankountant-confusion");
     await page.getByTestId("confidence-confident").click();

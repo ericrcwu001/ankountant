@@ -9,6 +9,10 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     export let eyebrow: string;
     export let title: string;
     export let message: string;
+    export let secondaryHref = "/ankountant-tbs";
+    export let secondaryLabel = "Browse simulations";
+    export let tertiaryHref = "/ankountant-dashboard";
+    export let tertiaryLabel = "View readiness evidence";
 
     let retrying = false;
 
@@ -34,8 +38,12 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         <button type="button" class="primary" on:click={retry} disabled={retrying}>
             {retrying ? "Retrying..." : "Retry"}
         </button>
-        <a href="/ankountant-tbs">Browse simulations</a>
-        <a href="/ankountant-dashboard">View readiness evidence</a>
+        {#if secondaryHref && secondaryLabel}
+            <a href={secondaryHref}>{secondaryLabel}</a>
+        {/if}
+        {#if tertiaryHref && tertiaryLabel}
+            <a href={tertiaryHref}>{tertiaryLabel}</a>
+        {/if}
     </div>
 </section>
 
