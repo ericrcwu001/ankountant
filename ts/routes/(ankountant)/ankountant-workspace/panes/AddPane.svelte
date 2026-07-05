@@ -29,6 +29,7 @@ media bridge lands.
         getNotetypeNames,
         newNote,
     } from "@generated/backend";
+    import { bridgeCommand } from "@tslib/bridgecommand";
 
     import type { NoteEditorAPI } from "../../../../editor/NoteEditor.svelte";
     import NoteEditor from "../../../../editor/NoteEditor.svelte";
@@ -118,6 +119,10 @@ media bridge lands.
         }
     }
 
+    function openImport(): void {
+        bridgeCommand("ankountant:import");
+    }
+
     async function submit(): Promise<void> {
         if (adding || loadingNote || !editor || !note) {
             return;
@@ -180,6 +185,14 @@ media bridge lands.
                         {addedCount} added
                     </span>
                 {/if}
+                <button
+                    type="button"
+                    class="import-btn"
+                    on:click={openImport}
+                    data-testid="add-import"
+                >
+                    Import package
+                </button>
                 <button
                     type="button"
                     class="add-btn"
@@ -289,6 +302,26 @@ media bridge lands.
         &[disabled] {
             opacity: 0.5;
             cursor: default;
+        }
+    }
+
+    .import-btn {
+        font: inherit;
+        font-weight: 600;
+        color: var(--fg);
+        background: var(--canvas-inset);
+        border: 1px solid var(--border-control);
+        border-radius: var(--border-radius);
+        padding: var(--space-xs) var(--space-md);
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--accent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
         }
     }
 

@@ -79,6 +79,14 @@ test("workspace panes do not leak backend html on load failure", async ({ page }
     await expect(paneState).not.toContainText("don&#39;t");
 });
 
+test("workspace add pane exposes package import", async ({ page }) => {
+    await page.goto("/ankountant-workspace?initial=add");
+
+    await expect(page.locator(".add-pane")).toBeVisible();
+    await expect(page.getByTestId("add-import")).toBeVisible();
+    await expect(page.getByTestId("add-import")).toHaveText("Import package");
+});
+
 for (
     const surface of [
         { initial: "tbs", title: "No simulation task found" },
