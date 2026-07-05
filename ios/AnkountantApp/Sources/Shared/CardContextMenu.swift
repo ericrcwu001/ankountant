@@ -42,15 +42,21 @@ struct CardContextMenu: View {
 
     var body: some View {
         Menu {
-            Button(action: performSuspend) {
+            Button {
+                Task { await performSuspend() }
+            } label: {
                 Label("Suspend", systemImage: "pause.circle")
             }
 
-            Button(action: performBury) {
+            Button {
+                Task { await performBury() }
+            } label: {
                 Label("Bury until tomorrow", systemImage: "books.vertical")
             }
 
-            Button(action: performResetToNew) {
+            Button {
+                Task { await performResetToNew() }
+            } label: {
                 Label("Forget", systemImage: "arrow.counterclockwise")
             }
 
@@ -64,18 +70,24 @@ struct CardContextMenu: View {
 
             if noteId != nil {
                 Menu {
-                    Button(action: performToggleMarkedNote) {
+                    Button {
+                        Task { await performToggleMarkedNote() }
+                    } label: {
                         Label(
                             isMarkedNote ? "Unmark note" : "Mark note",
                             systemImage: isMarkedNote ? "star.slash" : "star"
                         )
                     }
 
-                    Button(action: performSuspendNote) {
+                    Button {
+                        Task { await performSuspendNote() }
+                    } label: {
                         Label("Suspend note", systemImage: "pause.circle.fill")
                     }
 
-                    Button(action: performBuryNote) {
+                    Button {
+                        Task { await performBuryNote() }
+                    } label: {
                         Label("Bury note", systemImage: "books.vertical.fill")
                     }
 
@@ -125,7 +137,9 @@ struct CardContextMenu: View {
             Text(errorMessage ?? "An unknown error occurred.")
         }
         .confirmationDialog("Delete this note?", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
-            Button("Delete", role: .destructive, action: performDeleteNote)
+            Button("Delete", role: .destructive) {
+                Task { await performDeleteNote() }
+            }
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("This deletes the note and all its cards. The action cannot be undone.")
@@ -137,57 +151,51 @@ struct CardContextMenu: View {
         }
     }
 
-    private func performSuspend() {
-        do {
-            try cardClient.suspend(cardId)
-            onSuccess?()
-            onActionSuccess?(true)
-        } catch {
-            errorMessage = "Suspend failed: \(error.localizedDescription)"
-            showError = true
-        }
+    private func performSuspend() async {
+        await performCardAction(
+            action: cardClient.suspend,
+            errorPrefix: "Suspend failed",
+            shouldAdvance: true
+        )
     }
 
-    private func performBury() {
-        do {
-            try cardClient.bury(cardId)
-            onSuccess?()
-            onActionSuccess?(true)
-        } catch {
-            errorMessage = "Bury failed: \(error.localizedDescription)"
-            showError = true
-        }
+    private func performBury() async {
+        await performCardAction(
+            action: cardClient.bury,
+            errorPrefix: "Bury failed",
+            shouldAdvance: true
+        )
     }
 
-    private func performSuspendNote() {
-        performNoteAction(
-            action: { cardId in try cardClient.suspend(cardId) },
+    private func performSuspendNote() async {
+        await performNoteAction(
+            action: cardClient.suspend,
             errorMessage: { err in "Suspend note failed: \(err)" }
         )
     }
 
-    private func performBuryNote() {
-        performNoteAction(
-            action: { cardId in try cardClient.bury(cardId) },
+    private func performBuryNote() async {
+        await performNoteAction(
+            action: cardClient.bury,
             errorMessage: { err in "Bury note failed: \(err)" }
         )
     }
 
-    private func performResetToNew() {
-        do {
-            try cardClient.resetToNew(cardId)
-            onSuccess?()
-            onActionSuccess?(true)
-        } catch {
-            errorMessage = "Forget failed: \(error.localizedDescription)"
-            showError = true
-        }
+    private func performResetToNew() async {
+        await performCardAction(
+            action: cardClient.resetToNew,
+            errorPrefix: "Forget failed",
+            shouldAdvance: true
+        )
     }
 
-    private func performDeleteNote() {
+    private func performDeleteNote() async {
         guard let noteId else { return }
+        let deleteNote = noteClient.delete
         do {
-            try noteClient.delete(noteId)
+            try await Task.detached(priority: .userInitiated) {
+                try deleteNote(noteId)
+            }.value
             onSuccess?()
             onActionSuccess?(true)
         } catch {
@@ -196,13 +204,20 @@ struct CardContextMenu: View {
         }
     }
 
-    private func performToggleMarkedNote() {
+    private func performToggleMarkedNote() async {
         guard let noteId else { return }
+        let addTagToNotes = tagClient.addTagToNotes
+        let removeTagFromNotes = tagClient.removeTagFromNotes
+        let shouldRemove = isMarkedNote
         do {
-            if isMarkedNote {
-                try tagClient.removeTagFromNotes(markedTag, [noteId])
+            if shouldRemove {
+                try await Task.detached(priority: .userInitiated) {
+                    try removeTagFromNotes(markedTag, [noteId])
+                }.value
             } else {
-                try tagClient.addTagToNotes(markedTag, [noteId])
+                try await Task.detached(priority: .userInitiated) {
+                    try addTagToNotes(markedTag, [noteId])
+                }.value
             }
             isMarkedNote.toggle()
             onSuccess?()
@@ -213,19 +228,45 @@ struct CardContextMenu: View {
         }
     }
 
-    private func performNoteAction(
-        action: (Int64) throws -> Void,
-        errorMessage buildMessage: (String) -> String
-    ) {
-        guard let noteId else { return }
+    private func performCardAction(
+        action: @escaping @Sendable (_ cardId: Int64) throws -> Void,
+        errorPrefix: String,
+        shouldAdvance: Bool
+    ) async {
         do {
-            let cards = try cardClient.fetchByNote(noteId)
-            guard !cards.isEmpty else {
-                throw cardContextMenuError("No cards found for this note.")
-            }
-            for card in cards {
-                try action(card.id)
-            }
+            try await Task.detached(priority: .userInitiated) {
+                try action(cardId)
+            }.value
+            onSuccess?()
+            onActionSuccess?(shouldAdvance)
+        } catch {
+            errorMessage = "\(errorPrefix): \(error.localizedDescription)"
+            showError = true
+        }
+    }
+
+    private func performNoteAction(
+        action: @escaping @Sendable (_ cardId: Int64) throws -> Void,
+        errorMessage buildMessage: (String) -> String
+    ) async {
+        guard let noteId else { return }
+        let fetchByNote = cardClient.fetchByNote
+        do {
+            try await Task.detached(priority: .userInitiated) {
+                let cards = try fetchByNote(noteId)
+                guard !cards.isEmpty else {
+                    throw NSError(
+                        domain: "CardContextMenu",
+                        code: 1,
+                        userInfo: [
+                            NSLocalizedDescriptionKey: "No cards found for this note.",
+                        ]
+                    )
+                }
+                for card in cards {
+                    try action(card.id)
+                }
+            }.value
             onSuccess?()
             onActionSuccess?(true)
         } catch {
@@ -234,13 +275,12 @@ struct CardContextMenu: View {
         }
     }
 
-    private func cardContextMenuError(_ message: String) -> NSError {
-        NSError(domain: "CardContextMenu", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
-    }
-
-    private func performFlag(_ value: UInt32) {
+    private func performFlag(_ value: UInt32) async {
+        let flag = cardClient.flag
         do {
-            try cardClient.flag(cardId, value)
+            try await Task.detached(priority: .userInitiated) {
+                try flag(cardId, value)
+            }.value
             currentFlag = value
             onSuccess?()
             onActionSuccess?(false)
@@ -254,8 +294,11 @@ struct CardContextMenu: View {
         guard !isUndoing, canUndo else { return }
         isUndoing = true
         defer { isUndoing = false }
+        let undoLast = cardClient.undoLast
         do {
-            try cardClient.undoLast()
+            try await Task.detached(priority: .userInitiated) {
+                try undoLast()
+            }.value
             onSuccess?()
             onActionSuccess?(true)
         } catch {
@@ -266,8 +309,11 @@ struct CardContextMenu: View {
     }
 
     private func refreshUndoAvailability() async {
+        let hasUndoableAction = cardClient.hasUndoableAction
         do {
-            canUndo = try cardClient.hasUndoableAction()
+            canUndo = try await Task.detached(priority: .userInitiated) {
+                try hasUndoableAction()
+            }.value
         } catch {
             canUndo = false
             errorMessage = "Could not load undo state: \(error.localizedDescription)"
@@ -277,7 +323,9 @@ struct CardContextMenu: View {
 
     private func flagButton(_ value: UInt32) -> some View {
         let tint = flagColor(for: value)
-        return Button(action: { performFlag(value) }) {
+        return Button {
+            Task { await performFlag(value) }
+        } label: {
             Label {
                 Text(flagDisplayName(for: value))
                     .foregroundStyle(tint)
@@ -315,8 +363,11 @@ struct CardContextMenu: View {
             return
         }
 
+        let fetchNote = noteClient.fetch
         do {
-            let note = try noteClient.fetch(noteId)
+            let note = try await Task.detached(priority: .userInitiated) {
+                try fetchNote(noteId)
+            }.value
             isMarkedNote = note.map {
                 $0.tags
                     .split(separator: " ")
@@ -330,8 +381,11 @@ struct CardContextMenu: View {
     }
 
     private func loadCurrentFlag() async {
+        let getCardFlags = cardClient.getCardFlags
         do {
-            currentFlag = try cardClient.getCardFlags(cardId)
+            currentFlag = try await Task.detached(priority: .userInitiated) {
+                try getCardFlags(cardId)
+            }.value
         } catch {
             currentFlag = 0
             errorMessage = "Could not load card flag: \(error.localizedDescription)"
