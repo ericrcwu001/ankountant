@@ -112,6 +112,9 @@ specific field; regex + case options map straight onto FindAndReplaceRequest.
             if (e.key === "Escape") {
                 e.stopPropagation();
                 onClose();
+            } else if (e.key === "Enter" && !e.isComposing) {
+                e.preventDefault();
+                void apply();
             }
         }
         window.addEventListener("keydown", onKey, true);

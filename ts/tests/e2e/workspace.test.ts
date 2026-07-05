@@ -60,6 +60,28 @@ test("workspace find and replace shows apply failures in the dialog", async ({ p
     await expect(dialog).toBeVisible();
 });
 
+test("workspace find and replace submits with Enter", async ({ page, seed }) => {
+    expect(seed.sealedItems).toBeGreaterThan(0);
+    await page.route("**/_anki/findAndReplace", async (route) => {
+        await route.fulfill({
+            status: 500,
+            contentType: "text/plain",
+            body: "enter replace failed",
+        });
+    });
+    await page.goto("/ankountant-workspace?initial=browse");
+    await expect(page.getByTestId("browse-pane")).toBeVisible();
+    await page.getByRole("button", { name: "Find and replace" }).click();
+    const dialog = page.getByRole("dialog", { name: "Find and replace" });
+    const findInput = dialog.getByRole("textbox", { name: "Find" });
+    await findInput.fill("lease");
+    await findInput.press("Enter");
+    await expect(page.getByTestId("fr-apply-error")).toContainText(
+        "500: enter replace failed",
+    );
+    await expect(dialog).toBeVisible();
+});
+
 test("workspace panes do not leak backend html on load failure", async ({ page }) => {
     await page.route("**/_anki/searchNotes", async (route) => {
         await route.fulfill({
