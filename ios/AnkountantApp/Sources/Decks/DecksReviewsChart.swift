@@ -31,11 +31,12 @@ struct DecksReviewsChart: View {
                 // so the visual matches what the Stats tab renders.
                 HeatmapChartOptimized(reviews: reviews)
             } else {
-                Text(errorMessage ?? "No reviews yet")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .frame(minHeight: 200)
+                StatsEmptyChartView(
+                    title: errorMessage == nil ? "No reviews yet" : "Couldn't load reviews",
+                    systemImage: errorMessage == nil ? "calendar" : "exclamationmark.triangle",
+                    description: errorMessage ?? "Review cards to build your study heatmap.",
+                    height: 200
+                )
             }
         }
         .task { await load() }

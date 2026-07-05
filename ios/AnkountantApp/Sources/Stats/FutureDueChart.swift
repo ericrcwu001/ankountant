@@ -52,7 +52,11 @@ struct FutureDueChart: View {
             Text("Future Due").ankountantFont(.bodyEmphasis)
 
             if model.bars.isEmpty {
-                StatsEmptyChartView(title: "No cards due", systemImage: "calendar")
+                StatsEmptyChartView(
+                    title: "No cards due",
+                    systemImage: "calendar",
+                    description: "Add or review cards to create a future due schedule."
+                )
             } else {
                 Chart(model.bars, id: \.day) { item in
                     BarMark(

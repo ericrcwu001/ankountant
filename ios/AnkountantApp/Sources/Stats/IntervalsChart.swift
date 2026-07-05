@@ -41,7 +41,11 @@ struct IntervalsChart: View {
             Text("Review Intervals").ankountantFont(.bodyEmphasis)
 
             if buckets.isEmpty {
-                StatsEmptyChartView(title: "No interval data", systemImage: "calendar")
+                StatsEmptyChartView(
+                    title: "No interval data",
+                    systemImage: "calendar",
+                    description: "Answer review cards to build interval distribution."
+                )
             } else {
                 Chart(buckets) { bucket in
                     BarMark(

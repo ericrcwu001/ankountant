@@ -37,7 +37,11 @@ struct AddedChart: View {
             Text("Cards Added").ankountantFont(.bodyEmphasis)
 
             if model.bars.isEmpty {
-                StatsEmptyChartView(title: "No cards added", systemImage: "plus.rectangle")
+                StatsEmptyChartView(
+                    title: "No cards added",
+                    systemImage: "plus.rectangle",
+                    description: "Add or import cards in this period to show creation volume."
+                )
             } else {
                 Chart(model.bars, id: \.day) { item in
                     BarMark(

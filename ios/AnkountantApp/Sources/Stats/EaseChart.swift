@@ -28,7 +28,11 @@ struct EaseChart: View {
             }
 
             if chartData.isEmpty {
-                StatsEmptyChartView(title: "No ease data", systemImage: "gauge")
+                StatsEmptyChartView(
+                    title: "No ease data",
+                    systemImage: "gauge",
+                    description: "Review cards to build ease distribution."
+                )
             } else {
                 Chart(chartData, id: \.ease) { item in
                     BarMark(

@@ -186,9 +186,18 @@ struct HeatmapChartOptimized: View {
             }
 
             if visibleData.isEmpty {
-                Text("No reviews yet")
-                    .foregroundStyle(palette.textSecondary)
-                    .frame(maxWidth: .infinity, minHeight: isCompact ? 72 : 100)
+                if isCompact {
+                    Text("No reviews yet")
+                        .foregroundStyle(palette.textSecondary)
+                        .frame(maxWidth: .infinity, minHeight: 72)
+                } else {
+                    StatsEmptyChartView(
+                        title: "No reviews yet",
+                        systemImage: "calendar",
+                        description: "Review cards to build this evidence heatmap.",
+                        height: 110
+                    )
+                }
             } else {
                 if !isCompact {
                     HStack(spacing: 16) {

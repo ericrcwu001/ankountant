@@ -38,7 +38,11 @@ struct HourlyChart: View {
             Text("Hourly Breakdown").ankountantFont(.bodyEmphasis)
 
             if entries.allSatisfy({ $0.total == 0 }) {
-                StatsEmptyChartView(title: "No review data", systemImage: "clock")
+                StatsEmptyChartView(
+                    title: "No review data",
+                    systemImage: "clock",
+                    description: "Review cards to reveal when study sessions happen."
+                )
             } else {
                 Chart(entries) { entry in
                     BarMark(

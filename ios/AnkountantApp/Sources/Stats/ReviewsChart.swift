@@ -84,7 +84,11 @@ struct ReviewsChart: View {
             Text("Reviews").ankountantFont(.bodyEmphasis)
 
             if model.series.isEmpty {
-                StatsEmptyChartView(title: "No review data", systemImage: "chart.bar")
+                StatsEmptyChartView(
+                    title: "No review data",
+                    systemImage: "chart.bar",
+                    description: "Review cards in this period to build performance evidence."
+                )
             } else {
                 Chart(model.series) { entry in
                     BarMark(
