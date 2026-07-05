@@ -28,6 +28,10 @@ struct DeckTemplateListView: View {
         filterDeckTemplateEntries(entries, searchText: searchText)
     }
 
+    private var trimmedSearchText: String {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     var body: some View {
         mainContent
             .background(palette.background)
@@ -91,15 +95,28 @@ struct DeckTemplateListView: View {
                 tone: .warning
             )
         } else if entries.isEmpty {
-            ContentUnavailableView(
-                "No notetypes",
-                systemImage: "square.stack.3d.up.slash",
-                description: Text("No notetypes match this search.")
-            )
+            ContentUnavailableView {
+                Label("No notetypes", systemImage: "square.stack.3d.up.slash")
+            } description: {
+                Text("This collection has no editable notetypes.")
+            }
         } else if filteredEntries.isEmpty {
-            ContentUnavailableView.search(text: searchText)
+            templateSearchEmptyState
         } else {
             templateList
+        }
+    }
+
+    private var templateSearchEmptyState: some View {
+        ContentUnavailableView {
+            Label("No templates found", systemImage: "magnifyingglass")
+        } description: {
+            Text("No notetypes match \"\(trimmedSearchText)\".")
+        } actions: {
+            Button("Clear Search", systemImage: "xmark.circle") {
+                searchText = ""
+            }
+            .buttonStyle(.borderedProminent)
         }
     }
 
