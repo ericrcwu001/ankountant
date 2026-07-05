@@ -242,7 +242,9 @@ struct LookupPopupView: View {
                 showDictionarySettings = true
             }
         } else {
-            ContentUnavailableView.search(text: query)
+            lookupNoResultsView(query: query) {
+                showDictionarySettings = true
+            }
         }
     }
 
@@ -428,7 +430,9 @@ private struct LookupChildPane: View {
                     showDictionarySettings = true
                 }
             } else {
-                ContentUnavailableView.search(text: query)
+                lookupNoResultsView(query: query) {
+                    showDictionarySettings = true
+                }
             }
         }
         .navigationTitle(query)
@@ -452,6 +456,25 @@ private struct LookupChildPane: View {
             lookupError = error.localizedDescription
             result = nil
         }
+    }
+}
+
+@MainActor
+private func lookupNoResultsView(query: String, onOpenSettings: @escaping @MainActor () -> Void) -> some View {
+    let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    return ContentUnavailableView {
+        Label("No dictionary results", systemImage: "magnifyingglass")
+    } description: {
+        if trimmed.isEmpty {
+            Text("Type a word or phrase to search your Reader dictionaries.")
+        } else {
+            Text("No dictionary entries match \"\(trimmed)\".")
+        }
+    } actions: {
+        Button("Reader Dictionaries", systemImage: "books.vertical") {
+            onOpenSettings()
+        }
+        .buttonStyle(.borderedProminent)
     }
 }
 
