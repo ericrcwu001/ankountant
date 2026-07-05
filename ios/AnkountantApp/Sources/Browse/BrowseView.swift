@@ -751,15 +751,13 @@ struct NoteContextMenuButton: View {
                     onSuccess: onSuccess
                 )
             } else if cardActionError != nil {
-                Button {
+                Button("Card actions unavailable", systemImage: "exclamationmark.circle") {
                     showCardActionError = true
-                } label: {
-                    Image(systemName: "exclamationmark.circle")
-                        .ankountantFont(.bodyEmphasis)
-                        .foregroundStyle(.red)
                 }
+                .labelStyle(.iconOnly)
+                .ankountantFont(.bodyEmphasis)
+                .foregroundStyle(.red)
                 .buttonStyle(.plain)
-                .accessibilityLabel("Card actions unavailable")
             } else {
                 ProgressView()
                     .controlSize(.small)
@@ -767,24 +765,31 @@ struct NoteContextMenuButton: View {
             }
         }
         .alert("Card actions unavailable", isPresented: $showCardActionError) {
+            Button("Retry") {
+                loadCardActionState()
+            }
             Button("OK", role: .cancel) {}
         } message: {
             Text(cardActionError ?? "Unable to load card actions for this note.")
         }
         .task(id: noteId) {
-            firstCardId = nil
-            cardActionError = nil
-            showCardActionError = false
-            do {
-                let cards = try cardClient.fetchByNote(noteId)
-                guard let firstCard = cards.first else {
-                    cardActionError = "This note has no cards."
-                    return
-                }
-                firstCardId = firstCard.id
-            } catch {
-                cardActionError = "Failed to load card actions: \(error.localizedDescription)"
+            loadCardActionState()
+        }
+    }
+
+    private func loadCardActionState() {
+        firstCardId = nil
+        cardActionError = nil
+        showCardActionError = false
+        do {
+            let cards = try cardClient.fetchByNote(noteId)
+            guard let firstCard = cards.first else {
+                cardActionError = "This note has no cards."
+                return
             }
+            firstCardId = firstCard.id
+        } catch {
+            cardActionError = "Failed to load card actions: \(error.localizedDescription)"
         }
     }
 }
