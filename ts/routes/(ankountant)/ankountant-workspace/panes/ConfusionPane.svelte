@@ -48,5 +48,9 @@ ankountant-confusion/+page.ts.
         emptyTitle="No confusion drills yet"
         emptyText="Load or import CPA practice to build the drill queue."
         emptyImportLabel="Import package"
+        emptyActionHref="/ankountant-tbs"
+        emptyActionLabel="Practice simulations"
+        emptySecondaryHref="/ankountant-dashboard"
+        emptySecondaryLabel="Readiness evidence"
     />
 {/if}

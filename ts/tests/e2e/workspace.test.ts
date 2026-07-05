@@ -87,6 +87,31 @@ test("workspace add pane exposes package import", async ({ page }) => {
     await expect(page.getByTestId("add-import")).toHaveText("Import package");
 });
 
+test("workspace confusion empty state links to next steps", async ({ page }) => {
+    await page.route("**/_anki/buildConfusionQueue", async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: "application/binary",
+            body: Buffer.alloc(0),
+        });
+    });
+
+    await page.goto("/ankountant-workspace?initial=confusion");
+
+    const paneState = page.getByTestId("pane-state");
+    await expect(paneState).toHaveAttribute("data-phase", "empty");
+    await expect(paneState).toContainText("No confusion drills yet");
+    await expect(paneState.getByRole("button", { name: "Import package" })).toBeVisible();
+    await expect(paneState.getByRole("link", { name: "Practice simulations" })).toHaveAttribute(
+        "href",
+        "/ankountant-tbs",
+    );
+    await expect(paneState.getByRole("link", { name: "Readiness evidence" })).toHaveAttribute(
+        "href",
+        "/ankountant-dashboard",
+    );
+});
+
 for (
     const surface of [
         { initial: "tbs", title: "No simulation task found" },
