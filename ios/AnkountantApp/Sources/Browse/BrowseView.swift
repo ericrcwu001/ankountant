@@ -42,6 +42,7 @@ struct BrowseView: View {
     @State private var sortOrder: BrowseSortOrder = .dateDesc
     @State private var notetypeNames: [Int64: String] = [:]
     @State private var actionErrorMessage: String?
+    @State private var searchErrorMessage: String?
     @State private var searchGeneration = 0
 
     private let pageSize = 50
@@ -270,7 +271,9 @@ struct BrowseView: View {
 
     @ViewBuilder
     private var content: some View {
-        if notes.isEmpty && !isLoading && trimmedSearchText.isEmpty && !hasActiveFilter {
+        if !isLoading, let searchErrorMessage {
+            searchLoadErrorState(searchErrorMessage)
+        } else if notes.isEmpty && !isLoading && trimmedSearchText.isEmpty && !hasActiveFilter {
             emptyCollectionState
         } else if notes.isEmpty && !isLoading && trimmedSearchText.isEmpty && hasActiveFilter {
             filteredEmptyState
@@ -278,6 +281,31 @@ struct BrowseView: View {
             searchEmptyState
         } else {
             notesList
+        }
+    }
+
+    private func searchLoadErrorState(_ message: String) -> some View {
+        ContentUnavailableView {
+            Label("Could Not Load Notes", systemImage: "exclamationmark.triangle")
+        } description: {
+            Text(message)
+        } actions: {
+            Button("Retry", systemImage: "arrow.clockwise") {
+                Task { await performSearch() }
+            }
+            .buttonStyle(.borderedProminent)
+
+            if !trimmedSearchText.isEmpty {
+                Button("Clear Search", systemImage: "xmark.circle") {
+                    searchText = ""
+                }
+            }
+
+            if hasActiveFilter {
+                Button("Clear Filters", systemImage: "line.3.horizontal.decrease.circle") {
+                    clearFilters()
+                }
+            }
         }
     }
 
@@ -609,6 +637,7 @@ struct BrowseView: View {
         searchGeneration += 1
         let generation = searchGeneration
         isLoading = true
+        searchErrorMessage = nil
         defer {
             if generation == searchGeneration {
                 isLoading = false
@@ -627,7 +656,7 @@ struct BrowseView: View {
             allNotes = []
             notes = []
             hasMorePages = false
-            actionErrorMessage = "Search failed: \(error.localizedDescription)"
+            searchErrorMessage = "Search failed: \(error.localizedDescription)"
         }
     }
 
