@@ -115,15 +115,15 @@ struct AddImageOcclusionNoteView: View {
 
                 if let loadErrorMessage {
                     Section {
-                        if localContentMissing {
-                            ContentUnavailableView {
-                                Label("Could Not Load Decks", systemImage: "exclamationmark.triangle")
-                            } description: {
-                                Text(loadErrorMessage)
-                            } actions: {
-                                Button("Retry") {
-                                    Task { await loadDecks() }
-                                }
+                        ContentUnavailableView {
+                            Label("Could Not Load Decks", systemImage: "exclamationmark.triangle")
+                        } description: {
+                            Text(loadErrorMessage)
+                        } actions: {
+                            Button("Retry") {
+                                Task { await loadDecks() }
+                            }
+                            if localContentMissing {
                                 Button("Create deck", systemImage: "plus") {
                                     showCreateDeck = true
                                 }
@@ -132,9 +132,6 @@ struct AddImageOcclusionNoteView: View {
                                     showImport = true
                                 }
                             }
-                        } else {
-                            Text(loadErrorMessage)
-                                .ankountantStatusText(.danger, font: .caption)
                         }
                     }
                 }
