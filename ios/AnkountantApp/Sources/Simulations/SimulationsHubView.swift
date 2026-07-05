@@ -101,9 +101,15 @@ struct SimulationsHubView: View {
             List {
                 Section(tbsShapeDisplayLabel(selectedShape)) {
                     if filteredTasks.isEmpty {
-                        Text("No \(tbsShapeDisplayLabel(selectedShape).lowercased()) simulations in this profile.")
-                            .ankountantFont(.body)
-                            .foregroundStyle(palette.textSecondary)
+                        VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
+                            Text("No \(tbsShapeDisplayLabel(selectedShape).lowercased()) simulations in this profile.")
+                                .ankountantFont(.body)
+                                .foregroundStyle(palette.textSecondary)
+                            Button("Import package", systemImage: "square.and.arrow.down") {
+                                showImport = true
+                            }
+                        }
+                        .padding(.vertical, 2)
                     } else {
                         ForEach(filteredTasks) { task in
                             NavigationLink(value: SimulationRoute.tbs(task.noteId)) {
@@ -120,6 +126,9 @@ struct SimulationsHubView: View {
                         }
                     } else {
                         allConfusionRow(enabled: false)
+                        Button("Import package", systemImage: "square.and.arrow.down") {
+                            showImport = true
+                        }
                     }
                     ForEach(CPASection.practiceOrder) { section in
                         confusionSectionRow(section)
