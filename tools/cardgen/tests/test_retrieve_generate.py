@@ -155,6 +155,35 @@ def test_build_query_adds_confusion_treatments_for_mcq() -> None:
     assert "Operating lease" in q and "Finance lease" in q
 
 
+def test_build_query_uses_worklist_category_metadata() -> None:
+    item = {
+        "section": "AUD",
+        "area": "Risk Assessment",
+        "topic": "Materiality determination",
+        "task_id": "AUD.II.A.1",
+        "card_type": RECALL,
+        "category": "materiality_vs_trivial_misstatement",
+        "category_tags": ["ds::aud::material", "ds::aud::trivial"],
+        "treatments": ["Material misstatement", "Clearly trivial misstatement"],
+    }
+    q = _build_query(item, _cfg())
+    assert "materiality_vs_trivial_misstatement" in q
+    assert "ds::aud::material" in q
+    assert "Clearly trivial misstatement" in q
+
+
+def test_build_query_rejects_unknown_mcq_category() -> None:
+    item = {
+        "section": "REG",
+        "area": "Tax",
+        "topic": "Basis",
+        "task_id": "REG.confusion.not_a_real_category",
+        "card_type": MCQ,
+    }
+    with pytest.raises(ValueError, match="unknown confusion category"):
+        _build_query(item, _cfg())
+
+
 def test_build_query_plain_topic_without_cfg() -> None:
     q = _build_query({"section": "FAR", "topic": "Revenue Recognition", "area": "Revenue"})
     assert "Revenue Recognition" in q and "FAR" in q

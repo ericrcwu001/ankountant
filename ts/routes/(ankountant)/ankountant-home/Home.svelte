@@ -397,6 +397,27 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             </div>
         </header>
 
+        <div class="legend">
+            <span class="leg-item">
+                <svg viewBox="0 0 16 16" class="leg-flag">
+                    <path d="M4 2v12" stroke="#1f3a5f" stroke-width="1.6" />
+                    <path d="M4 2.5l7 2.5-7 2.5z" fill="#1f3a5f" />
+                </svg>
+                Sealed performance peak
+            </span>
+            <span class="leg-item">
+                <svg viewBox="0 0 16 16" class="leg-flag">
+                    <path d="M4 2v12" stroke="#7f8da2" stroke-width="1.6" />
+                    <path d="M4 2.5l7 2.5-7 2.5z" fill="#7f8da2" opacity="0.58" />
+                </svg>
+                Insufficient evidence
+            </span>
+            <span class="leg-item">
+                <span class="leg-dot"></span>
+                Memory / Performance detail
+            </span>
+        </div>
+
         <div class="map-wrap">
             {#if hoveredTopic}
                 <div class="topo-tip" style={`left:${tipLeft}%; top:${tipTop}%`}>
@@ -445,27 +466,6 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                         </strong>
                     </button>
                 {/each}
-            </div>
-
-            <div class="legend">
-                <span class="leg-item">
-                    <svg viewBox="0 0 16 16" class="leg-flag">
-                        <path d="M4 2v12" stroke="#1f3a5f" stroke-width="1.6" />
-                        <path d="M4 2.5l7 2.5-7 2.5z" fill="#1f3a5f" />
-                    </svg>
-                    Sealed performance peak
-                </span>
-                <span class="leg-item">
-                    <svg viewBox="0 0 16 16" class="leg-flag">
-                        <path d="M4 2v12" stroke="#7f8da2" stroke-width="1.6" />
-                        <path d="M4 2.5l7 2.5-7 2.5z" fill="#7f8da2" opacity="0.58" />
-                    </svg>
-                    Insufficient evidence
-                </span>
-                <span class="leg-item">
-                    <span class="leg-dot"></span>
-                    Memory / Performance detail
-                </span>
             </div>
         </div>
 
@@ -955,7 +955,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         aspect-ratio: 1000 / 680;
         min-height: 520px;
         max-height: 760px;
-        margin-top: var(--space-md);
+        margin-top: var(--space-sm);
     }
 
     .topo-tip {
@@ -1030,20 +1030,18 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     }
 
     .legend {
-        position: absolute;
-        left: 50%;
-        bottom: 22px;
-        z-index: 6;
-        transform: translateX(-50%);
+        align-self: center;
         display: flex;
         align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
         gap: var(--space-lg);
+        margin-top: var(--space-md);
         padding: 10px var(--space-lg);
         background: var(--canvas-overlay);
         border: 1px solid var(--border-subtle);
         border-radius: 999px;
         box-shadow: var(--elevation-e2);
-        white-space: nowrap;
     }
 
     .leg-item {

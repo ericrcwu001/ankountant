@@ -3,6 +3,7 @@ import AnkountantTheme
 import AnkiKit
 import AnkiClients
 import Dependencies
+import Sharing
 
 let journalEntrySpareLineCount = 2
 
@@ -16,6 +17,13 @@ struct TbsTaskView: View {
     @Environment(\.palette) private var palette
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Dependency(\.performanceClient) var performanceClient
+    @Dependency(\.learningFeedbackClient) var learningFeedbackClient
+
+    @Shared(.appStorage(LearningFeedbackPreferenceKeys.enabled))
+    private var learningFeedbackEnabled: Bool = LearningFeedbackPreferenceKeys.defaultEnabled
+
+    @Shared(.appStorage(LearningFeedbackPreferenceKeys.model))
+    private var learningFeedbackModel: String = defaultLearningFeedbackModel
 
     @State private var model: TbsModel?
     @State private var jeLines: [JeLineInput] = []
@@ -30,6 +38,8 @@ struct TbsTaskView: View {
     @State private var loadError: String?
     @State private var submitError: String?
     @State private var revealError: String?
+    @State private var learningFeedbackState: LearningFeedbackPanelState?
+    @State private var learningFeedbackGenerationID = 0
     @State private var startedAt = Date.now
 
     private var answerInputsLocked: Bool {
@@ -325,6 +335,10 @@ struct TbsTaskView: View {
                 SimulationResultsRevealView(reveal: reveal, results: results)
             }
 
+            if let learningFeedbackState {
+                LearningFeedbackPanel(state: learningFeedbackState)
+            }
+
             if let revealError {
                 SimulationRevealErrorView(message: revealError)
             }
@@ -408,6 +422,7 @@ struct TbsTaskView: View {
             total = nil
             submitError = nil
             revealError = nil
+            clearLearningFeedback()
             startedAt = Date.now
             loadError = nil
         } catch {
@@ -422,6 +437,7 @@ struct TbsTaskView: View {
         submitting = true
         submitError = nil
         revealError = nil
+        clearLearningFeedback()
         defer { submitting = false }
         do {
             let submissionJson: String
@@ -441,9 +457,16 @@ struct TbsTaskView: View {
             results = resp.steps
             total = resp.totalCredit
             do {
-                reveal = try await Task.detached(priority: .userInitiated) {
+                let loadedReveal = try await Task.detached(priority: .userInitiated) {
                     try loadTbsReveal(noteId)
                 }.value
+                reveal = loadedReveal
+                startLearningFeedbackIfNeeded(
+                    model: model,
+                    reveal: loadedReveal,
+                    results: resp.steps,
+                    totalCredit: resp.totalCredit
+                )
             } catch {
                 guard !Task.isCancelled else { return }
                 revealError = "Attempt recorded, but the answer key could not be shown: \(error.localizedDescription)"
@@ -452,6 +475,64 @@ struct TbsTaskView: View {
             guard !Task.isCancelled else { return }
             submitError = "Could not record this attempt: \(error.localizedDescription)"
         }
+    }
+
+    private func startLearningFeedbackIfNeeded(
+        model: TbsModel,
+        reveal: TbsRevealModel,
+        results: [PerformanceStepResult],
+        totalCredit: Double
+    ) {
+        guard learningFeedbackEnabled, tbsAttemptNeedsLearningFeedback(results: results, totalCredit: totalCredit) else {
+            return
+        }
+        let userAnswerText: String
+        switch model.shape {
+        case .numeric:
+            userAnswerText = numericLearningFeedbackUserAnswer(model: model, cells: numericCells)
+        case .journalEntry:
+            userAnswerText = journalEntryLearningFeedbackUserAnswer(model: model, lines: jeLines)
+        case .research, .docReview:
+            preconditionFailure("JE/numeric feedback requested for \(model.shape.rawValue)")
+        }
+        guard let request = buildTbsLearningFeedbackRequest(
+            title: jeNumericSimulationTitle(for: model.shape),
+            model: model,
+            reveal: reveal,
+            stepResults: results,
+            userAnswerText: userAnswerText
+        ) else {
+            learningFeedbackState = .error("Feedback could not be generated because no incorrect step context was available.")
+            return
+        }
+        startLearningFeedback(request: request)
+    }
+
+    private func startLearningFeedback(request: LearningFeedbackRequest) {
+        learningFeedbackGenerationID += 1
+        let generationID = learningFeedbackGenerationID
+        let model = resolvedLearningFeedbackModel(learningFeedbackModel)
+        let generate = learningFeedbackClient.generate
+        learningFeedbackState = .loading
+        Task { [request, model, generationID, generate] in
+            do {
+                let feedback = try await generate(request, model)
+                await MainActor.run {
+                    guard learningFeedbackGenerationID == generationID else { return }
+                    learningFeedbackState = .content(feedback, sources: request.sources)
+                }
+            } catch {
+                await MainActor.run {
+                    guard learningFeedbackGenerationID == generationID else { return }
+                    learningFeedbackState = .error(error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func clearLearningFeedback() {
+        learningFeedbackGenerationID += 1
+        learningFeedbackState = nil
     }
 }
 

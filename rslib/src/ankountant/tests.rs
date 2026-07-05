@@ -1716,6 +1716,57 @@ fn a5_band_with_sufficient_evidence() {
 }
 
 #[test]
+fn a5_emitted_scores_carry_ranges_and_metadata() {
+    let (mut col, _) = seeded();
+    seed_memory_reps(&mut col, "ds::lease::finance", 8, 6);
+    seed_sealed_attempts(&mut col, 2, 0.5);
+
+    let resp = readiness(&mut col);
+    let r = resp.readiness.unwrap();
+    assert!(!r.abstain);
+    assert!(r.band_low < r.point_estimate);
+    assert!(r.point_estimate < r.band_high);
+    assert!(r.band_low >= super::constants::CPA_MIN_SCORE);
+    assert!(r.band_high <= super::constants::CPA_MAX_SCORE);
+    assert!((r.coverage - 1.0).abs() < 1e-9);
+    assert!(r.generated_at > 0);
+    assert!(!r.confidence.is_empty());
+    assert!(r
+        .reasons
+        .iter()
+        .any(|reason| reason.contains("Coverage: 100%")));
+
+    let lease = resp
+        .topics
+        .iter()
+        .find(|t| t.set_id == "operating_vs_finance_lease")
+        .unwrap();
+    assert!(!lease.memory_insufficient);
+    assert!(lease.memory_low < lease.memory);
+    assert!(lease.memory < lease.memory_high);
+    assert!(lease.performance_low < lease.performance);
+    assert!(lease.performance < lease.performance_high);
+    assert!((lease.gap - (lease.memory - lease.performance)).abs() < 1e-9);
+}
+
+#[test]
+fn a5_abstain_clears_score_fields_but_keeps_give_up_evidence() {
+    let (mut col, _) = seeded();
+    seed_sealed_attempts(&mut col, 1, 0.5);
+
+    let r = readiness(&mut col).readiness.unwrap();
+    assert!(r.abstain);
+    assert_eq!(r.reason, "insufficient volume");
+    assert_eq!(r.point_estimate, 0.0);
+    assert_eq!(r.band_low, 0.0);
+    assert_eq!(r.band_high, 0.0);
+    assert!(r.confidence.is_empty());
+    assert!((r.coverage - 1.0).abs() < 1e-9);
+    assert!(r.generated_at > 0);
+    assert!(r.reasons.iter().any(|reason| reason.contains("need >= 20")));
+}
+
+#[test]
 fn a5_band_widens_when_volume_halves() {
     // A19 — verified on the pure Wilson fn (see logic.rs), reconfirm end-to-end.
     let (mut col_hi, _) = seeded();
@@ -1919,6 +1970,106 @@ fn f016_content_seed_has_real_recall_and_mcqs() {
 }
 
 #[test]
+fn f016_category_maps_cover_all_visible_sections() {
+    let (col, summary) = seeded();
+    assert_eq!(summary.confusion_sets, 38);
+
+    let expected = [
+        ("FAR", 13usize),
+        ("AUD", 6usize),
+        ("REG", 6usize),
+        ("TCP", 6usize),
+        ("ISC", 6usize),
+    ];
+    for (section, count) in expected {
+        let map: config::ConfusableMap = col
+            .get_config_optional(config::confusable_key(section).as_str())
+            .unwrap();
+        assert_eq!(map.len(), count, "{section} category count");
+        for (set_id, set) in map {
+            assert!(
+                !set.tags.is_empty() && set.tags.iter().all(|tag| tag.starts_with("ds::")),
+                "{section}::{set_id} has invalid tags"
+            );
+            assert!(
+                !set.treatments.is_empty(),
+                "{section}::{set_id} has no treatments"
+            );
+        }
+    }
+}
+
+#[test]
+fn f016_seeded_tbs_items_use_defined_categories() {
+    let (mut col, _) = seeded();
+    let misc = col
+        .search_notes_unordered("deck:Ankountant::Sealed::*::misc")
+        .unwrap();
+    assert!(
+        misc.is_empty(),
+        "seeded TBS must not fall back to misc decks"
+    );
+
+    for section in ["AUD", "REG", "TCP", "ISC"] {
+        let map: config::ConfusableMap = col
+            .get_config_optional(config::confusable_key(section).as_str())
+            .unwrap();
+        let mut covered = std::collections::BTreeSet::new();
+        let section_items = col
+            .search_notes_unordered(&format!("tag:sec::{section} note:\"Ankountant TBS\""))
+            .unwrap();
+        assert!(
+            !section_items.is_empty(),
+            "{section} should seed at least one section TBS item"
+        );
+        for nid in section_items {
+            let note = col.storage.get_note(nid).unwrap().unwrap();
+            let schema_tag = &note.fields()[super::notetypes::tbs_fields::SCHEMA_TAG];
+            let set_id = Collection::ankountant_set_for_tag(&map, schema_tag);
+            assert!(
+                set_id.is_some(),
+                "{section} TBS note has unknown schema tag {schema_tag}"
+            );
+            covered.insert(set_id.unwrap().to_string());
+        }
+        assert_eq!(covered.len(), map.len(), "{section} category item coverage");
+    }
+}
+
+#[test]
+fn f016_demo_history_covers_visible_non_far_categories() {
+    let mut col = Collection::new();
+    col.ankountant_load_far_seed(true).unwrap();
+
+    for section in ["AUD", "REG", "TCP", "ISC"] {
+        assert!(
+            col.ankountant_exam_date(section).unwrap().is_some(),
+            "{section} exam date should be seeded"
+        );
+        let resp = col.ankountant_get_readiness(section).unwrap();
+        let readiness = resp.readiness.clone().unwrap();
+        assert!(
+            !readiness.abstain,
+            "{section} should have enough category history: {}",
+            readiness.reason
+        );
+        assert_eq!(resp.topics.len(), 6, "{section} topic count");
+        for topic in resp.topics {
+            assert!(
+                !topic.memory_insufficient,
+                "{section}::{} should have memory history",
+                topic.set_id
+            );
+            assert!(
+                topic.performance > 0.0,
+                "{section}::{} should have performance history",
+                topic.set_id
+            );
+        }
+    }
+}
+
+#[test]
 fn f016_demo_history_is_strong_on_most_topics_with_a_few_weak_spots() {
     // with_history=true injects a lived-in profile: every FAR topic is reviewed
     // and scored — most strongly (Memory & Performance both > 80) with a handful
@@ -1995,12 +2146,14 @@ fn f016_lived_in_history_reshapes_cards_and_spreads_activity() {
     let mut col = Collection::new();
     col.ankountant_load_far_seed(true).unwrap();
 
-    // FSRS on (memory states / retrievability are live) + exam date set.
+    // FSRS on (memory states / retrievability are live) + exam dates set.
     assert!(col.get_config_bool(BoolKey::Fsrs), "FSRS should be enabled");
-    assert!(
-        col.ankountant_exam_date("FAR").unwrap().is_some(),
-        "exam date should be seeded for the Home countdown"
-    );
+    for section in ["FAR", "AUD", "REG", "TCP", "ISC"] {
+        assert!(
+            col.ankountant_exam_date(section).unwrap().is_some(),
+            "{section} exam date should be seeded for the Home countdown"
+        );
+    }
 
     // A believable mix: some cards reviewed, but still a fresh New pile left.
     let reviewed = col
@@ -2040,12 +2193,22 @@ fn f016_content_only_seed_stays_a_clean_slate() {
     let mut col = Collection::new();
     col.ankountant_load_far_seed(false).unwrap();
 
-    assert!(col.ankountant_exam_date("FAR").unwrap().is_none());
+    for section in ["FAR", "AUD", "REG", "TCP", "ISC"] {
+        assert!(col.ankountant_exam_date(section).unwrap().is_none());
+    }
     assert!(!col.get_config_bool(BoolKey::Fsrs));
-    let touched = col
-        .search_cards("deck:Ankountant::Study::FAR::* -is:new", SortMode::NoOrder)
-        .unwrap();
-    assert!(touched.is_empty(), "content-only seed must leave cards New");
+    for section in ["FAR", "AUD", "REG", "TCP", "ISC"] {
+        let touched = col
+            .search_cards(
+                &format!("deck:Ankountant::Study::{section}::* -is:new"),
+                SortMode::NoOrder,
+            )
+            .unwrap();
+        assert!(
+            touched.is_empty(),
+            "content-only seed must leave {section} cards New"
+        );
+    }
     let revlog = col
         .storage
         .get_all_revlog_entries(TimestampSecs(0))
@@ -2057,10 +2220,14 @@ fn f016_content_only_seed_stays_a_clean_slate() {
 fn f016_content_only_reseed_clears_demo_exam_date() {
     let mut col = Collection::new();
     col.ankountant_load_far_seed(true).unwrap();
-    assert!(col.ankountant_exam_date("FAR").unwrap().is_some());
+    for section in ["FAR", "AUD", "REG", "TCP", "ISC"] {
+        assert!(col.ankountant_exam_date(section).unwrap().is_some());
+    }
 
     col.ankountant_load_far_seed(false).unwrap();
-    assert!(col.ankountant_exam_date("FAR").unwrap().is_none());
+    for section in ["FAR", "AUD", "REG", "TCP", "ISC"] {
+        assert!(col.ankountant_exam_date(section).unwrap().is_none());
+    }
 }
 
 #[test]

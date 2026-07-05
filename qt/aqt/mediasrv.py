@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import enum
+import json
 import logging
 import mimetypes
 import os
@@ -431,6 +432,7 @@ def is_sveltekit_page(path: str) -> bool:
         "ankountant-stats",
         "ankountant-workspace",
         "ankountant-sync",
+        "ankountant-settings",
     ]
 
 
@@ -713,6 +715,62 @@ def save_custom_colours() -> bytes:
     return b""
 
 
+def _require_bool(payload: dict[str, object], key: str) -> bool:
+    value = payload[key]
+    if not isinstance(value, bool):
+        raise ValueError(f"{key} must be a boolean")
+    return value
+
+
+def _require_int(payload: dict[str, object], key: str) -> int:
+    value = payload[key]
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{key} must be an integer")
+    return value
+
+
+def _require_str(payload: dict[str, object], key: str) -> str:
+    value = payload[key]
+    if not isinstance(value, str):
+        raise ValueError(f"{key} must be a string")
+    return value
+
+
+def get_ankountant_sync_settings() -> bytes:
+    settings = {
+        "autoSync": aqt.mw.pm.auto_syncing_enabled(),
+        "syncMedia": aqt.mw.pm.media_syncing_enabled(),
+        "periodicSyncMediaMinutes": aqt.mw.pm.periodic_sync_media_minutes(),
+        "customSyncUrl": aqt.mw.pm.custom_sync_url() or "",
+        "networkTimeout": aqt.mw.pm.network_timeout(),
+    }
+    return json.dumps(settings).encode("utf8")
+
+
+def set_ankountant_sync_settings() -> bytes:
+    payload = json.loads(request.data.decode("utf8"))
+    if not isinstance(payload, dict):
+        raise ValueError("sync settings payload must be an object")
+
+    profile = aqt.mw.pm.profile
+    if profile is None:
+        raise ValueError("profile is not open")
+
+    profile["autoSync"] = _require_bool(payload, "autoSync")
+    profile["syncMedia"] = _require_bool(payload, "syncMedia")
+    periodic_sync_media_minutes = _require_int(payload, "periodicSyncMediaMinutes")
+    network_timeout = _require_int(payload, "networkTimeout")
+    if periodic_sync_media_minutes < 0:
+        raise ValueError("periodicSyncMediaMinutes must be non-negative")
+    if network_timeout < 1:
+        raise ValueError("networkTimeout must be positive")
+
+    aqt.mw.pm.set_periodic_sync_media_minutes(periodic_sync_media_minutes)
+    aqt.mw.pm.set_custom_sync_url(_require_str(payload, "customSyncUrl") or None)
+    aqt.mw.pm.set_network_timeout(network_timeout)
+    return b""
+
+
 post_handler_list = [
     congrats_info,
     get_deck_configs_for_update,
@@ -729,6 +787,8 @@ post_handler_list = [
     deck_options_require_close,
     deck_options_ready,
     save_custom_colours,
+    get_ankountant_sync_settings,
+    set_ankountant_sync_settings,
 ]
 
 
@@ -801,6 +861,8 @@ exposed_backend_list = [
     "set_config_json",
     "get_config_bool",
     "set_config_bool",
+    "get_preferences",
+    "set_preferences",
     # SearchService
     "search_notes",
     "search_cards",

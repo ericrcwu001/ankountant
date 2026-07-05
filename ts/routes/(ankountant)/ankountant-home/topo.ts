@@ -33,14 +33,14 @@ export interface TopoRange {
     width: number;
     height: number;
     baseY: number;
+    passY: number;
     layers: TopoLayer[];
     flags: TopoFlag[];
 }
 
 export const TOPIC_MAX_SCORE = 100;
+export const TOPIC_PASS_SCORE = 75;
 const TOPIC_SCORE_CURVE = 1.35;
-const FRONT_HEIGHT_SCALE = 0.82;
-const FRONT_HEIGHT_CURVE = 1.12;
 
 function mulberry32(seed: number): () => number {
     let a = seed >>> 0;
@@ -82,13 +82,14 @@ function clamp(value: number, min: number, max: number): number {
 
 function peakSpread(count: number, tier: "front" | "back"): number {
     if (count <= 1) {
-        return tier === "back" ? 0.13 : 0.095;
+        return tier === "back" ? 0.22 : 0.18;
     }
     const min = tier === "back" ? 0.1 : 0.045;
     const max = tier === "back" ? 0.9 : 0.955;
     const spacing = (max - min) / (count - 1);
-    const maxSpread = tier === "back" ? 0.13 : 0.095;
-    return clamp(spacing * 0.62, 0.058, maxSpread);
+    const minSpread = tier === "back" ? 0.07 : 0.055;
+    const maxSpread = tier === "back" ? 0.22 : 0.18;
+    return clamp(spacing * 0.62, minSpread, maxSpread);
 }
 
 function rawHeightForTopicScore(score: number): number {
@@ -100,14 +101,9 @@ function rawHeightForTopicScore(score: number): number {
 
 export function heightForTopicScore(
     score: number,
-    tier: "front" | "back" = "back",
+    _tier: "front" | "back" = "back",
 ): number {
-    const height = rawHeightForTopicScore(score);
-    if (tier === "back") {
-        return height;
-    }
-
-    return Math.pow(height, FRONT_HEIGHT_CURVE) * FRONT_HEIGHT_SCALE;
+    return rawHeightForTopicScore(score);
 }
 
 export function yForTopicScore(
@@ -325,6 +321,7 @@ export function buildTopoRange(
     const H = opts.height ?? 680;
     const baseY = H;
     const plotH = H * 0.86;
+    const passY = yForTopicScore(TOPIC_PASS_SCORE, baseY, plotH, "back");
 
     const front = topics.filter((t) => t.tier === "front");
     const back = topics.filter((t) => t.tier === "back");
@@ -394,6 +391,7 @@ export function buildTopoRange(
         width: W,
         height: H,
         baseY,
+        passY,
         layers: [farLayer, backLayer, frontLayer],
         flags,
     };

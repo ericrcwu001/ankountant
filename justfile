@@ -77,10 +77,10 @@ test-ios:
 
 # Runs the `#[ignore]`d correctness emitters. Run `just check` once first so
 # protobuf descriptors exist; this reuses the ninja build's Cargo target dir.
-# Regenerate Ankountant evidence artifacts: determinism, ablation, paraphrase, undo.
+# Regenerate Ankountant evidence artifacts: determinism, ablation, paraphrase, models, undo.
 ankountant-evidence:
     CARGO_TARGET_DIR=out/rust cargo test -p anki _evidence -- --ignored --nocapture
-    @echo "Evidence written to docs_ankountant/evidence/{determinism,ablation,paraphrase,undo}.html"
+    @echo "Evidence written to docs_ankountant/evidence/{determinism,ablation,paraphrase,models,undo}.html"
 
 # Release is required for meaningful numbers. Set ANKOUNTANT_BENCH_CARDS
 # (default 10000; headline 50000), ANKOUNTANT_BENCH_ANSWERS, and

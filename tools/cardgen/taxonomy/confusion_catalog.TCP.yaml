@@ -18,3 +18,15 @@ sets:
     topic: "Basis and depreciation recapture"
     tags: ["ds::tcp::expense", "ds::tcp::capitalize"]
     treatments: ["Expense currently", "Capitalize and recover"]
+  - set_id: "gift_vs_estate_tax"
+    topic: "Gift and estate tax basics"
+    tags: ["ds::tcp::gift", "ds::tcp::estate"]
+    treatments: ["Gift tax transfer", "Estate tax inclusion"]
+  - set_id: "redemption_vs_dividend"
+    topic: "Liquidations, reorganizations and distributions"
+    tags: ["ds::tcp::redemption", "ds::tcp::dividend"]
+    treatments: ["Sale/exchange redemption", "Dividend-equivalent distribution"]
+  - set_id: "active_vs_passive_loss"
+    topic: "Advanced individual income and AMT"
+    tags: ["ds::tcp::active", "ds::tcp::passive"]
+    treatments: ["Active business loss", "Passive activity loss"]

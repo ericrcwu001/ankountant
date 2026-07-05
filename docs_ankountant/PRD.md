@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-Ankountant is a fork of Anki (shared Rust core + PyQt desktop + native iOS SwiftUI) retargeted at the **CPA exam (FAR section)**. Where Anki optimizes open-ended recall, Ankountant measures and trains three things a candidate needs to pass: **Memory** (recall a taught fact), **Performance** (answer a _new_ exam-style item that uses it), and **Readiness** (what you'd _score today_, as a range, abstaining when evidence is thin). The MVP proves this on FAR with hand-authored seed content, no AI generation, local-first.
+Ankountant is a fork of Anki (shared Rust core + PyQt desktop + native iOS SwiftUI) retargeted at the **CPA exam**. Where Anki optimizes open-ended recall, Ankountant measures and trains three things a candidate needs to pass: **Memory** (recall a taught fact), **Performance** (answer a _new_ exam-style item that uses it), and **Readiness** (what you'd _score today_, as a range, abstaining when evidence is thin). The MVP proves this with inclusive CPA starter content, no runtime AI generation, local-first.
 
 ## 2. Problem & Goals
 
@@ -22,7 +22,7 @@ Ankountant is a fork of Anki (shared Rust core + PyQt desktop + native iOS Swift
 
 **Build order (hard):** **Phase A — shared Rust/proto/data-model** must be complete (`just check` + `test-rust` green) before **Phase B — frontends**, which then run as parallel tracks (desktop `qt/`+`ts/` ∥ iOS `ios/`). Every B feature declares `dependsOn` on its Phase-A features.
 
-**In scope:** A1–A10 (§5 Phase A) + B1–B5 (§5 Phase B) + FAR seed content (`prd/build-spec.md`).
+**In scope:** A1–A10 (§5 Phase A) + B1–B5 (§5 Phase B) + inclusive CPA starter content (`prd/build-spec.md`).
 
 ### Non-goals (pass this block verbatim as `clarifications.nonGoals` at launch)
 
@@ -31,7 +31,7 @@ Ankountant is a fork of Anki (shared Rust core + PyQt desktop + native iOS Swift
 - **Populating provenance fields → Phase 2a (out).** The fields are **stored** on the TBS note type (in-scope, forward-compat); only their **population** is out.
 - **Real IRT/CAT psychometrics (out)** — Readiness is the ADR 0005 Wilson-to-CPA-scale band heuristic; adaptive CAT item selection and faithful AICPA score reproduction remain out.
 - **Research-sim & document-review TBS _surfaces_ → future PRD (out).** The TBS note type still **stores** all four shapes; only the playable surfaces for those two are deferred.
-- **Sections other than FAR; ablation study; full course library; head-on B2B/Becker — all out.**
+- **BAR-first specialization; ablation study; full course library; head-on B2B/Becker — all out.**
 
 ## 5. Feature specs
 

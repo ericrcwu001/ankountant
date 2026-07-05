@@ -147,7 +147,13 @@ def _make_item(
     skill_level: str,
     card_type: str,
     i: int,
+    category: dict,
 ) -> WorkItem:
+    set_id = str(category.get("set_id", "")).strip()
+    tags = [str(t) for t in (category.get("tags") or [])]
+    treatments = [str(t) for t in (category.get("treatments") or [])]
+    if not set_id or not tags or not treatments:
+        raise ValueError(f"{section} work item missing category metadata for {topic}")
     item_id = content_hash(section, task_id, i)
     # Per-item seed: deterministic in cfg.seed but distinct per item, so
     # downstream generation can vary fact patterns without colliding.
@@ -161,7 +167,22 @@ def _make_item(
         skill_level=skill_level,
         card_type=card_type,
         seed=seed,
+        category=set_id,
+        category_tags=tags,
+        treatments=treatments,
     )
+
+
+def _category_for_topic(sets: list[dict], topic: str, index: int) -> dict:
+    """Deterministic category metadata for a non-MCQ topic item."""
+    if not sets:
+        raise ValueError(f"missing confusion catalog while categorizing {topic}")
+    normalized = topic.strip().lower()
+    for st in sets:
+        catalog_topic = str(st.get("topic", "")).strip().lower()
+        if catalog_topic == normalized:
+            return st
+    return sets[index % len(sets)]
 
 
 def allocate_section(cfg: RunConfig, section: str, target: int) -> list[WorkItem]:
@@ -207,6 +228,10 @@ def allocate_section(cfg: RunConfig, section: str, target: int) -> list[WorkItem
         applied_budget = 0
 
     topic_area = {t["topic"]: t["area"] for t in topics}
+    topic_category = {
+        id(t): _category_for_topic(sets, t["topic"], i)
+        for i, t in enumerate(topics)
+    }
     items: list[WorkItem] = []
 
     # (a) R&U topics -> recall
@@ -222,6 +247,7 @@ def allocate_section(cfg: RunConfig, section: str, target: int) -> list[WorkItem
                     skill_level=t["skill_level"],
                     card_type=RECALL,
                     i=i,
+                    category=topic_category[id(t)],
                 )
             )
 
@@ -239,6 +265,7 @@ def allocate_section(cfg: RunConfig, section: str, target: int) -> list[WorkItem
                         skill_level=t["skill_level"],
                         card_type=RECALL,
                         i=i,
+                        category=topic_category[id(t)],
                     )
                 )
 
@@ -260,6 +287,7 @@ def allocate_section(cfg: RunConfig, section: str, target: int) -> list[WorkItem
                         skill_level="Application",
                         card_type=MCQ,
                         i=i,
+                        category=st,
                     )
                 )
 
@@ -282,6 +310,7 @@ def allocate_section(cfg: RunConfig, section: str, target: int) -> list[WorkItem
                         skill_level=t["skill_level"],
                         card_type=card_type,
                         i=i,
+                        category=topic_category[id(t)],
                     )
                 )
 

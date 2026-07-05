@@ -33,9 +33,9 @@ RRF_K = 60
 GENERAL_SECTION = "GENERAL"
 _WORD = re.compile(r"[a-z0-9]+")
 
-# Per-run cache: (taxonomy_dir, section) -> {set-slug: [treatment terms]}. Lets
-# the query builder enrich confusion (MCQ) items without reloading YAML per item.
-_CATALOG_CACHE: dict[tuple[str, str], dict[str, list[str]]] = {}
+# Per-run cache: (taxonomy_dir, section) -> {set-slug: category metadata}. Lets
+# the query builder enrich category-aware items without reloading YAML per item.
+_CATALOG_CACHE: dict[tuple[str, str], dict[str, dict]] = {}
 
 
 # ---- Reciprocal-Rank Fusion (pure, unit-testable, no LanceDB) --------------
@@ -57,21 +57,16 @@ def rrf_fuse(ranked_lists: list[list[str]], k: int = RRF_K) -> list[tuple[str, f
 
 
 # ---- query construction ----------------------------------------------------
-def _catalog_treatments(cfg: RunConfig, section: str) -> dict[str, list[str]]:
-    """``{slug(set_id): [treatment strings]}`` for a section (cached)."""
+def _catalog_categories(cfg: RunConfig, section: str) -> dict[str, dict]:
+    """``{slug(set_id): catalog row}`` for a section (cached)."""
     key = (str(cfg.taxonomy_dir), section)
     cached = _CATALOG_CACHE.get(key)
     if cached is None:
         cached = {}
-        try:
-            from .taxonomy import load_confusion_catalog
+        from .taxonomy import load_confusion_catalog
 
-            for s in load_confusion_catalog(cfg, section):
-                cached[slugify(str(s.get("set_id", "")))] = [
-                    str(t) for t in (s.get("treatments") or [])
-                ]
-        except Exception:  # missing/omitted catalog is fine — just no enrichment
-            cached = {}
+        for s in load_confusion_catalog(cfg, section):
+            cached[slugify(str(s.get("set_id", "")))] = s
         _CATALOG_CACHE[key] = cached
     return cached
 
@@ -79,10 +74,10 @@ def _catalog_treatments(cfg: RunConfig, section: str) -> dict[str, list[str]]:
 def _build_query(item: dict, cfg: Optional[RunConfig] = None) -> str:
     """A richer topic query from the work item.
 
-    Beyond section/area/topic/task, we add the confusion-set *treatments* for MCQ
-    items (the exact concepts being contrasted, e.g. "Operating lease" vs
+    Beyond section/area/topic/task, we add the category set id, tags, and
+    treatments (the exact concepts being contrasted, e.g. "Operating lease" vs
     "Finance lease") so retrieval surfaces passages that actually discriminate
-    them — the biggest lever for confusion-item grounding.
+    them.
     """
     parts = [
         item.get("topic", ""),
@@ -90,6 +85,7 @@ def _build_query(item: dict, cfg: Optional[RunConfig] = None) -> str:
         item.get("group", ""),
         item.get("section", ""),
         item.get("task_id", ""),
+        item.get("category", ""),
     ]
 
     # Confusion (MCQ) enrichment: task_id is "<SECTION>.confusion.<set-slug>".
@@ -98,8 +94,13 @@ def _build_query(item: dict, cfg: Optional[RunConfig] = None) -> str:
     marker = f"{section}.confusion."
     if cfg is not None and str(item.get("card_type", "")) == MCQ and task_id.startswith(marker):
         slug = task_id[len(marker):]
-        parts.extend(_catalog_treatments(cfg, section).get(slug, []))
-    # Any treatments carried directly on the item (e.g. enriched callers) also help.
+        category = _catalog_categories(cfg, section).get(slug)
+        if category is None:
+            raise ValueError(f"unknown confusion category for task_id {task_id}")
+        parts.extend(category.get("treatments") or [])
+    elif cfg is not None and str(item.get("card_type", "")) == MCQ:
+        raise ValueError(f"MCQ work item missing confusion task_id: {task_id}")
+    parts.extend(str(t) for t in (item.get("category_tags") or []))
     parts.extend(str(t) for t in (item.get("treatments") or []))
 
     return " ".join(p for p in (str(x).strip() for x in parts) if p)

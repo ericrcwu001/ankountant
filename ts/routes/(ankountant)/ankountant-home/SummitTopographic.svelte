@@ -42,7 +42,7 @@
     viewBox="0 0 {range.width} {range.height}"
     preserveAspectRatio="xMidYMax meet"
     role="img"
-    aria-label="Topographic range of {sectionLabel} topics; each peak is sealed Performance."
+    aria-label="Topographic range of {sectionLabel} topics; each peak is sealed Performance with a pass line at 75."
 >
     <defs>
         <linearGradient id="topo-far" x1="0" y1="0" x2="0" y2="1">
@@ -148,6 +148,22 @@
         opacity="0.58"
         vector-effect="non-scaling-stroke"
     />
+    <line
+        class="pass-line"
+        x1="0"
+        x2={range.width}
+        y1={range.passY}
+        y2={range.passY}
+        vector-effect="non-scaling-stroke"
+    />
+    <text
+        class="pass-label"
+        x={range.width - 28}
+        y={range.passY - 10}
+        text-anchor="end"
+    >
+        Pass 75
+    </text>
 
     {#each range.flags as f (f.key)}
         {@const top = f.y - POLE}
@@ -232,6 +248,23 @@
         &.back {
             opacity: 0.032;
         }
+    }
+
+    .pass-line {
+        stroke: var(--fg-subtle);
+        stroke-width: 1.25;
+        stroke-dasharray: 9 7;
+        opacity: 0.68;
+    }
+
+    .pass-label {
+        fill: var(--fg-subtle);
+        font-size: 13px;
+        font-weight: 700;
+        paint-order: stroke;
+        stroke: var(--canvas);
+        stroke-linejoin: round;
+        stroke-width: 5px;
     }
 
     .flag-name {

@@ -8,8 +8,8 @@
 
 Implemented surfaces:
 
-- Desktop `ankountant-home`: navy app rail, white metric rail, sync-safe exam-date control, abstain-aware readiness gauge with range, live strong/attention topics, and FAR topographic topic mastery map.
-- Desktop topographic renderer: FAR topics remain data-bound to backend readiness, with layered foreground/background SVG mountains, clipped contours, pass-line flags, hover-toggled topic detail cards, and the existing topic drill-down links.
+- Desktop `ankountant-home`: navy app rail, white metric rail, sync-safe exam-date control, abstain-aware readiness gauge with range, live strong/attention topics, and active-section topic mastery map.
+- Desktop topographic renderer: active-section topics remain data-bound to backend readiness, with layered foreground/background SVG mountains, clipped contours, pass-line flags, hover-toggled topic detail cards, and the existing topic drill-down links.
 - iOS `Home`: native summit hero, topic list, topic detail screen with Memory/Performance ranges and Gap, exam-date control backed by the sync-safe backend RPCs, and phase-aware review/confusion actions.
 - iOS `Review`: pre-reveal confidence gate is now a required card-style panel before answer reveal.
 - iOS shell: bottom navigation now matches the supplied Home/Study/Review/Analytics/More framing while preserving Reader, Browse/Review, Stats, and Settings destinations.

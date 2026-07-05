@@ -5,8 +5,9 @@ Date: 2026-07-02
 
 ## Context
 
-The MVP (`PRD.md`) is scoped to **FAR**, and the deferred-TBS work initially
-inherited that: FAR-only seed, FAR confusion sets, FAR literature. But the four
+The original MVP (`PRD.md`) started with **FAR**, and the deferred-TBS work
+initially inherited that: a single-section seed, FAR confusion sets, FAR
+literature. But the four
 TBS **shapes** (journal-entry, numeric, research, document-review) are identical
 across all six CPA sections (**AUD, FAR, REG, BAR, ISC, TCP**); only the content,
 the authoritative-literature body, and shape prevalence differ. Restricting the

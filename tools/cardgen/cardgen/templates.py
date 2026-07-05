@@ -95,6 +95,34 @@ def _compute(formula: dict, row: dict) -> float:
     return float(val)
 
 
+def _category_entry(cfg: RunConfig, section: str, set_id: str) -> dict:
+    from .taxonomy import load_confusion_catalog
+
+    for entry in load_confusion_catalog(cfg, section):
+        if entry["set_id"] == set_id:
+            return entry
+    raise ValueError(f"unknown template category {section}::{set_id}")
+
+
+def _apply_category_metadata(
+    cfg: RunConfig,
+    tpl: dict,
+    row: dict,
+    section: str,
+    payload: dict,
+) -> None:
+    set_id = str(row.get("set_id", tpl.get("set_id", ""))).strip()
+    if not set_id:
+        return
+    entry = _category_entry(cfg, section, set_id)
+    tags = entry["tags"]
+    if not tags:
+        raise ValueError(f"template category {section}::{set_id} has no tags")
+    payload.setdefault("set_id", set_id)
+    payload.setdefault("schema_tag", tags[0])
+    payload.setdefault("ds_tag", tags[0])
+
+
 # ---------------------------------------------------------------------------
 # Payload builders (per card_type)
 # ---------------------------------------------------------------------------
@@ -217,6 +245,7 @@ def expand_row(cfg: RunConfig, tpl: dict, row: dict, idx: int) -> Candidate:
     skill_level = str(tpl.get("skill_level", "Application"))
 
     payload = _BUILDERS[card_type](tpl, row)
+    _apply_category_metadata(cfg, tpl, row, section, payload)
     variant_key = _render(str(tpl.get("variant_key", "{__idx__}")), {**row, "__idx__": idx})
     template_id = str(tpl["template_id"])
     item_id = content_hash(template_id, variant_key)

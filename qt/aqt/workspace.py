@@ -64,6 +64,7 @@ _ANKOUNTANT_ROUTES = {
     "doc_review": "ankountant-doc-review",
     "stats": "ankountant-stats",
     "sync": "ankountant-sync",
+    "settings": "ankountant-settings",
 }
 
 # The FAR study deck the Home "Review" button studies.
@@ -366,11 +367,11 @@ class Workspace:
         elif cmd == "ankountant:stats":
             aqt.dialogs.open("NewDeckStats", self.mw)
         elif cmd in {"ankountant:prefs", "ankountant:import"}:
-            app_dialogs = {
-                "ankountant:prefs": self.mw.onPrefs,
+            app_actions = {
+                "ankountant:prefs": lambda: self.open_ankountant("settings"),
                 "ankountant:import": self.mw.onImport,
             }
-            app_dialogs[cmd]()
+            app_actions[cmd]()
         elif cmd == "ankountant:sync":
             self.mw.on_sync_button_clicked()
         elif cmd.startswith("ankountant:nav:"):

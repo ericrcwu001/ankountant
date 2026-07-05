@@ -95,7 +95,9 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     class="band-fill"
                     style="left:{view.trackLeftPct}%; width:{view.trackWidthPct}%"
                 ></div>
-                <div class="pass-tick" style="left:{view.trackPassPct}%"></div>
+                <div class="pass-tick" style="left:{view.trackPassPct}%">
+                    <span>Pass 75</span>
+                </div>
             </div>
             <div class="meta" data-testid="readiness-meta">
                 <span data-testid="coverage">{view.coveragePct}% of exam covered</span>
@@ -409,7 +411,19 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
         height: 16px;
         margin-left: -1px;
         background: var(--fg-subtle);
-        opacity: 0.7;
+        box-shadow: 0 0 0 1px var(--canvas-elevated);
+        opacity: 0.9;
+
+        span {
+            position: absolute;
+            left: 50%;
+            bottom: calc(100% + 4px);
+            transform: translateX(-50%);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--fg-subtle);
+            white-space: nowrap;
+        }
     }
 
     .meta {

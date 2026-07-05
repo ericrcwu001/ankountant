@@ -21,6 +21,7 @@ rows:
   # --- AUD (grounded in the Tier-B CPA review PDF -> personal-use) ---
   - row_id: auc265_significant_deficiencies
     section: AUD
+    set_id: test_of_controls_vs_substantive
     topic: "the auditor's obligation to search for significant deficiencies and material weaknesses"
     citations: ["AU-C 265"]
     display_citation: "AU-C 265"
@@ -30,6 +31,7 @@ rows:
     license: personal_use
   - row_id: auc320_materiality
     section: AUD
+    set_id: materiality_vs_trivial_misstatement
     topic: "how an item is determined to be material to the financial statements"
     citations: ["AU-C 320"]
     display_citation: "AU-C 320"
@@ -39,6 +41,7 @@ rows:
     license: personal_use
   - row_id: auc705_qualified_adverse
     section: AUD
+    set_id: qualified_vs_adverse_opinion
     topic: "modifications to the opinion when management imposes a scope limitation"
     citations: ["AU-C 705"]
     display_citation: "AU-C 705"
@@ -50,6 +53,7 @@ rows:
   # --- ISC (grounded in NIST -> public domain, redistributable) ---
   - row_id: nist80053_ca3_info_exchange
     section: ISC
+    set_id: authentication_vs_authorization
     topic: "approving and managing the exchange of information between systems"
     citations: ["NIST SP 800-53 CA-3"]
     display_citation: "NIST SP 800-53, Rev. 5, CA-3"
@@ -59,6 +63,7 @@ rows:
     license: public
   - row_id: nist80053_ir6_incident_reporting
     section: ISC
+    set_id: incident_detection_vs_response
     topic: "requiring personnel to report suspected security incidents"
     citations: ["NIST SP 800-53 IR-6"]
     display_citation: "NIST SP 800-53, Rev. 5, IR-6"
@@ -68,6 +73,7 @@ rows:
     license: public
   - row_id: nist80053_sa9_external_services
     section: ISC
+    set_id: soc1_vs_soc2
     topic: "requiring providers of external system services to meet organizational requirements"
     citations: ["NIST SP 800-53 SA-9"]
     display_citation: "NIST SP 800-53, Rev. 5, SA-9"
@@ -77,6 +83,7 @@ rows:
     license: public
   - row_id: nist80012_configuration_management
     section: ISC
+    set_id: backup_vs_disaster_recovery
     topic: "the definition of configuration management"
     citations: ["NIST SP 800-12"]
     display_citation: "NIST SP 800-12, Rev. 1"
@@ -86,6 +93,7 @@ rows:
     license: public
   - row_id: omb_a130_cert_accreditation
     section: ISC
+    set_id: soc_report_type1_vs_type2
     topic: "the requirement for security certification and accreditation of federal information systems"
     citations: ["OMB Circular A-130, Appendix III"]
     display_citation: "OMB Circular A-130, Appendix III"
@@ -97,6 +105,7 @@ rows:
   # --- REG (grounded in Treasury Circular 230 -> public domain) ---
   - row_id: circ230_1071_discovery
     section: REG
+    set_id: circular230_sanction_vs_tax_penalty
     topic: "when discovery is permitted in a proceeding before an Administrative Law Judge"
     citations: ["Treasury Circular 230 Sec. 10.71"]
     display_citation: "Treasury Department Circular No. 230, Sec. 10.71"

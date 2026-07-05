@@ -7,6 +7,7 @@ card_type: tbs_research
 section: ISC
 skill_level: Analysis
 topic: "{topic}"
+set_id: isc_control_type
 citation: "{display_citation}"
 prompt: "Identify the NIST SP 800-53 (Rev. 5) control, by its identifier, that establishes the requirement shown in the exhibit."
 step_label: "Governing control"

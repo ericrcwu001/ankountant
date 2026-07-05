@@ -1,10 +1,10 @@
 # Confusion-set catalog: FAR
 #
-# The four FAR sets below are REUSED VERBATIM from the shipped app seed
+# The FAR sets below are REUSED VERBATIM from the shipped app seed
 #   (rslib/src/ankountant/seed.rs `SETS` + seed_content.json): identical
 #   set_id / ds:: tags / treatments, so generated confusion (MCQ) items drop
 #   straight into the existing CONFUSABLE map (config.rs `ankountant.confusable.FAR`).
-# Do NOT edit these — they are the frozen contract with the runtime app.
+# Keep these in lockstep with the runtime app category contract.
 section: FAR
 sets:
   - set_id: "capitalize_vs_expense"
@@ -23,3 +23,39 @@ sets:
     topic: "Investments: trading/AFS/HTM classification"
     tags: ["ds::securities::trading", "ds::securities::htm"]
     treatments: ["Trading (FV through NI)", "Held-to-maturity (amortized cost)"]
+  - set_id: "inventory_valuation"
+    topic: "Inventory (costing and LCM/NRV)"
+    tags: ["ds::inventory::lcm", "ds::inventory::lcnrv"]
+    treatments: ["Lower of cost or market", "Lower of cost and NRV"]
+  - set_id: "debt_extinguishment"
+    topic: "Bonds payable and effective interest"
+    tags: ["ds::debt::extinguish", "ds::debt::modify"]
+    treatments: ["Extinguishment (derecognize)", "Modification (retain)"]
+  - set_id: "intangibles_impairment"
+    topic: "Intangibles and goodwill impairment"
+    tags: ["ds::intangible::finite", "ds::intangible::indefinite"]
+    treatments: ["Finite-life (amortize)", "Indefinite-life (test only)"]
+  - set_id: "cash_receivables"
+    topic: "Cash and receivables (allowance methods)"
+    tags: ["ds::ar::allowance", "ds::ar::writeoff"]
+    treatments: ["Allowance method", "Direct write-off"]
+  - set_id: "financial_statements"
+    topic: "Statement presentation and cash-flow classification"
+    tags: ["ds::stmt::operating", "ds::stmt::financing"]
+    treatments: ["Operating activity", "Financing activity"]
+  - set_id: "conceptual_framework"
+    topic: "Conceptual framework and qualitative characteristics"
+    tags: ["ds::concept::relevance", "ds::concept::faithful"]
+    treatments: ["Relevance", "Faithful representation"]
+  - set_id: "tax_timing"
+    topic: "Income taxes: temporary vs permanent differences"
+    tags: ["ds::tax::temporary", "ds::tax::permanent"]
+    treatments: ["Temporary difference", "Permanent difference"]
+  - set_id: "pensions_equity"
+    topic: "Pensions, EPS and stockholders' equity"
+    tags: ["ds::pension::service", "ds::pension::interest"]
+    treatments: ["Service cost", "Interest cost"]
+  - set_id: "government_nfp"
+    topic: "Governmental and not-for-profit reporting"
+    tags: ["ds::govnfp::govtwide", "ds::govnfp::fund"]
+    treatments: ["Government-wide (accrual)", "Fund (modified accrual)"]

@@ -3,46 +3,46 @@
         {
             "action": "Button press acknowledged (answer_card)",
             "key": "answer_ack",
-            "p50": 0.07454200000000001,
-            "p95": 0.099083,
+            "p50": 0.076542,
+            "p95": 0.092292,
             "pass": true,
             "samples": 200,
             "target_p95": 50.0,
             "unit": "ms",
-            "worst": 0.18920800000000002
+            "worst": 0.22583299999999998
         },
         {
             "action": "Next card appears (get_queued_cards)",
             "key": "next_card",
-            "p50": 0.066667,
-            "p95": 0.08370899999999999,
+            "p50": 0.06724999999999999,
+            "p95": 0.081666,
             "pass": true,
             "samples": 201,
             "target_p95": 100.0,
             "unit": "ms",
-            "worst": 0.14441700000000002
+            "worst": 0.212792
         },
         {
             "action": "Dashboard first load (get_readiness)",
             "key": "dashboard_load",
-            "p50": 10.174333,
-            "p95": 11.823542,
+            "p50": 11.109542,
+            "p95": 11.700084,
             "pass": true,
             "samples": 100,
             "target_p95": 1000.0,
             "unit": "ms",
-            "worst": 32.737750000000005
+            "worst": 12.418042
         },
         {
             "action": "Dashboard refresh (build_confusion_queue)",
             "key": "dashboard_refresh",
-            "p50": 9.521666,
-            "p95": 10.038625000000001,
+            "p50": 10.545625,
+            "p95": 15.451917,
             "pass": true,
             "samples": 100,
             "target_p95": 500.0,
             "unit": "ms",
-            "worst": 10.467291
+            "worst": 18.135167
         }
     ],
     "all_targets_met": true,
@@ -50,10 +50,10 @@
     "deck": {
         "answers_measured": 200,
         "dashboard_iters": 100,
-        "filler_review_cards": 10000,
-        "total_cards": 10457
+        "filler_review_cards": 50000,
+        "total_cards": 50921
     },
-    "generated_at": 1783138435,
+    "generated_at": 1783286563,
     "methodology": "In-process Rust engine, single machine. Times exclude the PyO3/IPC boundary and UI rendering; they are the engine floor the desktop (Python) and iOS (Swift) clients add to. Percentiles use the nearest-rank method.",
     "profile": "release",
     "reproduce": "just ankountant-bench   (ANKOUNTANT_BENCH_CARDS=50000 for the headline run)",

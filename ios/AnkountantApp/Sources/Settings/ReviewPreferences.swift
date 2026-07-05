@@ -26,6 +26,8 @@ enum ReviewPreferences {
         static let cardContentAlignment = "review_pref_card_content_alignment"
         static let glassAnswerButtons = "review_pref_glass_answer_buttons"
         static let autoMatchCardBackground = "review_pref_auto_match_card_background"
+        static let learningFeedbackEnabled = "review_pref_learning_feedback_enabled"
+        static let learningFeedbackModel = "review_pref_learning_feedback_model"
     }
 }
 

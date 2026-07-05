@@ -3,6 +3,7 @@ import AnkountantTheme
 import AnkiKit
 import AnkiClients
 import Dependencies
+import Sharing
 
 /// Document-review simulation (T3) — parity with the desktop
 /// ts/routes/(ankountant)/ankountant-doc-review/DocReviewSurface.svelte. The
@@ -17,6 +18,13 @@ struct DocReviewTaskView: View {
 
     @Environment(\.palette) private var palette
     @Dependency(\.performanceClient) private var performanceClient
+    @Dependency(\.learningFeedbackClient) private var learningFeedbackClient
+
+    @Shared(.appStorage(LearningFeedbackPreferenceKeys.enabled))
+    private var learningFeedbackEnabled: Bool = LearningFeedbackPreferenceKeys.defaultEnabled
+
+    @Shared(.appStorage(LearningFeedbackPreferenceKeys.model))
+    private var learningFeedbackModel: String = defaultLearningFeedbackModel
 
     @State private var confidence: ConfidenceLevel?
     @State private var blanks: [DocReviewBlankInput]
@@ -26,6 +34,8 @@ struct DocReviewTaskView: View {
     @State private var submitting = false
     @State private var submitError: String?
     @State private var revealError: String?
+    @State private var learningFeedbackState: LearningFeedbackPanelState?
+    @State private var learningFeedbackGenerationID = 0
     @State private var startedAt = Date.now
 
     private var blankInputsLocked: Bool {
@@ -68,6 +78,9 @@ struct DocReviewTaskView: View {
                 submitSection
                 if let reveal, let results {
                     SimulationResultsRevealView(reveal: reveal, results: results)
+                }
+                if let learningFeedbackState {
+                    LearningFeedbackPanel(state: learningFeedbackState)
                 }
                 if let revealError {
                     SimulationRevealErrorView(message: revealError)
@@ -244,6 +257,7 @@ struct DocReviewTaskView: View {
         submitting = true
         submitError = nil
         revealError = nil
+        clearLearningFeedback()
         defer { submitting = false }
         let latency = UInt32(clamping: Int((Date.now.timeIntervalSince(startedAt) * 1000).rounded()))
         do {
@@ -258,9 +272,11 @@ struct DocReviewTaskView: View {
             results = resp.steps
             total = resp.totalCredit
             do {
-                reveal = try await Task.detached(priority: .userInitiated) {
+                let loadedReveal = try await Task.detached(priority: .userInitiated) {
                     try loadTbsReveal(noteId)
                 }.value
+                reveal = loadedReveal
+                startLearningFeedbackIfNeeded(reveal: loadedReveal, results: resp.steps, totalCredit: resp.totalCredit)
             } catch {
                 guard !Task.isCancelled else { return }
                 revealError = "Attempt recorded, but the answer key could not be shown: \(error.localizedDescription)"
@@ -269,5 +285,53 @@ struct DocReviewTaskView: View {
             guard !Task.isCancelled else { return }
             submitError = "Could not record this attempt: \(error.localizedDescription)"
         }
+    }
+
+    private func startLearningFeedbackIfNeeded(
+        reveal: TbsRevealModel,
+        results: [PerformanceStepResult],
+        totalCredit: Double
+    ) {
+        guard learningFeedbackEnabled, tbsAttemptNeedsLearningFeedback(results: results, totalCredit: totalCredit) else {
+            return
+        }
+        guard let request = buildTbsLearningFeedbackRequest(
+            title: "Document review",
+            model: model,
+            reveal: reveal,
+            stepResults: results,
+            userAnswerText: docReviewLearningFeedbackUserAnswer(model: model, blanks: blanks)
+        ) else {
+            learningFeedbackState = .error("Feedback could not be generated because no incorrect step context was available.")
+            return
+        }
+        startLearningFeedback(request: request)
+    }
+
+    private func startLearningFeedback(request: LearningFeedbackRequest) {
+        learningFeedbackGenerationID += 1
+        let generationID = learningFeedbackGenerationID
+        let model = resolvedLearningFeedbackModel(learningFeedbackModel)
+        let generate = learningFeedbackClient.generate
+        learningFeedbackState = .loading
+        Task { [request, model, generationID, generate] in
+            do {
+                let feedback = try await generate(request, model)
+                await MainActor.run {
+                    guard learningFeedbackGenerationID == generationID else { return }
+                    learningFeedbackState = .content(feedback, sources: request.sources)
+                }
+            } catch {
+                await MainActor.run {
+                    guard learningFeedbackGenerationID == generationID else { return }
+                    learningFeedbackState = .error(error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func clearLearningFeedback() {
+        learningFeedbackGenerationID += 1
+        learningFeedbackState = nil
     }
 }

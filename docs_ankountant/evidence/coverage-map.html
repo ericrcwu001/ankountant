@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ankountant FAR Coverage Map</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --ink: #171b22;
+        --muted: #5e6878;
+        --line: #d8dee8;
+        --pass: #116a36;
+        --warn: #7a5200;
+        --info: #0f5d87;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 32px 22px 72px;
+      }
+
+      h1 {
+        font-size: 30px;
+        line-height: 1.15;
+        margin: 0 0 8px;
+      }
+
+      h2 {
+        font-size: 20px;
+        margin: 32px 0 12px;
+      }
+
+      p {
+        color: var(--muted);
+        max-width: 88ch;
+      }
+
+      a {
+        color: #075f9d;
+      }
+
+      code {
+        background: #eef2f7;
+        border: 1px solid #dce3ed;
+        border-radius: 5px;
+        padding: 1px 5px;
+        font-size: 13px;
+      }
+
+      .topnav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .topnav a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel);
+        padding: 8px 14px;
+        color: var(--info);
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .topnav a:hover,
+      .topnav a:focus {
+        border-color: var(--info);
+        outline: none;
+      }
+
+      .topnav .primary {
+        background: #e0f1fa;
+        border-color: #b6d7ee;
+      }
+
+      .hero,
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 24px;
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .metric {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px 16px;
+        background: #fbfcfe;
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 25px;
+        line-height: 1.1;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 9px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #edf1f6;
+        color: #3f4856;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .status {
+        display: inline-block;
+        min-width: 96px;
+        border-radius: 999px;
+        padding: 4px 9px;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      .pass {
+        background: #e6f4eb;
+        color: var(--pass);
+      }
+
+      .warn {
+        background: #fff2d5;
+        color: var(--warn);
+      }
+
+      .info {
+        background: #e0f1fa;
+        color: var(--info);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav class="topnav" aria-label="Report navigation">
+        <a class="primary" href="sunday-verification.html">&larr; Back to verification matrix</a>
+        <a href="ai-card-check.html">Open AI card check</a>
+        <a href="models.html">Open model evidence</a>
+      </nav>
+
+      <section class="hero">
+        <h1>FAR Coverage Map</h1>
+        <p>
+          This map lists the FAR topic rows used by the app's AICPA-blueprint taxonomy and marks
+          whether the current deck covers them through the runtime seed, the proof3 generated pack,
+          or both. Readiness uses this same coverage idea: below 60% topic coverage, the backend
+          abstains instead of emitting a readiness score.
+        </p>
+        <div class="summary">
+          <div class="metric"><strong>16/16</strong><span>FAR topic rows covered by seed or generated pack</span></div>
+          <div class="metric"><strong>53/79</strong><span>proof3 FAR shipped cards versus target</span></div>
+          <div class="metric"><strong>67%</strong><span>proof3 FAR shipped/target coverage</span></div>
+          <div class="metric"><strong>60%</strong><span>backend readiness coverage floor</span></div>
+        </div>
+      </section>
+
+      <h2>Area Summary</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Area</th>
+            <th>Weight</th>
+            <th class="num">Topics</th>
+            <th class="num">Proof3 target</th>
+            <th class="num">Proof3 shipped</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>I. Financial Reporting</td>
+            <td>35%</td>
+            <td class="num">5</td>
+            <td class="num">20</td>
+            <td class="num">11</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>II. Select Balance Sheet Accounts</td>
+            <td>35%</td>
+            <td class="num">7</td>
+            <td class="num">32</td>
+            <td class="num">21</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>III. Select Transactions</td>
+            <td>30%</td>
+            <td class="num">4</td>
+            <td class="num">27</td>
+            <td class="num">21</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Topic Map</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Task ID</th>
+            <th>Official-outline topic row</th>
+            <th>Skill</th>
+            <th class="num">Target</th>
+            <th class="num">Generated</th>
+            <th class="num">Shipped</th>
+            <th>Seed/runtime coverage</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>FAR.I.A.1</td>
+            <td>Balance sheet / statement of financial position</td>
+            <td>R&amp;U</td>
+            <td class="num">6</td>
+            <td class="num">6</td>
+            <td class="num">5</td>
+            <td>Generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.I.A.2</td>
+            <td>Income statement and comprehensive income</td>
+            <td>Application</td>
+            <td class="num">2</td>
+            <td class="num">2</td>
+            <td class="num">2</td>
+            <td>Generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.I.A.3</td>
+            <td>Statement of cash flows (operating/investing/financing)</td>
+            <td>Analysis</td>
+            <td class="num">5</td>
+            <td class="num">4</td>
+            <td class="num">1</td>
+            <td>Seed category plus generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.I.B.1</td>
+            <td>Notes and significant accounting policies</td>
+            <td>R&amp;U</td>
+            <td class="num">5</td>
+            <td class="num">5</td>
+            <td class="num">2</td>
+            <td>Generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.I.B.2</td>
+            <td>Segment and interim reporting</td>
+            <td>Application</td>
+            <td class="num">2</td>
+            <td class="num">2</td>
+            <td class="num">1</td>
+            <td>Generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.II.A.1</td>
+            <td>Cash and receivables (allowance methods)</td>
+            <td>Application</td>
+            <td class="num">2</td>
+            <td class="num">2</td>
+            <td class="num">1</td>
+            <td>Seed category plus generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.II.A.2</td>
+            <td>Inventory (costing and LCM/NRV)</td>
+            <td>Analysis</td>
+            <td class="num">4</td>
+            <td class="num">4</td>
+            <td class="num">3</td>
+            <td>Seed category plus generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.II.A.3</td>
+            <td>PP&amp;E and capitalization vs expense</td>
+            <td>Analysis</td>
+            <td class="num">8</td>
+            <td class="num">8</td>
+            <td class="num">7</td>
+            <td>Seed category plus generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.II.A.4</td>
+            <td>Intangibles and goodwill impairment</td>
+            <td>R&amp;U</td>
+            <td class="num">4</td>
+            <td class="num">4</td>
+            <td class="num">4</td>
+            <td>Seed category plus generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.II.B.1</td>
+            <td>Leases (lessee: operating vs finance)</td>
+            <td>Analysis</td>
+            <td class="num">8</td>
+            <td class="num">2</td>
+            <td class="num">0</td>
+            <td>Seed category: <code>operating_vs_finance_lease</code></td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.II.B.2</td>
+            <td>Bonds payable and effective interest</td>
+            <td>Application</td>
+            <td class="num">2</td>
+            <td class="num">2</td>
+            <td class="num">2</td>
+            <td>Seed category plus generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.II.B.3</td>
+            <td>Stockholders' equity</td>
+            <td>R&amp;U</td>
+            <td class="num">4</td>
+            <td class="num">4</td>
+            <td class="num">4</td>
+            <td>Seed category plus generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.III.A.1</td>
+            <td>Revenue recognition (5-step model)</td>
+            <td>Analysis</td>
+            <td class="num">10</td>
+            <td class="num">10</td>
+            <td class="num">9</td>
+            <td>Seed category plus generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.III.A.2</td>
+            <td>Investments: trading/AFS/HTM classification</td>
+            <td>Analysis</td>
+            <td class="num">9</td>
+            <td class="num">7</td>
+            <td class="num">6</td>
+            <td>Seed category plus generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.III.B.1</td>
+            <td>Accounting changes and error corrections</td>
+            <td>Application</td>
+            <td class="num">2</td>
+            <td class="num">2</td>
+            <td class="num">2</td>
+            <td>Generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+          <tr>
+            <td>FAR.III.B.2</td>
+            <td>Governmental and not-for-profit reporting</td>
+            <td>R&amp;U</td>
+            <td class="num">6</td>
+            <td class="num">6</td>
+            <td class="num">4</td>
+            <td>Seed category plus generated pack</td>
+            <td><span class="status pass">Covered</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Abstain Rule</h2>
+      <div class="card">
+        <p>
+          The readiness backend abstains below the coverage line and below the sealed-attempt volume line.
+          The current rule is: no readiness score with fewer than 20 sealed attempts or less than 60% topic coverage.
+          Backend tests assert that abstained responses clear score fields while keeping the reason and give-up evidence.
+        </p>
+      </div>
+
+      <p>
+        Inputs: <code>tools/cardgen/taxonomy/taxonomy.FAR.yaml</code>,
+        <code>tools/cardgen/out/proof3/coverage_report.md</code>, and the runtime FAR seed/confusion categories.
+      </p>
+      <p>
+        <a href="sunday-verification.html">Back to Sunday verification matrix</a>
+      </p>
+    </main>
+  </body>
+</html>

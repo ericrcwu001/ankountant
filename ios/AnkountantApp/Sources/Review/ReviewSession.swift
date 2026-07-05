@@ -17,6 +17,7 @@ final class ReviewSession {
     @ObservationIgnored @Dependency(\.notesService) var notes
     @ObservationIgnored @Dependency(\.notetypesService) var notetypes
     @ObservationIgnored @Dependency(\.cardClient) var cardClient
+    @ObservationIgnored @Dependency(\.learningFeedbackClient) var learningFeedbackClient
 
     private(set) var frontHTML: String = ""
     private(set) var backHTML: String = ""
@@ -37,17 +38,20 @@ final class ReviewSession {
     private(set) var cardChromeIsDark: Bool = false
     private(set) var errorMessage: String?
     private(set) var currentFlag: UInt32 = 0
+    private(set) var learningFeedbackState: LearningFeedbackPanelState?
 
     private var reviewStartTime: Date = .now
     private var cardQueue: [QueuedReviewCard] = []
     private var currentQueuedCard: QueuedReviewCard?
     private var lastRating: Rating? = nil
+    private var learningFeedbackGenerationID = 0
 
     // Typed-answer state
     private var renderedFrontHTML: String = ""
     private var renderedBackHTML: String = ""
     private var typedAnswerState: TypedAnswerState?
     private var typedAnswerContinuation: CheckedContinuation<String?, Never>?
+    private var lastTypedAnswer: String?
 
     // MARK: - Computed
 
@@ -107,6 +111,8 @@ final class ReviewSession {
         currentFlag = 0
         nextIntervals = [:]
         typedAnswerState = nil
+        lastTypedAnswer = nil
+        clearLearningFeedback()
 
         do {
             let setCurrentDeck = decks.setCurrentDeck
@@ -135,6 +141,7 @@ final class ReviewSession {
         defer { isRevealingAnswer = false }
 
         if typedAnswerState == nil {
+            lastTypedAnswer = nil
             backHTML = strippingTypedAnswerPlaceholders(from: renderedBackHTML)
             showAnswer = true
             return
@@ -143,6 +150,7 @@ final class ReviewSession {
         typedAnswerRequestID += 1  // triggers JS to read <input> via updateUIView
 
         let typed = await readTypedAnswerWithTimeout()
+        lastTypedAnswer = typed ?? ""
         if let state = typedAnswerState {
             do {
                 backHTML = try await makeTypedAnswerBackHTML(state: state, typedAnswer: typed ?? "")
@@ -162,10 +170,18 @@ final class ReviewSession {
         typedAnswerContinuation = nil
     }
 
-    func answer(rating: Rating, confidence: ConfidenceLevel? = nil) async {
-        guard showAnswer, let queued = currentQueuedCard else { return }
+    func answer(
+        rating: Rating,
+        confidence: ConfidenceLevel? = nil,
+        learningFeedbackEnabled: Bool = false,
+        learningFeedbackModel: String = defaultLearningFeedbackModel
+    ) async {
+        guard showAnswer, learningFeedbackState == nil, let queued = currentQueuedCard else { return }
 
         let timeSpent = UInt32(Date.now.timeIntervalSince(reviewStartTime) * 1000)
+        let feedbackRequest = rating == .again && learningFeedbackEnabled
+            ? reviewLearningFeedbackRequest(rating: rating, confidence: confidence)
+            : nil
 
         do {
             let states = try queued.states.recordingConfidence(confidence?.rawValue)
@@ -188,10 +204,24 @@ final class ReviewSession {
                 learnCount: result.learningCount,
                 reviewCount: result.reviewCount
             )
-            await advanceToNextCard()
+            if rating == .again, learningFeedbackEnabled {
+                if let feedbackRequest {
+                    startLearningFeedback(request: feedbackRequest, model: resolvedLearningFeedbackModel(learningFeedbackModel))
+                } else {
+                    showLearningFeedbackError("Feedback could not be generated because this card context is unavailable.")
+                }
+            } else {
+                await advanceToNextCard()
+            }
         } catch {
             errorMessage = "Failed to answer card: \(error.localizedDescription)"
         }
+    }
+
+    func continueAfterLearningFeedback() async {
+        guard learningFeedbackState != nil else { return }
+        clearLearningFeedback()
+        await advanceToNextCard()
     }
 
     func undo() async {
@@ -299,6 +329,8 @@ final class ReviewSession {
         reviewStartTime = .now
         nextIntervals = next.nextIntervals
         typedAnswerState = nil
+        lastTypedAnswer = nil
+        clearLearningFeedback()
         stopAudioRequestID += 1
 
         do {
@@ -324,6 +356,75 @@ final class ReviewSession {
             backHTML = renderedBackHTML
             typedAnswerState = nil
         }
+    }
+
+    private func reviewLearningFeedbackRequest(rating: Rating, confidence: ConfidenceLevel?) -> LearningFeedbackRequest? {
+        guard let note = currentNote else { return nil }
+        let userAnswer = reviewLearningFeedbackUserAnswer(rating: rating, confidence: confidence)
+        let title = learningFeedbackReadableText(fromHTML: note.sfld)
+        return buildReviewLearningFeedbackRequest(
+            title: title.isEmpty ? "Review card" : title,
+            frontHTML: renderedFrontHTML,
+            backHTML: backHTML,
+            noteFields: note.flds.components(separatedBy: "\u{1f}"),
+            userAnswer: userAnswer
+        )
+    }
+
+    private func reviewLearningFeedbackUserAnswer(rating: Rating, confidence: ConfidenceLevel?) -> String {
+        var parts = [String]()
+        if let lastTypedAnswer {
+            parts.append("Typed answer: \(lastTypedAnswer)")
+        }
+        parts.append("Rating: \(ratingLabel(rating))")
+        if let confidence {
+            parts.append("Confidence: \(confidence.rawValue)")
+        }
+        return parts.joined(separator: "\n")
+    }
+
+    private func ratingLabel(_ rating: Rating) -> String {
+        switch rating {
+        case .again: "Again"
+        case .hard: "Hard"
+        case .good: "Good"
+        case .easy: "Easy"
+        }
+    }
+
+    private func startLearningFeedback(request: LearningFeedbackRequest, model: String) {
+        learningFeedbackGenerationID += 1
+        let generationID = learningFeedbackGenerationID
+        learningFeedbackState = .loading
+        let generate = learningFeedbackClient.generate
+        Task { [weak self, request, model, generationID, generate] in
+            do {
+                let feedback = try await generate(request, model)
+                self?.finishLearningFeedback(feedback, sources: request.sources, generationID: generationID)
+            } catch {
+                self?.finishLearningFeedback(error.localizedDescription, generationID: generationID)
+            }
+        }
+    }
+
+    private func finishLearningFeedback(_ feedback: LearningFeedback, sources: [LearningFeedbackSource], generationID: Int) {
+        guard learningFeedbackGenerationID == generationID else { return }
+        learningFeedbackState = .content(feedback, sources: sources)
+    }
+
+    private func finishLearningFeedback(_ message: String, generationID: Int) {
+        guard learningFeedbackGenerationID == generationID else { return }
+        learningFeedbackState = .error(message)
+    }
+
+    private func showLearningFeedbackError(_ message: String) {
+        learningFeedbackGenerationID += 1
+        learningFeedbackState = .error(message)
+    }
+
+    private func clearLearningFeedback() {
+        learningFeedbackGenerationID += 1
+        learningFeedbackState = nil
     }
 
     private func loadCardPresentation(for queued: QueuedReviewCard) async throws -> LoadedCardPresentation {

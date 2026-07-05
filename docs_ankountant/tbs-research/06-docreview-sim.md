@@ -128,7 +128,7 @@ per blank, stored per blank.
 - The Discipline sections (BAR/TCP) lean on the closely-related **"open response"** format
   (fill-in / dropdown / matching), which encodes the same way.
 
-**Implication for our FAR-focused build:** the _mechanic_ is identical to AUD; only the
+**Implication for our section-aware build:** the _mechanic_ is identical to AUD; only the
 document genre differs (footnote/memo/disclosure instead of audit request list). Our surface
 should treat the primary document as generic rich text with inline blanks, and let the
 `exhibits_json` carry either audit exhibits **or** a financial-statements+notes bundle.

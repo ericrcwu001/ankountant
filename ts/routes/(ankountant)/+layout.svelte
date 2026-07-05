@@ -13,7 +13,6 @@ tokens (--accent = Ink Navy).
     import { onDestroy, onMount } from "svelte";
 
     import { afterNavigate, goto } from "$app/navigation";
-    import { bridgeCommand } from "@tslib/bridgecommand";
     import { activeShellNavId } from "./shell-nav";
 
     // The Ankountant study surfaces are always presented in light mode, even when
@@ -48,11 +47,10 @@ tokens (--accent = Ink Navy).
     interface NavItem {
         id: string;
         label: string;
-        href?: string;
-        command?: string;
+        href: string;
     }
 
-    const settingsCommand = "ankountant:prefs";
+    const settingsHref = "/ankountant-settings";
 
     const nav: NavItem[] = [
         { id: "dashboard", label: "Dashboard", href: "/ankountant-home" },
@@ -66,7 +64,7 @@ tokens (--accent = Ink Navy).
             href: "/ankountant-workspace?initial=browse",
         },
         { id: "sync", label: "Sync", href: "/ankountant-sync" },
-        { id: "settings", label: "Settings", command: settingsCommand },
+        { id: "settings", label: "Settings", href: settingsHref },
     ];
 
     let currentPath = typeof window !== "undefined" ? window.location.pathname : "";
@@ -83,12 +81,8 @@ tokens (--accent = Ink Navy).
     }
 
     function navigate(item: NavItem): void {
-        if (item.command) {
-            bridgeCommand(item.command);
-        } else if (item.href) {
-            setCurrentLocation(item.href);
-            goto(item.href);
-        }
+        setCurrentLocation(item.href);
+        goto(item.href);
     }
 
     function setCurrentLocation(href: string): void {
@@ -98,7 +92,8 @@ tokens (--accent = Ink Navy).
     }
 
     function openSettings(): void {
-        bridgeCommand(settingsCommand);
+        setCurrentLocation(settingsHref);
+        goto(settingsHref);
     }
 
     onMount(() => {

@@ -50,6 +50,46 @@ struct SyncCoordinatorTests {
     }
 
     @Test @MainActor
+    func authFailureRequiresLogin() async throws {
+        try await withDependencies {
+            $0.appStorageKeyFormatWarningEnabled = false
+            $0.syncClient.sync = { throw SyncError.authFailed }
+        } operation: {
+            let coordinator = SyncCoordinator()
+            await coordinator.startSync()
+            try await Task.sleep(for: .milliseconds(100))
+            #expect(coordinator.requiresLogin)
+            guard case .error(let message) = coordinator.state else {
+                Issue.record("expected .error, got \(coordinator.state)")
+                return
+            }
+            #expect(message.contains("Authentication failed"))
+        }
+    }
+
+    @Test @MainActor
+    func mediaFailureDoesNotFailCollectionSync() async throws {
+        let summary = SyncSummary(cardsPushed: 2, cardsPulled: 4)
+        try await withDependencies {
+            $0.appStorageKeyFormatWarningEnabled = false
+            $0.syncClient.sync = { summary }
+            $0.syncClient.syncMedia = {
+                throw SyncError(message: "Media offline", isRetryable: true)
+            }
+        } operation: {
+            let coordinator = SyncCoordinator()
+            await coordinator.startSync()
+            try await Task.sleep(for: .milliseconds(100))
+            guard case .success(let resultSummary) = coordinator.state else {
+                Issue.record("expected .success, got \(coordinator.state)")
+                return
+            }
+            #expect(resultSummary == summary)
+            #expect(coordinator.logEntries.contains { $0.message.contains("Media sync skipped") && $0.level == .warning })
+        }
+    }
+
+    @Test @MainActor
     func needsFullSyncRequiresUserChoice() async throws {
         try await withDependencies {
             $0.appStorageKeyFormatWarningEnabled = false

@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+import datetime
 import enum
 import gc
+import json
 import os
 import re
 import signal
@@ -30,7 +32,7 @@ from anki.buildinfo import version as version_str
 from anki.collection import Collection, Config, GithubRelease, OpChanges, UndoStatus
 from anki.decks import DeckDict, DeckId
 from anki.hooks import runHook
-from anki.notes import NoteId
+from anki.notes import Note, NoteId
 from anki.sound import AVTag, SoundOrVideoTag
 from anki.utils import (
     dev_mode,
@@ -98,14 +100,212 @@ MainWindowState = Literal[
 
 
 T = TypeVar("T")
+CpaBankCategoryEntry = tuple[tuple[str, ...], tuple[str, ...]]
 
 
 ANKOUNTANT_DEMO_PHASES = frozenset({"foundation", "discrimination", "consolidation"})
+CPA_BANK_SECTIONS = ("FAR", "AUD", "REG", "TCP", "ISC")
+CPA_BANK_CATEGORY_SETS: dict[str, dict[str, CpaBankCategoryEntry]] = {
+    "FAR": {
+        "capitalize_vs_expense": (
+            ("ds::cost::capitalize", "ds::cost::expense"),
+            ("Capitalize", "Expense"),
+        ),
+        "operating_vs_finance_lease": (
+            ("ds::lease::operating", "ds::lease::finance"),
+            ("Operating lease", "Finance lease"),
+        ),
+        "revrec_step_selection": (
+            ("ds::revrec::step4", "ds::revrec::step5"),
+            ("Allocate price (Step 4)", "Recognize revenue (Step 5)"),
+        ),
+        "trading_afs_htm": (
+            ("ds::securities::trading", "ds::securities::htm"),
+            ("Trading (FV through NI)", "Held-to-maturity (amortized cost)"),
+        ),
+        "inventory_valuation": (
+            ("ds::inventory::lcm", "ds::inventory::lcnrv"),
+            ("Lower of cost or market", "Lower of cost and NRV"),
+        ),
+        "debt_extinguishment": (
+            ("ds::debt::extinguish", "ds::debt::modify"),
+            ("Extinguishment (derecognize)", "Modification (retain)"),
+        ),
+        "intangibles_impairment": (
+            ("ds::intangible::finite", "ds::intangible::indefinite"),
+            ("Finite-life (amortize)", "Indefinite-life (test only)"),
+        ),
+        "cash_receivables": (
+            ("ds::ar::allowance", "ds::ar::writeoff"),
+            ("Allowance method", "Direct write-off"),
+        ),
+        "financial_statements": (
+            ("ds::stmt::operating", "ds::stmt::financing"),
+            ("Operating activity", "Financing activity"),
+        ),
+        "conceptual_framework": (
+            ("ds::concept::relevance", "ds::concept::faithful"),
+            ("Relevance", "Faithful representation"),
+        ),
+        "tax_timing": (
+            ("ds::tax::temporary", "ds::tax::permanent"),
+            ("Temporary difference", "Permanent difference"),
+        ),
+        "pensions_equity": (
+            ("ds::pension::service", "ds::pension::interest"),
+            ("Service cost", "Interest cost"),
+        ),
+        "government_nfp": (
+            ("ds::govnfp::govtwide", "ds::govnfp::fund"),
+            ("Government-wide (accrual)", "Fund (modified accrual)"),
+        ),
+    },
+    "AUD": {
+        "qualified_vs_adverse_opinion": (
+            ("ds::aud::qualified", "ds::aud::adverse"),
+            ("Qualified opinion", "Adverse opinion"),
+        ),
+        "test_of_controls_vs_substantive": (
+            ("ds::aud::controls", "ds::aud::substantive"),
+            ("Test of controls", "Substantive procedure"),
+        ),
+        "aud_evidence_sufficiency": (
+            ("ds::aud::sufficient", "ds::aud::insufficient"),
+            ("Sufficient appropriate evidence", "Insufficient evidence"),
+        ),
+        "aud_request_relevance": (
+            ("ds::aud::retain", "ds::aud::revise"),
+            ("Retain as drafted", "Revise the request"),
+        ),
+        "materiality_vs_trivial_misstatement": (
+            ("ds::aud::material", "ds::aud::trivial"),
+            ("Material misstatement", "Clearly trivial misstatement"),
+        ),
+        "subsequent_events_vs_going_concern": (
+            ("ds::aud::subsequent", "ds::aud::going_concern"),
+            ("Subsequent event procedure", "Going concern evaluation"),
+        ),
+    },
+    "REG": {
+        "s1231_vs_capital_vs_ordinary": (
+            ("ds::reg::s1231", "ds::reg::capital", "ds::reg::ordinary"),
+            ("Section 1231 gain/loss", "Capital gain/loss", "Ordinary income"),
+        ),
+        "deduction_for_vs_from_agi": (
+            ("ds::reg::for_agi", "ds::reg::from_agi"),
+            ("Deduction for AGI", "Deduction from AGI"),
+        ),
+        "reg_capitalize_vs_deduct": (
+            ("ds::reg::deduct", "ds::reg::capitalize"),
+            ("Currently deductible", "Capitalize and recover over time"),
+        ),
+        "circular230_sanction_vs_tax_penalty": (
+            ("ds::reg::circular230", "ds::reg::tax_penalty"),
+            ("Circular 230 sanction", "Tax penalty"),
+        ),
+        "basis_vs_amount_realized": (
+            ("ds::reg::basis", "ds::reg::amount_realized"),
+            ("Adjusted basis", "Amount realized"),
+        ),
+        "c_corp_vs_s_corp_taxation": (
+            ("ds::reg::c_corp", "ds::reg::s_corp"),
+            ("C corporation taxation", "S corporation pass-through"),
+        ),
+    },
+    "TCP": {
+        "like_kind_vs_taxable_exchange": (
+            ("ds::tcp::nonrecognition", "ds::tcp::taxable"),
+            ("Nonrecognition (deferral)", "Currently taxable exchange"),
+        ),
+        "distribution_vs_liquidation": (
+            ("ds::tcp::distribution", "ds::tcp::liquidation"),
+            ("Nonliquidating distribution", "Complete liquidation"),
+        ),
+        "tcp_cost_recovery": (
+            ("ds::tcp::expense", "ds::tcp::capitalize"),
+            ("Expense currently", "Capitalize and recover"),
+        ),
+        "gift_vs_estate_tax": (
+            ("ds::tcp::gift", "ds::tcp::estate"),
+            ("Gift tax transfer", "Estate tax inclusion"),
+        ),
+        "redemption_vs_dividend": (
+            ("ds::tcp::redemption", "ds::tcp::dividend"),
+            ("Sale/exchange redemption", "Dividend-equivalent distribution"),
+        ),
+        "active_vs_passive_loss": (
+            ("ds::tcp::active", "ds::tcp::passive"),
+            ("Active business loss", "Passive activity loss"),
+        ),
+    },
+    "ISC": {
+        "soc1_vs_soc2": (
+            ("ds::isc::soc1", "ds::isc::soc2"),
+            ("SOC 1 (ICFR)", "SOC 2 (trust services)"),
+        ),
+        "soc_report_type1_vs_type2": (
+            ("ds::isc::type1", "ds::isc::type2"),
+            (
+                "Type 1 (design at a point in time)",
+                "Type 2 (operating effectiveness over a period)",
+            ),
+        ),
+        "isc_control_type": (
+            ("ds::isc::preventive", "ds::isc::detective"),
+            ("Preventive control", "Detective control"),
+        ),
+        "authentication_vs_authorization": (
+            ("ds::isc::authentication", "ds::isc::authorization"),
+            ("Authentication", "Authorization"),
+        ),
+        "backup_vs_disaster_recovery": (
+            ("ds::isc::backup", "ds::isc::recovery"),
+            ("Backup control", "Disaster recovery procedure"),
+        ),
+        "incident_detection_vs_response": (
+            ("ds::isc::detect", "ds::isc::respond"),
+            ("Incident detection", "Incident response"),
+        ),
+    },
+}
+CPA_BANK_MEMORY_TAGS = {
+    section: tuple(tag for tags, _ in categories.values() for tag in tags)
+    for section, categories in CPA_BANK_CATEGORY_SETS.items()
+}
+CPA_BANK_REVIEW_STRENGTH = {
+    "FAR": 8,
+    "AUD": 7,
+    "REG": 7,
+    "TCP": 6,
+    "ISC": 8,
+}
+CPA_BANK_EXAM_OFFSETS_DAYS = {
+    "FAR": 45,
+    "AUD": 68,
+    "REG": 96,
+    "TCP": 124,
+    "ISC": 82,
+}
 
 
 def require_ankountant_demo_phase(phase: str) -> None:
     if phase not in ANKOUNTANT_DEMO_PHASES:
         raise ValueError(f"unknown Ankountant demo phase: {phase}")
+
+
+def ankountant_category_metadata(
+    label: str,
+    tags: Sequence[Any],
+    treatments: Sequence[Any],
+) -> dict[str, list[str]]:
+    if (
+        not tags
+        or not treatments
+        or not all(isinstance(tag, str) and tag for tag in tags)
+        or not all(isinstance(treatment, str) and treatment for treatment in treatments)
+    ):
+        raise ValueError(f"{label} must contain non-empty string tags and treatments")
+    return {"tags": list(tags), "treatments": list(treatments)}
 
 
 def ankountant_confusable_patch_updates(
@@ -130,12 +330,164 @@ def ankountant_confusable_patch_updates(
         if not isinstance(treatments, list):
             raise ValueError(f"confusable set {set_id} treatments must be a list")
         key = f"ankountant.confusable.{section}"
-        updates.setdefault(key, {})[set_id] = {
-            "tags": tags,
-            "treatments": treatments,
-        }
+        updates.setdefault(key, {})[set_id] = ankountant_category_metadata(
+            f"confusable set {set_id}",
+            tags,
+            treatments,
+        )
 
     return updates
+
+
+def ankountant_sealed_deck_parts(deck_name: str) -> tuple[str, str] | None:
+    parts = deck_name.split("::")
+    if len(parts) < 4 or parts[0] != "Ankountant" or parts[1] != "Sealed":
+        return None
+    section = parts[2].upper()
+    if section not in CPA_BANK_SECTIONS:
+        return None
+    set_id = "::".join(parts[3:]).strip()
+    if not set_id:
+        raise ValueError(f"sealed deck is missing a set id: {deck_name}")
+    return section, set_id
+
+
+def ankountant_stress_sealed_deck_parts(deck_name: str) -> tuple[str, str] | None:
+    parts = deck_name.split("::")
+    if (
+        len(parts) < 5
+        or parts[0] != "Ankountant"
+        or parts[1] != "Stress"
+        or parts[2] != "Sealed"
+    ):
+        return None
+    section = parts[3].upper()
+    if section not in CPA_BANK_SECTIONS:
+        return None
+    set_id = "::".join(parts[4:]).strip()
+    if not set_id:
+        raise ValueError(f"stress sealed deck is missing a set id: {deck_name}")
+    return section, set_id
+
+
+def ankountant_bank_study_section(deck_name: str) -> str | None:
+    parts = deck_name.split("::")
+    if len(parts) < 3 or parts[0] != "Ankountant":
+        return None
+    if parts[1] not in {"Study", "Community"}:
+        return None
+    section = parts[2].upper()
+    return section if section in CPA_BANK_SECTIONS else None
+
+
+def ankountant_bank_category_entry(
+    section: str,
+    set_id: str,
+    confusable: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, list[str]]:
+    if section not in CPA_BANK_SECTIONS:
+        raise ValueError(f"unknown CPA bank section: {section}")
+    raw = CPA_BANK_CATEGORY_SETS[section].get(set_id)
+    if raw is not None:
+        tags, treatments = raw
+        return ankountant_category_metadata(
+            f"CPA bank category {section}::{set_id}",
+            tags,
+            treatments,
+        )
+    if confusable is not None and set_id in confusable:
+        entry = confusable[set_id]
+        tags = entry.get("tags", [])
+        treatments = entry.get("treatments", [])
+        return ankountant_category_metadata(
+            f"CPA bank category {section}::{set_id}",
+            tags,
+            treatments,
+        )
+    raise ValueError(f"unknown CPA bank category: {section}::{set_id}")
+
+
+def ankountant_review_is_correct(section: str, card_index: int, rep_index: int) -> bool:
+    threshold = CPA_BANK_REVIEW_STRENGTH[section]
+    return ((card_index * 3 + rep_index * 5 + len(section)) % 10) < threshold
+
+
+def ankountant_first_answer_value(value: Any) -> Any:
+    if isinstance(value, list):
+        if not value:
+            raise ValueError("answer_key list must not be empty")
+        return value[0]
+    return value
+
+
+def ankountant_wrong_answer_value(value: Any) -> Any:
+    if isinstance(value, bool):
+        return not value
+    if isinstance(value, (int, float)):
+        return value + 999
+    if isinstance(value, dict):
+        wrong = dict(value)
+        if not wrong:
+            return {"wrong": True}
+        first = next(iter(wrong))
+        wrong[first] = ankountant_wrong_answer_value(wrong[first])
+        return wrong
+    return "__wrong_answer__"
+
+
+def ankountant_tbs_type(value: str) -> str:
+    return re.sub(r"<!--s\d+-->$", "", value).strip()
+
+
+def ankountant_research_submission(steps: list[Any], correct: bool) -> str:
+    answer = ankountant_first_answer_value(steps[0].get("answer_key"))
+    citation = str(answer if correct else "NOT-A-VALID-CITATION")
+    return json.dumps({"citation": citation})
+
+
+def ankountant_confusion_submission(steps: list[Any], correct: bool) -> str:
+    answer = ankountant_first_answer_value(steps[0].get("answer_key"))
+    choice = str(answer if correct else "__wrong_choice__")
+    return json.dumps({"choice": choice})
+
+
+def ankountant_step_submission(steps: list[Any], correct: bool) -> str:
+    submitted_steps = []
+    for index, step in enumerate(steps):
+        if not isinstance(step, dict):
+            raise ValueError("Ankountant TBS step must contain an object")
+        step_id = step.get("id")
+        if not isinstance(step_id, str) or not step_id:
+            raise ValueError("Ankountant TBS step is missing an id")
+        value = ankountant_first_answer_value(step.get("answer_key"))
+        if index == 0 and not correct:
+            value = ankountant_wrong_answer_value(value)
+        submitted_steps.append({"id": step_id, "value": value})
+    return json.dumps({"steps": submitted_steps})
+
+
+def ankountant_submission_for_tbs_fields(
+    fields: list[str],
+    correct: bool,
+) -> tuple[str, str]:
+    if len(fields) <= 4:
+        raise ValueError("Ankountant TBS note is missing required fields")
+    tbs_type = ankountant_tbs_type(fields[0])
+    steps = json.loads(fields[3])
+    if not isinstance(steps, list) or not steps:
+        raise ValueError("Ankountant TBS note has invalid steps_json")
+
+    if tbs_type == "research":
+        return "research", ankountant_research_submission(steps, correct)
+
+    if tbs_type == "mcq":
+        return "confusion", ankountant_confusion_submission(steps, correct)
+
+    if tbs_type in {"journal_entry", "numeric", "doc_review"}:
+        mode = "doc_review" if tbs_type == "doc_review" else "tbs"
+        return mode, ankountant_step_submission(steps, correct)
+
+    raise ValueError(f"Unsupported Ankountant TBS type: {tbs_type}")
 
 
 class MainWebView(AnkiWebView):
@@ -1697,7 +2049,7 @@ title="{}" {}>{}</button>""".format(
         qconnect(cpa_stress.triggered, self.load_cpa_stress_bank)
 
     def load_ankountant_phase(self, phase: str) -> None:
-        """Seed the FAR demo profile tuned so the Home phase-aware CTA lands in a
+        """Seed the CPA demo profile tuned so the Home phase-aware CTA lands in a
         specific phase, for demoing/QA of the dynamic study recommendation:
 
         - "foundation": content only, no history and no exam date, so every topic
@@ -1709,45 +2061,49 @@ title="{}" {}>{}</button>""".format(
         - "consolidation": full history + an exam date 7 days out (inside the
           final-stretch window), so Home recommends "Consolidate" (recall to peak).
 
-        Each calls the LoadFarSeed backend RPC (F016), then sets/clears the shared
-        exam-date config key, and refreshes. Best on a fresh/throwaway profile."""
+        Each calls the LoadFarSeed backend RPC (F016), then sets/clears each
+        visible section's exam date, and refreshes. Best on a fresh/throwaway
+        profile."""
         require_ankountant_demo_phase(phase)
         if self.col is None:
             return
         if not askUser(
-            f"Load the FAR demo profile in its '{phase}' state? This adds sample"
-            " CPA-FAR content (and, except for foundation, sample study history)"
-            " and sets the exam date so the Home screen's recommended action"
-            " reflects that phase. Best on a fresh/throwaway profile.",
+            f"Load the CPA demo profile in its '{phase}' state? This adds sample"
+            " CPA starter content, category attempts, and phase-appropriate study"
+            " history so the Home screen's recommended action reflects that phase."
+            " Best on a fresh/throwaway profile.",
             parent=self,
         ):
             return
 
         import datetime
 
-        section = "FAR"
-        exam_key = f"ankountant.{section}.exam.date"
+        attempts = 0
         if phase == "foundation":
-            # No history => every topic is memory-insufficient => beginner. Clear
-            # the exam date so the countdown resets too.
-            resp = self.col._backend.load_far_seed(section=section, with_history=False)
-            self.col.remove_config(exam_key)
+            resp = self.col._backend.load_far_seed(section="FAR", with_history=False)
+            attempts = self._seed_cpa_bank_attempt_history(self.col)
+            for section in CPA_BANK_SECTIONS:
+                self.col._backend.set_exam_date(section=section, date="")
         elif phase == "consolidation":
-            # History for a memory base; override the seed's far exam date with a
-            # near one so days-to-exam falls inside the final-stretch window.
-            resp = self.col._backend.load_far_seed(section=section, with_history=True)
+            resp = self.col._backend.load_far_seed(section="FAR", with_history=True)
             iso = (datetime.date.today() + datetime.timedelta(days=7)).isoformat()
-            self.col.set_config(exam_key, iso)
+            for section in CPA_BANK_SECTIONS:
+                self.col._backend.set_exam_date(section=section, date=iso)
         else:
-            resp = self.col._backend.load_far_seed(section=section, with_history=True)
+            resp = self.col._backend.load_far_seed(section="FAR", with_history=True)
+            self._set_cpa_bank_exam_dates(self.col)
 
         self.reset()
         history = "no history" if phase == "foundation" else "sample history"
+        attempt_text = (
+            f" Seeded {attempts:,} starter category attempts." if attempts else ""
+        )
         tooltip(
-            f"Loaded FAR demo \u00b7 {phase}: "
+            f"Loaded CPA demo \u00b7 {phase}: "
             f"{resp.study_recall_cards} recall cards, "
             f"{resp.confusion_sets} confusion sets, "
             f"{resp.sealed_items} sealed items ({history})."
+            f"{attempt_text}"
             " Open the Ankountant Home to see the recommended action.",
             parent=self,
         )
@@ -1784,14 +2140,24 @@ title="{}" {}>{}</button>""".format(
         pack = pack_dir / "stress_bank.apkg"
         return [pack] if pack.exists() else []
 
+    def _cpa_bank_patch_updates(
+        self,
+        pack_dir: Path,
+    ) -> dict[str, dict[str, dict[str, Any]]]:
+        patch_path = pack_dir / "confusable_patch.json"
+        if not patch_path.exists():
+            return {}
+        return ankountant_confusable_patch_updates(
+            json.loads(patch_path.read_text(encoding="utf-8"))
+        )
+
     def load_cpa_bank(self) -> None:
         """Import the full generated CPA bank in one click: the AI/template deck
         (``cpa_bank.apkg``) and the online-sourced community deck
-        (``online_bank.apkg``), then apply the two follow-ups an ``.apkg`` can't
-        carry — suspend the sealed TBS cards and merge the confusable-set patch."""
+        (``online_bank.apkg``), seed the shared CPA demo profile, then apply the
+        follow-ups an ``.apkg`` can't carry."""
         if self.col is None:
             return
-        import json
 
         from anki.collection import ImportAnkiPackageOptions, ImportAnkiPackageRequest
         from aqt.operations import CollectionOp
@@ -1813,27 +2179,26 @@ title="{}" {}>{}</button>""".format(
         if not packs:
             showInfo("No .apkg packs found to import.", parent=self)
             return
-        patch_path = pack_dir / "confusable_patch.json"
-        patch_updates: dict[str, dict[str, dict[str, Any]]] = {}
-        if patch_path.exists():
-            try:
-                patch_updates = ankountant_confusable_patch_updates(
-                    json.loads(patch_path.read_text(encoding="utf-8"))
-                )
-            except (OSError, json.JSONDecodeError, ValueError) as exc:
-                showWarning(f"Invalid confusable_patch.json: {exc}", parent=self)
-                return
+        try:
+            patch_updates = self._cpa_bank_patch_updates(pack_dir)
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            showWarning(f"Invalid confusable_patch.json: {exc}", parent=self)
+            return
         if not askUser(
             f"Load {len(packs)} generated CPA pack(s) into this collection?\n\n"
             f"From: {pack_dir}\n\n"
             "This imports the AI/template cards and the online-sourced community"
-            " cards, then suspends the sealed practice cards. Best on a"
-            " fresh/throwaway profile.",
+            " cards, loads the CPA demo profile, suspends sealed practice cards,"
+            " and seeds realistic user history for FAR, AUD, REG, TCP, and ISC."
+            " Best on a fresh/throwaway profile.",
             parent=self,
         ):
             return
 
+        seeded = {"cards": 0, "attempts": 0}
+
         def op(col: Collection) -> Any:
+            col._backend.load_far_seed(section="FAR", with_history=True)
             changes: Any = None
             for pack in packs:
                 req = ImportAnkiPackageRequest(
@@ -1849,23 +2214,592 @@ title="{}" {}>{}</button>""".format(
             sealed = col.find_cards("deck:Ankountant::Sealed::*")
             if sealed:
                 col.sched.suspend_cards(sealed)
-            for key, entries in patch_updates.items():
-                current = col.get_config(key, default={}) or {}
-                if not isinstance(current, dict):
-                    raise ValueError(f"{key} config must contain an object")
-                merged = dict(current)
-                merged.update(entries)
-                col.set_config(key, merged)
+            self._apply_cpa_bank_patch_updates(col, patch_updates)
+            self._prepare_cpa_bank_sections(col)
+            seeded["cards"] = self._seed_cpa_bank_review_history(col)
+            seeded["attempts"] = self._seed_cpa_bank_attempt_history(col)
+            self._set_cpa_bank_exam_dates(col)
             return changes
 
         def on_success(_out: Any) -> None:
             tooltip(
                 f"Loaded the CPA bank: imported {len(packs)} pack(s);"
-                " sealed practice cards suspended.",
+                f" seeded {seeded['cards']:,} reviewed cards and"
+                f" {seeded['attempts']:,} sealed attempts.",
                 parent=self,
             )
 
         CollectionOp(parent=self, op=op).success(on_success).run_in_background()
+
+    def _apply_cpa_bank_patch_updates(
+        self,
+        col: Collection,
+        patch_updates: dict[str, dict[str, dict[str, Any]]],
+    ) -> None:
+        for key, entries in patch_updates.items():
+            current = col.get_config(key, default={}) or {}
+            if not isinstance(current, dict):
+                raise ValueError(f"{key} config must contain an object")
+            merged = dict(current)
+            merged.update(entries)
+            col.set_config(key, merged)
+
+    def _prepare_cpa_bank_sections(self, col: Collection) -> None:
+        self._tag_cpa_bank_study_cards(col)
+        deck_names = {int(deck.id): deck.name for deck in col.decks.all_names_and_ids()}
+        confusable_by_section = self._cpa_bank_confusable_by_section(col)
+        notes_to_update = []
+        for section in CPA_BANK_SECTIONS:
+            query = f'"note:Ankountant TBS" deck:Ankountant::Sealed::{section}::*'
+            for nid in col.find_notes(query):
+                note = self._prepare_cpa_bank_sealed_note(
+                    col,
+                    nid,
+                    deck_names,
+                    confusable_by_section,
+                )
+                if note is not None:
+                    notes_to_update.append(note)
+
+        if notes_to_update:
+            col.update_notes(notes_to_update, skip_undo_entry=True)
+        for section, confusable in confusable_by_section.items():
+            col.set_config(f"ankountant.confusable.{section}", confusable)
+
+    def _prepare_stress_bank_sections(self, col: Collection) -> None:
+        deck_names = {int(deck.id): deck.name for deck in col.decks.all_names_and_ids()}
+        confusable_by_section = self._cpa_bank_confusable_by_section(col)
+        notes_to_update = []
+        for section in CPA_BANK_SECTIONS:
+            query = (
+                f'"note:Ankountant TBS" deck:Ankountant::Stress::Sealed::{section}::*'
+            )
+            for nid in col.find_notes(query):
+                note = self._prepare_stress_bank_sealed_note(
+                    col,
+                    NoteId(nid),
+                    deck_names,
+                    confusable_by_section,
+                )
+                if note is not None:
+                    notes_to_update.append(note)
+
+        if notes_to_update:
+            col.update_notes(notes_to_update, skip_undo_entry=True)
+        for section, confusable in confusable_by_section.items():
+            col.set_config(f"ankountant.confusable.{section}", confusable)
+
+    def _cpa_bank_confusable_by_section(
+        self,
+        col: Collection,
+    ) -> dict[str, dict[str, dict[str, Any]]]:
+        out: dict[str, dict[str, dict[str, Any]]] = {}
+        for section in CPA_BANK_SECTIONS:
+            key = f"ankountant.confusable.{section}"
+            current = col.get_config(key, default={}) or {}
+            if not isinstance(current, dict):
+                raise ValueError(f"{key} config must contain an object")
+            out[section] = self._normalized_cpa_bank_confusable_map(key, current)
+        return out
+
+    def _normalized_cpa_bank_confusable_map(
+        self,
+        key: str,
+        current: dict[Any, Any],
+    ) -> dict[str, dict[str, Any]]:
+        confusable: dict[str, dict[str, Any]] = {}
+        for set_id, entry in current.items():
+            if not isinstance(set_id, str) or not isinstance(entry, dict):
+                raise ValueError(f"{key} contains an invalid confusable entry")
+            tags = entry.get("tags", [])
+            treatments = entry.get("treatments", [])
+            if not isinstance(tags, list) or not isinstance(treatments, list):
+                raise ValueError(f"{key}.{set_id} must contain tags and treatments")
+            confusable[set_id] = ankountant_category_metadata(
+                f"{key}.{set_id}",
+                tags,
+                treatments,
+            )
+        return confusable
+
+    def _prepare_cpa_bank_sealed_note(
+        self,
+        col: Collection,
+        nid: NoteId,
+        deck_names: dict[int, str],
+        confusable_by_section: dict[str, dict[str, dict[str, Any]]],
+    ) -> Note | None:
+        deck_name = self._cpa_bank_note_deck_name(col, nid, deck_names)
+        parts = ankountant_sealed_deck_parts(deck_name)
+        if parts is None:
+            return None
+        section, set_id = parts
+        note = col.get_note(nid)
+        if len(note.fields) <= 4:
+            raise ValueError(f"sealed TBS note is missing schema_tag: {nid}")
+        schema_tag, field_changed = self._cpa_bank_schema_tag_for_note(
+            note,
+            section,
+            set_id,
+            confusable_by_section[section],
+        )
+        tags_changed = self._ensure_cpa_bank_note_tags(note, section, schema_tag)
+        self._ensure_cpa_bank_confusable_set(
+            confusable_by_section[section],
+            section,
+            set_id,
+            schema_tag,
+        )
+        return note if field_changed or tags_changed else None
+
+    def _prepare_stress_bank_sealed_note(
+        self,
+        col: Collection,
+        nid: NoteId,
+        deck_names: dict[int, str],
+        confusable_by_section: dict[str, dict[str, dict[str, Any]]],
+    ) -> Note | None:
+        deck_name = self._cpa_bank_note_deck_name(col, nid, deck_names)
+        parts = ankountant_stress_sealed_deck_parts(deck_name)
+        if parts is None:
+            return None
+        section, set_id = parts
+        note = col.get_note(nid)
+        if len(note.fields) <= 4:
+            raise ValueError(f"stress sealed TBS note is missing schema_tag: {nid}")
+        tbs_type_changed = self._normalize_stress_tbs_type(note)
+        try:
+            schema_tag, field_changed = self._cpa_bank_schema_tag_for_note(
+                note,
+                section,
+                set_id,
+                confusable_by_section[section],
+            )
+        except ValueError:
+            if self._stress_note_has_category_hint(note):
+                raise
+            return note if tbs_type_changed else None
+        tags_changed = self._ensure_cpa_bank_note_tags(note, section, schema_tag)
+        self._ensure_cpa_bank_confusable_set(
+            confusable_by_section[section],
+            section,
+            set_id,
+            schema_tag,
+        )
+        return note if tbs_type_changed or field_changed or tags_changed else None
+
+    def _normalize_stress_tbs_type(self, note: Note) -> bool:
+        tbs_type = ankountant_tbs_type(note.fields[0])
+        if tbs_type == note.fields[0]:
+            return False
+        note.fields[0] = tbs_type
+        return True
+
+    def _stress_note_has_category_hint(self, note: Note) -> bool:
+        return bool(note.fields[4].strip()) or any(
+            tag.startswith("ds::") for tag in note.tags
+        )
+
+    def _cpa_bank_note_deck_name(
+        self,
+        col: Collection,
+        nid: NoteId,
+        deck_names: dict[int, str],
+    ) -> str:
+        did = col.db.scalar(
+            "SELECT did FROM cards WHERE nid = ? ORDER BY ord LIMIT 1",
+            int(nid),
+        )
+        if did is None:
+            raise ValueError(f"sealed note has no card: {nid}")
+        deck_name = deck_names.get(int(did))
+        if deck_name is None:
+            raise ValueError(f"sealed note has unknown deck id: {did}")
+        return deck_name
+
+    def _cpa_bank_schema_tag_for_note(
+        self,
+        note: Note,
+        section: str,
+        set_id: str,
+        confusable: dict[str, dict[str, Any]],
+    ) -> tuple[str, bool]:
+        known = ankountant_bank_category_entry(section, set_id, confusable)
+        schema_tag = note.fields[4].strip()
+        if schema_tag:
+            if schema_tag not in known["tags"]:
+                raise ValueError(
+                    f"sealed note {section}::{set_id} has unknown schema_tag: {schema_tag}"
+                )
+            return schema_tag, False
+        schema_tag = known["tags"][0]
+        note.fields[4] = schema_tag
+        return schema_tag, True
+
+    def _ensure_cpa_bank_note_tags(
+        self,
+        note: Note,
+        section: str,
+        schema_tag: str,
+    ) -> bool:
+        changed = False
+        for tag in (f"sec::{section}", schema_tag):
+            if tag and tag not in note.tags:
+                note.tags.append(tag)
+                changed = True
+        return changed
+
+    def _ensure_cpa_bank_confusable_set(
+        self,
+        confusable: dict[str, dict[str, Any]],
+        section: str,
+        set_id: str,
+        schema_tag: str,
+    ) -> None:
+        known = ankountant_bank_category_entry(section, set_id, confusable)
+        if schema_tag and schema_tag not in known["tags"]:
+            raise ValueError(
+                f"sealed note {section}::{set_id} has unknown schema_tag: {schema_tag}"
+            )
+        if set_id not in confusable:
+            confusable[set_id] = known
+            return
+        existing = ankountant_category_metadata(
+            f"CPA bank category {section}::{set_id}",
+            confusable[set_id]["tags"],
+            confusable[set_id]["treatments"],
+        )
+        if schema_tag and schema_tag not in existing["tags"]:
+            raise ValueError(
+                f"sealed note {section}::{set_id} has unknown schema_tag: {schema_tag}"
+            )
+
+    def _tag_cpa_bank_study_cards(self, col: Collection) -> None:
+        notes_to_update = []
+        for section, tags in CPA_BANK_MEMORY_TAGS.items():
+            if not tags:
+                raise ValueError(f"{section} has no CPA bank memory tags")
+            nids: set[int] = set()
+            for kind in ("Study", "Community"):
+                query = f"deck:Ankountant::{kind}::{section}::*"
+                nids.update(int(nid) for nid in col.find_notes(query))
+            for index, nid in enumerate(sorted(nids)):
+                note = col.get_note(NoteId(nid))
+                if any(tag.startswith("ds::") for tag in note.tags):
+                    continue
+                tag = tags[index % len(tags)]
+                if tag not in note.tags:
+                    note.tags.append(tag)
+                    notes_to_update.append(note)
+        if notes_to_update:
+            col.update_notes(notes_to_update, skip_undo_entry=True)
+
+    def _seed_cpa_bank_review_history(self, col: Collection) -> int:
+        import time
+
+        sorted_cids = self._cpa_bank_review_card_ids(col)
+        if not sorted_cids:
+            return 0
+        meta = self._cpa_bank_review_meta(col, sorted_cids)
+        now_ms = int(time.time() * 1000)
+        seeded_cids = self._seed_cpa_bank_review_cards(
+            col, sorted_cids, meta, now_ms // 1000
+        )
+        if seeded_cids:
+            self._insert_cpa_bank_review_revlogs(col, seeded_cids, meta, now_ms)
+        col.set_config("ankountant.latency.rote", 4200)
+        return len(seeded_cids)
+
+    def _cpa_bank_review_card_ids(self, col: Collection) -> list[int]:
+        cids: set[int] = set()
+        for section in CPA_BANK_SECTIONS:
+            for kind in ("Study", "Community"):
+                query = f"deck:Ankountant::{kind}::{section}::*"
+                cids.update(int(cid) for cid in col.find_cards(query))
+        return sorted(cids)
+
+    def _cpa_bank_review_meta(
+        self,
+        col: Collection,
+        sorted_cids: list[int],
+    ) -> dict[int, tuple[int, int, int, int, str]]:
+        deck_names = {int(deck.id): deck.name for deck in col.decks.all_names_and_ids()}
+        meta: dict[int, tuple[int, int, int, int, str]] = {}
+        sql_query_batch_size = 900
+        for start in range(0, len(sorted_cids), sql_query_batch_size):
+            self._add_cpa_bank_review_meta_batch(
+                col,
+                sorted_cids[start : start + sql_query_batch_size],
+                deck_names,
+                meta,
+            )
+        return meta
+
+    def _add_cpa_bank_review_meta_batch(
+        self,
+        col: Collection,
+        chunk: list[int],
+        deck_names: dict[int, str],
+        meta: dict[int, tuple[int, int, int, int, str]],
+    ) -> None:
+        placeholders = ",".join("?" for _ in chunk)
+        for cid, nid, did, ordv, reps in col.db.all(
+            f"SELECT id, nid, did, ord, reps FROM cards WHERE id IN ({placeholders})",
+            *chunk,
+        ):
+            deck_name = deck_names.get(int(did))
+            if deck_name is None:
+                raise ValueError(f"CPA bank card has unknown deck id: {did}")
+            section = ankountant_bank_study_section(deck_name)
+            if section is not None:
+                meta[int(cid)] = (int(nid), int(did), int(ordv), int(reps), section)
+
+    def _seed_cpa_bank_review_cards(
+        self,
+        col: Collection,
+        sorted_cids: list[int],
+        meta: dict[int, tuple[int, int, int, int, str]],
+        now_s: int,
+    ) -> list[int]:
+        from anki import cards_pb2
+        from anki.cards import Card
+
+        card_update_batch_size = 1000
+        today = col.sched.today
+        batch: list[Card] = []
+        seeded_cids: list[int] = []
+        for i, cid in enumerate(sorted_cids):
+            item = meta.get(cid)
+            if item is None:
+                continue
+            nid, did, ordv, reps, section = item
+            if reps > 0:
+                continue
+            interval = 7 + ((i * 11 + len(section)) % 84)
+            offset = (i % 45) - 14
+            batch.append(
+                Card(
+                    col,
+                    backend_card=cards_pb2.Card(
+                        id=cid,
+                        note_id=nid,
+                        deck_id=did,
+                        template_idx=ordv,
+                        ctype=2,
+                        queue=2,
+                        due=today + offset,
+                        interval=interval,
+                        ease_factor=2450 + (i % 5) * 20,
+                        reps=3 + (i % 8),
+                        lapses=1 if (i + len(section)) % 11 == 0 else 0,
+                        remaining_steps=0,
+                        memory_state=cards_pb2.FsrsMemoryState(
+                            stability=float(interval) * 1.35 + 4.0,
+                            difficulty=3.8 + float((i + len(section)) % 6) * 0.7,
+                        ),
+                        desired_retention=0.9,
+                        last_review_time_secs=now_s - (1 + i % 28) * 86_400,
+                    ),
+                )
+            )
+            seeded_cids.append(cid)
+            if len(batch) >= card_update_batch_size:
+                col.update_cards(batch, skip_undo_entry=True)
+                batch = []
+        if batch:
+            col.update_cards(batch, skip_undo_entry=True)
+        return seeded_cids
+
+    def _insert_cpa_bank_review_revlogs(
+        self,
+        col: Collection,
+        seeded_cids: list[int],
+        meta: dict[int, tuple[int, int, int, int, str]],
+        now_ms: int,
+    ) -> None:
+        revlog_insert_batch_size = 5000
+        revlog_sql = (
+            "INSERT OR IGNORE INTO revlog (id, cid, usn, ease, ivl, lastIvl, factor, time, type)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+
+        def insert_revlog() -> None:
+            rows: list[tuple] = []
+            seq = 0
+
+            def flush() -> None:
+                nonlocal rows
+                if rows:
+                    col.db.executemany(revlog_sql, rows)
+                    rows = []
+
+            for i, cid in enumerate(seeded_cids):
+                section = meta[cid][4]
+                interval = 7 + ((i * 11 + len(section)) % 84)
+                reps = 3 + (i + len(section)) % 4
+                last_ivl = 0
+                for j in range(reps):
+                    days_ago = 1 + ((i * 5 + j * 7 + len(section)) % 28)
+                    rid = now_ms - days_ago * 86_400_000 + seq
+                    seq += 1
+                    correct = ankountant_review_is_correct(section, i, j)
+                    ivl = max(1, int(interval * (j + 1) / reps))
+                    rows.append(
+                        (
+                            rid,
+                            cid,
+                            -1,
+                            3 if correct else 1,
+                            ivl,
+                            last_ivl,
+                            2450,
+                            2500 + (seq * 379) % 7000,
+                            1,
+                        )
+                    )
+                    last_ivl = ivl
+                    if len(rows) >= revlog_insert_batch_size:
+                        flush()
+            flush()
+
+        col.db.transact(insert_revlog)
+
+    def _seed_cpa_bank_attempt_history(self, col: Collection) -> int:
+        return self._seed_category_attempt_history(col, "Ankountant::Sealed")
+
+    def _seed_stress_attempt_history(self, col: Collection) -> int:
+        return self._seed_category_attempt_notes(
+            col,
+            self._stress_attempt_category_notes(col),
+        )
+
+    def _seed_category_attempt_history(
+        self,
+        col: Collection,
+        deck_prefix: str,
+    ) -> int:
+        category_notes: dict[tuple[str, str], list[int]] = {}
+        for section in ("AUD", "REG", "TCP", "ISC"):
+            for set_id in CPA_BANK_CATEGORY_SETS[section]:
+                query = f'"note:Ankountant TBS" deck:{deck_prefix}::{section}::{set_id}'
+                nids = sorted(int(nid) for nid in col.find_notes(query))
+                if not nids:
+                    raise ValueError(f"{deck_prefix} is missing {section}::{set_id}")
+                category_notes[(section, set_id)] = nids
+        return self._seed_category_attempt_notes(col, category_notes)
+
+    def _stress_attempt_category_notes(
+        self,
+        col: Collection,
+    ) -> dict[tuple[str, str], list[int]]:
+        deck_names = {int(deck.id): deck.name for deck in col.decks.all_names_and_ids()}
+        confusable_by_section = self._cpa_bank_confusable_by_section(col)
+        category_notes: dict[tuple[str, str], list[int]] = {}
+        for section in ("AUD", "REG", "TCP", "ISC"):
+            query = (
+                f'"note:Ankountant TBS" deck:Ankountant::Stress::Sealed::{section}::*'
+            )
+            for nid in col.find_notes(query):
+                note_id = NoteId(nid)
+                note = col.get_note(note_id)
+                if len(note.fields) <= 4:
+                    raise ValueError(
+                        f"stress sealed TBS note is missing schema_tag: {nid}"
+                    )
+                deck_name = self._cpa_bank_note_deck_name(col, note_id, deck_names)
+                parts = ankountant_stress_sealed_deck_parts(deck_name)
+                if parts is None:
+                    continue
+                note_section, set_id = parts
+                if not self._cpa_bank_note_resolves_category(
+                    note,
+                    note_section,
+                    set_id,
+                    confusable_by_section[note_section],
+                ):
+                    continue
+                category_notes.setdefault((note_section, set_id), []).append(int(nid))
+        return category_notes
+
+    def _cpa_bank_note_resolves_category(
+        self,
+        note: Note,
+        section: str,
+        set_id: str,
+        confusable: dict[str, dict[str, Any]],
+    ) -> bool:
+        try:
+            known = ankountant_bank_category_entry(section, set_id, confusable)
+        except ValueError:
+            return False
+        schema_tag = note.fields[4].strip()
+        return schema_tag in known["tags"] or any(
+            tag in known["tags"] for tag in note.tags
+        )
+
+    def _seed_category_attempt_notes(
+        self,
+        col: Collection,
+        category_notes: dict[tuple[str, str], list[int]],
+    ) -> int:
+        seeded = 0
+        for (section, _set_id), nids in sorted(category_notes.items()):
+            if not nids:
+                raise ValueError(f"{section} category has no sealed notes")
+            attempts = max(6, min(24, len(nids) * 3))
+            for i in range(attempts):
+                nid = nids[i % len(nids)]
+                note = col.get_note(NoteId(nid))
+                correct = ankountant_review_is_correct(section, seeded + i, i % 4)
+                mode, submission_json = ankountant_submission_for_tbs_fields(
+                    note.fields,
+                    correct,
+                )
+                col._backend.submit_performance_attempt(
+                    item_note_id=nid,
+                    mode=mode,
+                    submission_json=submission_json,
+                    confidence=self._cpa_bank_attempt_confidence(
+                        section,
+                        correct,
+                        seeded + i,
+                    ),
+                    latency_ms=self._cpa_bank_attempt_latency(
+                        mode, section, seeded + i
+                    ),
+                )
+                seeded += 1
+        return seeded
+
+    def _cpa_bank_attempt_confidence(
+        self,
+        section: str,
+        correct: bool,
+        index: int,
+    ) -> str:
+        marker = (index * 7 + len(section)) % 10
+        if correct:
+            return "unsure" if marker < 2 else "confident"
+        return "confident" if marker == 0 else "guess"
+
+    def _cpa_bank_attempt_latency(self, mode: str, section: str, index: int) -> int:
+        base = {
+            "confusion": 2_600,
+            "research": 48_000,
+            "tbs": 38_000,
+            "doc_review": 44_000,
+        }.get(mode)
+        if base is None:
+            raise ValueError(f"Unsupported performance attempt mode: {mode}")
+        return base + ((index * 1_379 + len(section) * 311) % base)
+
+    def _set_cpa_bank_exam_dates(self, col: Collection) -> None:
+        today = datetime.date.today()
+        for section, offset in CPA_BANK_EXAM_OFFSETS_DAYS.items():
+            col._backend.set_exam_date(
+                section=section,
+                date=(today + datetime.timedelta(days=offset)).isoformat(),
+            )
 
     def load_cpa_stress_bank(self) -> None:
         """Scale test: import the duplicated >50k-card stress pack (``stress_bank.apkg``).
@@ -1887,19 +2821,27 @@ title="{}" {}>{}</button>""".format(
                 parent=self,
             )
             return
+        try:
+            patch_updates = self._cpa_bank_patch_updates(pack_dir)
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            showWarning(f"Invalid confusable_patch.json: {exc}", parent=self)
+            return
         if not askUser(
             f"Import the ~50k-card STRESS TEST deck from {len(packs)} pack(s) and seed a synthetic review"
-            " history across ALL of them (review state + FSRS memory + revlog), so"
-            " review-driven features work at scale? This adds tens of thousands of"
-            " duplicate cards under Ankountant::Stress:: (tagged 'stress') and may"
-            " take a little while. Strongly recommend a fresh/throwaway profile.",
+            " history across ALL of them plus category attempts for AUD, REG, TCP,"
+            " and ISC, so review-driven features work at scale? This adds tens of"
+            " thousands of duplicate cards under Ankountant::Stress:: (tagged"
+            " 'stress') and may take a little while. Strongly recommend a"
+            " fresh/throwaway profile.",
             parent=self,
         ):
             return
 
-        seeded = {"n": 0}
+        seeded = {"n": 0, "attempts": 0}
 
         def op(col: Collection) -> Any:
+            col._backend.load_far_seed(section="FAR", with_history=True)
+            self._apply_cpa_bank_patch_updates(col, patch_updates)
             changes = None
             for pack in packs:
                 req = ImportAnkiPackageRequest(
@@ -1911,15 +2853,16 @@ title="{}" {}>{}</button>""".format(
                     ),
                 )
                 changes = col.import_anki_package(req)
-            # Give every imported card a synthetic review history (card review
-            # state + FSRS memory + revlog) so review-driven features (stats,
-            # retention, maturity, FSRS readiness) have data at scale.
+            self._prepare_stress_bank_sections(col)
             seeded["n"] = self._seed_stress_history(col)
+            seeded["attempts"] = self._seed_stress_attempt_history(col)
+            self._set_cpa_bank_exam_dates(col)
             return changes
 
         def on_success(_out: Any) -> None:
             tooltip(
-                f"Loaded the stress-test deck and seeded review history for {seeded['n']:,} cards.",
+                f"Loaded the stress-test deck and seeded review history for"
+                f" {seeded['n']:,} cards plus {seeded['attempts']:,} category attempts.",
                 parent=self,
             )
 

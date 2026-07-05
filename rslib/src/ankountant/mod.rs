@@ -24,6 +24,8 @@ pub(crate) mod grading;
 mod latency;
 pub(crate) mod literature;
 pub(crate) mod logic;
+#[cfg(test)]
+mod models_evidence;
 pub(crate) mod notetypes;
 #[cfg(test)]
 mod paraphrase;

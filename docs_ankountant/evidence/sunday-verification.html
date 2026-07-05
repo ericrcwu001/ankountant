@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ankountant Sunday Verification Matrix</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --ink: #171b22;
+        --muted: #5e6878;
+        --line: #d8dee8;
+        --pass: #116a36;
+        --manual: #7a5200;
+        --partial: #7a3d00;
+        --gap: #9d1f2e;
+        --info: #0f5d87;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.48 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 32px 22px 72px;
+      }
+
+      h1 {
+        font-size: 30px;
+        line-height: 1.15;
+        margin: 0 0 8px;
+      }
+
+      h2 {
+        font-size: 20px;
+        margin: 34px 0 12px;
+      }
+
+      h3 {
+        font-size: 16px;
+        margin: 24px 0 10px;
+      }
+
+      p {
+        color: var(--muted);
+        max-width: 88ch;
+      }
+
+      a {
+        color: #085f9f;
+      }
+
+      code {
+        background: #eef2f7;
+        border: 1px solid #dce3ed;
+        border-radius: 5px;
+        padding: 1px 5px;
+        font-size: 13px;
+      }
+
+      .hero {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 24px;
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 10px;
+        margin: 18px 0 4px;
+      }
+
+      .metric {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 14px 16px;
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 24px;
+        line-height: 1.1;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .report-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 12px;
+      }
+
+      .report-card {
+        display: block;
+        min-height: 168px;
+        background: var(--panel);
+        border: 2px solid #b6d7ee;
+        border-radius: 8px;
+        padding: 18px;
+        color: var(--ink);
+        text-decoration: none;
+        box-shadow: 0 8px 20px rgba(20, 42, 66, 0.06);
+      }
+
+      .report-card:hover,
+      .report-card:focus {
+        border-color: var(--info);
+        box-shadow: 0 10px 24px rgba(20, 42, 66, 0.12);
+        outline: none;
+      }
+
+      .report-card strong {
+        display: block;
+        margin: 6px 0 8px;
+        font-size: 18px;
+      }
+
+      .report-card span {
+        display: block;
+        color: var(--muted);
+      }
+
+      .report-kicker {
+        color: var(--info) !important;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .report-action {
+        margin-top: 16px;
+        color: var(--info) !important;
+        font-weight: 800;
+      }
+
+      .callout {
+        border: 1px solid var(--line);
+        border-left: 6px solid var(--gap);
+        background: var(--panel);
+        border-radius: 8px;
+        padding: 16px 18px;
+        margin-top: 16px;
+      }
+
+      .callout h2 {
+        margin-top: 0;
+      }
+
+      ul {
+        margin: 8px 0 0;
+        padding-left: 22px;
+      }
+
+      li {
+        margin: 5px 0;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #edf1f6;
+        color: #3f4856;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .status {
+        display: inline-block;
+        min-width: 116px;
+        border-radius: 999px;
+        padding: 4px 9px;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      .pass {
+        background: #e6f4eb;
+        color: var(--pass);
+      }
+
+      .manual {
+        background: #fff2d5;
+        color: var(--manual);
+      }
+
+      .partial {
+        background: #ffe8d6;
+        color: var(--partial);
+      }
+
+      .gap {
+        background: #ffe1e6;
+        color: var(--gap);
+      }
+
+      .info {
+        background: #e0f1fa;
+        color: var(--info);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 12px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+      }
+
+      .card h3 {
+        margin-top: 0;
+      }
+
+      .small {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .tight td,
+      .tight th {
+        padding: 8px 10px;
+      }
+
+      .nowrap {
+        white-space: nowrap;
+      }
+
+      @media print {
+        body {
+          background: #fff;
+        }
+
+        main {
+          max-width: none;
+          padding: 0;
+        }
+
+        a {
+          color: inherit;
+          text-decoration: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <h1>Ankountant Sunday Verification Matrix</h1>
+        <p>
+          Checked on Sunday, July 5, 2026 against the final requirements in the Speedrun brief.
+          This page separates requirements that are proven by backend tests from requirements that
+          still need a manual video, installed build artifact, or documentary proof.
+        </p>
+        <div class="summary">
+          <div class="metric"><strong>5</strong><span>subagents audited backend coverage</span></div>
+          <div class="metric"><strong>8</strong><span>self-contained evidence and report pages</span></div>
+          <div class="metric"><strong>50,921</strong><span>cards in the committed engine benchmark</span></div>
+          <div class="metric"><strong>0</strong><span>open website gaps after requested ignores</span></div>
+        </div>
+      </section>
+
+      <h2>Click Into Report Pages</h2>
+      <p>These cards are links to the supporting subpages and detailed reports.</p>
+      <div class="report-grid">
+        <a class="report-card" href="ai-card-check.html">
+          <span class="report-kicker">Subpage</span>
+          <strong>AI Card Check Report</strong>
+          <span>7f one-source 3-bucket counts, cutoff, gold set, baseline, and leakage proof.</span>
+          <span class="report-action">Open report &rarr;</span>
+        </a>
+        <a class="report-card" href="coverage-map.html">
+          <span class="report-kicker">Subpage</span>
+          <strong>FAR Coverage Map</strong>
+          <span>7c topic rows, generated/shipped counts, runtime seed coverage, and abstain line.</span>
+          <span class="report-action">Open coverage map &rarr;</span>
+        </a>
+        <a class="report-card" href="models.html">
+          <span class="report-kicker">Evidence</span>
+          <strong>Held-Out Model Evidence</strong>
+          <span>Memory calibration, Performance accuracy, CPA score mapping, and score range.</span>
+          <span class="report-action">Open evidence &rarr;</span>
+        </a>
+        <a class="report-card" href="../models/memory-model.md">
+          <span class="report-kicker">Handouts</span>
+          <strong>Model Descriptions</strong>
+          <span>One-page Markdown handouts for Memory, Performance, and Readiness.</span>
+          <span class="report-action">Open handouts &rarr;</span>
+        </a>
+      </div>
+
+      <section class="callout">
+        <h2>Deferred Validation</h2>
+        <ul>
+          <li>
+            <strong>Full project check:</strong> scoped test suites and <code>just fmt</code> passed, but a final
+            full <code>just check</code> has intentionally been skipped for now and should be run later.
+          </li>
+        </ul>
+      </section>
+
+      <h2>Proof Classification</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Requirement</th>
+            <th>Proof Mode</th>
+            <th>Status</th>
+            <th>Evidence or Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Memory model calibrated with a chart and Brier/log loss on held-out reviews.</td>
+            <td>Backend test and evidence artifact</td>
+            <td><span class="status pass">Backend pass</span></td>
+            <td>
+              <a href="models.html">models.html</a> reports held-out memory calibration,
+              Brier <code>0.214</code>, log loss <code>0.621</code>. Scope is a deterministic fixture,
+              not real-student validation.
+            </td>
+          </tr>
+          <tr>
+            <td>Performance model accuracy on held-out exam-style questions.</td>
+            <td>Backend test and evidence artifact</td>
+            <td><span class="status pass">Backend pass</span></td>
+            <td>
+              <a href="models.html">models.html</a> reports <code>14/25 = 56%</code> held-out
+              exam-style accuracy and classification accuracy at the 50% threshold.
+            </td>
+          </tr>
+          <tr>
+            <td>Score mapping written down with a range.</td>
+            <td>Backend test plus documentary proof</td>
+            <td><span class="status pass">Backend pass</span></td>
+            <td>
+              <a href="../adr/0005-cpa-scale-readiness-transform.md">ADR 0005</a> documents the CPA
+              0-99 transform. <a href="models.html">models.html</a> reports score <code>56.0</code>
+              with range <code>37.1 to 73.3</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>Study feature tested in three builds with equal study time.</td>
+            <td>Backend ablation artifact</td>
+            <td><span class="status partial">Partial</span></td>
+            <td>
+              <a href="ablation.html">ablation.html</a> now compares full app, app with A2 off,
+              and plain Anki/FSRS baseline with equal <code>6.4s</code> study time. It is a backend
+              interval/review-load fixture, not a real learner outcome study.
+            </td>
+          </tr>
+          <tr>
+            <td>Honest reporting, including things that did not work.</td>
+            <td>Documentary proof</td>
+            <td><span class="status pass">Documented</span></td>
+            <td>
+              This page, <a href="README.md">evidence README</a>, and
+              <a href="../friday-deadline-audit.md">Friday audit</a> explicitly identify fixture scope,
+              deterministic evidence boundaries, and deferred full-check validation.
+            </td>
+          </tr>
+          <tr>
+            <td>Packaged desktop installer.</td>
+            <td>Manual install recording plus artifact</td>
+            <td><span class="status manual">Manual proof</span></td>
+            <td>
+              Desktop artifact exists at <code>out/installer/dist/ankountant-0.2-mac-apple.dmg</code>.
+              Record a clean-machine install and launch.
+            </td>
+          </tr>
+          <tr>
+            <td>Both apps share the Rust engine.</td>
+            <td>Backend test plus architecture docs</td>
+            <td><span class="status pass">Backend pass</span></td>
+            <td>
+              iOS FFI smoke test opens a temporary collection through <code>AnkiBackend</code>.
+              Desktop Python bridge tests call Rust readiness/scheduler RPCs. Architecture is documented in
+              <a href="../../ios/ARCHITECTURE.md">ios/ARCHITECTURE.md</a>.
+            </td>
+          </tr>
+          <tr>
+            <td>Both apps run with AI off and still give a score.</td>
+            <td>Backend tests plus manual video</td>
+            <td><span class="status manual">Manual proof</span></td>
+            <td>
+              Cardgen keyless tests prove offline providers are selected. Desktop seed/readiness tests prove local scoring
+              without AI. Record both desktop and phone showing scores while network/API keys are off.
+            </td>
+          </tr>
+          <tr>
+            <td>Results report, model descriptions, Brainlift, and clean-device recordings.</td>
+            <td>Documentary proof plus manual recordings</td>
+            <td><span class="status pass">Documented</span></td>
+            <td>
+              Brainlift exists at <a href="../brainlift.md">brainlift.md</a>. Evidence artifacts exist here.
+              One-page model handouts are available for <a href="../models/memory-model.md">Memory</a>,
+              <a href="../models/performance-model.md">Performance</a>, and
+              <a href="../models/readiness-model.md">Readiness</a>. Recording evidence can be attached separately.
+            </td>
+          </tr>
+          <tr>
+            <td>3 to 5 minute demo video: review, Rust change, scores, AI features, test results.</td>
+            <td>Manual video</td>
+            <td><span class="status manual">Manual proof</span></td>
+            <td>
+              Use the manual checklist below. Backend tests cannot replace the video requirement.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Concrete Challenge Matrix</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Challenge</th>
+            <th>Status</th>
+            <th>Backend Proof</th>
+            <th>Manual Proof Still Needed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>7a. Real Rust engine change, 3 Rust tests, 1 Python call, undo/no corruption.</td>
+            <td><span class="status pass">Backend pass</span></td>
+            <td>
+              A2 latency-aware too-easy defunding is tested in Rust; readiness range tests were added;
+              <a href="undo.html">undo.html</a> proves undo/redo and DB integrity; Python bridge tests pass.
+            </td>
+            <td>
+              Demo the Rust change in action. This page includes the Rust-change note and touched-file summary below.
+            </td>
+          </tr>
+          <tr>
+            <td>7c. Official outline coverage map and abstain below coverage line.</td>
+            <td><span class="status pass">Documented</span></td>
+            <td>
+              <a href="coverage-map.html">coverage-map.html</a> lists the FAR topic rows, target/generated/shipped counts,
+              seed/runtime coverage, and the 60% readiness coverage floor.
+            </td>
+            <td>
+              Narrate the coverage page or dashboard during the demo if useful.
+            </td>
+          </tr>
+          <tr>
+            <td>7d. Paraphrase test: performance is not just memory.</td>
+            <td><span class="status pass">Backend pass</span></td>
+            <td>
+              <a href="paraphrase.html">paraphrase.html</a> holds recall constant while reworded sealed-item accuracy
+              changes, opening the Memory minus Performance gap only for the memorizer cohort.
+            </td>
+            <td>
+              Optional: narrate this artifact in the demo. The artifact is a deterministic backend fixture.
+            </td>
+          </tr>
+          <tr>
+            <td>7e. Leakage check for training data/test items and near-copies.</td>
+            <td><span class="status pass">Backend pass</span></td>
+            <td>
+              Cardgen tests cover leakage checks, near-copy behavior, and production gold-set shape. New AI
+              requirement tests assert provenance and gold-set buckets.
+            </td>
+            <td>
+              Include the current leakage report from <a href="../rag/RAG_RUN_RESULTS.md">RAG_RUN_RESULTS.md</a>
+              in the mentor packet.
+            </td>
+          </tr>
+          <tr>
+            <td>7f. AI card check: 50 Q&A gold set, 50 generated cards, 3 counts, cutoff.</td>
+            <td><span class="status pass">Documented</span></td>
+            <td>
+              <a href="ai-card-check.html">ai-card-check.html</a> reports the OpenStax FAR one-source slice:
+              70 generated, 56 correct/useful, 11 wrong, 3 bad-teaching, pre-registered cutoff = ship only correct/useful.
+            </td>
+            <td>
+              Regression coverage remains in <code>just test-cardgen</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>7h. One-command 50k benchmark: p50, p95, worst.</td>
+            <td><span class="status pass">Done</span></td>
+            <td>
+              <a href="latency.html">latency.html</a> records a 50,921-card release engine benchmark:
+              answer p95 <code>0.092ms</code>, next card p95 <code>0.082ms</code>,
+              dashboard load p95 <code>11.7ms</code>, dashboard refresh p95 <code>15.45ms</code>.
+            </td>
+            <td>
+              Accepted as done for this website.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Backend Test Runs</h2>
+      <table class="tight">
+        <thead>
+          <tr>
+            <th>Area</th>
+            <th>Command</th>
+            <th>Result</th>
+            <th>What it proves</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Rust Ankountant core</td>
+            <td><code>CARGO_TARGET_DIR=out/rust cargo test -p anki ankountant --lib</code></td>
+            <td><span class="status pass">126 passed</span></td>
+            <td>A2, scores, readiness ranges, abstain/give-up, sealed bank, TBS grading, evidence tests.</td>
+          </tr>
+          <tr>
+            <td>Evidence emitters</td>
+            <td><code>just ankountant-evidence</code></td>
+            <td><span class="status pass">Passed</span></td>
+            <td>Regenerates determinism, ablation, paraphrase, models, and undo HTML/JSON artifacts.</td>
+          </tr>
+          <tr>
+            <td>50k engine benchmark</td>
+            <td><code>ANKOUNTANT_BENCH_CARDS=50000 just ankountant-bench</code></td>
+            <td><span class="status pass">Passed</span></td>
+            <td>Produces p50/p95/worst engine timings on 50,921 total cards.</td>
+          </tr>
+          <tr>
+            <td>Python and Qt desktop wiring</td>
+            <td><code>just test-py</code></td>
+            <td><span class="status pass">217 passed</span></td>
+            <td>Rust RPCs callable from Python; desktop routes, FAR study bridge, score payload shape.</td>
+          </tr>
+          <tr>
+            <td>Card generation and AI safety</td>
+            <td><code>just test-cardgen</code></td>
+            <td><span class="status pass">91 passed</span></td>
+            <td>Provenance, gold-set buckets, leakage mechanics, keyless offline mode, baseline checks.</td>
+          </tr>
+          <tr>
+            <td>iOS app tests</td>
+            <td><code>just test-ios</code></td>
+            <td><span class="status pass">Passed</span></td>
+            <td>Shared Rust FFI smoke, review session scheduler call, sync coordinator, merge sequence.</td>
+          </tr>
+          <tr>
+            <td>Formatting</td>
+            <td><code>just fmt</code></td>
+            <td><span class="status pass">Passed</span></td>
+            <td>
+              Reran after formatting the Python test file touched by this audit.
+            </td>
+          </tr>
+          <tr>
+            <td>Full project check</td>
+            <td><code>just check</code></td>
+            <td><span class="status manual">Later</span></td>
+            <td>Skipped for now per instruction; run before final submission if time allows.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Evidence Artifact Index</h2>
+      <table class="tight">
+        <thead>
+          <tr>
+            <th>Artifact</th>
+            <th>Requirement</th>
+            <th>Reproduce</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="determinism.html">determinism.html</a></td>
+            <td>Shared Rust backend determinism across score, queue, and interval recommendations.</td>
+            <td><code>just ankountant-evidence</code></td>
+          </tr>
+          <tr>
+            <td><a href="ablation.html">ablation.html</a></td>
+            <td>Three-build A2 feature ablation with equal study time.</td>
+            <td><code>just ankountant-evidence</code></td>
+          </tr>
+          <tr>
+            <td><a href="paraphrase.html">paraphrase.html</a></td>
+            <td>Performance differs from Memory on reworded sealed items.</td>
+            <td><code>just ankountant-evidence</code></td>
+          </tr>
+          <tr>
+            <td><a href="models.html">models.html</a></td>
+            <td>Held-out memory calibration, performance accuracy, CPA score mapping/range.</td>
+            <td><code>just ankountant-evidence</code></td>
+          </tr>
+          <tr>
+            <td><a href="undo.html">undo.html</a></td>
+            <td>Rust change undo/redo and collection integrity.</td>
+            <td><code>just ankountant-evidence</code></td>
+          </tr>
+          <tr>
+            <td><a href="latency.html">latency.html</a></td>
+            <td>50k-card Rust engine p50/p95/worst benchmark.</td>
+            <td><code>ANKOUNTANT_BENCH_CARDS=50000 just ankountant-bench</code></td>
+          </tr>
+          <tr>
+            <td><a href="ai-card-check.html">ai-card-check.html</a></td>
+            <td>7f AI card check: one-source generated cards, 3-bucket counts, cutoff, gold set, baseline, leakage.</td>
+            <td><code>just test-cardgen</code></td>
+          </tr>
+          <tr>
+            <td><a href="coverage-map.html">coverage-map.html</a></td>
+            <td>7c FAR coverage map: topic rows, target/generated/shipped counts, seed/runtime coverage, abstain line.</td>
+            <td><code>just test-py</code> and <code>just ankountant-evidence</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Manual Video Checklist</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>Clean Build and Install</h3>
+          <ul>
+            <li>Show commit hash.</li>
+            <li>Install the desktop DMG on a clean machine and launch it.</li>
+            <li>Show AI disabled: no API key/network, or explicit app setting if available.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Core App Demo</h3>
+          <ul>
+            <li>Run a real review session on desktop.</li>
+            <li>Run a real review session on phone on the same deck.</li>
+            <li>Show Memory, Performance, and Readiness scores with ranges.</li>
+            <li>Show the give-up rule by using an insufficient-data state or evidence page.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Rust Change</h3>
+          <ul>
+            <li>Review a stable <code>cog::rote</code> card fast, correct, and confident.</li>
+            <li>Show A2 defunding lengthens the next interval or cite <a href="ablation.html">ablation.html</a>.</li>
+            <li>Show <a href="undo.html">undo.html</a> for undo/no-corruption proof.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Evidence Tour</h3>
+          <ul>
+            <li>Open this page.</li>
+            <li>
+              Open <a href="models.html">models</a>, <a href="latency.html">latency</a>,
+              <a href="coverage-map.html">coverage map</a>, and <a href="ai-card-check.html">AI card check</a>.
+            </li>
+            <li>State fixture limitations clearly: no real-student validation yet.</li>
+          </ul>
+        </article>
+      </div>
+
+      <h2>Model Descriptions</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>Memory</h3>
+          <p>
+            Memory estimates recall on study-pile cards. The backend emits point, range, coverage,
+            confidence, reasons, and update time. The model evidence fixture evaluates per-topic
+            trailing recall predictions against held-out recall outcomes and reports calibration,
+            Brier score, and log loss.
+            <a href="../models/memory-model.md">Open the one-page handout.</a>
+          </p>
+        </article>
+        <article class="card">
+          <h3>Performance</h3>
+          <p>
+            Performance uses sealed exam-style items, including confusion choices and TBS-style graded
+            attempts, rather than study-pile recall. Attempts are logged as ordinary sync-safe notes.
+            Timing, partial credit, and confidence can drag the score down. Performance abstains when
+            evidence is insufficient.
+            <a href="../models/performance-model.md">Open the one-page handout.</a>
+          </p>
+        </article>
+        <article class="card">
+          <h3>Readiness</h3>
+          <p>
+            Readiness maps sealed performance to a rough CPA 0-99 projection using the documented
+            ADR 0005 monotonic transform. It reports a Wilson-derived range, coverage, confidence,
+            reasons, last updated time, and no score below the give-up rule: fewer than 20 sealed
+            attempts or less than 60% topic coverage.
+            <a href="../models/readiness-model.md">Open the one-page handout.</a>
+          </p>
+        </article>
+      </div>
+
+      <h2>Rust Change Note</h2>
+      <div class="card">
+        <h3>A2 latency-aware too-easy defunding belongs in Rust</h3>
+        <p>
+          The A2 change runs inside the shared scheduler path: a stable rote card answered fast, correct,
+          and confident gets a compact <code>te</code> custom-data flag and a lower desired-retention input
+          before FSRS computes the next interval. This belongs in Rust because desktop and iOS both use the
+          same scheduling engine, undo transactions, card storage limits, FSRS interval math, and sync-safe
+          card state. A Python-only or Swift-only implementation would drift between clients and could not
+          reliably preserve Anki undo semantics.
+        </p>
+        <p>
+          Main upstream-touching files: <code>rslib/src/ankountant/defund.rs</code>,
+          <code>rslib/src/ankountant/logic.rs</code>, <code>rslib/src/ankountant/schedule.rs</code>,
+          <code>rslib/src/ankountant/tests.rs</code>, scheduler answer/preview call sites, Python bridge tests,
+          and iOS FFI/review tests. Merge difficulty is moderate: the change is mostly additive under
+          <code>rslib/src/ankountant/</code>, but future upstream scheduler changes around desired retention,
+          <code>answer_card</code>, card custom data, or undo boundaries must be rechecked.
+        </p>
+      </div>
+
+      <h2>Subagent Audit Summary</h2>
+      <table class="tight">
+        <thead>
+          <tr>
+            <th>Agent Scope</th>
+            <th>Added or Verified</th>
+            <th>Residual Risk</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Rust core/scoring</td>
+            <td>Readiness range/metadata tests, model evidence, undo and A2 coverage.</td>
+            <td>Does not prove UI rendering or real-student validation.</td>
+          </tr>
+          <tr>
+            <td>Python/desktop bridge</td>
+            <td>Python readiness payload tests, desktop route/sync/settings wiring, FAR study bridge.</td>
+            <td>No explicit desktop AI-off toggle found; local no-AI path is proven instead.</td>
+          </tr>
+          <tr>
+            <td>Cardgen/AI safety</td>
+            <td>Gold-set/provenance tests, keyless offline providers, prompt-injection handling, baseline guard.</td>
+            <td>AI card-check report added for the OpenStax FAR one-source slice.</td>
+          </tr>
+          <tr>
+            <td>iOS/shared engine</td>
+            <td>Rust FFI smoke, review scheduler path, sync coordinator, merge sequencing.</td>
+            <td>Full mobile review E2E beyond service-level tests remains manual.</td>
+          </tr>
+          <tr>
+            <td>Evidence/report/benchmark</td>
+            <td>Models artifact, three-build ablation, 50k engine latency artifact, readable evidence checks.</td>
+            <td>Full <code>just check</code> is deferred for later.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="small">
+        Bottom line: backend evidence for the Rust engine, score mechanics, AI safety harness, and iOS/Python call
+        paths is strong. The remaining deferred task is a final full <code>just check</code>.
+      </p>
+    </main>
+  </body>
+</html>

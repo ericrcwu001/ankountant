@@ -18,3 +18,15 @@ sets:
     topic: "Logical and physical access controls"
     tags: ["ds::isc::preventive", "ds::isc::detective"]
     treatments: ["Preventive control", "Detective control"]
+  - set_id: "authentication_vs_authorization"
+    topic: "Logical and physical access controls"
+    tags: ["ds::isc::authentication", "ds::isc::authorization"]
+    treatments: ["Authentication", "Authorization"]
+  - set_id: "backup_vs_disaster_recovery"
+    topic: "System availability and business continuity"
+    tags: ["ds::isc::backup", "ds::isc::recovery"]
+    treatments: ["Backup control", "Disaster recovery procedure"]
+  - set_id: "incident_detection_vs_response"
+    topic: "Incident response and detection"
+    tags: ["ds::isc::detect", "ds::isc::respond"]
+    treatments: ["Incident detection", "Incident response"]

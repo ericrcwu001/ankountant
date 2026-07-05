@@ -15,6 +15,15 @@ from anki.errors import NotFoundError
 from tests.shared import getEmptyCol
 
 
+def assert_probability_band(low: float, point: float, high: float) -> None:
+    assert 0.0 <= low <= point <= high <= 1.0
+
+
+def assert_cpa_score_band(low: float, point: float, high: float) -> None:
+    assert 0.0 <= low < high <= 99.0
+    assert low <= point <= high
+
+
 def test_compute_exam_schedule_callable():
     # A08 — ComputeExamSchedule is callable from Python and returns a response.
     col = getEmptyCol()
@@ -55,8 +64,16 @@ def test_get_readiness_callable_and_abstains_when_empty():
     # A16 surfaced through Python: no attempts -> abstain, insufficient volume.
     col = getEmptyCol()
     resp = col._backend.get_readiness(section="FAR")
-    assert resp.readiness.abstain is True
-    assert resp.readiness.reason == "insufficient volume"
+    readiness = resp.readiness
+    assert readiness.abstain is True
+    assert readiness.reason == "insufficient volume"
+    assert readiness.point_estimate == 0.0
+    assert readiness.band_low == 0.0
+    assert readiness.band_high == 0.0
+    assert readiness.coverage == 0.0
+    assert readiness.generated_at > 0
+    assert list(readiness.reasons)
+    assert list(resp.topics) == []
 
 
 def test_submit_performance_attempt_dispatches():
@@ -100,5 +117,36 @@ def test_load_far_seed_dispatches_and_seeds():
     # readiness emits a band instead of abstaining (matches the desktop menu).
     col2 = getEmptyCol()
     col2._backend.load_far_seed(section="FAR", with_history=True)
-    readiness = col2._backend.get_readiness(section="FAR").readiness
+    resp2 = col2._backend.get_readiness(section="FAR")
+    readiness = resp2.readiness
     assert not readiness.abstain
+    assert readiness.reason == ""
+    assert_cpa_score_band(
+        readiness.band_low,
+        readiness.point_estimate,
+        readiness.band_high,
+    )
+    assert readiness.confidence
+    assert 0.60 <= readiness.coverage <= 1.0
+    assert readiness.generated_at > 0
+    assert list(readiness.reasons)
+
+    topics = list(resp2.topics)
+    assert topics
+    assert any(not topic.memory_insufficient for topic in topics)
+    assert all(topic.set_id for topic in topics)
+    assert all(
+        abs(topic.gap - (topic.memory - topic.performance)) < 1e-9 for topic in topics
+    )
+    for topic in topics:
+        if topic.memory_insufficient:
+            assert topic.memory == 0.0
+            assert topic.memory_low == 0.0
+            assert topic.memory_high == 0.0
+        else:
+            assert_probability_band(topic.memory_low, topic.memory, topic.memory_high)
+        assert_probability_band(
+            topic.performance_low,
+            topic.performance,
+            topic.performance_high,
+        )

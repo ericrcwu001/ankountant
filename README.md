@@ -30,7 +30,7 @@ Scoring readiness on cards you already drilled is just measuring recall again. A
 
 ## Current UI
 
-The desktop home screen is now a summit-style CPA dashboard: a navy app rail, a white countdown/readiness rail, and a FAR topographic map where each peak is a live topic score. The iOS companion mirrors the same flow natively with a FAR summit hero, topic list, topic detail drill-ins, a pre-reveal confidence check during review, and a Progress summary above the detailed stats charts. Both clients keep the existing review, sync, import, deck browsing, and scoring paths intact.
+The desktop home screen is now a summit-style CPA dashboard: a navy app rail, a white countdown/readiness rail, and a five-section readiness range for FAR, AUD, REG, TCP, and ISC with topic drill-ins for the active section. The iOS companion mirrors the same flow natively with a summit hero, topic list, topic detail drill-ins, a pre-reveal confidence check during review, and a Progress summary above the detailed stats charts. Both clients keep the existing review, sync, import, deck browsing, and scoring paths intact.
 
 ## Grounding
 

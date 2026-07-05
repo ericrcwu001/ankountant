@@ -127,7 +127,7 @@ def _derive_ds_tag(payload: dict, topic: str) -> str:
 def _build_tags(section: str, topic: str, card_type: str, skill_level: str, payload: dict) -> list[str]:
     cog = "cog::rote" if (card_type == RECALL and _is_remember_understand(skill_level)) else "cog::applied"
     tags = [f"sec::{section}", cog, f"topic::{slugify(topic)}"]
-    if card_type in (MCQ, TBS_DOC_REVIEW):
+    if card_type in (MCQ, TBS_DOC_REVIEW) or payload.get("schema_tag") or payload.get("ds_tag"):
         tags.append(_derive_ds_tag(payload, topic))
     return tags
 
@@ -168,6 +168,17 @@ def finalize_candidate(
     source_passage = str(data.get("source_passage", "") or "")
     citation = str(data.get("citation", "") or "")
     payload = data.get("payload") if isinstance(data.get("payload"), dict) else {}
+    category = str(item.get("category", "") or "").strip()
+    category_tags = [str(t) for t in (item.get("category_tags") or [])]
+    treatments = [str(t) for t in (item.get("treatments") or [])]
+    if category:
+        payload.setdefault("set_id", category)
+    if category_tags:
+        payload.setdefault("schema_tag", category_tags[0])
+        if card_type in (MCQ, TBS_DOC_REVIEW):
+            payload.setdefault("ds_tag", category_tags[0])
+    if card_type == MCQ and treatments:
+        payload["treatments"] = treatments
 
     # Grounding proof (or repair, or drop). The source_passage must be a real,
     # substantive sentence — never a heading/label/stub. If the model's passage

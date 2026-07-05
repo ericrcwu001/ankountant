@@ -40,6 +40,12 @@ struct ReviewView: View {
     @Shared(.appStorage(ReviewPreferences.Keys.playAudioInSilentMode))
     private var playAudioInSilentMode: Bool = false
 
+    @Shared(.appStorage(LearningFeedbackPreferenceKeys.enabled))
+    private var learningFeedbackEnabled: Bool = LearningFeedbackPreferenceKeys.defaultEnabled
+
+    @Shared(.appStorage(LearningFeedbackPreferenceKeys.model))
+    private var learningFeedbackModel: String = defaultLearningFeedbackModel
+
     @State private var session: ReviewSession
     @State private var editingNote: NoteRecord?
     @State private var editingTemplate: ReviewSession.TemplateTarget?
@@ -249,10 +255,20 @@ struct ReviewView: View {
                 onRenderError: { message in session.reportRenderError(message) }
             )
 
+            if let learningFeedbackState = session.learningFeedbackState {
+                LearningFeedbackPanel(state: learningFeedbackState)
+                    .padding(.horizontal)
+                    .padding(.top, AnkountantSpacing.md)
+            }
+
             Spacer()
 
             if session.showAnswer {
-                answerButtons
+                if session.learningFeedbackState == nil {
+                    answerButtons
+                } else {
+                    learningFeedbackContinueButton
+                }
             } else {
                 confidencePanel
             }
@@ -309,6 +325,17 @@ struct ReviewView: View {
         .padding(.vertical, 16)
     }
 
+    private var learningFeedbackContinueButton: some View {
+        Button("Continue", systemImage: "arrow.right") {
+            committedConfidence = nil
+            Task { await session.continueAfterLearningFeedback() }
+        }
+        .buttonStyle(AnkountantPrimaryButtonStyle())
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+    }
+
     private var ratingButtons: some View {
         Group {
             ratingButton(.again, color: palette.danger)
@@ -322,7 +349,14 @@ struct ReviewView: View {
         Button {
             let confidence = committedConfidence
             committedConfidence = nil
-            Task { await session.answer(rating: rating, confidence: confidence) }
+            Task {
+                await session.answer(
+                    rating: rating,
+                    confidence: confidence,
+                    learningFeedbackEnabled: learningFeedbackEnabled,
+                    learningFeedbackModel: learningFeedbackModel
+                )
+            }
         } label: {
             VStack(spacing: 4) {
                 if showNextReviewTime {

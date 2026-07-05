@@ -3,7 +3,14 @@
 
 import { expect, test } from "vitest";
 
-import { buildTopoRange, heightForTopicScore, TOPIC_MAX_SCORE, type TopoTopic, yForTopicScore } from "./topo";
+import {
+    buildTopoRange,
+    heightForTopicScore,
+    TOPIC_MAX_SCORE,
+    TOPIC_PASS_SCORE,
+    type TopoTopic,
+    yForTopicScore,
+} from "./topo";
 
 test("heightForTopicScore maps topic score percentages onto 0..1", () => {
     expect(heightForTopicScore(0)).toBe(0);
@@ -15,16 +22,14 @@ test("heightForTopicScore maps topic score percentages onto 0..1", () => {
     expect(heightForTopicScore(90) - heightForTopicScore(80)).toBeGreaterThan(0.1);
 });
 
-test("foreground topic heights are compressed for visual layering", () => {
+test("topic heights use one pass-line scale across both rows", () => {
     expect(heightForTopicScore(0, "front")).toBe(0);
     expect(heightForTopicScore(82, "front")).toBeGreaterThan(heightForTopicScore(60, "front"));
-    expect(heightForTopicScore(82, "front")).toBeLessThan(heightForTopicScore(82, "back"));
-    expect(heightForTopicScore(TOPIC_MAX_SCORE, "front")).toBeLessThan(1);
-    expect(heightForTopicScore(85, "back") - heightForTopicScore(82, "front"))
-        .toBeGreaterThan(0.1);
+    expect(heightForTopicScore(82, "front")).toBe(heightForTopicScore(82, "back"));
+    expect(heightForTopicScore(TOPIC_MAX_SCORE, "front")).toBe(1);
 });
 
-test("topo flags use the topic performance y-axis without a pass line", () => {
+test("topo flags and pass line use the topic performance y-axis", () => {
     const topics: TopoTopic[] = [
         {
             key: "back-above",
@@ -62,7 +67,9 @@ test("topo flags use the topic performance y-axis without a pass line", () => {
     const range = buildTopoRange(topics, { width: 1000, height: 680 });
     const plotH = range.height * 0.86;
 
-    expect("passY" in range).toBe(false);
+    expect(range.passY).toBeCloseTo(
+        yForTopicScore(TOPIC_PASS_SCORE, range.baseY, plotH, "back"),
+    );
     expect(yForTopicScore(0, range.baseY, plotH)).toBe(range.height);
     expect(range.flags.find((f) => f.key === "back-mid")?.y).toBeCloseTo(
         yForTopicScore(75, range.baseY, plotH, "back"),
@@ -73,7 +80,7 @@ test("topo flags use the topic performance y-axis without a pass line", () => {
     expect(range.flags.find((f) => f.key === "front-lower")?.y).toBeCloseTo(
         yForTopicScore(60, range.baseY, plotH, "front"),
     );
-    expect(range.flags.find((f) => f.key === "front-lower")?.y).toBeGreaterThan(
-        yForTopicScore(60, range.baseY, plotH, "back"),
+    expect(range.flags.find((f) => f.key === "front-mid")?.y).toBeCloseTo(
+        range.passY,
     );
 });

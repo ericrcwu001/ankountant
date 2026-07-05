@@ -1,18 +1,18 @@
-# iOS "Summit" Home — FAR Topic Flow
+# iOS "Summit" Home — CPA Section Flow
 
 > Branch: working tree UI overhaul · Scope: **iOS + shared exam-date protobuf/client dispatch** ·
 > Status: **implemented 2026-07-03**
 >
 > The original plan below described a five-section summit overview. The shipped
-> implementation intentionally follows the supplied reference image instead:
-> a FAR-focused hero range, FAR topic list, topic detail flow, pre-reveal
-> confidence check, and Progress summary.
+> implementation follows that inclusive CPA framing: a section-aware hero range,
+> topic list, topic detail flow, pre-reveal confidence check, and Progress
+> summary.
 
 ## Implementation Update
 
 Implemented iOS surfaces:
 
-- `HomeView` now renders the FAR summit hero, countdown/readiness cards, sync-safe exam-date control, FAR topic list, phase-aware study CTA, and confusion practice entry.
+- `HomeView` now renders the CPA summit hero, countdown/readiness cards, sync-safe exam-date control, active-section topic list, phase-aware study CTA, and confusion practice entry.
 - `FarTopicDetailView` shows a selected topic's Memory, Performance, Gap, Memory range, Performance range, and confusion-set tokens.
 - `ReviewView` requires a Guess/Unsure/Confident selection before answer reveal.
 - `ContentView` now uses the supplied Home/Study/Review/Analytics/More tab shell while preserving the Reader, Browse/Review, Stats, and Settings destinations.
@@ -85,26 +85,25 @@ Backed by `rslib/src/ankountant/readiness.rs`.
   weighting applies only to the per-topic bars). Never present the peak as "the average
   of these topics."
 
-**What each section shows today** (dev device after Debug → _Load FAR demo content_,
-`loadFarSeed(withHistory: true)`):
+**What each section shows today** (after loading the inclusive CPA demo profile):
 
-| Section | Confusable map | Sealed attempts | `getReadiness` result                                                   | Peak           |
-| ------- | -------------- | --------------- | ----------------------------------------------------------------------- | -------------- |
-| **FAR** | 4 sets         | ~36             | `!abstain`; point ≈ **60**; band ≈ 44–75; Med confidence; coverage 0.75 | **below pass** |
-| AUD     | 2 sets         | 0               | abstain "insufficient volume"; 2 topic rows (all insufficient)          | **unproven**   |
-| REG     | 1 set          | 0               | abstain; 1 topic row                                                    | **unproven**   |
-| TCP     | 1 set          | 0               | abstain; 1 topic row                                                    | **unproven**   |
-| ISC     | 1 set          | 0               | abstain; 1 topic row                                                    | **unproven**   |
+| Section | Confusable map   | Seeded user data                                    | `getReadiness` result                                 |
+| ------- | ---------------- | --------------------------------------------------- | ----------------------------------------------------- |
+| **FAR** | seed sets        | recall history + sealed attempts                    | emits a readiness band when loaded with history       |
+| AUD     | seed/import sets | sealed attempts + available study/community history | emits or abstains from the same evidence rules as FAR |
+| REG     | seed/import sets | review history + sealed attempts                    | emits or abstains from the same evidence rules as FAR |
+| TCP     | seed/import sets | review history + sealed attempts                    | emits or abstains from the same evidence rules as FAR |
+| ISC     | seed/import sets | sealed attempts + available study/community history | emits or abstains from the same evidence rules as FAR |
 
 Corrections the cross-check forced into this plan:
 
-- **Non-FAR sections are seeded with maps + sealed content**; they abstain purely because
-  they have **0 attempts**, so their drill-in still lists topic rows (all "insufficient") —
-  the detail screen is not empty.
-- **FAR only produces a band under `with_history = true`.** Content-only or a fresh
-  collection → **FAR also abstains.** Do **not** hardcode FAR as the always-real peak; the
-  range must render gracefully when **all five abstain** (fresh install = five ghosts, never
-  five zero-height peaks).
+- **All visible sections are seeded with maps, sealed content, and/or imported study content**;
+  they follow the same abstain rules, so the detail screen is not empty and no section is
+  hardcoded as the always-real peak.
+- **A section produces a band only when it has enough seeded or user-created evidence.**
+  Content-only or a fresh collection → every section may abstain. The range must render
+  gracefully when **all five abstain** (fresh install = five ghosts, never five zero-height
+  peaks).
 - **All 5 sections are real — verified against `cursor/cpa-online-cards`** (worktree
   `../ankountant-cpa-online`, currently uncommitted). It adds card-generation tooling
   (`tools/cardgen/scripts/{harvest_online,triage_online,emit_online}.py`, `fetch_ankiweb.mjs`)
@@ -114,14 +113,11 @@ Corrections the cross-check forced into this plan:
   checkout. The online harvest changes **no `proto`, `rslib/src/ankountant`, or `ios` code**
   (only `tools/cardgen`, `docs_ankountant/rag`, and the desktop `qt/aqt/main.py` loader) → the
   iOS plan's data model and readiness math are unaffected.
-- **Nuance (don't over-promise the peaks):** those community cards are **study-pile (Memory)
-  content**, not the sealed **Performance** bank or confusion-set (`ds::*`) items, and
-  confusable maps still come from `rslib` seed (FAR-only today). So importing the bank gives
-  all 5 sections real _study content_ (peaks are legitimate, not vaporware), but does **not**
-  by itself lift a non-FAR section's readiness band out of abstain — each peak stays "Not
-  enough data yet" until that section has its confusion-set sealed bank + ≥20 sealed attempts +
-  ≥60% coverage. Net: **show all 5 peaks; non-FAR peaks light up as their readiness pipeline
-  (not just these cards) fills in.** Never bake in "FAR is the only real section."
+- **Nuance (don't over-promise the peaks):** community cards are **study-pile (Memory)
+  content**, while sealed **Performance** evidence comes from seeded/imported TBS items and
+  logged attempts. Importing the bank plus the demo seeding gives all 5 visible sections real
+  data, but each section still follows the same ≥20 sealed-attempt and ≥60% coverage gates.
+  Net: **show all 5 peaks; each peak lights up only when its own evidence supports it.**
 
 ---
 
@@ -316,15 +312,14 @@ range → (d) section list → (e) actions.**
 - **Keep verbatim:** `countdownCard` (numeral in neutral ink, DatePicker → `examConfigClient`),
   the phase-aware CTA + "View stats", and all derived helpers.
 - **`readinessCard` stays the headline** and stays the **largest readiness element** (the
-  range is supporting context, never the hero). One change: header string → **"FAR ·
-  Exam-day projection"** (or a small `.accent` "FAR" chip) so the band unambiguously reads as
-  FAR now that five sections are visible.
-- **Degrade to abstain when FAR abstains** (already implemented for the single card — must be
-  preserved; don't assume FAR always yields a band).
-- **Quick stats** ("Topics tracked" / "Gaps to close") keep counting **FAR confusion sets**
-  (actionable + FAR-scoped); optionally relabel "FAR topics."
-- **`topicsCard` moves** into `SectionDetailView` (tapping the FAR peak/row) to keep the hero
-  from getting too tall; FAR renders the exact same shared components as every other section.
+  range is supporting context, never the hero). Header string should use the active section
+  code, e.g. **"REG · Exam-day projection"**, so the band unambiguously reads as scoped.
+- **Degrade to abstain when the active section abstains** (already implemented for the single
+  card — must be preserved; don't assume any section always yields a band).
+- **Quick stats** ("Topics tracked" / "Gaps to close") count active-section confusion sets;
+  relabel as section topics where needed.
+- **`topicsCard` moves** into `SectionDetailView` (tapping a peak/row) to keep the hero from
+  getting too tall; every section renders the same shared components.
 - **Section switcher (fast-follow, now that all 5 are real):** repointing the headline
   countdown + readiness to a tapped section becomes worthwhile. Exam date is already stored
   **per section** (`ankountant.<section>.exam.date`), so no schema change is needed. MVP keeps
@@ -532,8 +527,9 @@ subagents weren't available in its sandbox). **Verdict: ship with changes.** It 
 Rust data claims (abstain → `pointEstimate 0`; CPA cap 99; thresholds 5 / 20 / 0.60; pooled
 attempt-weighted section point). Changes it prompted, now folded in above:
 
-- **Non-FAR framing → "Not in this version"** (§11 #1): "Not enough data yet" is
-  product-dishonest in a FAR-only MVP with no path to prove AUD/REG/TCP/ISC.
+- **Section framing → evidence-gated, not section-gated** (§11 #1): "Not enough data yet"
+  means the section lacks enough evidence right now, not that the section is outside the
+  product.
 - **Cross-client framing (D7):** the iOS range is an _overview/roadmap_ layer; canonical
   Readiness stays per-confusion-set (the desktop model), which the iOS detail mirrors.
 - **Near-pass display rule (§8):** a below-pass score must never render as an unqualified "75"

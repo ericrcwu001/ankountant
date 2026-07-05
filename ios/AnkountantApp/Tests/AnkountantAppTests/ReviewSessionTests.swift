@@ -237,6 +237,202 @@ final class ReviewSessionTests: XCTestCase {
         }
     }
 
+    func testAnswerAfterRevealSubmitsReviewAndAdvancesQueue() async {
+        final class State: @unchecked Sendable {
+            var queueCalls = 0
+            var answers: [(cardId: Int64, rating: Rating)] = []
+        }
+        let state = State()
+        let firstCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
+        let secondCard = QueuedReviewCard.preview(cardId: 2, noteId: 200, ord: 0)
+
+        await withDependencies {
+            $0.decksService.setCurrentDeck = { deckId in
+                XCTAssertEqual(deckId, 1)
+            }
+            $0.schedulerService.getQueuedCards = { fetchLimit in
+                XCTAssertEqual(fetchLimit, 200)
+                state.queueCalls += 1
+                if state.queueCalls == 1 {
+                    return QueuedCardsResult(cards: [firstCard], newCount: 1, learningCount: 0, reviewCount: 0)
+                }
+                return QueuedCardsResult(cards: [secondCard], newCount: 0, learningCount: 0, reviewCount: 1)
+            }
+            $0.schedulerService.answerReviewCard = { cardId, rating, _, _ in
+                state.answers.append((cardId: cardId, rating: rating))
+            }
+            $0.notesService.getNote = { noteId in
+                NoteRecord(id: noteId, guid: "g", mid: 200, mod: 0, flds: "", sfld: "", csum: 0)
+            }
+            $0.cardRenderingService.renderCard = { cardId in
+                RenderedCard(frontHTML: "front-\(cardId)", backHTML: "back-\(cardId)", cardCSS: "")
+            }
+        } operation: {
+            let session = ReviewSession(deckId: 1)
+            await session.start()
+            XCTAssertEqual(session.currentCardId, 1)
+
+            await session.revealAnswer()
+            await session.answer(rating: .good)
+
+            XCTAssertEqual(state.answers.count, 1)
+            XCTAssertEqual(state.answers.first?.cardId, 1)
+            XCTAssertEqual(state.answers.first?.rating, .good)
+            XCTAssertEqual(session.currentCardId, 2)
+            XCTAssertEqual(session.sessionStats.reviewed, 1)
+            XCTAssertEqual(session.sessionStats.correct, 1)
+            XCTAssertTrue(session.canUndo)
+            XCTAssertFalse(session.showAnswer)
+            XCTAssertEqual(session.remainingCounts.reviewCount, 1)
+        }
+    }
+
+    func testAgainWithLearningFeedbackEnabledHoldsUntilContinue() async {
+        final class State: @unchecked Sendable {
+            var queueCalls = 0
+            var answers: [(cardId: Int64, rating: Rating)] = []
+            var feedbackRequests: [LearningFeedbackRequest] = []
+        }
+        let state = State()
+        let firstCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
+        let secondCard = QueuedReviewCard.preview(cardId: 2, noteId: 200, ord: 0)
+        let feedback = LearningFeedback(
+            title: "Fix the concept",
+            whyWrong: "The selected treatment does not match the revealed answer.",
+            correctApproach: "Start from the rule shown on the back of the card.",
+            remember: "Anchor the next attempt to the cited source.",
+            sourceIds: ["review-back"]
+        )
+
+        await withDependencies {
+            $0.decksService.setCurrentDeck = { _ in }
+            $0.schedulerService.getQueuedCards = { _ in
+                state.queueCalls += 1
+                if state.queueCalls == 1 {
+                    return QueuedCardsResult(cards: [firstCard], newCount: 1, learningCount: 0, reviewCount: 0)
+                }
+                return QueuedCardsResult(cards: [secondCard], newCount: 0, learningCount: 0, reviewCount: 1)
+            }
+            $0.schedulerService.answerReviewCard = { cardId, rating, _, _ in
+                state.answers.append((cardId: cardId, rating: rating))
+            }
+            $0.notesService.getNote = { noteId in
+                NoteRecord(
+                    id: noteId,
+                    guid: "g-\(noteId)",
+                    mid: 200,
+                    mod: 0,
+                    flds: "Question \(noteId)\u{1f}Answer \(noteId)",
+                    sfld: "Question \(noteId)",
+                    csum: 0
+                )
+            }
+            $0.cardRenderingService.renderCard = { cardId in
+                RenderedCard(
+                    frontHTML: "<p>Front \(cardId)</p>",
+                    backHTML: "<p>Back \(cardId)</p>",
+                    cardCSS: ""
+                )
+            }
+            $0.learningFeedbackClient.generate = { request, model in
+                XCTAssertEqual(model, "test-feedback-model")
+                state.feedbackRequests.append(request)
+                return feedback
+            }
+        } operation: {
+            let session = ReviewSession(deckId: 1)
+            await session.start()
+            XCTAssertEqual(session.currentCardId, 1)
+
+            await session.revealAnswer()
+            await session.answer(
+                rating: .again,
+                learningFeedbackEnabled: true,
+                learningFeedbackModel: "test-feedback-model"
+            )
+
+            XCTAssertEqual(state.answers.count, 1)
+            XCTAssertEqual(state.answers.first?.cardId, 1)
+            XCTAssertEqual(state.answers.first?.rating, .again)
+            XCTAssertEqual(session.currentCardId, 1)
+            XCTAssertTrue(session.showAnswer)
+            XCTAssertEqual(session.sessionStats.reviewed, 1)
+            XCTAssertEqual(session.sessionStats.correct, 0)
+            XCTAssertTrue(session.canUndo)
+            XCTAssertNotNil(session.learningFeedbackState)
+            XCTAssertEqual(session.remainingCounts.reviewCount, 1)
+
+            for _ in 0..<10 where state.feedbackRequests.isEmpty {
+                await Task.yield()
+            }
+            XCTAssertEqual(state.feedbackRequests.count, 1)
+
+            await session.continueAfterLearningFeedback()
+
+            XCTAssertEqual(session.currentCardId, 2)
+            XCTAssertFalse(session.showAnswer)
+            XCTAssertNil(session.learningFeedbackState)
+        }
+    }
+
+    func testAgainWithLearningFeedbackDisabledAdvancesImmediately() async {
+        final class State: @unchecked Sendable {
+            var queueCalls = 0
+            var answers: [(cardId: Int64, rating: Rating)] = []
+            var feedbackCalls = 0
+        }
+        let state = State()
+        let firstCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
+        let secondCard = QueuedReviewCard.preview(cardId: 2, noteId: 200, ord: 0)
+
+        await withDependencies {
+            $0.decksService.setCurrentDeck = { _ in }
+            $0.schedulerService.getQueuedCards = { _ in
+                state.queueCalls += 1
+                if state.queueCalls == 1 {
+                    return QueuedCardsResult(cards: [firstCard], newCount: 1, learningCount: 0, reviewCount: 0)
+                }
+                return QueuedCardsResult(cards: [secondCard], newCount: 0, learningCount: 0, reviewCount: 1)
+            }
+            $0.schedulerService.answerReviewCard = { cardId, rating, _, _ in
+                state.answers.append((cardId: cardId, rating: rating))
+            }
+            $0.notesService.getNote = { noteId in
+                NoteRecord(id: noteId, guid: "g-\(noteId)", mid: 200, mod: 0, flds: "", sfld: "", csum: 0)
+            }
+            $0.cardRenderingService.renderCard = { cardId in
+                RenderedCard(frontHTML: "front-\(cardId)", backHTML: "back-\(cardId)", cardCSS: "")
+            }
+            $0.learningFeedbackClient.generate = { _, _ in
+                state.feedbackCalls += 1
+                return LearningFeedback(
+                    title: "Unexpected",
+                    whyWrong: "Unexpected",
+                    correctApproach: "Unexpected",
+                    remember: "Unexpected",
+                    sourceIds: ["review-back"]
+                )
+            }
+        } operation: {
+            let session = ReviewSession(deckId: 1)
+            await session.start()
+            await session.revealAnswer()
+
+            await session.answer(rating: .again, learningFeedbackEnabled: false)
+
+            XCTAssertEqual(state.answers.count, 1)
+            XCTAssertEqual(state.answers.first?.cardId, 1)
+            XCTAssertEqual(state.answers.first?.rating, .again)
+            XCTAssertEqual(state.feedbackCalls, 0)
+            XCTAssertEqual(session.currentCardId, 2)
+            XCTAssertFalse(session.showAnswer)
+            XCTAssertNil(session.learningFeedbackState)
+            XCTAssertEqual(session.sessionStats.reviewed, 1)
+            XCTAssertEqual(session.sessionStats.correct, 0)
+            XCTAssertTrue(session.canUndo)
+        }
+    }
+
     func testCardActionSuccessAdvancesWithoutCountingReview() async {
         final class QueueState: @unchecked Sendable { var calls = 0 }
         let state = QueueState()

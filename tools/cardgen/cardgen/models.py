@@ -67,6 +67,9 @@ class WorkItem:
     skill_level: str
     card_type: str
     seed: int = 0
+    category: str = ""
+    category_tags: list[str] = field(default_factory=list)
+    treatments: list[str] = field(default_factory=list)
 
 
 @dataclass

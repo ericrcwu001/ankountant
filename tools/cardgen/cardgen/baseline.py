@@ -40,7 +40,10 @@ HELDOUT_N = 120
 REF_K = 30
 # Passing bar is pre-registered (doc 05): hybrid must not regress vs either
 # baseline on the two headline numbers.
-PASS_RULE = "hybrid >= bm25 AND hybrid >= vector, on faithfulness AND bucket-1 rate"
+PASS_RULE = (
+    "hybrid >= bm25 AND hybrid >= vector, on faithfulness AND bucket-1 rate, "
+    "with a nonzero hybrid signal"
+)
 
 RUBRIC = (
     "CPA card 3-bucket gate: correct_useful (ship) / wrong (block) / "
@@ -135,6 +138,8 @@ def decide_pass(arms: dict[str, dict]) -> bool:
     """PASS iff hybrid ≥ both baselines on faithfulness AND bucket-1 rate."""
     h, b, v = arms.get("hybrid"), arms.get("bm25"), arms.get("vector")
     if not (h and b and v):
+        return False
+    if h.get("faithfulness", 0.0) <= 0.0 and h.get("bucket1_rate", 0.0) <= 0.0:
         return False
     return (
         h["faithfulness"] >= b["faithfulness"]

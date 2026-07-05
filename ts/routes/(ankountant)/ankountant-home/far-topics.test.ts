@@ -4,7 +4,7 @@
 import { type GetReadinessResponse, TopicScore } from "@generated/anki/scheduler_pb";
 import { expect, test } from "vitest";
 
-import { buildFarTopics, buildSectionTopics, needsAttention, topStrongTopics } from "./far-topics";
+import { buildFarTopics, buildSectionTopics, needsAttention, topicRowCounts, topStrongTopics } from "./far-topics";
 import { heightForTopicScore } from "./topo";
 
 const rounded = (value: number): number => Number(value.toFixed(3));
@@ -62,34 +62,43 @@ test("FAR topic mountains are ranked by preparedness, row-major", () => {
     ];
 
     expect(topics.map((t) => t.performance)).toEqual(expectedScores);
-    expect(topics.slice(0, 5).map((t) => t.tier)).toEqual([
+    expect(topics.slice(0, 6).map((t) => t.tier)).toEqual([
+        "back",
         "back",
         "back",
         "back",
         "back",
         "back",
     ]);
-    expect(topics.slice(5).every((t) => t.tier === "front")).toBe(true);
-    expect(topics.slice(0, 5).map((t) => rounded(t.cx))).toEqual([
-        0.12,
-        0.32,
-        0.52,
-        0.72,
+    expect(topics.slice(6).every((t) => t.tier === "front")).toBe(true);
+    expect(topics.slice(0, 6).map((t) => rounded(t.cx))).toEqual([
+        0.1,
+        0.26,
+        0.42,
+        0.58,
+        0.74,
         0.9,
     ]);
-    expect(topics.slice(5).map((t) => rounded(t.cx))).toEqual([
-        0.045,
-        0.175,
-        0.305,
-        0.435,
-        0.565,
-        0.695,
-        0.825,
-        0.955,
+    expect(topics.slice(6).map((t) => rounded(t.cx))).toEqual([
+        0.064,
+        0.209,
+        0.355,
+        0.5,
+        0.645,
+        0.791,
+        0.936,
     ]);
     expect(topics.map((t) => t.height)).toEqual(
         topics.map((topic) => heightForTopicScore(topic.performance ?? 0, topic.tier)),
     );
+});
+
+test("topic mountain rows are split from the total category count", () => {
+    expect(topicRowCounts(0)).toEqual({ back: 0, front: 0 });
+    expect(topicRowCounts(1)).toEqual({ back: 1, front: 0 });
+    expect(topicRowCounts(2)).toEqual({ back: 1, front: 1 });
+    expect(topicRowCounts(13)).toEqual({ back: 6, front: 7 });
+    expect(() => topicRowCounts(1.5)).toThrow(/Invalid topic count/);
 });
 
 test("non-FAR sections use emitted topics without FAR placeholders", () => {
@@ -110,6 +119,8 @@ test("non-FAR sections use emitted topics without FAR placeholders", () => {
         "Request relevance",
         "Evidence sufficiency",
     ]);
+    expect(topics.map((t) => t.tier)).toEqual(["back", "front"]);
+    expect(topics.map((t) => rounded(t.cx))).toEqual([0.38, 0.62]);
     expect(topics.every((t) => !t.setId.includes("lease"))).toBe(true);
 });
 

@@ -2,7 +2,7 @@
 
 > Status: **Implemented** · Owner: eric · Last updated: 2026-07-03
 >
-> The desktop app now launches into one PyQt main window with an embedded Ankountant SvelteKit shell. The shell matches the summit-dashboard direction: a navy app rail, white countdown/readiness rail, and FAR topographic mastery canvas.
+> The desktop app now launches into one PyQt main window with an embedded Ankountant SvelteKit shell. The shell matches the summit-dashboard direction: a navy app rail, white countdown/readiness rail, and five-section CPA readiness canvas.
 
 ## Current shape
 
@@ -61,10 +61,10 @@ Handled in `Workspace._ankountant_bridge()`:
 The reference direction is implemented in:
 
 - `ts/routes/(ankountant)/+layout.svelte` for the navy app rail and app-level navigation.
-- `ts/routes/(ankountant)/ankountant-home/Home.svelte` for the white countdown/readiness rail and FAR mastery page.
-- `ts/routes/(ankountant)/ankountant-home/SummitTopographic.svelte` and `topo.ts` for the topographic mountain map. The renderer uses layered SVG peak silhouettes, clipped contour paths, foreground/background depth ordering, and pass-line flags while keeping each topic tied to the live FAR readiness data.
+- `ts/routes/(ankountant)/ankountant-home/Home.svelte` for the white countdown/readiness rail and active-section mastery page.
+- `ts/routes/(ankountant)/ankountant-home/SummitTopographic.svelte` and `topo.ts` for the topographic mountain map. The renderer uses layered SVG peak silhouettes, clipped contour paths, foreground/background depth ordering, and pass-line flags while keeping each topic tied to the live active-section readiness data.
 - Topic detail cards are hover-toggled from the SVG flags. The map must not render a permanent default topic pop-up; leaving the flag clears the card.
-- `ts/routes/(ankountant)/ankountant-home/far-topics.ts` for the live FAR topic projection onto the map.
+- `ts/routes/(ankountant)/ankountant-home/far-topics.ts` for the live active-section topic projection onto the map.
 - `ts/lib/sass/_vars.scss`, `_root-vars.scss`, `base.scss`, and button/elevation SCSS for Ledger tokens.
 
 The main mastery area is intentionally unframed on the light canvas. The countdown/readiness rail remains a raised panel, and the mountain range should read as a layered topographic illustration, matching the supplied summit-topographic reference rather than a generic chart.

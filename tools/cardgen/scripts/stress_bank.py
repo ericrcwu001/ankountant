@@ -3,9 +3,9 @@
 
 This is a LOAD TEST artifact, not new study material: it reads the emitted packs
 (``cpa_bank.apkg`` + ``online_bank.apkg``), then replicates every note ``ceil(
-target / base)`` times with fresh, unique GUIDs (and an invisible per-copy marker
-so first-fields are unique too), writing sharded ``out/<run_id>/stress_bank_part*.apkg``
-files with >= ``--target`` notes. Content is intentionally identical across
+target / base)`` times with fresh, unique GUIDs (and an invisible per-copy marker),
+writing sharded ``out/<run_id>/stress_bank_part*.apkg`` files with >= ``--target`` notes.
+Content is intentionally identical across
 copies — the point is to see whether the app handles tens of thousands of cards.
 
 Copies land under ``Ankountant::Stress::<original-deck>`` (mirroring the source
@@ -49,6 +49,18 @@ def _stress_deck(name: str) -> str:
     if name.startswith(prefix):
         return f"Ankountant::Stress::{name[len(prefix):]}"
     return f"Ankountant::Stress::{name or 'Default'}"
+
+
+def _stress_fields(model: dict, fields: list[str], idx: int) -> list[str]:
+    out = list(fields)
+    if not out:
+        return out
+    field_names = [
+        f["name"] for f in sorted(model["flds"], key=lambda f: f.get("ord", 0))
+    ]
+    marker_index = 1 if field_names[0] == "tbs_type" and len(out) > 1 else 0
+    out[marker_index] = f"{out[marker_index]}<!--s{idx}-->"
+    return out
 
 
 def _read_pack(apkg: Path) -> tuple[dict[int, dict], list[tuple[int, list[str], list[str], str]]]:
@@ -145,13 +157,13 @@ def run(run_id: str, target: int, shard_size: int) -> None:
     idx = 0
     for copy in range(copies):
         for mid, fields, tags, deck in base_rows:
+            source_model = models_by_mid.get(mid)
+            if source_model is None:
+                continue
             model = genanki_models.get(mid)
             if model is None:
                 continue
-            f = list(fields)
-            # Invisible per-copy marker => unique first field (belt-and-suspenders
-            # with the unique GUID) so nothing collapses on import.
-            f[0] = f"{f[0]}<!--s{idx}-->"
+            f = _stress_fields(source_model, fields, idx)
             note = genanki.Note(
                 model=model,
                 fields=f,

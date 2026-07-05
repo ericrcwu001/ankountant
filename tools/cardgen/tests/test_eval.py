@@ -286,6 +286,13 @@ def test_decide_pass_rule() -> None:
     }
     assert decide_pass(weak) is False
 
+    degenerate = {
+        "bm25": {"faithfulness": 0.0, "bucket1_rate": 0.0},
+        "vector": {"faithfulness": 0.0, "bucket1_rate": 0.0},
+        "hybrid": {"faithfulness": 0.0, "bucket1_rate": 0.0},
+    }
+    assert decide_pass(degenerate) is False
+
 
 # ===========================================================================
 # Stage 11 — baseline end-to-end (fixtured, offline)
@@ -444,7 +451,6 @@ def test_baseline_handles_empty_retrieval(monkeypatch) -> None:
     monkeypatch.setattr(baseline, "get_judge", lambda c: OfflineJudge())
 
     metrics = baseline.run(cfg)
-    # Empty retrieval => zeroed metrics, no crash; all arms tie at 0.0 so the
-    # >= rule yields a (degenerate) PASS. The point is a deterministic verdict.
+    # Empty retrieval => zeroed metrics, no crash, deterministic FAIL.
     assert metrics["metrics"]["hybrid"]["faithfulness"] == 0.0
-    assert metrics["pass"] is True
+    assert metrics["pass"] is False

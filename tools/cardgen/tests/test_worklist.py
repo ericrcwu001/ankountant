@@ -23,9 +23,10 @@ from cardgen.models import (
 from cardgen import worklist
 from cardgen.taxonomy import all_topics, load_confusion_catalog, load_taxonomy
 
-# The four FAR confusion sets shipped by the app (seed.rs `SETS` /
-# config.rs CONFUSABLE map) — the pipeline MUST reuse them verbatim.
-FAR_KNOWN_SETS = {
+# The original four FAR confusion sets shipped by the app (seed.rs `SETS` /
+# config.rs CONFUSABLE map) — the pipeline MUST keep them verbatim while the
+# full FAR catalog stays at the runtime app's 13 categories.
+FAR_ANCHOR_SETS = {
     "capitalize_vs_expense",
     "operating_vs_finance_lease",
     "revrec_step_selection",
@@ -45,6 +46,7 @@ FAR_KNOWN_TREATMENTS = {
 }
 
 TBS_SHAPES = (TBS_RESEARCH, TBS_NUMERIC, TBS_JE, TBS_DOC_REVIEW)
+RICH_CATEGORY_SECTIONS = ("AUD", "REG", "TCP", "ISC")
 
 
 def _cfg(**kw) -> RunConfig:
@@ -85,6 +87,10 @@ def test_all_six_taxonomies_and_catalogs_load():
             assert cs["set_id"]
             assert cs["tags"] and all(tag.startswith("ds::") for tag in cs["tags"])
             assert cs["treatments"]
+        if section == "FAR":
+            assert len(catalog) == 13
+        if section in RICH_CATEGORY_SECTIONS:
+            assert len(catalog) >= 6, f"{section} has too few categories"
 
 
 def test_evaluation_only_appears_in_aud():
@@ -101,7 +107,7 @@ def test_far_reuses_the_four_known_confusion_sets():
     cfg = _cfg()
     catalog = load_confusion_catalog(cfg, "FAR")
     by_id = {cs["set_id"]: cs for cs in catalog}
-    assert set(by_id) == FAR_KNOWN_SETS
+    assert FAR_ANCHOR_SETS <= set(by_id)
     for set_id, tags in FAR_KNOWN_TAGS.items():
         assert by_id[set_id]["tags"] == tags
         assert by_id[set_id]["treatments"] == FAR_KNOWN_TREATMENTS[set_id]
@@ -140,8 +146,14 @@ def test_worklist_120_all_sections():
             "skill_level",
             "card_type",
             "seed",
+            "category",
+            "category_tags",
+            "treatments",
         }
         assert r["card_type"] in CARD_TYPES
+        assert r["category"]
+        assert r["category_tags"] and all(t.startswith("ds::") for t in r["category_tags"])
+        assert r["treatments"]
 
     # item_ids are globally unique
     ids = [r["item_id"] for r in rows]
@@ -163,10 +175,27 @@ def test_far_worklist_mcq_uses_known_set_ids():
     rows = list(read_jsonl(worklist.run(cfg)))
     mcq_tasks = {r["task_id"] for r in rows if r["card_type"] == MCQ}
     assert mcq_tasks, "no FAR MCQ items generated"
-    # every MCQ task_id is derived from one of the four known FAR sets
+    catalog_sets = {cs["set_id"] for cs in load_confusion_catalog(cfg, "FAR")}
+    # every MCQ task_id is derived from a defined FAR category.
     for task_id in mcq_tasks:
         assert task_id.startswith("FAR.confusion.")
-        assert task_id.removeprefix("FAR.confusion.") in FAR_KNOWN_SETS
+        assert task_id.removeprefix("FAR.confusion.") in catalog_sets
+
+
+def test_worklist_carries_rich_category_metadata_for_visible_sections():
+    cfg = _cfg(sections=list(SECTIONS), target_total=300)
+    rows = list(read_jsonl(worklist.run(cfg)))
+    by_section = {
+        section: {r["category"] for r in rows if r["section"] == section}
+        for section in RICH_CATEGORY_SECTIONS
+    }
+    for section, categories in by_section.items():
+        assert len(categories) >= 6, f"{section} has sparse categories: {categories}"
+    for r in rows:
+        if r["card_type"] == MCQ:
+            assert r["task_id"].endswith(r["category"])
+            assert r["category_tags"]
+            assert r["treatments"]
 
 
 def test_section_targets_follow_doc2_weights():

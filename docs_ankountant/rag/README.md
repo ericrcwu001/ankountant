@@ -4,9 +4,10 @@
 > (`tmpl4`) and a sharded stress-test pack. This is **Phase 2a** from
 > [`../brainlift_features.md`](../brainlift_features.md). It is an **offline,
 > build-time batch tool** (`tools/cardgen/`) — the study loop never calls a model
-> live (the "decouple build-time from runtime" split). The MVP seeds the
-> hand-authored FAR demo (`rslib/src/ankountant/seed.rs`); this pipeline grows it
-> toward a **50,000-card** CPA question bank.
+> live (the "decouple build-time from runtime" split). The MVP seeds an
+> inclusive CPA demo profile (`rslib/src/ankountant/seed.rs` plus the desktop
+> CPA-bank loader); this pipeline grows it toward a **50,000-card** CPA question
+> bank.
 >
 > **As-built (read these first):** the shipped stack + licensing deltas are in
 > [`../adr/0009-rag-cardgen-lean-stack-cursor-judge-tier-b.md`](../adr/0009-rag-cardgen-lean-stack-cursor-judge-tier-b.md);
@@ -18,10 +19,11 @@
 
 ## Why this exists
 
-The MVP seed is ~130 hand-authored FAR cards + a sealed bank + a handful of TBS
-— enough to run the review loop and light up the readiness dashboard, but not a
-real product. To be a credible CPA study tool we need broad, accurate coverage
-of **all six CPA-Evolution sections** at exam depth. Hand-authoring 50k cards is
+The MVP seed and one-click CPA-bank loader provide starter coverage across the
+visible CPA sections — enough to run the review loop and light up the readiness
+dashboard, but not a real product. To be a credible CPA study tool we need
+broad, accurate coverage of **all six CPA-Evolution sections** at exam depth.
+Hand-authoring 50k cards is
 infeasible and error-prone; a **retrieval-augmented generation (RAG)** pipeline,
 grounded in public-domain / openly-licensed source material and gated by an
 independent quality checker, is the path.

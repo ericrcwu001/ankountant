@@ -1,0 +1,500 @@
+{
+    "generated_at": 1783286368,
+    "memory": {
+        "brier": 0.214,
+        "calibration": [
+            {
+                "absolute_error": 0.09999999999999998,
+                "bucket": "50-59%",
+                "correct": 2,
+                "mean_prediction": 0.5,
+                "observed": 0.4,
+                "total": 5
+            },
+            {
+                "absolute_error": 0.0,
+                "bucket": "60-69%",
+                "correct": 3,
+                "mean_prediction": 0.6,
+                "observed": 0.6,
+                "total": 5
+            },
+            {
+                "absolute_error": 0.09999999999999998,
+                "bucket": "70-79%",
+                "correct": 3,
+                "mean_prediction": 0.7,
+                "observed": 0.6,
+                "total": 5
+            },
+            {
+                "absolute_error": 0.0,
+                "bucket": "80-89%",
+                "correct": 4,
+                "mean_prediction": 0.8,
+                "observed": 0.8,
+                "total": 5
+            },
+            {
+                "absolute_error": 0.09999999999999998,
+                "bucket": "90-99%",
+                "correct": 4,
+                "mean_prediction": 0.9,
+                "observed": 0.8,
+                "total": 5
+            }
+        ],
+        "held_out_reviews": 25,
+        "log_loss": 0.6213921580652146,
+        "model": "Per-topic Memory prediction is the training split's trailing-review recall rate; calibration is evaluated only on held-out recall outcomes.",
+        "rows": [
+            {
+                "id": 10000,
+                "outcome": true,
+                "prediction": 0.8,
+                "topic": "capitalize_vs_expense"
+            },
+            {
+                "id": 10001,
+                "outcome": true,
+                "prediction": 0.8,
+                "topic": "capitalize_vs_expense"
+            },
+            {
+                "id": 10002,
+                "outcome": true,
+                "prediction": 0.8,
+                "topic": "capitalize_vs_expense"
+            },
+            {
+                "id": 10003,
+                "outcome": true,
+                "prediction": 0.8,
+                "topic": "capitalize_vs_expense"
+            },
+            {
+                "id": 10004,
+                "outcome": false,
+                "prediction": 0.8,
+                "topic": "capitalize_vs_expense"
+            },
+            {
+                "id": 10100,
+                "outcome": true,
+                "prediction": 0.7,
+                "topic": "operating_vs_finance_lease"
+            },
+            {
+                "id": 10101,
+                "outcome": true,
+                "prediction": 0.7,
+                "topic": "operating_vs_finance_lease"
+            },
+            {
+                "id": 10102,
+                "outcome": true,
+                "prediction": 0.7,
+                "topic": "operating_vs_finance_lease"
+            },
+            {
+                "id": 10103,
+                "outcome": false,
+                "prediction": 0.7,
+                "topic": "operating_vs_finance_lease"
+            },
+            {
+                "id": 10104,
+                "outcome": false,
+                "prediction": 0.7,
+                "topic": "operating_vs_finance_lease"
+            },
+            {
+                "id": 10200,
+                "outcome": true,
+                "prediction": 0.9,
+                "topic": "revrec_step_selection"
+            },
+            {
+                "id": 10201,
+                "outcome": true,
+                "prediction": 0.9,
+                "topic": "revrec_step_selection"
+            },
+            {
+                "id": 10202,
+                "outcome": true,
+                "prediction": 0.9,
+                "topic": "revrec_step_selection"
+            },
+            {
+                "id": 10203,
+                "outcome": true,
+                "prediction": 0.9,
+                "topic": "revrec_step_selection"
+            },
+            {
+                "id": 10204,
+                "outcome": false,
+                "prediction": 0.9,
+                "topic": "revrec_step_selection"
+            },
+            {
+                "id": 10300,
+                "outcome": true,
+                "prediction": 0.6,
+                "topic": "trading_afs_htm"
+            },
+            {
+                "id": 10301,
+                "outcome": true,
+                "prediction": 0.6,
+                "topic": "trading_afs_htm"
+            },
+            {
+                "id": 10302,
+                "outcome": true,
+                "prediction": 0.6,
+                "topic": "trading_afs_htm"
+            },
+            {
+                "id": 10303,
+                "outcome": false,
+                "prediction": 0.6,
+                "topic": "trading_afs_htm"
+            },
+            {
+                "id": 10304,
+                "outcome": false,
+                "prediction": 0.6,
+                "topic": "trading_afs_htm"
+            },
+            {
+                "id": 10400,
+                "outcome": true,
+                "prediction": 0.5,
+                "topic": "tax_book_vs_tax_basis"
+            },
+            {
+                "id": 10401,
+                "outcome": true,
+                "prediction": 0.5,
+                "topic": "tax_book_vs_tax_basis"
+            },
+            {
+                "id": 10402,
+                "outcome": false,
+                "prediction": 0.5,
+                "topic": "tax_book_vs_tax_basis"
+            },
+            {
+                "id": 10403,
+                "outcome": false,
+                "prediction": 0.5,
+                "topic": "tax_book_vs_tax_basis"
+            },
+            {
+                "id": 10404,
+                "outcome": false,
+                "prediction": 0.5,
+                "topic": "tax_book_vs_tax_basis"
+            }
+        ]
+    },
+    "performance": {
+        "brier": 0.22800000000000004,
+        "calibration": [
+            {
+                "absolute_error": 0.0,
+                "bucket": "40-49%",
+                "correct": 2,
+                "mean_prediction": 0.4,
+                "observed": 0.4,
+                "total": 5
+            },
+            {
+                "absolute_error": 0.09999999999999998,
+                "bucket": "50-59%",
+                "correct": 2,
+                "mean_prediction": 0.5,
+                "observed": 0.4,
+                "total": 5
+            },
+            {
+                "absolute_error": 0.0,
+                "bucket": "60-69%",
+                "correct": 3,
+                "mean_prediction": 0.6,
+                "observed": 0.6,
+                "total": 5
+            },
+            {
+                "absolute_error": 0.09999999999999998,
+                "bucket": "70-79%",
+                "correct": 3,
+                "mean_prediction": 0.7,
+                "observed": 0.6,
+                "total": 5
+            },
+            {
+                "absolute_error": 0.0,
+                "bucket": "80-89%",
+                "correct": 4,
+                "mean_prediction": 0.8,
+                "observed": 0.8,
+                "total": 5
+            }
+        ],
+        "classification_accuracy_at_50_pct": 0.6,
+        "held_out_accuracy": 0.56,
+        "held_out_correct": 14,
+        "held_out_questions": 25,
+        "log_loss": 0.6470334052420519,
+        "model": "Per-topic Performance prediction is the training split's sealed exam-style accuracy; held-out accuracy is evaluated on disjoint sealed exam-style outcomes.",
+        "rows": [
+            {
+                "id": 20000,
+                "outcome": true,
+                "prediction": 0.7,
+                "topic": "capitalize_vs_expense"
+            },
+            {
+                "id": 20001,
+                "outcome": true,
+                "prediction": 0.7,
+                "topic": "capitalize_vs_expense"
+            },
+            {
+                "id": 20002,
+                "outcome": true,
+                "prediction": 0.7,
+                "topic": "capitalize_vs_expense"
+            },
+            {
+                "id": 20003,
+                "outcome": false,
+                "prediction": 0.7,
+                "topic": "capitalize_vs_expense"
+            },
+            {
+                "id": 20004,
+                "outcome": false,
+                "prediction": 0.7,
+                "topic": "capitalize_vs_expense"
+            },
+            {
+                "id": 20100,
+                "outcome": true,
+                "prediction": 0.6,
+                "topic": "operating_vs_finance_lease"
+            },
+            {
+                "id": 20101,
+                "outcome": true,
+                "prediction": 0.6,
+                "topic": "operating_vs_finance_lease"
+            },
+            {
+                "id": 20102,
+                "outcome": true,
+                "prediction": 0.6,
+                "topic": "operating_vs_finance_lease"
+            },
+            {
+                "id": 20103,
+                "outcome": false,
+                "prediction": 0.6,
+                "topic": "operating_vs_finance_lease"
+            },
+            {
+                "id": 20104,
+                "outcome": false,
+                "prediction": 0.6,
+                "topic": "operating_vs_finance_lease"
+            },
+            {
+                "id": 20200,
+                "outcome": true,
+                "prediction": 0.8,
+                "topic": "revrec_step_selection"
+            },
+            {
+                "id": 20201,
+                "outcome": true,
+                "prediction": 0.8,
+                "topic": "revrec_step_selection"
+            },
+            {
+                "id": 20202,
+                "outcome": true,
+                "prediction": 0.8,
+                "topic": "revrec_step_selection"
+            },
+            {
+                "id": 20203,
+                "outcome": true,
+                "prediction": 0.8,
+                "topic": "revrec_step_selection"
+            },
+            {
+                "id": 20204,
+                "outcome": false,
+                "prediction": 0.8,
+                "topic": "revrec_step_selection"
+            },
+            {
+                "id": 20300,
+                "outcome": true,
+                "prediction": 0.5,
+                "topic": "trading_afs_htm"
+            },
+            {
+                "id": 20301,
+                "outcome": true,
+                "prediction": 0.5,
+                "topic": "trading_afs_htm"
+            },
+            {
+                "id": 20302,
+                "outcome": false,
+                "prediction": 0.5,
+                "topic": "trading_afs_htm"
+            },
+            {
+                "id": 20303,
+                "outcome": false,
+                "prediction": 0.5,
+                "topic": "trading_afs_htm"
+            },
+            {
+                "id": 20304,
+                "outcome": false,
+                "prediction": 0.5,
+                "topic": "trading_afs_htm"
+            },
+            {
+                "id": 20400,
+                "outcome": true,
+                "prediction": 0.4,
+                "topic": "tax_book_vs_tax_basis"
+            },
+            {
+                "id": 20401,
+                "outcome": true,
+                "prediction": 0.4,
+                "topic": "tax_book_vs_tax_basis"
+            },
+            {
+                "id": 20402,
+                "outcome": false,
+                "prediction": 0.4,
+                "topic": "tax_book_vs_tax_basis"
+            },
+            {
+                "id": 20403,
+                "outcome": false,
+                "prediction": 0.4,
+                "topic": "tax_book_vs_tax_basis"
+            },
+            {
+                "id": 20404,
+                "outcome": false,
+                "prediction": 0.4,
+                "topic": "tax_book_vs_tax_basis"
+            }
+        ]
+    },
+    "reproduce": "just ankountant-evidence",
+    "scope_note": "Deterministic backend fixture for Sunday verification-page inputs. It proves held-out split reproducibility and metric/report generation; it is not a real-student external validation sample.",
+    "score_mapping": {
+        "accuracy_high": 0.7333436111893264,
+        "accuracy_low": 0.3706733186979878,
+        "anchors": [
+            {
+                "accuracy": 0.0,
+                "score": 0.0
+            },
+            {
+                "accuracy": 0.75,
+                "score": 75.0
+            },
+            {
+                "accuracy": 1.0,
+                "score": 99.0
+            }
+        ],
+        "band_high": 73.33436111893265,
+        "band_low": 37.067331869798785,
+        "exam": "CPA FAR",
+        "held_out_correct": 14.0,
+        "held_out_total": 25.0,
+        "method": "Map held-out sealed exam-style accuracy to the CPA 0-99 readiness scale with the ADR-0005 monotonic piecewise-linear transform; 75% accuracy maps to the CPA pass line of 75. The range maps the Wilson 95% accuracy band endpoints through the same transform.",
+        "point_accuracy": 0.56,
+        "point_estimate": 56.0,
+        "range": "37.1 to 73.3"
+    },
+    "split": {
+        "memory_held_out_count": 25,
+        "memory_held_out_ids": [
+            10000,
+            10001,
+            10002,
+            10003,
+            10004,
+            10100,
+            10101,
+            10102,
+            10103,
+            10104,
+            10200,
+            10201,
+            10202,
+            10203,
+            10204,
+            10300,
+            10301,
+            10302,
+            10303,
+            10304,
+            10400,
+            10401,
+            10402,
+            10403,
+            10404
+        ],
+        "performance_held_out_count": 25,
+        "performance_held_out_ids": [
+            20000,
+            20001,
+            20002,
+            20003,
+            20004,
+            20100,
+            20101,
+            20102,
+            20103,
+            20104,
+            20200,
+            20201,
+            20202,
+            20203,
+            20204,
+            20300,
+            20301,
+            20302,
+            20303,
+            20304,
+            20400,
+            20401,
+            20402,
+            20403,
+            20404
+        ],
+        "rule": "Static deterministic fixture: per topic, 10 authored outcomes train the estimator and 5 later authored outcomes are held out. Held-out ids are disjoint from train ids by construction."
+    },
+    "title": "Held-out model evidence — calibration, performance, score range",
+    "verdicts": {
+        "held_out_sets_non_empty": true,
+        "score_range_ordered": true,
+        "split_reproducible": true
+    }
+}

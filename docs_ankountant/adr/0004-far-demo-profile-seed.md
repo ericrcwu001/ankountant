@@ -28,8 +28,8 @@ Two hard constraints collided:
 
 **Two layers behind one seed, history opt-in via a proto field.**
 
-- **Content (always):** ~130 real CPA-FAR recall cards + real confusion MCQs +
-  the pinned anchor TBS + a few worked TBS, embedded from
+- **Content (always):** inclusive CPA starter recall cards + real confusion MCQs +
+  the pinned anchor TBS + worked TBS across the visible sections, embedded from
   `seed_content.json` (authored offline by the `far-seed-content` workflow: a
   fan-out author pass + an independent fact-check pass — the Phase-2a pattern in
   miniature). Provenance rides in the card body / TBS provenance fields.

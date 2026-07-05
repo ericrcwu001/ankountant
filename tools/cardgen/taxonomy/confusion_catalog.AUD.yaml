@@ -22,3 +22,11 @@ sets:
     topic: "Confirmations and substantive procedures"
     tags: ["ds::aud::retain", "ds::aud::revise"]
     treatments: ["Retain as drafted", "Revise the request"]
+  - set_id: "materiality_vs_trivial_misstatement"
+    topic: "Materiality determination"
+    tags: ["ds::aud::material", "ds::aud::trivial"]
+    treatments: ["Material misstatement", "Clearly trivial misstatement"]
+  - set_id: "subsequent_events_vs_going_concern"
+    topic: "Subsequent events and going concern"
+    tags: ["ds::aud::subsequent", "ds::aud::going_concern"]
+    treatments: ["Subsequent event procedure", "Going concern evaluation"]

@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ankountant AI Card Check Report</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --ink: #171b22;
+        --muted: #5e6878;
+        --line: #d8dee8;
+        --pass: #116a36;
+        --warn: #7a5200;
+        --bad: #9d1f2e;
+        --info: #0f5d87;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 32px 22px 72px;
+      }
+
+      h1 {
+        font-size: 30px;
+        line-height: 1.15;
+        margin: 0 0 8px;
+      }
+
+      h2 {
+        font-size: 20px;
+        margin: 32px 0 12px;
+      }
+
+      p {
+        color: var(--muted);
+        max-width: 86ch;
+      }
+
+      a {
+        color: #075f9d;
+      }
+
+      code {
+        background: #eef2f7;
+        border: 1px solid #dce3ed;
+        border-radius: 5px;
+        padding: 1px 5px;
+        font-size: 13px;
+      }
+
+      .topnav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .topnav a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel);
+        padding: 8px 14px;
+        color: var(--info);
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .topnav a:hover,
+      .topnav a:focus {
+        border-color: var(--info);
+        outline: none;
+      }
+
+      .topnav .primary {
+        background: #e0f1fa;
+        border-color: #b6d7ee;
+      }
+
+      .hero,
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 24px;
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .metric {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px 16px;
+        background: #fbfcfe;
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 25px;
+        line-height: 1.1;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #edf1f6;
+        color: #3f4856;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .status {
+        display: inline-block;
+        min-width: 112px;
+        border-radius: 999px;
+        padding: 4px 9px;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      .pass {
+        background: #e6f4eb;
+        color: var(--pass);
+      }
+
+      .warn {
+        background: #fff2d5;
+        color: var(--warn);
+      }
+
+      .bad {
+        background: #ffe1e6;
+        color: var(--bad);
+      }
+
+      .info {
+        background: #e0f1fa;
+        color: var(--info);
+      }
+
+      ul {
+        margin: 8px 0 0;
+        padding-left: 22px;
+      }
+
+      li {
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav class="topnav" aria-label="Report navigation">
+        <a class="primary" href="sunday-verification.html">&larr; Back to verification matrix</a>
+        <a href="coverage-map.html">Open coverage map</a>
+        <a href="models.html">Open model evidence</a>
+      </nav>
+
+      <section class="hero">
+        <h1>AI Card Check Report</h1>
+        <p>
+          This report summarizes the Speedrun 7f AI card check from the existing
+          <code>proof3</code> run. The one-source slice uses OpenStax Financial Accounting
+          (<code>source_id=openstax_far_v1</code>) and generated more than the required 50 cards.
+        </p>
+        <div class="summary">
+          <div class="metric"><strong>70</strong><span>cards generated from OpenStax FAR</span></div>
+          <div class="metric"><strong>56</strong><span>correct and useful</span></div>
+          <div class="metric"><strong>11</strong><span>wrong and blocked</span></div>
+          <div class="metric"><strong>3</strong><span>bad-teaching and quarantined</span></div>
+          <div class="metric"><strong>0</strong><span>leaks in shipped set</span></div>
+        </div>
+      </section>
+
+      <h2>Pass Rule</h2>
+      <div class="card">
+        <p>
+          The cutoff was set before looking at outputs: only cards judged
+          <code>correct_useful</code> ship. Cards judged <code>wrong</code> or
+          <code>bad_teaching</code> are blocked from the student-facing deck.
+        </p>
+      </div>
+
+      <h2>Required 7f Counts</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Bucket</th>
+            <th>OpenStax FAR one-source slice</th>
+            <th>Overall proof3 run</th>
+            <th>Disposition</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Correct and useful</td>
+            <td>56</td>
+            <td>181</td>
+            <td><span class="status pass">Ship</span></td>
+          </tr>
+          <tr>
+            <td>Wrong</td>
+            <td>11</td>
+            <td>70</td>
+            <td><span class="status bad">Block</span></td>
+          </tr>
+          <tr>
+            <td>Correct but bad teaching</td>
+            <td>3</td>
+            <td>12</td>
+            <td><span class="status warn">Quarantine</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Gold Set and Judge Calibration</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Check</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>FAR gold set</td>
+            <td>At least 50 known-correct FAR Q&A items are committed in <code>tools/cardgen/gold/gold.FAR.jsonl</code>.</td>
+          </tr>
+          <tr>
+            <td>Calibration set</td>
+            <td>182 positives and 36 planted negatives.</td>
+          </tr>
+          <tr>
+            <td>Calibration bar</td>
+            <td>Judge must pass at least 90% of positives and catch at least 90% of negatives.</td>
+          </tr>
+          <tr>
+            <td>Observed calibration</td>
+            <td><span class="status pass">Passed</span> Offline/keyless judge passed all positives and caught all negatives.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Source, Provenance, and Leakage</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Requirement</th>
+            <th>Evidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Named source</td>
+            <td>Every generated card carries <code>source_id</code>, <code>locator</code>, <code>citation</code>, and <code>source_passage</code>.</td>
+          </tr>
+          <tr>
+            <td>Generation method</td>
+            <td>Cards include <code>gen_method</code> with model, prompt version, retrieval config, index version, and seed.</td>
+          </tr>
+          <tr>
+            <td>Leakage scan</td>
+            <td>181 shipped candidates screened against 138 sealed references; 0 leaks detected.</td>
+          </tr>
+          <tr>
+            <td>Offline/keyless behavior</td>
+            <td><code>just test-cardgen</code> verifies missing API keys select offline embedder, generator, and judge providers.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Baseline Comparison</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Arm</th>
+            <th>Faithfulness</th>
+            <th>Retrieval hit@6</th>
+            <th>Context recall</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>BM25 keyword</td>
+            <td>0.608</td>
+            <td>0.850</td>
+            <td>0.897</td>
+          </tr>
+          <tr>
+            <td>Vector</td>
+            <td>0.592</td>
+            <td>0.733</td>
+            <td>0.798</td>
+          </tr>
+          <tr>
+            <td>Hybrid + rerank</td>
+            <td><strong>0.742</strong></td>
+            <td><strong>1.000</strong></td>
+            <td><strong>0.999</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Artifacts and Reproduction</h2>
+      <ul>
+        <li>Run summary: <a href="../rag/RAG_RUN_RESULTS.md">docs_ankountant/rag/RAG_RUN_RESULTS.md</a></li>
+        <li>Baseline detail: <code>tools/cardgen/out/proof3/baseline_report.md</code></li>
+        <li>Leakage detail: <code>tools/cardgen/out/proof3/leakage_report.md</code></li>
+        <li>Per-card judge output: <code>tools/cardgen/out/proof3/07-judge/graded.jsonl</code></li>
+        <li>Regression tests: <code>just test-cardgen</code></li>
+      </ul>
+
+      <p>
+        <a href="sunday-verification.html">Back to Sunday verification matrix</a>
+      </p>
+    </main>
+  </body>
+</html>

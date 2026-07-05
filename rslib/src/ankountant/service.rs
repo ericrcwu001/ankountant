@@ -117,7 +117,16 @@ impl Collection {
     /// True if the note's card lives in the sealed firewall deck for `section`.
     fn ankountant_note_is_sealed(&mut self, nid: NoteId, section: &str) -> Result<bool> {
         let search = format!("nid:{} deck:Ankountant::Sealed::{}::*", nid.0, section);
-        Ok(!self.search_notes_unordered(search.as_str())?.is_empty())
+        if !self.search_notes_unordered(search.as_str())?.is_empty() {
+            return Ok(true);
+        }
+        let stress_search = format!(
+            "nid:{} deck:Ankountant::Stress::Sealed::{}::*",
+            nid.0, section
+        );
+        Ok(!self
+            .search_notes_unordered(stress_search.as_str())?
+            .is_empty())
     }
 }
 

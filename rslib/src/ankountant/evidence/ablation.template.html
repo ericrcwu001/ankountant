@@ -73,6 +73,10 @@
       <div class="cards" id="stats"></div>
       <div class="verdict" id="verdict"><span class="dot"></span><span id="verdict-text"></span></div>
 
+      <h2>Three-build equal-time comparison</h2>
+      <div class="card"><table id="builds"></table></div>
+      <p class="foot" id="protocol"></p>
+
       <h2>Per-card next interval</h2>
       <div class="legend">
         <span><span class="swatch" style="background:var(--off);opacity:.55"></span>OFF (feature disabled)</span>
@@ -120,6 +124,21 @@
         : "Hypothesis NOT supported by this run.";
       if (!cut) { $("verdict").style.borderColor = "var(--bad)"; document.querySelector("#verdict .dot").style.background = "var(--bad)"; }
 
+      const builds = DATA.builds || [];
+      $("builds").innerHTML =
+        `<tr><th>Build</th><th class="num">Study time</th><th class="num">Mean interval</th><th class="num">Projected reviews</th><th class="num">Δ vs plain</th></tr>` +
+        builds.map((b) =>
+          `<tr>
+            <td>${b.label}</td>
+            <td class="num">${f1(b.study_time_seconds)}s</td>
+            <td class="num">${f1(b.mean_interval_days)}d</td>
+            <td class="num">${f1(b.projected_reviews)}</td>
+            <td class="num">${f1(b.delta_vs_plain_reviews_pct)}%</td>
+          </tr>`
+        ).join("");
+      const protocol = DATA.equal_time_protocol || {};
+      $("protocol").textContent = protocol.note || "";
+
       const rows = DATA.per_card || [];
       const maxIvl = Math.max(1, ...rows.map((r) => Math.max(r.interval_off_days, r.interval_on_days)));
       $("bars").innerHTML = rows.map((r) => {
@@ -135,8 +154,8 @@
       }).join("");
 
       $("table").innerHTML =
-        `<tr><th>Card</th><th class="num">OFF (days)</th><th class="num">ON (days)</th><th class="num">Δ</th></tr>` +
-        rows.map((r) => `<tr><td>${r.card}</td><td class="num">${r.interval_off_days}</td><td class="num">${r.interval_on_days}</td><td class="num">+${r.delta_days}</td></tr>`).join("");
+        `<tr><th>Card</th><th class="num">Plain Anki (days)</th><th class="num">A2 OFF (days)</th><th class="num">A2 ON (days)</th><th class="num">Δ</th></tr>` +
+        rows.map((r) => `<tr><td>${r.card}</td><td class="num">${r.interval_plain_anki_days}</td><td class="num">${r.interval_off_days}</td><td class="num">${r.interval_on_days}</td><td class="num">+${r.delta_days}</td></tr>`).join("");
 
       const c = DATA.control;
       const ok = c.feature_fired === c.expected;

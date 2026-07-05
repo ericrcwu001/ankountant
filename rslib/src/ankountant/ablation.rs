@@ -157,6 +157,46 @@ struct Measured {
     interval_on: u32,
 }
 
+fn mean_interval(cohort: &[Measured], f: impl Fn(&Measured) -> u32) -> f64 {
+    cohort.iter().map(|m| f(m) as f64).sum::<f64>() / cohort.len() as f64
+}
+
+fn projected_reviews_for(cohort: &[Measured], f: impl Fn(&Measured) -> u32) -> f64 {
+    cohort.iter().map(|m| projected_reviews(f(m))).sum()
+}
+
+fn three_build_summary(cohort: &[Measured], study_time_seconds: f64) -> Vec<Value> {
+    let plain_reviews = projected_reviews_for(cohort, |m| m.interval_off);
+    let feature_off_reviews = projected_reviews_for(cohort, |m| m.interval_off);
+    let full_reviews = projected_reviews_for(cohort, |m| m.interval_on);
+    vec![
+        json!({
+            "build": "full_app_feature_on",
+            "label": "Full app (A2 on)",
+            "study_time_seconds": study_time_seconds,
+            "mean_interval_days": mean_interval(cohort, |m| m.interval_on),
+            "projected_reviews": full_reviews,
+            "delta_vs_plain_reviews_pct": (full_reviews - plain_reviews) / plain_reviews * 100.0,
+        }),
+        json!({
+            "build": "app_feature_off",
+            "label": "App with A2 off",
+            "study_time_seconds": study_time_seconds,
+            "mean_interval_days": mean_interval(cohort, |m| m.interval_off),
+            "projected_reviews": feature_off_reviews,
+            "delta_vs_plain_reviews_pct": (feature_off_reviews - plain_reviews) / plain_reviews * 100.0,
+        }),
+        json!({
+            "build": "plain_anki_baseline",
+            "label": "Plain Anki / FSRS baseline",
+            "study_time_seconds": study_time_seconds,
+            "mean_interval_days": mean_interval(cohort, |m| m.interval_off),
+            "projected_reviews": plain_reviews,
+            "delta_vs_plain_reviews_pct": 0.0,
+        }),
+    ]
+}
+
 /// Build the eligible rote cohort, fire the feature (fast+Good+Confident), then
 /// read each card's next "Good" interval with the too-easy flag ON vs cleared.
 fn measure_cohort(col: &mut Collection, limit: usize) -> Vec<Measured> {
@@ -250,6 +290,24 @@ fn a2_ablation_control_applied_card_is_unaffected() {
 }
 
 #[test]
+fn a2_ablation_three_builds_use_equal_time_budget() {
+    let mut col = seeded_fsrs();
+    let cohort = measure_cohort(&mut col, 8);
+    let builds = three_build_summary(&cohort, cohort.len() as f64 * 0.8);
+    assert_eq!(builds.len(), 3);
+    let times: Vec<f64> = builds
+        .iter()
+        .map(|b| b["study_time_seconds"].as_f64().unwrap())
+        .collect();
+    assert!(times.windows(2).all(|w| (w[0] - w[1]).abs() < 1e-9));
+    let full_reviews = builds[0]["projected_reviews"].as_f64().unwrap();
+    let off_reviews = builds[1]["projected_reviews"].as_f64().unwrap();
+    let plain_reviews = builds[2]["projected_reviews"].as_f64().unwrap();
+    assert!(full_reviews < off_reviews);
+    assert!((off_reviews - plain_reviews).abs() < 1e-9);
+}
+
+#[test]
 #[ignore = "evidence emitter; run via `just ankountant-evidence`"]
 fn emit_ablation_evidence() {
     let mut col = seeded_fsrs();
@@ -262,30 +320,24 @@ fn emit_ablation_evidence() {
             json!({
                 "card": format!("rote #{}", i + 1),
                 "interval_off_days": m.interval_off,
+                "interval_plain_anki_days": m.interval_off,
                 "interval_on_days": m.interval_on,
                 "delta_days": m.interval_on as i64 - m.interval_off as i64,
             })
         })
         .collect();
 
-    let mean = |f: &dyn Fn(&Measured) -> f64| -> f64 {
-        cohort.iter().map(f).sum::<f64>() / cohort.len() as f64
-    };
-    let mean_off = mean(&|m| m.interval_off as f64);
-    let mean_on = mean(&|m| m.interval_on as f64);
-    let reviews_off: f64 = cohort
-        .iter()
-        .map(|m| projected_reviews(m.interval_off))
-        .sum();
-    let reviews_on: f64 = cohort
-        .iter()
-        .map(|m| projected_reviews(m.interval_on))
-        .sum();
+    let mean_off = mean_interval(&cohort, |m| m.interval_off);
+    let mean_on = mean_interval(&cohort, |m| m.interval_on);
+    let reviews_off = projected_reviews_for(&cohort, |m| m.interval_off);
+    let reviews_on = projected_reviews_for(&cohort, |m| m.interval_on);
     let reduction_pct = if reviews_off > 0.0 {
         (reviews_off - reviews_on) / reviews_off * 100.0
     } else {
         0.0
     };
+    let study_time_seconds = cohort.len() as f64 * 0.8;
+    let builds = three_build_summary(&cohort, study_time_seconds);
 
     // Control card (applied) — feature inert.
     let applied = col
@@ -300,18 +352,29 @@ fn emit_ablation_evidence() {
     let control_fired = is_too_easy(&mut col, applied);
 
     let data = json!({
-        "title": "A2 too-easy defunding — off/on ablation (rubric #5)",
+        "title": "A2 too-easy defunding — three-build ablation (rubric #5)",
         "generated_at": TimestampSecs::now().0,
         "reproduce": "just ankountant-evidence",
         "feature": "A2 latency-aware too-easy defunding",
         "hypothesis": "On a stable (>=21d) cog::rote card answered fast (<0.5x baseline), correct, and Confident, defunding lowers desired retention by 0.05 (floored 0.70), lengthening the next interval and reducing projected reviews. Non-rote/unstable/slow cards are unaffected.",
         "horizon_days": HORIZON_DAYS,
         "cohort_size": cohort.len(),
+        "equal_time_protocol": {
+            "study_time_seconds_per_build": study_time_seconds,
+            "same_cards": true,
+            "same_answer": "Good",
+            "same_answer_latency_ms": 800,
+            "builds": ["full_app_feature_on", "app_feature_off", "plain_anki_baseline"],
+            "note": "This backend fixture isolates A2. Plain Anki / FSRS and app-feature-off are expected to match because A2 is the only toggled behavior in this harness.",
+        },
+        "builds": builds,
         "per_card": rows,
         "summary": {
             "mean_interval_off_days": mean_off,
+            "mean_interval_plain_anki_days": mean_off,
             "mean_interval_on_days": mean_on,
             "projected_reviews_off": reviews_off,
+            "projected_reviews_plain_anki": reviews_off,
             "projected_reviews_on": reviews_on,
             "review_reduction_pct": reduction_pct,
         },
@@ -323,6 +386,11 @@ fn emit_ablation_evidence() {
         "safety_bound": "Retention is never reduced below TOO_EASY_RETENTION_FLOOR (0.70); this is a design bound, not a measured retention outcome.",
     });
 
-    assert!(mean_on >= mean_off && reviews_on < reviews_off && !control_fired);
+    assert!(
+        mean_on >= mean_off
+            && reviews_on < reviews_off
+            && !control_fired
+            && data["builds"].as_array().unwrap().len() == 3
+    );
     evidence::write_artifact("ablation", evidence::ABLATION_TEMPLATE, &data);
 }

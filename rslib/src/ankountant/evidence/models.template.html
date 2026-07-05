@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ankountant — Held-Out Model Evidence</title>
+    <style>
+      :root {
+        --bg: #10131a;
+        --panel: #181d27;
+        --panel-2: #202737;
+        --ink: #edf1f7;
+        --muted: #a5b1c4;
+        --accent: #7cc0ff;
+        --ok: #67e09f;
+        --bad: #ff7373;
+        --border: #2b3447;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .wrap { max-width: 1040px; margin: 0 auto; padding: 40px 24px 80px; }
+      h1 { font-size: 26px; margin: 0 0 4px; }
+      h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 32px 0 12px; }
+      p { color: var(--muted); max-width: 78ch; }
+      code { background: var(--panel-2); padding: 2px 6px; border-radius: 5px; font-size: 13px; }
+      .badges { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0; }
+      .badge {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border);
+        background: var(--panel); font-weight: 600;
+      }
+      .badge .dot { width: 10px; height: 10px; border-radius: 50%; }
+      .pass .dot { background: var(--ok); } .pass { color: var(--ok); }
+      .fail .dot { background: var(--bad); } .fail { color: var(--bad); }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+      .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+      table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+      th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+      th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+      td.num, th.num { text-align: right; }
+      .foot { color: var(--muted); font-size: 13px; margin-top: 10px; }
+      details { margin-top: 16px; }
+      summary { cursor: pointer; color: var(--accent); }
+      pre { background: #0b0f18; border: 1px solid var(--border); border-radius: 10px; padding: 16px; overflow: auto; font-size: 12px; color: #c7d3e8; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1 id="title"></h1>
+      <p id="scope"></p>
+      <p class="foot">Reproduce: <code id="reproduce"></code> · generated <span id="ts"></span></p>
+
+      <div class="badges" id="badges"></div>
+
+      <h2>Score Mapping</h2>
+      <div class="card"><table id="score"></table></div>
+
+      <h2>Held-Out Metrics</h2>
+      <div class="grid">
+        <div class="card"><table id="memory"></table></div>
+        <div class="card"><table id="performance"></table></div>
+      </div>
+
+      <h2>Calibration</h2>
+      <div class="grid">
+        <div class="card"><table id="memory-cal"></table></div>
+        <div class="card"><table id="performance-cal"></table></div>
+      </div>
+
+      <details>
+        <summary>Raw JSON record</summary>
+        <pre id="raw"></pre>
+      </details>
+    </div>
+
+    <script>
+      const DATA = /*__DATA__*/;
+
+      const $ = (id) => document.getElementById(id);
+      $("title").textContent = DATA.title;
+      $("scope").textContent = DATA.scope_note;
+      $("reproduce").textContent = DATA.reproduce;
+      $("ts").textContent = new Date((DATA.generated_at || 0) * 1000).toISOString();
+      $("raw").textContent = JSON.stringify(DATA, null, 2);
+
+      function pct(v) {
+        return `${(v * 100).toFixed(1)}%`;
+      }
+
+      function num(v) {
+        return Number(v).toFixed(3);
+      }
+
+      function badge(label, ok) {
+        const cls = ok ? "pass" : "fail";
+        const mark = ok ? "verified" : "failed";
+        return `<span class="badge ${cls}"><span class="dot"></span>${label}: ${mark}</span>`;
+      }
+
+      $("badges").innerHTML =
+        badge("Split reproducible", DATA.verdicts.split_reproducible) +
+        badge("Held-out rows", DATA.verdicts.held_out_sets_non_empty) +
+        badge("Ordered score range", DATA.verdicts.score_range_ordered);
+
+      const s = DATA.score_mapping;
+      $("score").innerHTML = `
+        <tr><th>Exam</th><td>${s.exam}</td></tr>
+        <tr><th>Method</th><td>${s.method}</td></tr>
+        <tr><th>Held-out accuracy</th><td>${s.held_out_correct}/${s.held_out_total} (${pct(s.point_accuracy)})</td></tr>
+        <tr><th>Projected score</th><td>${num(s.point_estimate)}</td></tr>
+        <tr><th>Likely range</th><td>${s.range}</td></tr>`;
+
+      function metricsTable(model) {
+        return `
+          <tr><th>Model</th><td>${model.model}</td></tr>
+          <tr><th>Held-out rows</th><td>${model.held_out_reviews || model.held_out_questions}</td></tr>
+          <tr><th>Brier</th><td>${num(model.brier)}</td></tr>
+          <tr><th>Log loss</th><td>${num(model.log_loss)}</td></tr>`;
+      }
+
+      $("memory").innerHTML = metricsTable(DATA.memory);
+      $("performance").innerHTML = metricsTable(DATA.performance) +
+        `<tr><th>Accuracy</th><td>${pct(DATA.performance.held_out_accuracy)}</td></tr>`;
+
+      function calibrationTable(rows) {
+        return `<tr><th>Bucket</th><th class="num">Predicted</th><th class="num">Observed</th><th class="num">Rows</th></tr>` +
+          rows.map((r) => `
+            <tr>
+              <td>${r.bucket}</td>
+              <td class="num">${pct(r.mean_prediction)}</td>
+              <td class="num">${pct(r.observed)}</td>
+              <td class="num">${r.total}</td>
+            </tr>`).join("");
+      }
+
+      $("memory-cal").innerHTML = calibrationTable(DATA.memory.calibration);
+      $("performance-cal").innerHTML = calibrationTable(DATA.performance.calibration);
+    </script>
+  </body>
+</html>

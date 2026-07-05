@@ -87,10 +87,10 @@ All three scores are shown as **ranges**, never bare points.
 
 ## Content pipeline (Phase 2a)
 
-- **Demo seed / demo profile** — the hand-authored FAR content **plus fake
-  review/attempt history** loaded on demand so the review loop, Memory, and the
-  Readiness band/give-up rule are all exercised on a fresh install. Sample data,
-  not generated content.
+- **Demo seed / demo profile** — inclusive CPA starter content **plus fake
+  review/attempt history** loaded on demand so FAR, AUD, REG, TCP, and ISC all
+  exercise the review loop, Memory, and the Readiness band/give-up rule on a
+  fresh install. Sample data, not generated content.
 - **Provenance** — the traceable origin of an AI-generated card: the exact
   **source passage** it was grounded in, how it was generated, and its checker
   verdict. A card with no traceable source is invalid.

@@ -2,7 +2,7 @@
     "cohorts": [
         {
             "mean_gap": 0.4,
-            "mean_memory": 0.9,
+            "mean_memory": 0.9000000000000002,
             "mean_performance": 0.5,
             "name": "Rote memorizer",
             "topics": [
@@ -11,13 +11,85 @@
                     "memory": 0.9,
                     "performance": 0.5,
                     "topic": "capitalize vs expense"
+                },
+                {
+                    "gap": 0.4,
+                    "memory": 0.9,
+                    "performance": 0.5,
+                    "topic": "cash receivables"
+                },
+                {
+                    "gap": 0.4,
+                    "memory": 0.9,
+                    "performance": 0.5,
+                    "topic": "conceptual framework"
+                },
+                {
+                    "gap": 0.4,
+                    "memory": 0.9,
+                    "performance": 0.5,
+                    "topic": "debt extinguishment"
+                },
+                {
+                    "gap": 0.4,
+                    "memory": 0.9,
+                    "performance": 0.5,
+                    "topic": "financial statements"
+                },
+                {
+                    "gap": 0.4,
+                    "memory": 0.9,
+                    "performance": 0.5,
+                    "topic": "government nfp"
+                },
+                {
+                    "gap": 0.4,
+                    "memory": 0.9,
+                    "performance": 0.5,
+                    "topic": "intangibles impairment"
+                },
+                {
+                    "gap": 0.4,
+                    "memory": 0.9,
+                    "performance": 0.5,
+                    "topic": "inventory valuation"
+                },
+                {
+                    "gap": 0.4,
+                    "memory": 0.9,
+                    "performance": 0.5,
+                    "topic": "operating vs finance lease"
+                },
+                {
+                    "gap": 0.4,
+                    "memory": 0.9,
+                    "performance": 0.5,
+                    "topic": "pensions equity"
+                },
+                {
+                    "gap": 0.4,
+                    "memory": 0.9,
+                    "performance": 0.5,
+                    "topic": "revrec step selection"
+                },
+                {
+                    "gap": 0.4,
+                    "memory": 0.9,
+                    "performance": 0.5,
+                    "topic": "tax timing"
+                },
+                {
+                    "gap": 0.4,
+                    "memory": 0.9,
+                    "performance": 0.5,
+                    "topic": "trading afs htm"
                 }
             ]
         },
         {
             "mean_gap": 0.050000000000000044,
-            "mean_memory": 0.9,
-            "mean_performance": 0.85,
+            "mean_memory": 0.9000000000000002,
+            "mean_performance": 0.8499999999999998,
             "name": "Genuine mastery",
             "topics": [
                 {
@@ -25,11 +97,83 @@
                     "memory": 0.9,
                     "performance": 0.85,
                     "topic": "capitalize vs expense"
+                },
+                {
+                    "gap": 0.050000000000000044,
+                    "memory": 0.9,
+                    "performance": 0.85,
+                    "topic": "cash receivables"
+                },
+                {
+                    "gap": 0.050000000000000044,
+                    "memory": 0.9,
+                    "performance": 0.85,
+                    "topic": "conceptual framework"
+                },
+                {
+                    "gap": 0.050000000000000044,
+                    "memory": 0.9,
+                    "performance": 0.85,
+                    "topic": "debt extinguishment"
+                },
+                {
+                    "gap": 0.050000000000000044,
+                    "memory": 0.9,
+                    "performance": 0.85,
+                    "topic": "financial statements"
+                },
+                {
+                    "gap": 0.050000000000000044,
+                    "memory": 0.9,
+                    "performance": 0.85,
+                    "topic": "government nfp"
+                },
+                {
+                    "gap": 0.050000000000000044,
+                    "memory": 0.9,
+                    "performance": 0.85,
+                    "topic": "intangibles impairment"
+                },
+                {
+                    "gap": 0.050000000000000044,
+                    "memory": 0.9,
+                    "performance": 0.85,
+                    "topic": "inventory valuation"
+                },
+                {
+                    "gap": 0.050000000000000044,
+                    "memory": 0.9,
+                    "performance": 0.85,
+                    "topic": "operating vs finance lease"
+                },
+                {
+                    "gap": 0.050000000000000044,
+                    "memory": 0.9,
+                    "performance": 0.85,
+                    "topic": "pensions equity"
+                },
+                {
+                    "gap": 0.050000000000000044,
+                    "memory": 0.9,
+                    "performance": 0.85,
+                    "topic": "revrec step selection"
+                },
+                {
+                    "gap": 0.050000000000000044,
+                    "memory": 0.9,
+                    "performance": 0.85,
+                    "topic": "tax timing"
+                },
+                {
+                    "gap": 0.050000000000000044,
+                    "memory": 0.9,
+                    "performance": 0.85,
+                    "topic": "trading afs htm"
                 }
             ]
         }
     ],
-    "generated_at": 1783108273,
+    "generated_at": 1783286369,
     "method": "Two cohorts share the SAME study-pile recall (Memory); only the sealed reworded-item accuracy (Performance) differs. Memory reads trailing-30d recall on the study cards; Performance reads the label-stripped sealed 'which treatment applies?' items — the same idea in new words. If Performance merely echoed Memory the two would move together; instead Performance follows the reworded items and the gap opens.",
     "note": "A fair test that could fail: had Performance copied Memory, both cohorts would read ~90% Performance and ~0 gap regardless of the reworded-item accuracy. It does not — Performance tracks the sealed items, so the two signals are genuinely distinct.",
     "reproduce": "just ankountant-evidence",

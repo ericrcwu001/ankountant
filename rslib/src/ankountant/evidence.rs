@@ -2,7 +2,8 @@
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 //! Reproducible evidence artifact helpers for Ankountant rubric claims:
-//! determinism, A2 ablation, paraphrase transfer, undo integrity, and latency.
+//! determinism, A2 ablation, paraphrase transfer, model checks, undo integrity,
+//! and latency.
 //! Correctness emitters run through `just ankountant-evidence`; the optimized
 //! latency emitter runs through `just ankountant-bench`. Each emitter writes a
 //! JSON record plus a self-contained HTML artifact under
@@ -58,5 +59,37 @@ pub(super) fn write_artifact(name: &str, template: &str, data: &Value) {
 pub(super) const DETERMINISM_TEMPLATE: &str = include_str!("evidence/determinism.template.html");
 pub(super) const ABLATION_TEMPLATE: &str = include_str!("evidence/ablation.template.html");
 pub(super) const PARAPHRASE_TEMPLATE: &str = include_str!("evidence/paraphrase.template.html");
+pub(super) const MODELS_TEMPLATE: &str = include_str!("evidence/models.template.html");
 pub(super) const UNDO_TEMPLATE: &str = include_str!("evidence/undo.template.html");
 pub(super) const LATENCY_TEMPLATE: &str = include_str!("evidence/latency.template.html");
+
+#[test]
+fn evidence_html_artifacts_are_self_contained_readable_pages() {
+    for name in [
+        "determinism",
+        "ablation",
+        "paraphrase",
+        "models",
+        "undo",
+        "latency",
+    ] {
+        let html = std::fs::read_to_string(evidence_dir().join(format!("{name}.html"))).unwrap();
+        assert!(
+            html.starts_with("<!doctype html>"),
+            "{name} missing doctype"
+        );
+        assert!(html.contains("<title>"), "{name} missing title");
+        assert!(
+            html.contains("Raw JSON record"),
+            "{name} missing raw JSON disclosure"
+        );
+        assert!(
+            html.contains("const DATA = {"),
+            "{name} missing inlined data"
+        );
+        assert!(
+            !html.contains("/*__DATA__*/"),
+            "{name} still has template token"
+        );
+    }
+}

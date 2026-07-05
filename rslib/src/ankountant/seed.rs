@@ -4,7 +4,7 @@
 //! F016 — the FAR demo seed. Two layers on ordinary Anki objects (FR-5):
 //!
 //! 1. **Content** (always): ~130 real CPA-FAR recall cards, real "which
-//!    treatment?" MCQs for the four confusion sets, the anchor JE/numeric TBS
+//!    treatment?" MCQs for the FAR confusion sets, the anchor JE/numeric TBS
 //!    the grading tests pin, plus a few extra worked TBS — all authored offline
 //!    (a build-time author + independent fact-check pass; see
 //!    `docs_ankountant/rag/`) and embedded from `seed_content.json`.
@@ -342,8 +342,8 @@ pub(crate) struct SeedSummary {
 /// One confusion set's authoring spec.
 struct SetSpec {
     set_id: &'static str,
-    tags: [&'static str; 2],
-    treatments: [&'static str; 2],
+    tags: &'static [&'static str],
+    treatments: &'static [&'static str],
 }
 
 // The full FAR blueprint: one confusion set per Home topo topic (see
@@ -354,71 +354,71 @@ struct SetSpec {
 const SETS: [SetSpec; 13] = [
     SetSpec {
         set_id: "capitalize_vs_expense",
-        tags: ["ds::cost::capitalize", "ds::cost::expense"],
-        treatments: ["Capitalize", "Expense"],
+        tags: &["ds::cost::capitalize", "ds::cost::expense"],
+        treatments: &["Capitalize", "Expense"],
     },
     SetSpec {
         set_id: "operating_vs_finance_lease",
-        tags: ["ds::lease::operating", "ds::lease::finance"],
-        treatments: ["Operating lease", "Finance lease"],
+        tags: &["ds::lease::operating", "ds::lease::finance"],
+        treatments: &["Operating lease", "Finance lease"],
     },
     SetSpec {
         set_id: "revrec_step_selection",
-        tags: ["ds::revrec::step4", "ds::revrec::step5"],
-        treatments: ["Allocate price (Step 4)", "Recognize revenue (Step 5)"],
+        tags: &["ds::revrec::step4", "ds::revrec::step5"],
+        treatments: &["Allocate price (Step 4)", "Recognize revenue (Step 5)"],
     },
     SetSpec {
         set_id: "trading_afs_htm",
-        tags: ["ds::securities::trading", "ds::securities::htm"],
-        treatments: [
+        tags: &["ds::securities::trading", "ds::securities::htm"],
+        treatments: &[
             "Trading (FV through NI)",
             "Held-to-maturity (amortized cost)",
         ],
     },
     SetSpec {
         set_id: "inventory_valuation",
-        tags: ["ds::inventory::lcm", "ds::inventory::lcnrv"],
-        treatments: ["Lower of cost or market", "Lower of cost and NRV"],
+        tags: &["ds::inventory::lcm", "ds::inventory::lcnrv"],
+        treatments: &["Lower of cost or market", "Lower of cost and NRV"],
     },
     SetSpec {
         set_id: "debt_extinguishment",
-        tags: ["ds::debt::extinguish", "ds::debt::modify"],
-        treatments: ["Extinguishment (derecognize)", "Modification (retain)"],
+        tags: &["ds::debt::extinguish", "ds::debt::modify"],
+        treatments: &["Extinguishment (derecognize)", "Modification (retain)"],
     },
     SetSpec {
         set_id: "intangibles_impairment",
-        tags: ["ds::intangible::finite", "ds::intangible::indefinite"],
-        treatments: ["Finite-life (amortize)", "Indefinite-life (test only)"],
+        tags: &["ds::intangible::finite", "ds::intangible::indefinite"],
+        treatments: &["Finite-life (amortize)", "Indefinite-life (test only)"],
     },
     SetSpec {
         set_id: "cash_receivables",
-        tags: ["ds::ar::allowance", "ds::ar::writeoff"],
-        treatments: ["Allowance method", "Direct write-off"],
+        tags: &["ds::ar::allowance", "ds::ar::writeoff"],
+        treatments: &["Allowance method", "Direct write-off"],
     },
     SetSpec {
         set_id: "financial_statements",
-        tags: ["ds::stmt::operating", "ds::stmt::financing"],
-        treatments: ["Operating activity", "Financing activity"],
+        tags: &["ds::stmt::operating", "ds::stmt::financing"],
+        treatments: &["Operating activity", "Financing activity"],
     },
     SetSpec {
         set_id: "conceptual_framework",
-        tags: ["ds::concept::relevance", "ds::concept::faithful"],
-        treatments: ["Relevance", "Faithful representation"],
+        tags: &["ds::concept::relevance", "ds::concept::faithful"],
+        treatments: &["Relevance", "Faithful representation"],
     },
     SetSpec {
         set_id: "tax_timing",
-        tags: ["ds::tax::temporary", "ds::tax::permanent"],
-        treatments: ["Temporary difference", "Permanent difference"],
+        tags: &["ds::tax::temporary", "ds::tax::permanent"],
+        treatments: &["Temporary difference", "Permanent difference"],
     },
     SetSpec {
         set_id: "pensions_equity",
-        tags: ["ds::pension::service", "ds::pension::interest"],
-        treatments: ["Service cost", "Interest cost"],
+        tags: &["ds::pension::service", "ds::pension::interest"],
+        treatments: &["Service cost", "Interest cost"],
     },
     SetSpec {
         set_id: "government_nfp",
-        tags: ["ds::govnfp::govtwide", "ds::govnfp::fund"],
-        treatments: ["Government-wide (accrual)", "Fund (modified accrual)"],
+        tags: &["ds::govnfp::govtwide", "ds::govnfp::fund"],
+        treatments: &["Government-wide (accrual)", "Fund (modified accrual)"],
     },
 ];
 
@@ -455,42 +455,156 @@ fn far_set_for_topic(topic_tag: &str) -> Option<&'static SetSpec> {
 // section that carries seeded TBS gets ≥1 set so doc-review blanks can reuse it
 // and Performance attributes correctly. Config keys are
 // `ankountant.confusable.<section>`.
-const AUD_SETS: [SetSpec; 2] = [
+const AUD_SETS: [SetSpec; 6] = [
+    SetSpec {
+        set_id: "qualified_vs_adverse_opinion",
+        tags: &["ds::aud::qualified", "ds::aud::adverse"],
+        treatments: &["Qualified opinion", "Adverse opinion"],
+    },
+    SetSpec {
+        set_id: "test_of_controls_vs_substantive",
+        tags: &["ds::aud::controls", "ds::aud::substantive"],
+        treatments: &["Test of controls", "Substantive procedure"],
+    },
     SetSpec {
         set_id: "aud_evidence_sufficiency",
-        tags: ["ds::aud::sufficient", "ds::aud::insufficient"],
-        treatments: ["Sufficient appropriate evidence", "Insufficient evidence"],
+        tags: &["ds::aud::sufficient", "ds::aud::insufficient"],
+        treatments: &["Sufficient appropriate evidence", "Insufficient evidence"],
     },
     SetSpec {
         set_id: "aud_request_relevance",
-        tags: ["ds::aud::retain", "ds::aud::revise"],
-        treatments: ["Retain as drafted", "Revise the request"],
+        tags: &["ds::aud::retain", "ds::aud::revise"],
+        treatments: &["Retain as drafted", "Revise the request"],
+    },
+    SetSpec {
+        set_id: "materiality_vs_trivial_misstatement",
+        tags: &["ds::aud::material", "ds::aud::trivial"],
+        treatments: &["Material misstatement", "Clearly trivial misstatement"],
+    },
+    SetSpec {
+        set_id: "subsequent_events_vs_going_concern",
+        tags: &["ds::aud::subsequent", "ds::aud::going_concern"],
+        treatments: &["Subsequent event procedure", "Going concern evaluation"],
     },
 ];
 
-const REG_SETS: [SetSpec; 1] = [SetSpec {
-    set_id: "reg_capitalize_vs_deduct",
-    tags: ["ds::reg::deduct", "ds::reg::capitalize"],
-    treatments: ["Currently deductible", "Capitalize and recover over time"],
-}];
+const REG_SETS: [SetSpec; 6] = [
+    SetSpec {
+        set_id: "s1231_vs_capital_vs_ordinary",
+        tags: &["ds::reg::s1231", "ds::reg::capital", "ds::reg::ordinary"],
+        treatments: &[
+            "Section 1231 gain/loss",
+            "Capital gain/loss",
+            "Ordinary income",
+        ],
+    },
+    SetSpec {
+        set_id: "deduction_for_vs_from_agi",
+        tags: &["ds::reg::for_agi", "ds::reg::from_agi"],
+        treatments: &["Deduction for AGI", "Deduction from AGI"],
+    },
+    SetSpec {
+        set_id: "reg_capitalize_vs_deduct",
+        tags: &["ds::reg::deduct", "ds::reg::capitalize"],
+        treatments: &["Currently deductible", "Capitalize and recover over time"],
+    },
+    SetSpec {
+        set_id: "circular230_sanction_vs_tax_penalty",
+        tags: &["ds::reg::circular230", "ds::reg::tax_penalty"],
+        treatments: &["Circular 230 sanction", "Tax penalty"],
+    },
+    SetSpec {
+        set_id: "basis_vs_amount_realized",
+        tags: &["ds::reg::basis", "ds::reg::amount_realized"],
+        treatments: &["Adjusted basis", "Amount realized"],
+    },
+    SetSpec {
+        set_id: "c_corp_vs_s_corp_taxation",
+        tags: &["ds::reg::c_corp", "ds::reg::s_corp"],
+        treatments: &["C corporation taxation", "S corporation pass-through"],
+    },
+];
 
 const BAR_SETS: [SetSpec; 1] = [SetSpec {
     set_id: "bar_segment_reporting",
-    tags: ["ds::bar::reportable", "ds::bar::not_reportable"],
-    treatments: ["Reportable segment", "Not separately reportable"],
+    tags: &["ds::bar::reportable", "ds::bar::not_reportable"],
+    treatments: &["Reportable segment", "Not separately reportable"],
 }];
 
-const ISC_SETS: [SetSpec; 1] = [SetSpec {
-    set_id: "isc_control_type",
-    tags: ["ds::isc::preventive", "ds::isc::detective"],
-    treatments: ["Preventive control", "Detective control"],
-}];
+const ISC_SETS: [SetSpec; 6] = [
+    SetSpec {
+        set_id: "soc1_vs_soc2",
+        tags: &["ds::isc::soc1", "ds::isc::soc2"],
+        treatments: &["SOC 1 (ICFR)", "SOC 2 (trust services)"],
+    },
+    SetSpec {
+        set_id: "soc_report_type1_vs_type2",
+        tags: &["ds::isc::type1", "ds::isc::type2"],
+        treatments: &[
+            "Type 1 (design at a point in time)",
+            "Type 2 (operating effectiveness over a period)",
+        ],
+    },
+    SetSpec {
+        set_id: "isc_control_type",
+        tags: &["ds::isc::preventive", "ds::isc::detective"],
+        treatments: &["Preventive control", "Detective control"],
+    },
+    SetSpec {
+        set_id: "authentication_vs_authorization",
+        tags: &["ds::isc::authentication", "ds::isc::authorization"],
+        treatments: &["Authentication", "Authorization"],
+    },
+    SetSpec {
+        set_id: "backup_vs_disaster_recovery",
+        tags: &["ds::isc::backup", "ds::isc::recovery"],
+        treatments: &["Backup control", "Disaster recovery procedure"],
+    },
+    SetSpec {
+        set_id: "incident_detection_vs_response",
+        tags: &["ds::isc::detect", "ds::isc::respond"],
+        treatments: &["Incident detection", "Incident response"],
+    },
+];
 
-const TCP_SETS: [SetSpec; 1] = [SetSpec {
-    set_id: "tcp_cost_recovery",
-    tags: ["ds::tcp::expense", "ds::tcp::capitalize"],
-    treatments: ["Expense currently", "Capitalize and recover"],
-}];
+const TCP_SETS: [SetSpec; 6] = [
+    SetSpec {
+        set_id: "like_kind_vs_taxable_exchange",
+        tags: &["ds::tcp::nonrecognition", "ds::tcp::taxable"],
+        treatments: &["Nonrecognition (deferral)", "Currently taxable exchange"],
+    },
+    SetSpec {
+        set_id: "distribution_vs_liquidation",
+        tags: &["ds::tcp::distribution", "ds::tcp::liquidation"],
+        treatments: &["Nonliquidating distribution", "Complete liquidation"],
+    },
+    SetSpec {
+        set_id: "tcp_cost_recovery",
+        tags: &["ds::tcp::expense", "ds::tcp::capitalize"],
+        treatments: &["Expense currently", "Capitalize and recover"],
+    },
+    SetSpec {
+        set_id: "gift_vs_estate_tax",
+        tags: &["ds::tcp::gift", "ds::tcp::estate"],
+        treatments: &["Gift tax transfer", "Estate tax inclusion"],
+    },
+    SetSpec {
+        set_id: "redemption_vs_dividend",
+        tags: &["ds::tcp::redemption", "ds::tcp::dividend"],
+        treatments: &[
+            "Sale/exchange redemption",
+            "Dividend-equivalent distribution",
+        ],
+    },
+    SetSpec {
+        set_id: "active_vs_passive_loss",
+        tags: &["ds::tcp::active", "ds::tcp::passive"],
+        treatments: &["Active business loss", "Passive activity loss"],
+    },
+];
+
+const DEMO_VISIBLE_SECTIONS: &[&str] = &["FAR", "AUD", "REG", "TCP", "ISC"];
+const DEMO_NON_FAR_SECTIONS: &[&str] = &["AUD", "REG", "TCP", "ISC"];
 
 /// The confusion sets defined for a section (empty for an unseeded section).
 fn section_sets(section: &str) -> &'static [SetSpec] {
@@ -508,6 +622,35 @@ fn section_sets(section: &str) -> &'static [SetSpec] {
 /// Resolve a `(section, set_id)` to its `SetSpec`, if defined.
 fn find_set(section: &str, set_id: &str) -> Option<&'static SetSpec> {
     section_sets(section).iter().find(|s| s.set_id == set_id)
+}
+
+fn category_title(set_id: &str) -> String {
+    set_id.replace('_', " ")
+}
+
+fn category_recall_front(section: &str, spec: &SetSpec, treatment: &str, variant: usize) -> String {
+    let category = category_title(spec.set_id);
+    if variant == 0 {
+        format!("{section}: In the {category} category, what facts point to {treatment}?")
+    } else {
+        format!("{section}: What is the key contrast tested by {category}?")
+    }
+}
+
+fn category_recall_back(spec: &SetSpec, treatment: &str) -> String {
+    format!(
+        "Classify the fact pattern as {treatment}. Contrast it with: {}.",
+        spec.treatments.join("; ")
+    )
+}
+
+fn category_mcq_prompt(section: &str, spec: &SetSpec, treatment: &str, index: usize) -> String {
+    format!(
+        "{section} practice item {} for {}. The fact pattern points to {}. Select the correct treatment.",
+        index + 1,
+        category_title(spec.set_id),
+        treatment
+    )
 }
 
 /// Deterministic [0,1) PRNG (a splitmix64 finalizer) keyed by an integer. Lets
@@ -604,9 +747,15 @@ impl Collection {
                 + chrono::Duration::days(constants::SEED_EXAM_OFFSET_DAYS))
             .format("%Y-%m-%d")
             .to_string();
-            self.ankountant_set_exam_date(super::DEFAULT_SECTION, &exam_iso)?;
-        } else if self.ankountant_exam_date(super::DEFAULT_SECTION)?.is_some() {
-            self.ankountant_set_exam_date(super::DEFAULT_SECTION, "")?;
+            for section in DEMO_VISIBLE_SECTIONS {
+                self.ankountant_set_exam_date(section, &exam_iso)?;
+            }
+        } else {
+            for section in DEMO_VISIBLE_SECTIONS {
+                if self.ankountant_exam_date(section)?.is_some() {
+                    self.ankountant_set_exam_date(section, "")?;
+                }
+            }
         }
         Ok(out.output)
     }
@@ -639,7 +788,7 @@ impl Collection {
         let content = seed_content();
 
         // --- CONFUSABLE map in col config, PER SECTION (A3/A6; ADR 0008). ---
-        // FAR keeps its four sets; AUD/REG/BAR/ISC/TCP get their own so
+        // FAR keeps its 13-set topo map; AUD/REG/BAR/ISC/TCP get their own so
         // doc-review blanks reuse them and Performance attributes per section.
         let mut total_sets = 0usize;
         for sec in super::SECTIONS {
@@ -649,6 +798,11 @@ impl Collection {
             }
             let mut map: ConfusableMap = ConfusableMap::new();
             for spec in specs {
+                require!(
+                    !spec.tags.is_empty() && !spec.treatments.is_empty(),
+                    "confusion set {} has empty category metadata",
+                    spec.set_id
+                );
                 map.insert(
                     spec.set_id.to_string(),
                     ConfusionSet {
@@ -709,7 +863,7 @@ impl Collection {
                 card.ds_tag.clone()
             } else if let Some(spec) = far_set_for_topic(&card.topic_tag) {
                 let n = topic_ds_counter.entry(card.topic_tag.clone()).or_default();
-                let tag = spec.tags[*n % 2].to_string();
+                let tag = spec.tags[*n % spec.tags.len()].to_string();
                 *n += 1;
                 tag
             } else {
@@ -731,8 +885,41 @@ impl Collection {
             }
         }
 
+        for sec in DEMO_NON_FAR_SECTIONS {
+            for spec in section_sets(sec) {
+                let deck_name = format!("Ankountant::Study::{sec}::{}", spec.set_id);
+                let deck = match study_decks.get(&deck_name) {
+                    Some(d) => *d,
+                    None => {
+                        let d = self.ankountant_get_or_create_deck_inner(&deck_name)?;
+                        study_decks.insert(deck_name, d);
+                        d
+                    }
+                };
+                for (i, treatment) in spec.treatments.iter().enumerate() {
+                    let ds_tag = spec.tags[i % spec.tags.len()].to_string();
+                    for variant in 0..2 {
+                        let mut note = study_nt.new_note();
+                        note.set_field(0, category_recall_front(sec, spec, treatment, variant))?;
+                        note.set_field(1, category_recall_back(spec, treatment))?;
+                        note.tags = vec![
+                            TAG_COG_APPLIED.to_string(),
+                            format!("{}{}", super::SEC_TAG_PREFIX, sec),
+                            ds_tag.clone(),
+                        ];
+                        self.add_note_inner(&mut note, deck)?;
+                        summary.study_recall_cards += 1;
+                        let cids = self.storage.card_ids_of_notes(&[note.id])?;
+                        ds_cards.entry(ds_tag.clone()).or_default().extend(cids);
+                    }
+                }
+            }
+        }
+
         // --- 2) Sealed bank per set: real, varied single-choice MCQs. ---
         let mut set_mcq_ids: std::collections::HashMap<String, Vec<NoteId>> =
+            std::collections::HashMap::new();
+        let mut category_item_ids: std::collections::HashMap<(String, String), Vec<NoteId>> =
             std::collections::HashMap::new();
         for spec in SETS.iter() {
             let sealed_deck = self.ankountant_get_or_create_deck_inner(&format!(
@@ -784,6 +971,53 @@ impl Collection {
                     .entry(spec.set_id.to_string())
                     .or_default()
                     .push(note.id);
+                category_item_ids
+                    .entry((section.to_string(), spec.set_id.to_string()))
+                    .or_default()
+                    .push(note.id);
+            }
+        }
+
+        for sec in DEMO_NON_FAR_SECTIONS {
+            for spec in section_sets(sec) {
+                let sealed_deck = self.ankountant_get_or_create_deck_inner(&format!(
+                    "Ankountant::Sealed::{sec}::{}",
+                    spec.set_id
+                ))?;
+                for (i, treatment) in spec.treatments.iter().enumerate() {
+                    let ds_tag = spec.tags[i % spec.tags.len()].to_string();
+                    let steps = json!([
+                        {"id": "choice", "answer_key": treatment.to_string(), "weight": 1.0}
+                    ]);
+                    let mut note = tbs_nt.new_note();
+                    note.set_field(tbs_fields::TBS_TYPE, "mcq")?;
+                    note.set_field(
+                        tbs_fields::PROMPT,
+                        category_mcq_prompt(sec, spec, treatment, i),
+                    )?;
+                    note.set_field(tbs_fields::EXHIBITS_JSON, "[]")?;
+                    note.set_field(tbs_fields::STEPS_JSON, steps.to_string())?;
+                    note.set_field(tbs_fields::SCHEMA_TAG, &ds_tag)?;
+                    note.set_field(
+                        tbs_fields::SOURCE_PASSAGE,
+                        format!(
+                            "{sec} demo category seed for {}: {}.",
+                            category_title(spec.set_id),
+                            spec.treatments.join(" vs ")
+                        ),
+                    )?;
+                    note.set_field(tbs_fields::GEN_METHOD, GEN_METHOD_SEED)?;
+                    note.set_field(tbs_fields::CHECKER_STATUS, "pass")?;
+                    note.tags = vec![format!("{}{}", super::SEC_TAG_PREFIX, sec), ds_tag];
+                    self.add_note_inner(&mut note, sealed_deck)?;
+                    self.suspend_note_cards(note.id)?;
+                    category_item_ids
+                        .entry(((*sec).to_string(), spec.set_id.to_string()))
+                        .or_default()
+                        .push(note.id);
+                    summary.sealed_items += 1;
+                    summary.sections_seeded.insert((*sec).to_string());
+                }
             }
         }
 
@@ -819,20 +1053,13 @@ impl Collection {
 
         // --- 3) Extra worked TBS from content (real numbers + provenance). ---
         for t in &content.tbs {
-            let spec = SETS.iter().find(|s| s.set_id == t.set_id);
-            let (deck, tag) = match spec {
-                Some(sp) => (
-                    self.ankountant_get_or_create_deck_inner(&format!(
-                        "{sealed_deck_base}::{}",
-                        sp.set_id
-                    ))?,
-                    sp.tags[0].to_string(),
-                ),
-                None => (
-                    self.ankountant_get_or_create_deck_inner(&format!("{sealed_deck_base}::misc"))?,
-                    String::new(),
-                ),
-            };
+            let spec = find_set(section, &t.set_id)
+                .or_invalid(format!("unknown seeded TBS category {}", t.set_id))?;
+            let deck = self.ankountant_get_or_create_deck_inner(&format!(
+                "{sealed_deck_base}::{}",
+                spec.set_id
+            ))?;
+            let tag = spec.tags[0].to_string();
             let steps = content_tbs_steps(t)?;
             let mut note = tbs_nt.new_note();
             note.set_field(tbs_fields::TBS_TYPE, &t.kind)?;
@@ -851,6 +1078,10 @@ impl Collection {
             }
             self.add_note_inner(&mut note, deck)?;
             self.suspend_note_cards(note.id)?;
+            category_item_ids
+                .entry((section.to_string(), spec.set_id.to_string()))
+                .or_default()
+                .push(note.id);
             if t.kind == "journal_entry" {
                 summary.sealed_je_tbs += 1;
             } else {
@@ -868,22 +1099,15 @@ impl Collection {
         //         section. Replaces the old stored-only stubs. ---
         for item in &content.section_items {
             validate_section_item(item)?;
-            let (deck, schema_tag) = match find_set(&item.section, &item.set_id) {
-                Some(spec) => (
-                    self.ankountant_get_or_create_deck_inner(&format!(
-                        "Ankountant::Sealed::{}::{}",
-                        item.section, spec.set_id
-                    ))?,
-                    spec.tags[0].to_string(),
-                ),
-                None => (
-                    self.ankountant_get_or_create_deck_inner(&format!(
-                        "Ankountant::Sealed::{}::misc",
-                        item.section
-                    ))?,
-                    String::new(),
-                ),
-            };
+            let spec = find_set(&item.section, &item.set_id).or_invalid(format!(
+                "unknown seeded section-item category {}::{}",
+                item.section, item.set_id
+            ))?;
+            let deck = self.ankountant_get_or_create_deck_inner(&format!(
+                "Ankountant::Sealed::{}::{}",
+                item.section, spec.set_id
+            ))?;
+            let schema_tag = spec.tags[0].to_string();
             let steps = section_item_steps(item);
             let mut note = tbs_nt.new_note();
             note.set_field(tbs_fields::TBS_TYPE, &item.tbs_type)?;
@@ -904,6 +1128,10 @@ impl Collection {
             note.tags = tags;
             self.add_note_inner(&mut note, deck)?;
             self.suspend_note_cards(note.id)?;
+            category_item_ids
+                .entry((item.section.clone(), spec.set_id.to_string()))
+                .or_default()
+                .push(note.id);
             match item.tbs_type.as_str() {
                 "research" => summary.sealed_research_tbs += 1,
                 "doc_review" => summary.sealed_doc_review_tbs += 1,
@@ -934,7 +1162,7 @@ impl Collection {
             for (ti, topic) in DEMO_TOPICS.iter().enumerate() {
                 let spec = SETS.iter().find(|s| s.set_id == topic.set_id).unwrap();
                 let mut cids: Vec<CardId> = Vec::new();
-                for tag in spec.tags {
+                for &tag in spec.tags {
                     if let Some(v) = ds_cards.get(tag) {
                         cids.extend(v.iter().copied());
                     }
@@ -976,6 +1204,70 @@ impl Collection {
                     topic.tbs,
                     &items,
                 )?;
+            }
+
+            for (sec_index, sec) in DEMO_NON_FAR_SECTIONS.iter().enumerate() {
+                for (set_index, spec) in section_sets(sec).iter().enumerate() {
+                    let mut cids: Vec<CardId> = Vec::new();
+                    for &tag in spec.tags {
+                        if let Some(v) = ds_cards.get(tag) {
+                            cids.extend(v.iter().copied());
+                        }
+                    }
+                    require!(
+                        !cids.is_empty(),
+                        "missing seeded study cards for {}::{}",
+                        sec,
+                        spec.set_id
+                    );
+                    let leave_new = 1usize.min(cids.len().saturating_sub(1));
+                    let split = cids.len().saturating_sub(leave_new);
+                    let studied = &cids[..split];
+                    let n = studied.len().max(1);
+                    let mem_total = 8usize + (set_index % 3) * 2;
+                    let mem_misses = 1usize + ((set_index + sec_index) % 3);
+                    let mem_correct = mem_total.saturating_sub(mem_misses);
+                    for (ci, &cid) in studied.iter().enumerate() {
+                        let seed = mix(10_000 + sec_index as u64, set_index as u64, ci as u64);
+                        self.simulate_card_history(
+                            cid,
+                            seed,
+                            per_card_share(mem_total, n, ci),
+                            per_card_share(mem_correct, n, ci),
+                            2 + (rng01(mix(seed, 7, 0)) * 3.0) as u32,
+                            today,
+                            decay,
+                            &mut clock,
+                        )?;
+                    }
+
+                    let key = ((*sec).to_string(), spec.set_id.to_string());
+                    let items = category_item_ids.get(&key).cloned().unwrap_or_default();
+                    require!(
+                        !items.is_empty(),
+                        "missing seeded sealed items for {}::{}",
+                        sec,
+                        spec.set_id
+                    );
+                    let mcq_total = 8u32 + ((set_index % 3) as u32 * 2);
+                    let mcq_misses = 1u32 + ((set_index + sec_index) % 3) as u32;
+                    let mcq_correct = mcq_total.saturating_sub(mcq_misses);
+                    let tbs_credits = match (set_index + sec_index) % 4 {
+                        0 => vec![0.65, 0.85, 1.0],
+                        1 => vec![0.75, 0.9, 1.0],
+                        2 => vec![0.5, 0.8, 0.95],
+                        _ => vec![0.8, 1.0, 1.0],
+                    };
+                    self.seed_performance_history(
+                        sec,
+                        spec.set_id,
+                        mix(20_000 + sec_index as u64, set_index as u64, 0),
+                        mcq_correct,
+                        mcq_total,
+                        &tbs_credits,
+                        &items,
+                    )?;
+                }
             }
         }
 

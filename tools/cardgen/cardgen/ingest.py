@@ -185,6 +185,17 @@ def _split_markdown(raw: str) -> list[tuple[str, str, str]]:
 def _split_html(raw: str) -> list[tuple[str, str, str]]:
     from html.parser import HTMLParser
 
+    void_tags = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
+
+    def hidden(attrs) -> bool:
+        values = {str(k).lower(): str(v or "").lower() for k, v in attrs}
+        if "hidden" in values:
+            return True
+        if values.get("aria-hidden") == "true":
+            return True
+        style = values.get("style", "").replace(" ", "")
+        return "display:none" in style or "visibility:hidden" in style
+
     class _Extractor(HTMLParser):
         def __init__(self) -> None:
             super().__init__(convert_charrefs=True)
@@ -203,17 +214,26 @@ def _split_html(raw: str) -> list[tuple[str, str, str]]:
             self.buf = []
 
         def handle_starttag(self, tag: str, attrs) -> None:
-            if tag in ("script", "style"):
-                self._skip += 1
-            elif re.fullmatch(r"h[1-6]", tag):
+            tag = tag.lower()
+            if self._skip:
+                if tag not in void_tags:
+                    self._skip += 1
+                return
+            if tag in ("script", "style") or hidden(attrs):
+                if tag not in void_tags:
+                    self._skip = 1
+                return
+            if re.fullmatch(r"h[1-6]", tag):
                 self._flush()
                 self._heading_level = int(tag[1])
                 self._heading_text = []
 
         def handle_endtag(self, tag: str) -> None:
-            if tag in ("script", "style") and self._skip:
+            tag = tag.lower()
+            if self._skip:
                 self._skip -= 1
-            elif re.fullmatch(r"h[1-6]", tag) and self._heading_level is not None:
+                return
+            if re.fullmatch(r"h[1-6]", tag) and self._heading_level is not None:
                 title = " ".join("".join(self._heading_text).split()).strip()
                 level = self._heading_level
                 self.stack = [(lvl, t) for (lvl, t) in self.stack if lvl < level]

@@ -18,3 +18,15 @@ sets:
     topic: "Basis and holding period of assets"
     tags: ["ds::reg::deduct", "ds::reg::capitalize"]
     treatments: ["Currently deductible", "Capitalize and recover over time"]
+  - set_id: "circular230_sanction_vs_tax_penalty"
+    topic: "Treasury Circular 230 and preparer responsibilities"
+    tags: ["ds::reg::circular230", "ds::reg::tax_penalty"]
+    treatments: ["Circular 230 sanction", "Tax penalty"]
+  - set_id: "basis_vs_amount_realized"
+    topic: "Basis and holding period of assets"
+    tags: ["ds::reg::basis", "ds::reg::amount_realized"]
+    treatments: ["Adjusted basis", "Amount realized"]
+  - set_id: "c_corp_vs_s_corp_taxation"
+    topic: "C corporation taxable income and Schedule M-1"
+    tags: ["ds::reg::c_corp", "ds::reg::s_corp"]
+    treatments: ["C corporation taxation", "S corporation pass-through"]

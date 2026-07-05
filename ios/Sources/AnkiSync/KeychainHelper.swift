@@ -3,10 +3,12 @@ import Security
 
 public enum KeychainHelper: Sendable {
     private static let service = "com.ankiapp.sync"
+    private static let openAIService = "com.ankountant.openai"
     private static let hostKeyAccount = "sync-host-key"
     private static let usernameAccount = "sync-username"
     private static let endpointAccount = "sync-endpoint"
     private static let currentEndpointAccount = "sync-current-endpoint"
+    private static let openAIAPIKeyAccount = "openai-api-key"
 
     // MARK: - Host Key
 
@@ -70,15 +72,42 @@ public enum KeychainHelper: Sendable {
         delete(account: currentEndpointAccount)
     }
 
+    public static func saveOpenAIAPIKey(_ key: String) throws {
+        let trimmedKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedKey.isEmpty else {
+            throw KeychainError.missingOpenAIAPIKey
+        }
+        try save(serviceName: openAIService, account: openAIAPIKeyAccount, value: trimmedKey)
+    }
+
+    public static func loadOpenAIAPIKey() throws -> String? {
+        try load(serviceName: openAIService, account: openAIAPIKeyAccount)
+    }
+
+    public static func requireOpenAIAPIKey() throws -> String {
+        guard let key = try loadOpenAIAPIKey()?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !key.isEmpty else {
+            throw KeychainError.missingOpenAIAPIKey
+        }
+        return key
+    }
+
+    public static func deleteOpenAIAPIKey() throws {
+        try delete(serviceName: openAIService, account: openAIAPIKeyAccount)
+    }
+
     // MARK: - Internal
 
     private static func save(account: String, value: String) throws {
+        try save(serviceName: service, account: account, value: value)
+    }
+
+    private static func save(serviceName: String, account: String, value: String) throws {
         let data = Data(value.utf8)
-        // Delete existing item first to avoid duplicates
-        delete(account: account)
+        try delete(serviceName: serviceName, account: account)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
+            kSecAttrService as String: serviceName,
             kSecAttrAccount as String: account,
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
@@ -90,29 +119,66 @@ public enum KeychainHelper: Sendable {
     }
 
     private static func load(account: String) -> String? {
+        try? load(serviceName: service, account: account)
+    }
+
+    private static func load(serviceName: String, account: String) throws -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
+            kSecAttrService as String: serviceName,
             kSecAttrAccount as String: account,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
+        guard status != errSecItemNotFound else { return nil }
+        guard status == errSecSuccess else {
+            throw KeychainError.loadFailed(status)
+        }
+        guard let data = result as? Data,
+              let value = String(data: data, encoding: .utf8) else {
+            throw KeychainError.invalidStringData
+        }
+        return value
     }
 
     private static func delete(account: String) {
+        try? delete(serviceName: service, account: account)
+    }
+
+    private static func delete(serviceName: String, account: String) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
+            kSecAttrService as String: serviceName,
             kSecAttrAccount as String: account,
         ]
-        SecItemDelete(query as CFDictionary)
+        let status = SecItemDelete(query as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw KeychainError.deleteFailed(status)
+        }
     }
 }
 
-public enum KeychainError: Error, Sendable {
+public enum KeychainError: Error, LocalizedError, Sendable {
     case saveFailed(OSStatus)
+    case loadFailed(OSStatus)
+    case deleteFailed(OSStatus)
+    case invalidStringData
+    case missingOpenAIAPIKey
+
+    public var errorDescription: String? {
+        switch self {
+        case .saveFailed(let status):
+            "Keychain save failed with status \(status)."
+        case .loadFailed(let status):
+            "Keychain load failed with status \(status)."
+        case .deleteFailed(let status):
+            "Keychain delete failed with status \(status)."
+        case .invalidStringData:
+            "Keychain item could not be decoded as text."
+        case .missingOpenAIAPIKey:
+            "OpenAI API key is missing."
+        }
+    }
 }
