@@ -76,6 +76,7 @@ ankountant-tbs/TbsTab.svelte for the JE/numeric task types this pane can render.
         onRetry={load}
         emptyTitle="No simulation task found"
         emptyText="This profile has no sealed journal-entry or numeric simulations for the workspace queue yet."
+        emptyImportLabel="Import package"
         emptyActionHref="/ankountant-tbs"
         emptyActionLabel="Browse simulations"
         emptySecondaryHref="/ankountant-dashboard"

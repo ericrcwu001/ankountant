@@ -7,10 +7,13 @@ surface fetches (or fails to fetch) its data. Kept token-styled + centered so a
 pane never renders blank.
 -->
 <script lang="ts">
+    import { bridgeCommand } from "@tslib/bridgecommand";
+
     export let phase: "loading" | "empty" | "error";
     export let message = "";
     export let emptyTitle = "";
     export let emptyText = "Nothing to show yet.";
+    export let emptyImportLabel = "";
     export let emptyActionHref = "";
     export let emptyActionLabel = "";
     export let emptySecondaryHref = "";
@@ -18,8 +21,13 @@ pane never renders blank.
     export let onRetry: (() => void) | undefined = undefined;
 
     $: hasEmptyActions =
+        emptyImportLabel !== "" ||
         (emptyActionHref !== "" && emptyActionLabel !== "") ||
         (emptySecondaryHref !== "" && emptySecondaryLabel !== "");
+
+    function openImport(): void {
+        bridgeCommand("ankountant:import");
+    }
 </script>
 
 <div class="pane-state" data-phase={phase} data-testid="pane-state">
@@ -34,8 +42,13 @@ pane never renders blank.
         <p class="muted">{emptyText}</p>
         {#if hasEmptyActions}
             <div class="empty-actions">
+                {#if emptyImportLabel}
+                    <button type="button" class="primary" on:click={openImport}>
+                        {emptyImportLabel}
+                    </button>
+                {/if}
                 {#if emptyActionHref && emptyActionLabel}
-                    <a class="primary" href={emptyActionHref}>{emptyActionLabel}</a>
+                    <a href={emptyActionHref}>{emptyActionLabel}</a>
                 {/if}
                 {#if emptySecondaryHref && emptySecondaryLabel}
                     <a href={emptySecondaryHref}>{emptySecondaryLabel}</a>
@@ -120,7 +133,7 @@ pane never renders blank.
         gap: var(--space-xs);
         margin-top: var(--space-xs);
 
-        a {
+        :is(a, button) {
             min-height: 34px;
             display: inline-flex;
             align-items: center;
@@ -130,10 +143,12 @@ pane never renders blank.
             border-radius: var(--border-radius);
             background: var(--canvas-elevated);
             color: var(--fg);
+            font: inherit;
             font-size: var(--type-caption-size);
             font-weight: 700;
             line-height: 1.1;
             text-decoration: none;
+            cursor: pointer;
 
             &:hover {
                 background: var(--canvas-inset);

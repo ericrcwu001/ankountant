@@ -100,6 +100,7 @@ for (
         const paneState = page.getByTestId("pane-state");
         await expect(paneState).toHaveAttribute("data-phase", "empty");
         await expect(paneState).toContainText(surface.title);
+        await expect(paneState.getByRole("button", { name: "Import package" })).toBeVisible();
         await expect(paneState.getByRole("link", { name: "Browse simulations" })).toHaveAttribute(
             "href",
             "/ankountant-tbs",

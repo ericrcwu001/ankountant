@@ -74,6 +74,7 @@ sections, so it never collides with a JE/numeric item.
         onRetry={load}
         emptyTitle="No research task found"
         emptyText="This profile has no sealed research simulation for the workspace queue yet."
+        emptyImportLabel="Import package"
         emptyActionHref="/ankountant-tbs"
         emptyActionLabel="Browse simulations"
         emptySecondaryHref="/ankountant-dashboard"

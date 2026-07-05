@@ -47,5 +47,6 @@ ankountant-confusion/+page.ts.
         onRetry={load}
         emptyTitle="No confusion drills yet"
         emptyText="Load or import CPA practice to build the drill queue."
+        emptyImportLabel="Import package"
     />
 {/if}
