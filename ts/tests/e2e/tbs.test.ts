@@ -124,6 +124,32 @@ test("the TBS chooser does not leak backend html on load failure", async ({ page
     await expect(page.getByTestId("tbs-error")).not.toContainText("don&#39;t");
 });
 
+test("a deep-linked TBS load failure can retry", async ({ page, seed }) => {
+    let getNoteRequests = 0;
+    await page.route("**/_anki/getNote", async (route) => {
+        getNoteRequests += 1;
+        if (getNoteRequests === 1) {
+            await route.fulfill({
+                status: 500,
+                contentType: "text/html",
+                body: "<!doctype html><title>500 Broken note</title><h1>Broken note</h1>",
+            });
+        } else {
+            await route.continue();
+        }
+    });
+
+    await page.goto(`/ankountant-tbs?note=${seed.sealedTbsNoteIds[0]}`);
+
+    const error = page.getByTestId("tbs-load-error");
+    await expect(error).toContainText("500 Broken note. The TBS task could not be loaded.");
+    await expect(error).not.toContainText("<!doctype html>");
+    await error.getByRole("button", { name: "Retry" }).click();
+
+    await expect(page.getByTestId("tbs-surface")).toBeVisible();
+    await expect.poll(() => getNoteRequests).toBeGreaterThan(1);
+});
+
 test("the TBS chooser empty state keeps next steps visible", async ({ page }) => {
     await page.route("**/_anki/searchNotes", async (route) => {
         await route.fulfill({

@@ -90,6 +90,34 @@ test("doc-review: submit failures stay in the surface", async ({ page }) => {
     await expect(page.getByTestId("docreview-submit")).toBeEnabled();
 });
 
+test("doc-review: initial load failure can retry without leaking backend html", async ({ page }) => {
+    let searchRequests = 0;
+    await page.route("**/_anki/searchNotes", async (route) => {
+        searchRequests += 1;
+        if (searchRequests === 1) {
+            await route.fulfill({
+                status: 502,
+                contentType: "text/html",
+                body: "<!doctype html><title>502 Search failed</title><h1>Search failed</h1>",
+            });
+        } else {
+            await route.continue();
+        }
+    });
+
+    await page.goto("/ankountant-doc-review");
+
+    const error = page.getByTestId("docreview-load-error");
+    await expect(error).toContainText(
+        "502 Search failed. The document-review task could not be loaded.",
+    );
+    await expect(error).not.toContainText("<!doctype html>");
+    await error.getByRole("button", { name: "Retry" }).click();
+
+    await expect(page.getByTestId("exam-shell")).toHaveAttribute("data-shape", "doc_review");
+    await expect.poll(() => searchRequests).toBeGreaterThan(1);
+});
+
 test("doc-review: empty state links to simulation and readiness surfaces", async ({ page }) => {
     await page.route("**/_anki/searchNotes", async (route) => {
         await route.fulfill({

@@ -4,13 +4,21 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 -->
 <script lang="ts">
     import type { PageData } from "./$types";
+    import TaskErrorState from "../TaskErrorState.svelte";
     import TaskEmptyState from "../TaskEmptyState.svelte";
     import ResearchSurface from "./ResearchSurface.svelte";
 
     export let data: PageData;
 </script>
 
-{#if data.model}
+{#if data.loadError}
+    <TaskErrorState
+        testId="research-load-error"
+        eyebrow="Research practice"
+        title="Could not load research task"
+        message={data.loadError}
+    />
+{:else if data.model}
     {#key data.noteId}
         <ResearchSurface
             noteId={data.noteId}

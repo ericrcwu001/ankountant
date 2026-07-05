@@ -89,6 +89,34 @@ test("research: submit failures stay in the surface", async ({ page }) => {
     await expect(page.getByTestId("research-submit")).toBeEnabled();
 });
 
+test("research: initial load failure can retry without leaking backend html", async ({ page }) => {
+    let searchRequests = 0;
+    await page.route("**/_anki/searchNotes", async (route) => {
+        searchRequests += 1;
+        if (searchRequests === 1) {
+            await route.fulfill({
+                status: 502,
+                contentType: "text/html",
+                body: "<!doctype html><title>502 Search failed</title><h1>Search failed</h1>",
+            });
+        } else {
+            await route.continue();
+        }
+    });
+
+    await page.goto("/ankountant-research");
+
+    const error = page.getByTestId("research-load-error");
+    await expect(error).toContainText(
+        "502 Search failed. The research task could not be loaded.",
+    );
+    await expect(error).not.toContainText("<!doctype html>");
+    await error.getByRole("button", { name: "Retry" }).click();
+
+    await expect(page.getByTestId("exam-shell")).toHaveAttribute("data-shape", "research");
+    await expect.poll(() => searchRequests).toBeGreaterThan(1);
+});
+
 test("research: exposes NO Again/Hard/Good/Easy buttons (parity with tbs.test.ts)", async ({ page }) => {
     await page.goto("/ankountant-research");
     await expect(page.getByTestId("exam-shell")).toBeVisible();

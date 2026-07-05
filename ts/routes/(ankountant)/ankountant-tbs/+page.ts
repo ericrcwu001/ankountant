@@ -3,6 +3,7 @@
 
 import { getNote } from "@generated/backend";
 
+import { readableBackendError } from "../backendError";
 import type { PageLoad } from "./$types";
 import { buildTbsModel } from "./lib";
 
@@ -11,12 +12,22 @@ import { buildTbsModel } from "./lib";
 // chooser then opens on that note's shape. Without an id the chooser loads the
 // first available FAR simulation shape on mount.
 export const load = (async ({ url }) => {
-    const noteIdParam = url.searchParams.get("note");
-    const noteId = noteIdParam ? BigInt(noteIdParam) : 0n;
-    if (noteId === 0n) {
-        return { noteId: 0n, model: null, fields: [] as string[], tags: [] as string[] };
+    try {
+        const noteIdParam = url.searchParams.get("note");
+        const noteId = noteIdParam ? BigInt(noteIdParam) : 0n;
+        if (noteId === 0n) {
+            return { noteId: 0n, model: null, fields: [] as string[], tags: [] as string[] };
+        }
+        const note = await getNote({ nid: noteId });
+        const model = buildTbsModel(note.fields, note.tags);
+        return { noteId, model, fields: note.fields, tags: note.tags };
+    } catch (error) {
+        return {
+            noteId: 0n,
+            model: null,
+            fields: [] as string[],
+            tags: [] as string[],
+            loadError: readableBackendError(error, "The TBS task could not be loaded."),
+        };
     }
-    const note = await getNote({ nid: noteId });
-    const model = buildTbsModel(note.fields, note.tags);
-    return { noteId, model, fields: note.fields, tags: note.tags };
 }) satisfies PageLoad;
