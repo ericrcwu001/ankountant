@@ -71,3 +71,34 @@ test("stats: graph load failure shows an inline error state", async ({ page, see
     await expect(page.getByLabel("Statistics overview")).toBeVisible();
     await expect(page.getByTestId("stats-load-error")).toHaveCount(0);
 });
+
+test("stats: preference load failure can retry without leaking backend html", async ({ page, seedWithHistory }) => {
+    expect(seedWithHistory.sealedItems).toBeGreaterThan(0);
+    let preferenceRequests = 0;
+    await page.route("**/_anki/getGraphPreferences", async (route) => {
+        preferenceRequests += 1;
+        if (preferenceRequests === 1) {
+            await route.fulfill({
+                status: 503,
+                contentType: "text/html",
+                body: "<!doctype html><title>503 Preferences unavailable</title><h1>traceback</h1>",
+            });
+        } else {
+            await route.continue();
+        }
+    });
+
+    await page.goto("/ankountant-stats");
+
+    const error = page.getByTestId("stats-load-error");
+    await expect(error).toBeVisible();
+    await expect(error).toContainText(
+        "503 Preferences unavailable. Statistics preferences could not be loaded.",
+    );
+    await expect(error).not.toContainText("<!doctype html>");
+
+    await error.getByRole("button", { name: "Retry" }).click();
+    await expect.poll(() => preferenceRequests).toBeGreaterThan(1);
+    await expect(page.getByLabel("Statistics overview")).toBeVisible();
+    await expect(page.getByTestId("stats-load-error")).toHaveCount(0);
+});

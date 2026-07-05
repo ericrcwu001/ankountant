@@ -41,7 +41,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
     {/if}
 
     <div class="graphs-container">
-        {#if sourceData && revlogRange}
+        {#if sourceData && revlogRange && prefs}
             {#each graphs as graph}
                 <svelte:component
                     this={graph}

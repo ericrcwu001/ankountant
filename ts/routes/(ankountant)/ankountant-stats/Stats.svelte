@@ -294,7 +294,7 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             </div>
         </div>
 
-        {#if sourceData && revlogRange}
+        {#if sourceData && revlogRange && prefs}
             {#if analyticsEvidenceIsEmpty(sourceData)}
                 <section
                     class="stats-state empty"
