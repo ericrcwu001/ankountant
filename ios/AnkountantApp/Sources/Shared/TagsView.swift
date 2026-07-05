@@ -52,13 +52,16 @@ struct TagsView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if allTags.isEmpty {
-                ContentUnavailableView(
-                    "No Tags",
-                    systemImage: "tag.slash",
-                    description: Text(isNoteMode
-                        ? "These notes don't have any tags."
-                        : "Your collection has no tags yet.")
-                )
+                ContentUnavailableView {
+                    Label("No Tags", systemImage: "tag.slash")
+                } description: {
+                    Text(emptyTagsDescription)
+                } actions: {
+                    Button(newTagActionTitle, systemImage: "plus") {
+                        showAddTag = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             } else {
                 tagListContent
             }
@@ -130,6 +133,17 @@ struct TagsView: View {
         .task {
             await loadTags()
         }
+    }
+
+    private var emptyTagsDescription: String {
+        if isNoteMode {
+            return "These notes don't have any tags yet."
+        }
+        return "Your collection has no tags yet."
+    }
+
+    private var newTagActionTitle: String {
+        isNoteMode ? "Create and Apply Tag" : "New Tag"
     }
 
     // MARK: - Computed
