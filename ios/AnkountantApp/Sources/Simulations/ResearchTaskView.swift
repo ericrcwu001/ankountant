@@ -163,17 +163,28 @@ struct ResearchTaskView: View {
         revealError = nil
         defer { submitting = false }
         let latency = UInt32(clamping: Int((Date.now.timeIntervalSince(startedAt) * 1000).rounded()))
+        let submitResearch = performanceClient.submitResearch
+        let loadTbsReveal = performanceClient.loadTbsReveal
+        let confidenceValue = confidence.rawValue
+        let citation = trimmedCitation
         do {
-            let resp = try performanceClient.submitResearch(noteId, trimmedCitation, confidence.rawValue, latency)
+            let resp = try await Task.detached(priority: .userInitiated) {
+                try submitResearch(noteId, citation, confidenceValue, latency)
+            }.value
+            guard !Task.isCancelled else { return }
             elapsedMs = latency
             results = resp.steps
             correct = resp.totalCredit >= 1
             do {
-                reveal = try performanceClient.loadTbsReveal(noteId)
+                reveal = try await Task.detached(priority: .userInitiated) {
+                    try loadTbsReveal(noteId)
+                }.value
             } catch {
+                guard !Task.isCancelled else { return }
                 revealError = "Attempt recorded, but the answer key could not be shown: \(error.localizedDescription)"
             }
         } catch {
+            guard !Task.isCancelled else { return }
             submitError = "Could not record this attempt: \(error.localizedDescription)"
         }
     }

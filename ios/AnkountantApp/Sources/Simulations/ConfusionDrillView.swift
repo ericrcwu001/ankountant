@@ -155,7 +155,7 @@ struct ConfusionDrillView: View {
 
     private func treatmentButton(_ current: ConfusionItemModel, _ treatment: String) -> some View {
         Button {
-            choose(current, treatment)
+            Task { await choose(current, treatment) }
         } label: {
             Text(treatment)
                 .ankountantFont(.body)
@@ -258,9 +258,19 @@ struct ConfusionDrillView: View {
     private func load() async {
         isLoading = true
         loadError = nil
-        defer { isLoading = false }
+        let confusionQueue = performanceClient.confusionQueue
+        let queueSection = queueSection
+        defer {
+            if !Task.isCancelled {
+                isLoading = false
+            }
+        }
         do {
-            items = try performanceClient.confusionQueue(queueSection, 60)
+            let loadedItems = try await Task.detached(priority: .userInitiated) {
+                try confusionQueue(queueSection, 60)
+            }.value
+            guard !Task.isCancelled else { return }
+            items = loadedItems
             index = 0
             confidence = nil
             lastCorrect = nil
@@ -270,12 +280,13 @@ struct ConfusionDrillView: View {
             itemStartedAt = Date.now
             loadError = nil
         } catch {
+            guard !Task.isCancelled else { return }
             items = []
             loadError = error.localizedDescription
         }
     }
 
-    private func choose(_ current: ConfusionItemModel, _ treatment: String) {
+    private func choose(_ current: ConfusionItemModel, _ treatment: String) async {
         guard let confidence, !submitting, lastCorrect == nil else { return }
         submitError = nil
         reveal = nil
@@ -283,15 +294,25 @@ struct ConfusionDrillView: View {
         submitting = true
         defer { submitting = false }
         let latencyMs = UInt32(clamping: Int((Date.now.timeIntervalSince(itemStartedAt) * 1000).rounded()))
+        let submitConfusion = performanceClient.submitConfusion
+        let loadConfusionReveal = performanceClient.loadConfusionReveal
+        let confidenceValue = confidence.rawValue
         do {
-            let resp = try performanceClient.submitConfusion(current.noteId, treatment, confidence.rawValue, latencyMs)
+            let resp = try await Task.detached(priority: .userInitiated) {
+                try submitConfusion(current.noteId, treatment, confidenceValue, latencyMs)
+            }.value
+            guard !Task.isCancelled else { return }
             lastCorrect = resp.totalCredit >= 1
             do {
-                reveal = try performanceClient.loadConfusionReveal(current.noteId, current.setId)
+                reveal = try await Task.detached(priority: .userInitiated) {
+                    try loadConfusionReveal(current.noteId, current.setId)
+                }.value
             } catch {
+                guard !Task.isCancelled else { return }
                 revealError = "Attempt recorded, but the correct treatment could not be shown: \(error.localizedDescription)"
             }
         } catch {
+            guard !Task.isCancelled else { return }
             submitError = "Could not record this attempt: \(error.localizedDescription)"
         }
     }

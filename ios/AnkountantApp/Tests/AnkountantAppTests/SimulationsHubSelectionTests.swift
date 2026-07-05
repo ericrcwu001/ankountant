@@ -51,6 +51,38 @@ struct SimulationsHubSelectionTests {
         #expect(availableConfusionSections(counts, order: CPASection.practiceOrder) == [.far, .reg])
     }
 
+    @Test func loadConfusionCountsUsesZeroItemCountRequests() throws {
+        enum RequestError: Error {
+            case unexpectedMaxItems(Int32)
+            case unexpectedSection(String)
+        }
+
+        let item = ConfusionItemModel(
+            noteId: 1,
+            prompt: "Prompt",
+            treatments: ["Keep", "Delete"],
+            setId: "leases"
+        )
+        let counts = try loadConfusionCounts(
+            using: { section, maxItems in
+                guard maxItems == 0 else {
+                    throw RequestError.unexpectedMaxItems(maxItems)
+                }
+                switch section {
+                case "FAR":
+                    return [item, item]
+                case "AUD":
+                    return []
+                default:
+                    throw RequestError.unexpectedSection(section)
+                }
+            },
+            sections: [.far, .aud]
+        )
+
+        #expect(counts == [.far: 2, .aud: 0])
+    }
+
     @Test func confusionCountLabelPluralizes() {
         #expect(confusionCountLabel(0) == "0 items")
         #expect(confusionCountLabel(1) == "1 item")

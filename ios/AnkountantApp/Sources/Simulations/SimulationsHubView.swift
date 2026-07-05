@@ -290,9 +290,16 @@ struct SimulationsHubView: View {
 
     private func loadTasks() async {
         isLoading = true
+        let listTbsTasks = performanceClient.listTbsTasks
+        let confusionQueue = performanceClient.confusionQueue
         do {
-            let loaded = try performanceClient.listTbsTasks()
-            let loadedConfusionCounts = try loadConfusionCounts()
+            let (loaded, loadedConfusionCounts) = try await Task.detached(priority: .userInitiated) {
+                (
+                    try listTbsTasks(),
+                    try loadConfusionCounts(using: confusionQueue)
+                )
+            }.value
+            guard !Task.isCancelled else { return }
             tasks = loaded
             confusionCounts = loadedConfusionCounts
             allConfusionCount = loadedConfusionCounts.values.reduce(0, +)
@@ -309,14 +316,6 @@ struct SimulationsHubView: View {
             allConfusionCount = 0
         }
         isLoading = false
-    }
-
-    private func loadConfusionCounts() throws -> [CPASection: Int] {
-        var counts: [CPASection: Int] = [:]
-        for section in CPASection.practiceOrder {
-            counts[section] = try performanceClient.confusionQueue(section.code, 0).count
-        }
-        return counts
     }
 
     private func handleImport(_ result: Result<URL, Error>) {
@@ -370,6 +369,17 @@ func availableConfusionSections(
     order: [CPASection]
 ) -> [CPASection] {
     order.filter { counts[$0, default: 0] > 0 }
+}
+
+func loadConfusionCounts(
+    using confusionQueue: @Sendable (_ section: String, _ maxItems: Int32) throws -> [ConfusionItemModel],
+    sections: [CPASection] = CPASection.practiceOrder
+) throws -> [CPASection: Int] {
+    var counts: [CPASection: Int] = [:]
+    for section in sections {
+        counts[section] = try confusionQueue(section.code, 0).count
+    }
+    return counts
 }
 
 func confusionCountLabel(_ count: Int) -> String {
