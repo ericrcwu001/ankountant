@@ -21,6 +21,7 @@ struct AddImageOcclusionNoteView: View {
     @State private var tagsText: String = ""
     @State private var isSaving = false
     @State private var loadErrorMessage: String?
+    @State private var imageLoadErrorMessage: String?
     @State private var saveErrorMessage: String?
     @State private var imageURL: URL?
     @State private var showOcclusionEditor = false
@@ -80,6 +81,20 @@ struct AddImageOcclusionNoteView: View {
                     }
                 } header: {
                     Text("Image")
+                }
+
+                if let imageLoadErrorMessage {
+                    Section {
+                        ContentUnavailableView {
+                            Label("Could Not Load Image", systemImage: "photo.badge.exclamationmark")
+                        } description: {
+                            Text(imageLoadErrorMessage)
+                        } actions: {
+                            Button("Retry image", systemImage: "arrow.clockwise") {
+                                Task { await loadImage(from: selectedItem) }
+                            }
+                        }
+                    }
                 }
 
                 if let uiImage = selectedImage {
@@ -302,22 +317,22 @@ struct AddImageOcclusionNoteView: View {
         masks = []
         selectedImage = nil
         imageURL = nil
-        loadErrorMessage = nil
+        imageLoadErrorMessage = nil
         saveErrorMessage = nil
 
         do {
             guard let data = try await item.loadTransferable(type: Data.self) else {
-                loadErrorMessage = "The selected image could not be loaded."
+                imageLoadErrorMessage = "The selected image could not be loaded."
                 return
             }
 
             guard let img = UIImage(data: data) else {
-                loadErrorMessage = "The selected file is not a readable image."
+                imageLoadErrorMessage = "The selected file is not a readable image."
                 return
             }
 
             guard let jpegData = img.jpegData(compressionQuality: 0.92) else {
-                loadErrorMessage = "The selected image could not be prepared for saving."
+                imageLoadErrorMessage = "The selected image could not be prepared for saving."
                 return
             }
 
@@ -327,7 +342,7 @@ struct AddImageOcclusionNoteView: View {
             selectedImage = img
             imageURL = url
         } catch {
-            loadErrorMessage = "Failed to load image: \(error.localizedDescription)"
+            imageLoadErrorMessage = "Failed to load image: \(error.localizedDescription)"
         }
     }
 
