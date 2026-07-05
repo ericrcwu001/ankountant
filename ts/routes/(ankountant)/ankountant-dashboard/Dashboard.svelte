@@ -160,73 +160,79 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
                     </tr>
                 </thead>
                 <tbody>
-                    {#each rows as row (row.setId)}
-                        <tr
-                            class="topic-row"
-                            class:gap-warning={row.gapWarning}
-                            data-testid="topic-row"
-                            data-set-id={row.setId}
-                        >
-                            <td class="set-id">{prettySetId(row.setId)}</td>
-                            <td class="memory num" data-testid="memory">
-                                {#if row.memoryPct === null}
-                                    <span class="insufficient">insufficient</span>
-                                {:else}
-                                    <span class="pct">{row.memoryPct}%</span>
-                                    {#if row.memoryRange}
-                                        <span
-                                            class="range-sub"
-                                            data-testid="memory-range"
-                                        >
-                                            {row.memoryRange}
-                                        </span>
-                                    {/if}
-                                    <span class="meter" aria-hidden="true">
-                                        <span
-                                            class="meter-fill"
-                                            style="width:{row.memoryPct}%"
-                                        ></span>
-                                    </span>
-                                {/if}
-                            </td>
-                            <td class="performance num" data-testid="performance">
-                                {#if row.performancePct === null}
-                                    <span class="insufficient">insufficient</span>
-                                {:else}
-                                    <span class="pct">{row.performancePct}%</span>
-                                    {#if row.performanceRange}
-                                        <span
-                                            class="range-sub"
-                                            data-testid="performance-range"
-                                        >
-                                            {row.performanceRange}
-                                        </span>
-                                    {/if}
-                                    <span class="meter" aria-hidden="true">
-                                        <span
-                                            class="meter-fill"
-                                            style="width:{row.performancePct}%"
-                                        ></span>
-                                    </span>
-                                {/if}
-                            </td>
-                            <td class="gap num" data-testid="gap">
-                                {#if row.gapPct === null}
-                                    <span class="insufficient">insufficient</span>
-                                {:else}
-                                    {#if row.gapWarning}
-                                        <span
-                                            class="gap-flag"
-                                            role="img"
-                                            aria-label="Large gap"
-                                        >
-                                            &#9650;
-                                        </span>
-                                    {/if}{row.gapPct}%
-                                {/if}
-                            </td>
+                    {#if rows.length === 0}
+                        <tr class="topic-empty" data-testid="topic-empty">
+                            <td colspan="4">No topics defined for this section yet.</td>
                         </tr>
-                    {/each}
+                    {:else}
+                        {#each rows as row (row.setId)}
+                            <tr
+                                class="topic-row"
+                                class:gap-warning={row.gapWarning}
+                                data-testid="topic-row"
+                                data-set-id={row.setId}
+                            >
+                                <td class="set-id">{prettySetId(row.setId)}</td>
+                                <td class="memory num" data-testid="memory">
+                                    {#if row.memoryPct === null}
+                                        <span class="insufficient">insufficient</span>
+                                    {:else}
+                                        <span class="pct">{row.memoryPct}%</span>
+                                        {#if row.memoryRange}
+                                            <span
+                                                class="range-sub"
+                                                data-testid="memory-range"
+                                            >
+                                                {row.memoryRange}
+                                            </span>
+                                        {/if}
+                                        <span class="meter" aria-hidden="true">
+                                            <span
+                                                class="meter-fill"
+                                                style="width:{row.memoryPct}%"
+                                            ></span>
+                                        </span>
+                                    {/if}
+                                </td>
+                                <td class="performance num" data-testid="performance">
+                                    {#if row.performancePct === null}
+                                        <span class="insufficient">insufficient</span>
+                                    {:else}
+                                        <span class="pct">{row.performancePct}%</span>
+                                        {#if row.performanceRange}
+                                            <span
+                                                class="range-sub"
+                                                data-testid="performance-range"
+                                            >
+                                                {row.performanceRange}
+                                            </span>
+                                        {/if}
+                                        <span class="meter" aria-hidden="true">
+                                            <span
+                                                class="meter-fill"
+                                                style="width:{row.performancePct}%"
+                                            ></span>
+                                        </span>
+                                    {/if}
+                                </td>
+                                <td class="gap num" data-testid="gap">
+                                    {#if row.gapPct === null}
+                                        <span class="insufficient">insufficient</span>
+                                    {:else}
+                                        {#if row.gapWarning}
+                                            <span
+                                                class="gap-flag"
+                                                role="img"
+                                                aria-label="Large gap"
+                                            >
+                                                &#9650;
+                                            </span>
+                                        {/if}{row.gapPct}%
+                                    {/if}
+                                </td>
+                            </tr>
+                        {/each}
+                    {/if}
                 </tbody>
             </table>
         </div>
@@ -569,6 +575,11 @@ License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
             font-weight: 500;
             padding-top: calc(var(--space-md) + 1px);
         }
+    }
+
+    .topic-empty td {
+        color: var(--fg-subtle);
+        text-align: center;
     }
 
     // Position-on-a-common-scale meter for Memory / Performance (§5: position

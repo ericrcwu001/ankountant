@@ -24,6 +24,23 @@ test("thin data shows the abstain message + reason and NO number (A55)", async (
     await expect(row).not.toHaveClass(/gap-warning/);
 });
 
+test("empty readiness topics show an explicit dashboard table state", async ({ page }) => {
+    await page.route("**/_anki/getReadiness", async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: "application/binary",
+            body: Buffer.alloc(0),
+        });
+    });
+
+    await page.goto("/ankountant-dashboard");
+
+    await expect(page.getByTestId("topic-empty")).toContainText(
+        "No topics defined for this section yet.",
+    );
+    await expect(page.getByTestId("topic-row")).toHaveCount(0);
+});
+
 test("sufficient data shows a readiness point, range, confidence, and topic scores (A54)", async ({ page, seedWithHistory }) => {
     expect(seedWithHistory.sealedItems).toBeGreaterThanOrEqual(24);
     await page.goto("/ankountant-dashboard");
