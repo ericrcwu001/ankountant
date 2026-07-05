@@ -30,11 +30,20 @@ struct DecksReviewsChart: View {
                 // Full-size heatmap — same call shape as StatsDashboardView
                 // so the visual matches what the Stats tab renders.
                 HeatmapChartOptimized(reviews: reviews)
+            } else if let errorMessage {
+                ContentUnavailableView {
+                    Label("Couldn't load reviews", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(errorMessage)
+                } actions: {
+                    Button("Retry", systemImage: "arrow.clockwise", action: retry)
+                }
+                .frame(height: 200)
             } else {
                 StatsEmptyChartView(
-                    title: errorMessage == nil ? "No reviews yet" : "Couldn't load reviews",
-                    systemImage: errorMessage == nil ? "calendar" : "exclamationmark.triangle",
-                    description: errorMessage ?? "Review cards to build your study heatmap.",
+                    title: "No reviews yet",
+                    systemImage: "calendar",
+                    description: "Review cards to build your study heatmap.",
                     height: 200
                 )
             }
@@ -63,5 +72,9 @@ struct DecksReviewsChart: View {
             reviews = nil
         }
         isLoading = false
+    }
+
+    private func retry() {
+        Task { await load() }
     }
 }
