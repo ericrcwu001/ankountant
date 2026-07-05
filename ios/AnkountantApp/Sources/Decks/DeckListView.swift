@@ -301,7 +301,7 @@ private struct DeckRowView: View {
 
 // MARK: - CreateDeckSheet
 
-private struct CreateDeckSheet: View {
+struct CreateDeckSheet: View {
     let onDone: () -> Void
 
     @Dependency(\.deckClient) var deckClient

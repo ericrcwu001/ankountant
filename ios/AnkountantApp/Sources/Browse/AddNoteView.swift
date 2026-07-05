@@ -23,6 +23,7 @@ struct AddNoteView: View {
     @State private var showImport = false
     @State private var importMessage: String?
     @State private var showImportAlert = false
+    @State private var showCreateDeck = false
 
     let preselectedDeckId: Int64?
     let initialDraft: AddNoteDraft?
@@ -90,6 +91,12 @@ struct AddNoteView: View {
                             Button("Retry") {
                                 Task { await loadData() }
                             }
+                            if loadErrorMessage == Self.noDecksMessage {
+                                Button("Create deck", systemImage: "plus") {
+                                    showCreateDeck = true
+                                }
+                                .buttonStyle(.borderedProminent)
+                            }
                             if localContentMissing {
                                 Button("Import package", systemImage: "square.and.arrow.down") {
                                     showImport = true
@@ -134,6 +141,15 @@ struct AddNoteView: View {
             }
             .fileImporter(isPresented: $showImport, allowedContentTypes: [.data]) { result in
                 handleImport(result)
+            }
+            .sheet(isPresented: $showCreateDeck) {
+                CreateDeckSheet {
+                    showCreateDeck = false
+                    Task {
+                        await loadData()
+                        onSave()
+                    }
+                }
             }
             .alert("Import", isPresented: $showImportAlert) {
                 Button("OK") {}
