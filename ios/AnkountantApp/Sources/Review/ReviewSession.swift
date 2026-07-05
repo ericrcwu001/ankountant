@@ -96,6 +96,17 @@ final class ReviewSession {
 
     func start() {
         errorMessage = nil
+        isFinished = false
+        showAnswer = false
+        canUndo = false
+        sessionStats = .init()
+        remainingCounts = .zero
+        cardQueue = []
+        currentQueuedCard = nil
+        currentNote = nil
+        currentFlag = 0
+        nextIntervals = [:]
+        typedAnswerState = nil
 
         do {
             try decks.setCurrentDeck(deckId)

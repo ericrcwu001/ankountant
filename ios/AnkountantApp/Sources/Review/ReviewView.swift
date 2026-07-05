@@ -375,9 +375,16 @@ struct ReviewView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             Spacer()
-            Button("Done") { onDismiss() }
+            VStack(spacing: AnkountantSpacing.sm) {
+                Button("Retry", systemImage: "arrow.clockwise") {
+                    session.start()
+                }
                 .buttonStyle(AnkountantPrimaryButtonStyle())
-                .padding()
+
+                Button("Done") { onDismiss() }
+                    .buttonStyle(.bordered)
+            }
+            .padding()
         }
     }
 }

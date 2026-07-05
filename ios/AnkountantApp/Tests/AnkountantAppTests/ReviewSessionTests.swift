@@ -138,6 +138,42 @@ final class ReviewSessionTests: XCTestCase {
         }
     }
 
+    func testStartCanRecoverAfterFailure() {
+        final class StartState: @unchecked Sendable { var calls = 0 }
+        let state = StartState()
+        let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
+        let stubResult = QueuedCardsResult(
+            cards: [stubCard], newCount: 1, learningCount: 0, reviewCount: 0
+        )
+        let stubNote = NoteRecord(id: 100, guid: "g", mid: 200, mod: 0, flds: "", sfld: "", csum: 0)
+
+        withDependencies {
+            $0.decksService.setCurrentDeck = { _ in
+                state.calls += 1
+                if state.calls == 1 {
+                    throw ReviewSessionFixtureError.failed
+                }
+            }
+            $0.schedulerService.getQueuedCards = { _ in stubResult }
+            $0.notesService.getNote = { _ in stubNote }
+            $0.cardRenderingService.renderCard = { _ in
+                RenderedCard(frontHTML: "front", backHTML: "back", cardCSS: "")
+            }
+        } operation: {
+            let session = ReviewSession(deckId: 1)
+            session.start()
+            XCTAssertTrue(session.isFinished)
+            XCTAssertTrue(session.errorMessage?.contains("fixture failure") == true)
+
+            session.start()
+
+            XCTAssertFalse(session.isFinished)
+            XCTAssertNil(session.errorMessage)
+            XCTAssertEqual(session.currentCardId, 1)
+            XCTAssertEqual(session.remainingCounts.newCount, 1)
+        }
+    }
+
     func testAnswerFailureKeepsCurrentCardAndReportsError() async {
         let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
         let stubResult = QueuedCardsResult(
