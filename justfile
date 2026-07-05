@@ -65,11 +65,11 @@ test-py coverage='' html='':
 test-ts coverage='' html='':
     just {{ if coverage == "--coverage" { "_coverage-ts " + html } else { "_test-ts" } }}
 
-# Run Playwright end-to-end tests. Pass --ui to open the interactive UI.
+# Run Playwright end-to-end tests. Pass a spec path to target a subset, or --ui to open the interactive UI.
 [arg("ui", long="ui", value="--ui")]
-test-e2e ui='': _install-playwright-browsers
+test-e2e ui='' *args: _install-playwright-browsers
     {{ ninja }} pyenv ts:generated pylib qt
-    {{ playwright_env }} {{ yarn }} test:e2e {{ ui }}
+    {{ playwright_env }} {{ yarn }} test:e2e {{ ui }} {{ args }}
 
 # Run iOS app tests on the default simulator.
 test-ios:

@@ -34,6 +34,10 @@ sync — the cross-pane version is impossible without a shared store).
         }
     }
     $: results = corpusError ? [] : searchCorpus(entries, query);
+
+    function clearSearch(): void {
+        query = "";
+    }
 </script>
 
 <div class="literature" data-testid="literature">
@@ -101,9 +105,21 @@ sync — the cross-pane version is impossible without a shared store).
         {/if}
         {#if !corpusError && results.length === 0}
             <li class="empty" data-testid="lit-none">
-                {query
-                    ? `No passages match "${query}".`
-                    : "No literature bundled for this section yet."}
+                <span>
+                    {query
+                        ? `No passages match "${query}".`
+                        : "No literature bundled for this section yet."}
+                </span>
+                {#if query}
+                    <button
+                        type="button"
+                        class="clear-search"
+                        data-testid="lit-clear-search"
+                        on:click={clearSearch}
+                    >
+                        Clear search
+                    </button>
+                {/if}
             </li>
         {/if}
     </ul>
@@ -274,7 +290,33 @@ sync — the cross-pane version is impossible without a shared store).
     }
 
     .empty {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-sm);
         color: var(--fg-subtle);
         font-size: var(--type-caption-size);
+    }
+
+    .clear-search {
+        font: inherit;
+        font-size: var(--type-caption-size);
+        font-weight: 600;
+        color: var(--fg);
+        background: var(--canvas-inset);
+        border: 1px solid var(--border-control);
+        border-radius: var(--border-radius);
+        padding: var(--space-xxs) var(--space-sm);
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
     }
 </style>

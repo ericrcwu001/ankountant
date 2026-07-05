@@ -30,6 +30,19 @@ test("research: literature search + a correct citation + time-to-cite (T1/T2)", 
     await expect(page.getByTestId("lit-cite").first()).toBeDisabled();
 });
 
+test("research: literature empty search can be cleared", async ({ page }) => {
+    await page.goto("/ankountant-research");
+
+    await page.getByTestId("lit-search").fill("__no_literature_match__");
+    await expect(page.getByTestId("lit-none")).toContainText(
+        "No passages match",
+    );
+    await page.getByTestId("lit-clear-search").click();
+
+    await expect(page.getByTestId("lit-search")).toHaveValue("");
+    await expect(page.getByTestId("lit-result").first()).toBeVisible();
+});
+
 test("research: a wrong citation is marked incorrect (T1)", async ({ page }) => {
     await page.goto("/ankountant-research");
     await page.getByTestId("confidence-unsure").click();

@@ -322,11 +322,20 @@ struct LiteraturePaneView: View {
     private func literatureResults(_ entries: [CorpusEntry]) -> some View {
         let results = searchCorpus(entries, query: query)
         if results.isEmpty {
-            Text(query.isEmpty
-                ? "No literature bundled for this section yet."
-                : "No passages match \"\(query)\".")
-                .ankountantFont(.caption)
-                .foregroundStyle(palette.textSecondary)
+            VStack(alignment: .leading, spacing: AnkountantSpacing.sm) {
+                Text(query.isEmpty
+                    ? "No literature bundled for this section yet."
+                    : "No passages match \"\(query)\".")
+                    .ankountantFont(.caption)
+                    .foregroundStyle(palette.textSecondary)
+
+                if !query.isEmpty {
+                    Button("Clear search", systemImage: "xmark.circle") {
+                        query = ""
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
         } else {
             ForEach(results) { entry in
                 resultCard(entry)
