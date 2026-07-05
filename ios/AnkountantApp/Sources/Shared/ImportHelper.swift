@@ -16,6 +16,22 @@ enum ImportError: Error, LocalizedError {
 
 enum ImportHelper {
     static func importPackage(from url: URL) throws -> String {
+        @Dependency(\.importExportService) var importExportService
+        return try importPackage(from: url, importAnkiPackage: importExportService.importAnkiPackage)
+    }
+
+    static func importPackageInBackground(from url: URL) async throws -> String {
+        @Dependency(\.importExportService) var importExportService
+        let importAnkiPackage = importExportService.importAnkiPackage
+        return try await Task.detached(priority: .userInitiated) {
+            try importPackage(from: url, importAnkiPackage: importAnkiPackage)
+        }.value
+    }
+
+    private static func importPackage(
+        from url: URL,
+        importAnkiPackage: @Sendable (_ path: String) throws -> String
+    ) throws -> String {
         guard url.startAccessingSecurityScopedResource() else {
             throw ImportError.accessDenied
         }
@@ -27,8 +43,7 @@ enum ImportHelper {
         try FileManager.default.copyItem(at: url, to: tempFile)
         defer { try? FileManager.default.removeItem(at: tempFile) }
 
-        @Dependency(\.importExportService) var importExportService
-        return try importExportService.importAnkiPackage(tempFile.path)
+        return try importAnkiPackage(tempFile.path)
     }
 
     static func exportCollection(to filename: String = "collection.colpkg") throws -> URL {

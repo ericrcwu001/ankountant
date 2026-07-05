@@ -375,12 +375,7 @@ struct DeckDetailView: View {
         importInProgress = true
         defer { importInProgress = false }
         do {
-            // ImportHelper handles security-scoped access + temp-file copy;
-            // run on a detached task so the file copy + Rust import don't
-            // block the navigation stack.
-            let summary = try await Task.detached {
-                try ImportHelper.importPackage(from: url)
-            }.value
+            let summary = try await ImportHelper.importPackageInBackground(from: url)
             importIsError = false
             importMessage = summary
             await loadCounts()

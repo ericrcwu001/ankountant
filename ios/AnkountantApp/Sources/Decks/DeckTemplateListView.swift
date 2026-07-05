@@ -242,13 +242,15 @@ struct DeckTemplateListView: View {
                 showImportAlert = true
                 return
             }
-            do {
-                importMessage = try ImportHelper.importPackage(from: url)
-                Task { await loadTemplates() }
-            } catch {
-                importMessage = "Import failed: \(error.localizedDescription)"
+            Task { @MainActor in
+                do {
+                    importMessage = try await ImportHelper.importPackageInBackground(from: url)
+                    await loadTemplates()
+                } catch {
+                    importMessage = "Import failed: \(error.localizedDescription)"
+                }
+                showImportAlert = true
             }
-            showImportAlert = true
         case .failure(let error):
             importMessage = "Could not select file: \(error.localizedDescription)"
             showImportAlert = true

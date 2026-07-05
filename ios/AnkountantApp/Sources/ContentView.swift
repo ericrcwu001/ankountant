@@ -162,14 +162,16 @@ struct ContentView: View {
                 showImportAlert = true
                 return
             }
-            do {
-                let summary = try ImportHelper.importPackage(from: url)
-                importMessage = summary
-                refreshID = UUID()
-            } catch {
-                importMessage = "Import failed: \(error.localizedDescription)"
+            Task { @MainActor in
+                do {
+                    let summary = try await ImportHelper.importPackageInBackground(from: url)
+                    importMessage = summary
+                    refreshID = UUID()
+                } catch {
+                    importMessage = "Import failed: \(error.localizedDescription)"
+                }
+                showImportAlert = true
             }
-            showImportAlert = true
         case .failure(let error):
             importMessage = "Could not select file: \(error.localizedDescription)"
             showImportAlert = true
