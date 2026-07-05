@@ -404,8 +404,11 @@ struct DeckDetailView: View {
         // separator collisions to avoid creating multi-level decks unexpectedly.
         let leafName = trimmed.replacingOccurrences(of: "::", with: "_")
         let fullName = "\(deck.name)::\(leafName)"
+        let createDeck = deckClient.create
         do {
-            _ = try deckClient.create(fullName)
+            _ = try await Task.detached(priority: .userInitiated) {
+                try createDeck(fullName)
+            }.value
             newSubdeckName = ""
             subdeckCreationError = nil
             await loadChildren()
@@ -416,9 +419,13 @@ struct DeckDetailView: View {
 
     private func loadCounts() async {
         countsError = nil
+        let countsForDeck = deckClient.countsForDeck
+        let deckId = deck.id
 
         do {
-            counts = try deckClient.countsForDeck(deck.id)
+            counts = try await Task.detached(priority: .userInitiated) {
+                try countsForDeck(deckId)
+            }.value
         } catch {
             counts = .zero
             countsError = "Failed to load deck counts: \(error.localizedDescription)"
@@ -427,10 +434,14 @@ struct DeckDetailView: View {
 
     private func loadChildren() async {
         childDecksError = nil
+        let fetchTree = deckClient.fetchTree
+        let deckId = deck.id
 
         do {
-            let tree = try deckClient.fetchTree()
-            childDecks = findChildren(in: tree, parentId: deck.id)
+            let tree = try await Task.detached(priority: .userInitiated) {
+                try fetchTree()
+            }.value
+            childDecks = findChildren(in: tree, parentId: deckId)
         } catch {
             childDecks = []
             childDecksError = "Failed to load subdecks: \(error.localizedDescription)"
@@ -451,8 +462,12 @@ struct DeckDetailView: View {
     fileprivate func rebuild() async {
         actionInFlight = true
         defer { actionInFlight = false }
+        let rebuildFilteredDeck = deckClient.rebuildFilteredDeck
+        let deckId = deck.id
         do {
-            let count = try deckClient.rebuildFilteredDeck(deck.id)
+            let count = try await Task.detached(priority: .userInitiated) {
+                try rebuildFilteredDeck(deckId)
+            }.value
             rebuildFeedback = "Rebuilt — \(count) cards"
             await loadCounts()
             try? await Task.sleep(for: .seconds(2))
@@ -465,8 +480,12 @@ struct DeckDetailView: View {
     fileprivate func empty() async {
         actionInFlight = true
         defer { actionInFlight = false }
+        let emptyFilteredDeck = deckClient.emptyFilteredDeck
+        let deckId = deck.id
         do {
-            try deckClient.emptyFilteredDeck(deck.id)
+            try await Task.detached(priority: .userInitiated) {
+                try emptyFilteredDeck(deckId)
+            }.value
             await loadCounts()
         } catch {
             actionError = error.localizedDescription
