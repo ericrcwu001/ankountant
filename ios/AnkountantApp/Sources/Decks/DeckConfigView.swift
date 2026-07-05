@@ -589,8 +589,14 @@ struct DeckConfigView: View {
         loadError = nil
         loaded = nil
         do {
-            let config = try deckClient.getDeckConfig(deckId)
-            let context = try deckClient.fetchDeckConfigContext(deckId)
+            let getDeckConfig = deckClient.getDeckConfig
+            let fetchDeckConfigContext = deckClient.fetchDeckConfigContext
+            let (config, context) = try await Task.detached(priority: .userInitiated) {
+                (
+                    try getDeckConfig(deckId),
+                    try fetchDeckConfigContext(deckId)
+                )
+            }.value
             await MainActor.run {
                 apply(config: config, context: context)
                 isLoading = false
@@ -744,15 +750,23 @@ struct DeckConfigView: View {
         updated.config = cfg
 
         do {
-            try deckClient.updateDeckConfig(
-                deckId,
-                updated,
-                applyToChildren,
-                fsrsEnabled,
-                newCardsIgnoreReviewLimit,
-                applyAllParentLimits,
-                fsrsHealthCheck
-            )
+            let updateDeckConfig = deckClient.updateDeckConfig
+            let applyToChildren = applyToChildren
+            let fsrsEnabled = fsrsEnabled
+            let newCardsIgnoreReviewLimit = newCardsIgnoreReviewLimit
+            let applyAllParentLimits = applyAllParentLimits
+            let fsrsHealthCheck = fsrsHealthCheck
+            try await Task.detached(priority: .userInitiated) {
+                try updateDeckConfig(
+                    deckId,
+                    updated,
+                    applyToChildren,
+                    fsrsEnabled,
+                    newCardsIgnoreReviewLimit,
+                    applyAllParentLimits,
+                    fsrsHealthCheck
+                )
+            }.value
             onDismiss()
         } catch {
             saveError = error.localizedDescription
@@ -807,7 +821,11 @@ struct DeckConfigView: View {
         isPresetMutating = true
         defer { isPresetMutating = false }
         do {
-            try deckClient.selectDeckPreset(deckId, target, applyToChildren)
+            let selectDeckPreset = deckClient.selectDeckPreset
+            let applyToChildren = applyToChildren
+            try await Task.detached(priority: .userInitiated) {
+                try selectDeckPreset(deckId, target, applyToChildren)
+            }.value
             await loadConfig()
         } catch {
             presetActionError = "Failed to switch preset: \(error.localizedDescription)"
@@ -820,7 +838,12 @@ struct DeckConfigView: View {
         isPresetMutating = true
         defer { isPresetMutating = false }
         do {
-            try deckClient.createDeckPreset(deckId, base, uniqueName(name), applyToChildren)
+            let createDeckPreset = deckClient.createDeckPreset
+            let uniquePresetName = uniqueName(name)
+            let applyToChildren = applyToChildren
+            try await Task.detached(priority: .userInitiated) {
+                try createDeckPreset(deckId, base, uniquePresetName, applyToChildren)
+            }.value
             newPresetName = ""
             await loadConfig()
         } catch {
@@ -836,9 +859,11 @@ struct DeckConfigView: View {
         defer { isPresetMutating = false }
         do {
             base.name = trimmed
-            // Reuse selectDeckPreset which writes the existing config's row in
-            // place — same RPC the Anki Desktop "rename preset" flow uses.
-            try deckClient.selectDeckPreset(deckId, base, applyToChildren)
+            let selectDeckPreset = deckClient.selectDeckPreset
+            let applyToChildren = applyToChildren
+            try await Task.detached(priority: .userInitiated) {
+                try selectDeckPreset(deckId, base, applyToChildren)
+            }.value
             await loadConfig()
         } catch {
             presetActionError = "Failed to rename preset: \(error.localizedDescription)"
@@ -850,7 +875,12 @@ struct DeckConfigView: View {
         isPresetMutating = true
         defer { isPresetMutating = false }
         do {
-            try deckClient.deleteDeckPreset(deckId, current.id, fallback, applyToChildren)
+            let deleteDeckPreset = deckClient.deleteDeckPreset
+            let currentId = current.id
+            let applyToChildren = applyToChildren
+            try await Task.detached(priority: .userInitiated) {
+                try deleteDeckPreset(deckId, currentId, fallback, applyToChildren)
+            }.value
             await loadConfig()
         } catch {
             presetActionError = "Failed to delete preset: \(error.localizedDescription)"
@@ -881,7 +911,10 @@ struct DeckConfigView: View {
             req.numOfRelearningSteps = relearningStepsInDay(try parseDeckConfigSteps(relearningStepsText))
             req.healthCheck = fsrsHealthCheck
 
-            let response = try deckClient.computeFsrsParams(req)
+            let computeFsrsParams = deckClient.computeFsrsParams
+            let response = try await Task.detached(priority: .userInitiated) {
+                try computeFsrsParams(req)
+            }.value
             guard !response.params.isEmpty else {
                 optimizeError = "Not enough review history to optimize. Try lowering historical retention or expanding the search."
                 return
@@ -901,7 +934,11 @@ struct DeckConfigView: View {
         defer { isOptimizingFsrs = false }
 
         do {
-            try deckClient.optimizeFsrsPresets(deckId, loaded.config)
+            let optimizeFsrsPresets = deckClient.optimizeFsrsPresets
+            let config = loaded.config
+            try await Task.detached(priority: .userInitiated) {
+                try optimizeFsrsPresets(deckId, config)
+            }.value
             await loadConfig()
         } catch {
             optimizeError = error.localizedDescription
@@ -1172,7 +1209,10 @@ struct FsrsSimulatorView: View {
         do {
             switch context.mode {
             case .review:
-                let response = try deckClient.simulateFsrsReview(req)
+                let simulateFsrsReview = deckClient.simulateFsrsReview
+                let response = try await Task.detached(priority: .userInitiated) {
+                    try simulateFsrsReview(req)
+                }.value
                 let totalNew = response.dailyNewCount.reduce(0, +)
                 let totalReview = response.dailyReviewCount.reduce(0, +)
                 let totalTime = response.dailyTimeCost.reduce(0, +)
@@ -1187,7 +1227,10 @@ struct FsrsSimulatorView: View {
                 ]
                 workloadRows = []
             case .workload:
-                let response = try deckClient.simulateFsrsWorkload(req)
+                let simulateFsrsWorkload = deckClient.simulateFsrsWorkload
+                let response = try await Task.detached(priority: .userInitiated) {
+                    try simulateFsrsWorkload(req)
+                }.value
                 let sorted = response.cost.keys.sorted()
                 workloadRows = sorted.map { retention in
                     let cost = response.cost[retention] ?? 0
