@@ -226,6 +226,7 @@ media bridge lands.
     .add-bar {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: var(--space-md);
         flex: 0 0 auto;
         padding: var(--space-sm) var(--space-md);
@@ -237,6 +238,7 @@ media bridge lands.
         display: flex;
         align-items: center;
         gap: var(--space-xs);
+        min-width: 0;
     }
 
     .picker-label {
@@ -254,6 +256,7 @@ media bridge lands.
         border-radius: var(--border-radius);
         padding: var(--space-xxs) var(--space-sm);
         max-width: 12rem;
+        min-width: 0;
         cursor: pointer;
 
         &:focus-visible {
@@ -265,6 +268,8 @@ media bridge lands.
     .add-actions {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
         gap: var(--space-sm);
         margin-left: auto;
     }
