@@ -94,7 +94,7 @@ final class ReviewSession {
         errorMessage = message
     }
 
-    func start() {
+    func start() async {
         errorMessage = nil
         isFinished = false
         showAnswer = false
@@ -109,16 +109,20 @@ final class ReviewSession {
         typedAnswerState = nil
 
         do {
-            try decks.setCurrentDeck(deckId)
-
-            let result = try scheduler.getQueuedCards(200)
+            let setCurrentDeck = decks.setCurrentDeck
+            let getQueuedCards = scheduler.getQueuedCards
+            let deckId = deckId
+            let result = try await Task.detached(priority: .userInitiated) {
+                try setCurrentDeck(deckId)
+                return try getQueuedCards(200)
+            }.value
             cardQueue = result.cards
             remainingCounts = DeckCounts(
                 newCount: result.newCount,
                 learnCount: result.learningCount,
                 reviewCount: result.reviewCount
             )
-            advanceToNextCard()
+            await advanceToNextCard()
         } catch {
             errorMessage = "Failed to start review: \(error.localizedDescription)"
             isFinished = true
@@ -140,7 +144,12 @@ final class ReviewSession {
 
         let typed = await readTypedAnswerWithTimeout()
         if let state = typedAnswerState {
-            backHTML = makeTypedAnswerBackHTML(state: state, typedAnswer: typed ?? "")
+            do {
+                backHTML = try await makeTypedAnswerBackHTML(state: state, typedAnswer: typed ?? "")
+            } catch {
+                errorMessage = "Failed to compare typed answer: \(error.localizedDescription)"
+                backHTML = renderedBackHTML.replacingOccurrences(of: state.placeholder, with: "")
+            }
         } else {
             backHTML = strippingTypedAnswerPlaceholders(from: renderedBackHTML)
         }
@@ -153,14 +162,19 @@ final class ReviewSession {
         typedAnswerContinuation = nil
     }
 
-    func answer(rating: Rating, confidence: ConfidenceLevel? = nil) {
+    func answer(rating: Rating, confidence: ConfidenceLevel? = nil) async {
         guard showAnswer, let queued = currentQueuedCard else { return }
 
         let timeSpent = UInt32(Date.now.timeIntervalSince(reviewStartTime) * 1000)
 
         do {
             let states = try queued.states.recordingConfidence(confidence?.rawValue)
-            try scheduler.answerReviewCard(queued.card.id, rating, timeSpent, states)
+            let answerReviewCard = scheduler.answerReviewCard
+            let getQueuedCards = scheduler.getQueuedCards
+            let result = try await Task.detached(priority: .userInitiated) {
+                try answerReviewCard(queued.card.id, rating, timeSpent, states)
+                return try getQueuedCards(200)
+            }.value
 
             sessionStats.reviewed += 1
             if rating != .again { sessionStats.correct += 1 }
@@ -168,52 +182,53 @@ final class ReviewSession {
             lastRating = rating
             canUndo = true
 
-            let result = try scheduler.getQueuedCards(200)
             cardQueue = result.cards
             remainingCounts = DeckCounts(
                 newCount: result.newCount,
                 learnCount: result.learningCount,
                 reviewCount: result.reviewCount
             )
-            advanceToNextCard()
+            await advanceToNextCard()
         } catch {
             errorMessage = "Failed to answer card: \(error.localizedDescription)"
         }
     }
 
-    func undo() {
+    func undo() async {
         guard canUndo else { return }
 
         do {
-            try collection.undoLast()
+            let undoLast = collection.undoLast
+            let getQueuedCards = scheduler.getQueuedCards
+            let result = try await Task.detached(priority: .userInitiated) {
+                try undoLast()
+                return try getQueuedCards(200)
+            }.value
             canUndo = false
 
-            // Roll back session stats
             sessionStats.reviewed -= 1
             if let last = lastRating, last != .again {
                 sessionStats.correct -= 1
             }
             lastRating = nil
 
-            // Re-fetch queue — Anki places the undone card at the front
-            let result = try scheduler.getQueuedCards(200)
             cardQueue = result.cards
             remainingCounts = DeckCounts(
                 newCount: result.newCount,
                 learnCount: result.learningCount,
                 reviewCount: result.reviewCount
             )
-            advanceToNextCard()
+            await advanceToNextCard()
         } catch {
             errorMessage = "Failed to undo review: \(error.localizedDescription)"
         }
     }
 
-    func handleCardActionSuccess(shouldAdvance: Bool) {
+    func handleCardActionSuccess(shouldAdvance: Bool) async {
         if shouldAdvance {
-            refreshQueueAfterCardAction()
+            await refreshQueueAfterCardAction()
         } else {
-            refreshCurrentCardMetadata()
+            await refreshCurrentCardMetadata()
         }
     }
 
@@ -238,26 +253,29 @@ final class ReviewSession {
         guard let queued = currentQueuedCard else { return }
 
         do {
-            currentNote = try notes.getNote(queued.card.nid)
-        } catch {
-            errorMessage = "Failed to reload note after edit: \(error.localizedDescription)"
-        }
+            let loaded = try await loadCardPresentation(for: queued)
+            currentNote = loaded.note
+            renderedFrontHTML = loaded.rendered.frontHTML
+            renderedBackHTML = loaded.rendered.backHTML
+            cardCSS = loaded.rendered.cardCSS
 
-        do {
-            let rendered = try cardRendering.renderCard(queued.card.id)
-            renderedFrontHTML = rendered.frontHTML
-            renderedBackHTML = rendered.backHTML
-            cardCSS = rendered.cardCSS
-
-            typedAnswerState = resolveTypedAnswerState(for: queued, frontHTML: rendered.frontHTML)
+            typedAnswerState = loaded.typedAnswerState
             frontHTML = makeTypedAnswerFrontHTML(state: typedAnswerState, raw: renderedFrontHTML)
 
             if showAnswer, let state = typedAnswerState {
-                backHTML = makeTypedAnswerBackHTML(state: state, typedAnswer: "")
+                do {
+                    backHTML = try await makeTypedAnswerBackHTML(state: state, typedAnswer: "")
+                } catch {
+                    errorMessage = "Failed to compare typed answer: \(error.localizedDescription)"
+                    backHTML = strippingTypedAnswerPlaceholders(from: renderedBackHTML)
+                }
             } else if showAnswer {
                 backHTML = strippingTypedAnswerPlaceholders(from: renderedBackHTML)
             } else {
                 backHTML = renderedBackHTML
+            }
+            if let typedAnswerError = loaded.typedAnswerError {
+                errorMessage = typedAnswerError
             }
         } catch {
             errorMessage = "Failed to render edited card: \(error.localizedDescription)"
@@ -266,7 +284,7 @@ final class ReviewSession {
 
     // MARK: - Private: card advancement
 
-    private func advanceToNextCard() {
+    private func advanceToNextCard() async {
         guard let next = cardQueue.first else {
             isFinished = true
             currentQueuedCard = nil
@@ -284,23 +302,21 @@ final class ReviewSession {
         stopAudioRequestID += 1
 
         do {
-            currentNote = try notes.getNote(next.card.nid)
-        } catch {
-            errorMessage = "Failed to load note: \(error.localizedDescription)"
-            currentNote = nil
-        }
+            let loaded = try await loadCardPresentation(for: next)
+            currentNote = loaded.note
+            renderedFrontHTML = loaded.rendered.frontHTML
+            renderedBackHTML = loaded.rendered.backHTML
+            cardCSS = loaded.rendered.cardCSS
 
-        do {
-            let rendered = try cardRendering.renderCard(next.card.id)
-            renderedFrontHTML = rendered.frontHTML
-            renderedBackHTML = rendered.backHTML
-            cardCSS = rendered.cardCSS
-
-            typedAnswerState = resolveTypedAnswerState(for: next, frontHTML: rendered.frontHTML)
+            typedAnswerState = loaded.typedAnswerState
             frontHTML = makeTypedAnswerFrontHTML(state: typedAnswerState, raw: renderedFrontHTML)
-            backHTML = renderedBackHTML  // back substitution happens at reveal
+            backHTML = renderedBackHTML
+            if let typedAnswerError = loaded.typedAnswerError {
+                errorMessage = typedAnswerError
+            }
         } catch {
             errorMessage = "Failed to render card: \(error.localizedDescription)"
+            currentNote = nil
             renderedFrontHTML = "<p>Unable to render this card.</p>"
             renderedBackHTML = "<p>Unable to render this card.</p>"
             cardCSS = ""
@@ -310,75 +326,68 @@ final class ReviewSession {
         }
     }
 
-    private func refreshQueueAfterCardAction() {
+    private func loadCardPresentation(for queued: QueuedReviewCard) async throws -> LoadedCardPresentation {
+        let getNote = notes.getNote
+        let renderCard = cardRendering.renderCard
+        let getNotetypeFields = notetypes.getNotetypeFields
+        let extractClozeForTyping = cardRendering.extractClozeForTyping
+        let cardOrdinal = Int(queued.card.ord)
+        return try await Task.detached(priority: .userInitiated) {
+            let note = try getNote(queued.card.nid)
+            let rendered = try renderCard(queued.card.id)
+            let typedAnswerState: TypedAnswerState?
+            let typedAnswerError: String?
+            do {
+                typedAnswerState = try resolvedTypedAnswerState(
+                    for: queued,
+                    note: note,
+                    frontHTML: rendered.frontHTML,
+                    cardOrdinal: cardOrdinal,
+                    getNotetypeFields: getNotetypeFields,
+                    extractClozeForTyping: extractClozeForTyping
+                )
+                typedAnswerError = nil
+            } catch {
+                typedAnswerState = nil
+                typedAnswerError = "Failed to prepare typed answer: \(error.localizedDescription)"
+            }
+            return LoadedCardPresentation(
+                note: note,
+                rendered: rendered,
+                typedAnswerState: typedAnswerState,
+                typedAnswerError: typedAnswerError
+            )
+        }.value
+    }
+
+    private func refreshQueueAfterCardAction() async {
         do {
-            let result = try scheduler.getQueuedCards(200)
+            let getQueuedCards = scheduler.getQueuedCards
+            let result = try await Task.detached(priority: .userInitiated) {
+                try getQueuedCards(200)
+            }.value
             cardQueue = result.cards
             remainingCounts = DeckCounts(
                 newCount: result.newCount,
                 learnCount: result.learningCount,
                 reviewCount: result.reviewCount
             )
-            advanceToNextCard()
+            await advanceToNextCard()
         } catch {
             errorMessage = "Failed to refresh review after card action: \(error.localizedDescription)"
         }
     }
 
-    private func refreshCurrentCardMetadata() {
+    private func refreshCurrentCardMetadata() async {
         guard let cardId = currentCardId else { return }
 
         do {
-            currentFlag = try cardClient.getCardFlags(cardId)
+            let getCardFlags = cardClient.getCardFlags
+            currentFlag = try await Task.detached(priority: .userInitiated) {
+                try getCardFlags(cardId)
+            }.value
         } catch {
             errorMessage = "Failed to refresh card action state: \(error.localizedDescription)"
-        }
-    }
-
-    // MARK: - Typed-answer state resolution
-
-    private func resolveTypedAnswerState(
-        for queued: QueuedReviewCard,
-        frontHTML: String
-    ) -> TypedAnswerState? {
-        guard let placeholder = firstTypedAnswerPlaceholder(in: frontHTML) else {
-            return nil
-        }
-
-        do {
-            let noteRecord = try notes.getNote(queued.card.nid)
-
-            // Fetch per-field font/size config via service (keeps backend access inside AnkiServices).
-            let fields = try notetypes.getNotetypeFields(noteRecord.mid)
-
-            guard let field = fields.first(where: { $0.name == placeholder.fieldName }) else {
-                errorMessage = "Failed to prepare typed answer: field \"\(placeholder.fieldName)\" does not exist on notetype \(noteRecord.mid)."
-                return nil
-            }
-
-            let fieldValues = noteRecord.flds.components(separatedBy: "\u{1f}")
-            guard fieldValues.indices.contains(field.ordinal) else {
-                errorMessage = "Failed to prepare typed answer: field \"\(field.name)\" is missing from note \(noteRecord.id)."
-                return nil
-            }
-
-            var expected = fieldValues[field.ordinal]
-
-            // Cloze typed-answer: extract the specific cloze ordinal's text
-            if let clozeOrdinal = placeholder.clozeOrdinal {
-                expected = try cardRendering.extractClozeForTyping(expected, clozeOrdinal)
-            }
-
-            return TypedAnswerState(
-                placeholder: placeholder.rawToken,
-                expected: expected,
-                combining: placeholder.combining,
-                fontName: field.fontName,
-                fontSize: field.fontSize
-            )
-        } catch {
-            errorMessage = "Failed to prepare typed answer: \(error.localizedDescription)"
-            return nil
         }
     }
 
@@ -399,81 +408,25 @@ final class ReviewSession {
         return raw.replacingOccurrences(of: state.placeholder, with: inputHTML)
     }
 
-    private func makeTypedAnswerBackHTML(state: TypedAnswerState, typedAnswer: String) -> String {
+    private func makeTypedAnswerBackHTML(state: TypedAnswerState, typedAnswer: String) async throws -> String {
         guard renderedBackHTML.contains(state.placeholder) else {
             return renderedBackHTML
         }
         if state.expected.isEmpty {
             return renderedBackHTML.replacingOccurrences(of: state.placeholder, with: "")
         }
-        do {
-            let diff = try cardRendering.compareAnswer(state.expected, typedAnswer, state.combining)
-            let wrapped = "<div style=\"font-family: '\(state.fontName)'; font-size: \(state.fontSize)px\">\(diff)</div>"
-            return renderedBackHTML.replacingOccurrences(of: state.placeholder, with: wrapped)
-        } catch {
-            errorMessage = "Failed to compare typed answer: \(error.localizedDescription)"
-            return renderedBackHTML.replacingOccurrences(of: state.placeholder, with: "")
-        }
+        let compareAnswer = cardRendering.compareAnswer
+        let diff = try await Task.detached(priority: .userInitiated) {
+            try compareAnswer(state.expected, typedAnswer, state.combining)
+        }.value
+        let wrapped = "<div style=\"font-family: '\(state.fontName)'; font-size: \(state.fontSize)px\">\(diff)</div>"
+        return renderedBackHTML.replacingOccurrences(of: state.placeholder, with: wrapped)
     }
 
     private func strippingTypedAnswerPlaceholders(from html: String) -> String {
         let regex = typedAnswerRegex(pattern: #"\[\[type:.+?\]\]"#)
         let range = NSRange(html.startIndex..., in: html)
         return regex.stringByReplacingMatches(in: html, range: range, withTemplate: "")
-    }
-
-    // MARK: - Placeholder parsing
-
-    private struct TypedAnswerPlaceholder {
-        let rawToken: String
-        let fieldName: String
-        let combining: Bool
-        let clozeOrdinal: UInt32?
-    }
-
-    private func firstTypedAnswerPlaceholder(in html: String) -> TypedAnswerPlaceholder? {
-        let regex = typedAnswerRegex(pattern: #"\[\[type:(.+?)\]\]"#)
-        let nsRange = NSRange(html.startIndex..., in: html)
-        guard let match = regex.firstMatch(in: html, range: nsRange),
-              let rawRange = Range(match.range(at: 0), in: html),
-              let specRange = Range(match.range(at: 1), in: html)
-        else {
-            return nil
-        }
-
-        var spec = String(html[specRange])
-        var combining = true
-        var clozeOrdinal: UInt32?
-
-        if spec.hasPrefix("cloze:") {
-            spec.removeFirst("cloze:".count)
-            clozeOrdinal = queuedClozeOrdinal()
-        }
-        if spec.hasPrefix("nc:") {
-            spec.removeFirst("nc:".count)
-            combining = false
-        }
-
-        guard !spec.isEmpty else { return nil }
-
-        return TypedAnswerPlaceholder(
-            rawToken: String(html[rawRange]),
-            fieldName: spec,
-            combining: combining,
-            clozeOrdinal: clozeOrdinal
-        )
-    }
-
-    private func typedAnswerRegex(pattern: String) -> NSRegularExpression {
-        do {
-            return try NSRegularExpression(pattern: pattern)
-        } catch {
-            preconditionFailure("Invalid typed-answer regex: \(error)")
-        }
-    }
-
-    private func queuedClozeOrdinal() -> UInt32 {
-        UInt32((currentQueuedCard?.card.ord ?? 0)) + 1
     }
 
     // MARK: - Typed-answer async read
@@ -493,5 +446,112 @@ final class ReviewSession {
                 self.typedAnswerContinuation = nil
             }
         }
+    }
+}
+
+private struct LoadedCardPresentation: Sendable {
+    let note: NoteRecord
+    let rendered: RenderedCard
+    let typedAnswerState: TypedAnswerState?
+    let typedAnswerError: String?
+}
+
+private struct TypedAnswerPlaceholder {
+    let rawToken: String
+    let fieldName: String
+    let combining: Bool
+    let clozeOrdinal: UInt32?
+}
+
+private func resolvedTypedAnswerState(
+    for queued: QueuedReviewCard,
+    note: NoteRecord,
+    frontHTML: String,
+    cardOrdinal: Int,
+    getNotetypeFields: @Sendable (_ id: Int64) throws -> [NotetypeFieldInfo],
+    extractClozeForTyping: @Sendable (_ text: String, _ ordinal: UInt32) throws -> String
+) throws -> TypedAnswerState? {
+    guard let placeholder = firstTypedAnswerPlaceholder(in: frontHTML, cardOrdinal: cardOrdinal) else {
+        return nil
+    }
+
+    let fields = try getNotetypeFields(note.mid)
+
+    guard let field = fields.first(where: { $0.name == placeholder.fieldName }) else {
+        throw ReviewTypedAnswerError.missingField(placeholder.fieldName, note.mid)
+    }
+
+    let fieldValues = note.flds.components(separatedBy: "\u{1f}")
+    guard fieldValues.indices.contains(field.ordinal) else {
+        throw ReviewTypedAnswerError.missingNoteField(field.name, note.id)
+    }
+
+    var expected = fieldValues[field.ordinal]
+
+    if let clozeOrdinal = placeholder.clozeOrdinal {
+        expected = try extractClozeForTyping(expected, clozeOrdinal)
+    }
+
+    return TypedAnswerState(
+        placeholder: placeholder.rawToken,
+        expected: expected,
+        combining: placeholder.combining,
+        fontName: field.fontName,
+        fontSize: field.fontSize
+    )
+}
+
+private enum ReviewTypedAnswerError: LocalizedError {
+    case missingField(String, Int64)
+    case missingNoteField(String, Int64)
+
+    var errorDescription: String? {
+        switch self {
+        case .missingField(let fieldName, let notetypeId):
+            "field \"\(fieldName)\" does not exist on notetype \(notetypeId)."
+        case .missingNoteField(let fieldName, let noteId):
+            "field \"\(fieldName)\" is missing from note \(noteId)."
+        }
+    }
+}
+
+private func firstTypedAnswerPlaceholder(in html: String, cardOrdinal: Int) -> TypedAnswerPlaceholder? {
+    let regex = typedAnswerRegex(pattern: #"\[\[type:(.+?)\]\]"#)
+    let nsRange = NSRange(html.startIndex..., in: html)
+    guard let match = regex.firstMatch(in: html, range: nsRange),
+          let rawRange = Range(match.range(at: 0), in: html),
+          let specRange = Range(match.range(at: 1), in: html)
+    else {
+        return nil
+    }
+
+    var spec = String(html[specRange])
+    var combining = true
+    var clozeOrdinal: UInt32?
+
+    if spec.hasPrefix("cloze:") {
+        spec.removeFirst("cloze:".count)
+        clozeOrdinal = UInt32(cardOrdinal) + 1
+    }
+    if spec.hasPrefix("nc:") {
+        spec.removeFirst("nc:".count)
+        combining = false
+    }
+
+    guard !spec.isEmpty else { return nil }
+
+    return TypedAnswerPlaceholder(
+        rawToken: String(html[rawRange]),
+        fieldName: spec,
+        combining: combining,
+        clozeOrdinal: clozeOrdinal
+    )
+}
+
+private func typedAnswerRegex(pattern: String) -> NSRegularExpression {
+    do {
+        return try NSRegularExpression(pattern: pattern)
+    } catch {
+        preconditionFailure("Invalid typed-answer regex: \(error)")
     }
 }

@@ -112,33 +112,33 @@ final class ReviewSessionTests: XCTestCase {
 
     /// When the scheduler returns an empty queue, start() should mark the session finished.
     /// Mirrors fork's testRefreshAndAdvanceMethodExists (which was a no-op placeholder).
-    func testStartWithEmptyQueueFinishesSession() throws {
-        withDependencies {
+    func testStartWithEmptyQueueFinishesSession() async throws {
+        await withDependencies {
             $0.decksService.setCurrentDeck = { _ in }
             $0.schedulerService.getQueuedCards = { _ in
                 QueuedCardsResult(cards: [], newCount: 0, learningCount: 0, reviewCount: 0)
             }
         } operation: {
             let s = ReviewSession(deckId: 42)
-            s.start()
+            await s.start()
             XCTAssertTrue(s.isFinished,
                           "Session with empty queue should be finished after start()")
             XCTAssertEqual(s.remainingCounts, .zero)
         }
     }
 
-    func testStartFailureSurfacesError() {
-        withDependencies {
+    func testStartFailureSurfacesError() async {
+        await withDependencies {
             $0.decksService.setCurrentDeck = { _ in throw ReviewSessionFixtureError.failed }
         } operation: {
             let session = ReviewSession(deckId: 1)
-            session.start()
+            await session.start()
             XCTAssertTrue(session.isFinished)
             XCTAssertTrue(session.errorMessage?.contains("fixture failure") == true)
         }
     }
 
-    func testStartCanRecoverAfterFailure() {
+    func testStartCanRecoverAfterFailure() async {
         final class StartState: @unchecked Sendable { var calls = 0 }
         let state = StartState()
         let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
@@ -147,7 +147,7 @@ final class ReviewSessionTests: XCTestCase {
         )
         let stubNote = NoteRecord(id: 100, guid: "g", mid: 200, mod: 0, flds: "", sfld: "", csum: 0)
 
-        withDependencies {
+        await withDependencies {
             $0.decksService.setCurrentDeck = { _ in
                 state.calls += 1
                 if state.calls == 1 {
@@ -161,11 +161,11 @@ final class ReviewSessionTests: XCTestCase {
             }
         } operation: {
             let session = ReviewSession(deckId: 1)
-            session.start()
+            await session.start()
             XCTAssertTrue(session.isFinished)
             XCTAssertTrue(session.errorMessage?.contains("fixture failure") == true)
 
-            session.start()
+            await session.start()
 
             XCTAssertFalse(session.isFinished)
             XCTAssertNil(session.errorMessage)
@@ -191,11 +191,11 @@ final class ReviewSessionTests: XCTestCase {
             }
         } operation: {
             let session = ReviewSession(deckId: 1)
-            session.start()
+            await session.start()
             XCTAssertEqual(session.currentCardId, 1)
 
             await session.revealAnswer()
-            session.answer(rating: .good)
+            await session.answer(rating: .good)
 
             XCTAssertEqual(session.currentCardId, 1)
             XCTAssertEqual(session.sessionStats.reviewed, 0)
@@ -204,7 +204,7 @@ final class ReviewSessionTests: XCTestCase {
         }
     }
 
-    func testAnswerBeforeRevealIsIgnored() {
+    func testAnswerBeforeRevealIsIgnored() async {
         final class Counter: @unchecked Sendable { var value = 0 }
         let answerCounter = Counter()
         let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
@@ -213,7 +213,7 @@ final class ReviewSessionTests: XCTestCase {
         )
         let stubNote = NoteRecord(id: 100, guid: "g", mid: 200, mod: 0, flds: "", sfld: "", csum: 0)
 
-        withDependencies {
+        await withDependencies {
             $0.decksService.setCurrentDeck = { _ in }
             $0.schedulerService.getQueuedCards = { _ in stubResult }
             $0.schedulerService.answerReviewCard = { _, _, _, _ in
@@ -225,9 +225,9 @@ final class ReviewSessionTests: XCTestCase {
             }
         } operation: {
             let session = ReviewSession(deckId: 1)
-            session.start()
+            await session.start()
 
-            session.answer(rating: .good)
+            await session.answer(rating: .good)
 
             XCTAssertEqual(answerCounter.value, 0)
             XCTAssertEqual(session.currentCardId, 1)
@@ -237,13 +237,13 @@ final class ReviewSessionTests: XCTestCase {
         }
     }
 
-    func testCardActionSuccessAdvancesWithoutCountingReview() {
+    func testCardActionSuccessAdvancesWithoutCountingReview() async {
         final class QueueState: @unchecked Sendable { var calls = 0 }
         let state = QueueState()
         let firstCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
         let secondCard = QueuedReviewCard.preview(cardId: 2, noteId: 200, ord: 0)
 
-        withDependencies {
+        await withDependencies {
             $0.decksService.setCurrentDeck = { _ in }
             $0.schedulerService.getQueuedCards = { _ in
                 state.calls += 1
@@ -260,10 +260,10 @@ final class ReviewSessionTests: XCTestCase {
             }
         } operation: {
             let session = ReviewSession(deckId: 1)
-            session.start()
+            await session.start()
             XCTAssertEqual(session.currentCardId, 1)
 
-            session.handleCardActionSuccess(shouldAdvance: true)
+            await session.handleCardActionSuccess(shouldAdvance: true)
 
             XCTAssertEqual(session.currentCardId, 2)
             XCTAssertEqual(session.sessionStats.reviewed, 0)
@@ -289,11 +289,11 @@ final class ReviewSessionTests: XCTestCase {
             $0.cardClient.getCardFlags = { _ in 4 }
         } operation: {
             let session = ReviewSession(deckId: 1)
-            session.start()
+            await session.start()
             await session.revealAnswer()
             XCTAssertTrue(session.showAnswer)
 
-            session.handleCardActionSuccess(shouldAdvance: false)
+            await session.handleCardActionSuccess(shouldAdvance: false)
 
             XCTAssertEqual(session.currentCardId, 1)
             XCTAssertEqual(session.currentFlag, 4)
@@ -301,7 +301,7 @@ final class ReviewSessionTests: XCTestCase {
         }
     }
 
-    func testTypedAnswerMissingNotetypeFieldReportsError() {
+    func testTypedAnswerMissingNotetypeFieldReportsError() async {
         let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
         let stubResult = QueuedCardsResult(
             cards: [stubCard], newCount: 1, learningCount: 0, reviewCount: 0
@@ -316,7 +316,7 @@ final class ReviewSessionTests: XCTestCase {
             csum: 0
         )
 
-        withDependencies {
+        await withDependencies {
             $0.decksService.setCurrentDeck = { _ in }
             $0.schedulerService.getQueuedCards = { _ in stubResult }
             $0.notesService.getNote = { _ in stubNote }
@@ -329,7 +329,7 @@ final class ReviewSessionTests: XCTestCase {
             }
         } operation: {
             let session = ReviewSession(deckId: 1)
-            session.start()
+            await session.start()
 
             XCTAssertFalse(session.requiresTypedAnswerInput)
             XCTAssertFalse(session.frontHTML.contains("[[type:Missing]]"))
@@ -338,7 +338,7 @@ final class ReviewSessionTests: XCTestCase {
         }
     }
 
-    func testTypedAnswerMissingNoteFieldReportsError() {
+    func testTypedAnswerMissingNoteFieldReportsError() async {
         let stubCard = QueuedReviewCard.preview(cardId: 1, noteId: 100, ord: 0)
         let stubResult = QueuedCardsResult(
             cards: [stubCard], newCount: 1, learningCount: 0, reviewCount: 0
@@ -353,7 +353,7 @@ final class ReviewSessionTests: XCTestCase {
             csum: 0
         )
 
-        withDependencies {
+        await withDependencies {
             $0.decksService.setCurrentDeck = { _ in }
             $0.schedulerService.getQueuedCards = { _ in stubResult }
             $0.notesService.getNote = { _ in stubNote }
@@ -366,7 +366,7 @@ final class ReviewSessionTests: XCTestCase {
             }
         } operation: {
             let session = ReviewSession(deckId: 1)
-            session.start()
+            await session.start()
 
             XCTAssertFalse(session.requiresTypedAnswerInput)
             XCTAssertFalse(session.frontHTML.contains("[[type:Back]]"))
@@ -421,7 +421,7 @@ final class ReviewSessionTests: XCTestCase {
             }
         } operation: {
             let session = ReviewSession(deckId: 1)
-            session.start()
+            await session.start()
             XCTAssertTrue(session.requiresTypedAnswerInput)
 
             let firstReveal = Task { @MainActor in
@@ -522,7 +522,7 @@ final class ReviewSessionTests: XCTestCase {
             $0.decksService.setCurrentDeck = { _ in }
         } operation: {
             let session = ReviewSession(deckId: 1)
-            session.start()
+            await session.start()
             try await Task.sleep(for: .milliseconds(50))
             XCTAssertEqual(session.currentNote, stubNote)
             XCTAssertEqual(callCounter.value, 1, "getNote should be called exactly once per advance")
@@ -554,7 +554,7 @@ final class ReviewSessionTests: XCTestCase {
             $0.decksService.setCurrentDeck = { _ in }
         } operation: {
             let session = ReviewSession(deckId: 1)
-            session.start()
+            await session.start()
             try await Task.sleep(for: .milliseconds(50))
             let target = session.currentTemplateTarget
             XCTAssertNotNil(target)
@@ -582,7 +582,7 @@ final class ReviewSessionTests: XCTestCase {
             $0.decksService.setCurrentDeck = { _ in }
         } operation: {
             let session = ReviewSession(deckId: 1)
-            session.start()
+            await session.start()
             try await Task.sleep(for: .milliseconds(50))
 
             // Audio start
@@ -640,7 +640,7 @@ final class ReviewSessionTests: XCTestCase {
             $0.decksService.setCurrentDeck = { _ in }
         } operation: {
             let session = ReviewSession(deckId: 1)
-            session.start()
+            await session.start()
             try await Task.sleep(for: .milliseconds(50))
 
             let originalNoteId = session.currentNote?.id

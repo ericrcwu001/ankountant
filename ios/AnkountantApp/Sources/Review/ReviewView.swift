@@ -91,7 +91,7 @@ struct ReviewView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Undo answer", systemImage: "arrow.uturn.backward") {
-                        session.undo()
+                        Task { await session.undo() }
                     }
                     .labelStyle(.iconOnly)
                     .disabled(!session.canUndo)
@@ -133,7 +133,9 @@ struct ReviewView: View {
                                     cardId: cardId,
                                     noteId: session.currentNote?.id,
                                     onActionSuccess: { shouldAdvance in
-                                        session.handleCardActionSuccess(shouldAdvance: shouldAdvance)
+                                        Task {
+                                            await session.handleCardActionSuccess(shouldAdvance: shouldAdvance)
+                                        }
                                     }
                                 )
                             }
@@ -213,7 +215,7 @@ struct ReviewView: View {
         }
         .task {
             ReviewAudioSession.apply(playInSilent: playAudioInSilentMode)
-            session.start()
+            await session.start()
         }
         .onChange(of: playAudioInSilentMode) { _, newValue in
             ReviewAudioSession.apply(playInSilent: newValue)
@@ -318,8 +320,9 @@ struct ReviewView: View {
 
     private func ratingButton(_ rating: Rating, color: Color) -> some View {
         Button {
-            session.answer(rating: rating, confidence: committedConfidence)
+            let confidence = committedConfidence
             committedConfidence = nil
+            Task { await session.answer(rating: rating, confidence: confidence) }
         } label: {
             VStack(spacing: 4) {
                 if showNextReviewTime {
@@ -377,7 +380,7 @@ struct ReviewView: View {
             Spacer()
             VStack(spacing: AnkountantSpacing.sm) {
                 Button("Retry", systemImage: "arrow.clockwise") {
-                    session.start()
+                    Task { await session.start() }
                 }
                 .buttonStyle(AnkountantPrimaryButtonStyle())
 
