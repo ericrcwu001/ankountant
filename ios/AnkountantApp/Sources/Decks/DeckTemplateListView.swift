@@ -23,6 +23,9 @@ struct DeckTemplateListView: View {
     @State private var showDeleteConfirm = false
     @State private var actionError: String?
     @State private var showActionError = false
+    @State private var showImport = false
+    @State private var importMessage: String?
+    @State private var showImportAlert = false
 
     private var filteredEntries: [Anki_Notetypes_NotetypeNameId] {
         filterDeckTemplateEntries(entries, searchText: searchText)
@@ -76,6 +79,14 @@ struct DeckTemplateListView: View {
             } message: {
                 Text(actionError ?? "An unknown error occurred.")
             }
+            .fileImporter(isPresented: $showImport, allowedContentTypes: [.data]) { result in
+                handleImport(result)
+            }
+            .alert("Import", isPresented: $showImportAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(importMessage ?? "")
+            }
             .task {
                 await loadTemplates()
             }
@@ -88,17 +99,26 @@ struct DeckTemplateListView: View {
         if isLoading {
             ProgressView()
         } else if let errorMessage {
-            AnkountantStatusMessageView(
-                title: "Could not load templates",
-                message: errorMessage,
-                systemImage: "exclamationmark.triangle",
-                tone: .warning
-            )
+            ContentUnavailableView {
+                Label("Could not load templates", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(errorMessage)
+            } actions: {
+                Button("Retry") {
+                    Task { await loadTemplates() }
+                }
+                .buttonStyle(.borderedProminent)
+            }
         } else if entries.isEmpty {
             ContentUnavailableView {
                 Label("No notetypes", systemImage: "square.stack.3d.up.slash")
             } description: {
-                Text("This collection has no editable notetypes.")
+                Text("Import an Anki package to add editable card templates to this collection.")
+            } actions: {
+                Button("Import package", systemImage: "square.and.arrow.down") {
+                    showImport = true
+                }
+                .buttonStyle(.borderedProminent)
             }
         } else if filteredEntries.isEmpty {
             templateSearchEmptyState
@@ -210,6 +230,28 @@ struct DeckTemplateListView: View {
         } catch {
             actionError = "Delete failed: \(error.localizedDescription)"
             showActionError = true
+        }
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            let ext = url.pathExtension.lowercased()
+            guard ext == "apkg" || ext == "colpkg" else {
+                importMessage = "Unsupported file type. Please select an .apkg or .colpkg file."
+                showImportAlert = true
+                return
+            }
+            do {
+                importMessage = try ImportHelper.importPackage(from: url)
+                Task { await loadTemplates() }
+            } catch {
+                importMessage = "Import failed: \(error.localizedDescription)"
+            }
+            showImportAlert = true
+        case .failure(let error):
+            importMessage = "Could not select file: \(error.localizedDescription)"
+            showImportAlert = true
         }
     }
 }
