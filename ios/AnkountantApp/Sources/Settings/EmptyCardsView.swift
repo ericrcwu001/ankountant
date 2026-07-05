@@ -25,7 +25,7 @@ struct EmptyCardsView: View {
     @State private var showSuccess = false
     @State private var editingNote: NoteRecord?
 
-    struct NoteEntry: Identifiable {
+    struct NoteEntry: Identifiable, Sendable {
         let id: Int64
         let cardIds: [Int64]
         let totalCards: Int
@@ -218,40 +218,37 @@ struct EmptyCardsView: View {
         defer { isLoading = false }
 
         do {
-            let emptyReport: EmptyCardsReport = try await Task.detached {
-                try cardRenderingServiceCapture.getEmptyCardsReport()
+            let (loadedReport, loadedEntries) = try await Task.detached(priority: .userInitiated) {
+                let emptyReport: EmptyCardsReport = try cardRenderingServiceCapture.getEmptyCardsReport()
+                let deckById = try capturedDeckClient.fetchAll().reduce(into: [Int64: String]()) { partial, deck in
+                    partial[deck.id] = deck.name
+                }
+
+                let entries = try emptyReport.notes.map { note in
+                    let cards = try capturedCardClient.fetchByNote(note.noteID)
+                    guard cards.count >= note.cardIDs.count, let firstCard = cards.first else {
+                        throw emptyCardsLoadError("Card metadata changed while loading note \(note.noteID).")
+                    }
+                    guard let deckName = deckById[firstCard.did] else {
+                        throw emptyCardsLoadError("Deck metadata is missing for note \(note.noteID).")
+                    }
+                    return NoteEntry(
+                        id: note.noteID,
+                        cardIds: note.cardIDs,
+                        totalCards: cards.count,
+                        emptyCards: note.cardIDs.count,
+                        deckName: deckName,
+                        willDeleteNote: note.willDeleteNote
+                    )
+                }
+                return (emptyReport.report, entries)
             }.value
-            report = emptyReport.report
-
-            let deckById = try capturedDeckClient.fetchAll().reduce(into: [Int64: String]()) { partial, deck in
-                partial[deck.id] = deck.name
-            }
-
-            noteEntries = try emptyReport.notes.map { note in
-                let cards = try capturedCardClient.fetchByNote(note.noteID)
-                guard cards.count >= note.cardIDs.count, let firstCard = cards.first else {
-                    throw emptyCardsLoadError("Card metadata changed while loading note \(note.noteID).")
-                }
-                guard let deckName = deckById[firstCard.did] else {
-                    throw emptyCardsLoadError("Deck metadata is missing for note \(note.noteID).")
-                }
-                return NoteEntry(
-                    id: note.noteID,
-                    cardIds: note.cardIDs,
-                    totalCards: cards.count,
-                    emptyCards: note.cardIDs.count,
-                    deckName: deckName,
-                    willDeleteNote: note.willDeleteNote
-                )
-            }
+            report = loadedReport
+            noteEntries = loadedEntries
         } catch {
             noteEntries = []
             loadErrorMessage = "Failed to load empty cards: \(error.localizedDescription)"
         }
-    }
-
-    private func emptyCardsLoadError(_ message: String) -> NSError {
-        NSError(domain: "EmptyCardsView", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
     }
 
     private func deleteAllEmpty() async {
@@ -273,7 +270,11 @@ struct EmptyCardsView: View {
 
     private func openNoteEditor(noteId: Int64) async {
         do {
-            guard let note = try noteClient.fetch(noteId) else {
+            let fetchNote = noteClient.fetch
+            let note = try await Task.detached(priority: .userInitiated) {
+                try fetchNote(noteId)
+            }.value
+            guard let note else {
                 errorMessage = "The selected note no longer exists."
                 showError = true
                 return
@@ -284,4 +285,8 @@ struct EmptyCardsView: View {
             showError = true
         }
     }
+}
+
+private func emptyCardsLoadError(_ message: String) -> NSError {
+    NSError(domain: "EmptyCardsView", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
 }
