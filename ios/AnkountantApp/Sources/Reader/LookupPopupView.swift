@@ -406,6 +406,11 @@ private struct LookupChildPane: View {
                     Label("Lookup failed", systemImage: "exclamationmark.triangle")
                 } description: {
                     Text(lookupError)
+                } actions: {
+                    Button("Retry") {
+                        Task { await runLookup() }
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
             } else if let result, !result.entries.isEmpty {
                 List {
