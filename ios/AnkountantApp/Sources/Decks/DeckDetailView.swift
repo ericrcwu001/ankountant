@@ -84,54 +84,61 @@ struct DeckDetailView: View {
     var body: some View {
         List {
             Section {
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text("New")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text("\(counts.newCount)")
-                            .font(.title2.weight(.semibold))
-                            .foregroundStyle(palette.stateNew)
+                if let countsError {
+                    ContentUnavailableView {
+                        Label("Could Not Load Deck Counts", systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text(countsError)
+                    } actions: {
+                        Button("Retry", systemImage: "arrow.clockwise") {
+                            Task { await loadCounts() }
+                        }
                     }
-                    Spacer()
-                    VStack(alignment: .leading) {
-                        Text("Learning")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text("\(counts.learnCount)")
-                            .font(.title2.weight(.semibold))
-                            .foregroundStyle(palette.stateLearn)
-                    }
-                    Spacer()
-                    VStack(alignment: .leading) {
-                        Text("Review")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text("\(counts.reviewCount)")
-                            .font(.title2.weight(.semibold))
-                            .foregroundStyle(palette.stateReview)
-                    }
-                }
-                .padding(.vertical, 8)
-            }
-
-            if let countsError {
-                Section {
-                    Text(countsError)
-                        .ankountantStatusText(.danger, font: .caption)
-                }
-            }
-
-            Section {
-                if counts.total == 0 {
-                    emptyDeckActions
                 } else {
-                    Button {
-                        showReview = true
-                    } label: {
-                        Label("Study Now", systemImage: "play.fill")
-                            .frame(maxWidth: .infinity)
-                            .font(.headline)
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text("New")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text("\(counts.newCount)")
+                                .font(.title2.weight(.semibold))
+                                .foregroundStyle(palette.stateNew)
+                        }
+                        Spacer()
+                        VStack(alignment: .leading) {
+                            Text("Learning")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text("\(counts.learnCount)")
+                                .font(.title2.weight(.semibold))
+                                .foregroundStyle(palette.stateLearn)
+                        }
+                        Spacer()
+                        VStack(alignment: .leading) {
+                            Text("Review")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text("\(counts.reviewCount)")
+                                .font(.title2.weight(.semibold))
+                                .foregroundStyle(palette.stateReview)
+                        }
+                    }
+                    .padding(.vertical, 8)
+                }
+            }
+
+            if countsError == nil {
+                Section {
+                    if counts.total == 0 {
+                        emptyDeckActions
+                    } else {
+                        Button {
+                            showReview = true
+                        } label: {
+                            Label("Study Now", systemImage: "play.fill")
+                                .frame(maxWidth: .infinity)
+                                .font(.headline)
+                        }
                     }
                 }
             }
@@ -156,8 +163,15 @@ struct DeckDetailView: View {
 
             if let childDecksError {
                 Section("Subdecks") {
-                    Text(childDecksError)
-                        .ankountantStatusText(.danger, font: .caption)
+                    ContentUnavailableView {
+                        Label("Could Not Load Subdecks", systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text(childDecksError)
+                    } actions: {
+                        Button("Retry", systemImage: "arrow.clockwise") {
+                            Task { await loadChildren() }
+                        }
+                    }
                 }
             }
 
