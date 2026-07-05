@@ -65,10 +65,13 @@ struct ReaderLibraryView: View {
         ReaderConfigurationLoader.loadConfiguration() != nil && !books.isEmpty && loadError == nil
     }
 
+    private var trimmedSearchText: String {
+        searchText.trimmingCharacters(in: .whitespaces)
+    }
+
     private var filteredBooks: [ReaderBook] {
-        let trimmed = searchText.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return books }
-        return books.filter { $0.title.localizedCaseInsensitiveContains(trimmed) }
+        guard !trimmedSearchText.isEmpty else { return books }
+        return books.filter { $0.title.localizedCaseInsensitiveContains(trimmedSearchText) }
     }
 
     private var sortedBooks: [ReaderBook] {
@@ -216,7 +219,7 @@ struct ReaderLibraryView: View {
         } else {
             ScrollView {
                 if sortedBooks.isEmpty {
-                    ContentUnavailableView.search(text: searchText)
+                    readerSearchEmptyState
                         .frame(maxWidth: .infinity, minHeight: 360)
                         .padding(.horizontal, 24)
                 } else {
@@ -233,6 +236,27 @@ struct ReaderLibraryView: View {
             }
             .searchable(text: $searchText, prompt: "Search books")
             .refreshable { await reload() }
+        }
+    }
+
+    private var readerSearchEmptyState: some View {
+        ContentUnavailableView {
+            Label("No books found", systemImage: "magnifyingglass")
+        } description: {
+            Text("No Reader books match \"\(trimmedSearchText)\".")
+        } actions: {
+            Button("Clear Search", systemImage: "xmark.circle") {
+                searchText = ""
+            }
+            .buttonStyle(.borderedProminent)
+
+            Button("Import package", systemImage: "square.and.arrow.down") {
+                showImport = true
+            }
+
+            Button("Reader settings", systemImage: "slider.horizontal.3") {
+                showConfiguration = true
+            }
         }
     }
 
