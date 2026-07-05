@@ -327,7 +327,10 @@ struct TagsView: View {
 
     private func loadTags() async {
         do {
-            allTags = try tagClient.getAllTags()
+            let getAllTags = tagClient.getAllTags
+            allTags = try await Task.detached(priority: .userInitiated) {
+                try getAllTags()
+            }.value
             isLoading = false
         } catch {
             errorMessage = "Failed to load tags: \(error.localizedDescription)"
@@ -342,9 +345,16 @@ struct TagsView: View {
 
         do {
             if isNoteMode {
-                try tagClient.addTagToNotes(name, targetNoteIDs)
+                let addTagToNotes = tagClient.addTagToNotes
+                let noteIDs = targetNoteIDs
+                try await Task.detached(priority: .userInitiated) {
+                    try addTagToNotes(name, noteIDs)
+                }.value
             } else {
-                try tagClient.addTag(name)
+                let addTag = tagClient.addTag
+                try await Task.detached(priority: .userInitiated) {
+                    try addTag(name)
+                }.value
             }
             newTagName = ""
             showAddTag = false
@@ -358,7 +368,11 @@ struct TagsView: View {
     private func applyTag(_ tag: String) async {
         defer { finishApplying() }
         do {
-            try tagClient.addTagToNotes(tag, targetNoteIDs)
+            let addTagToNotes = tagClient.addTagToNotes
+            let noteIDs = targetNoteIDs
+            try await Task.detached(priority: .userInitiated) {
+                try addTagToNotes(tag, noteIDs)
+            }.value
         } catch {
             errorMessage = "Failed to apply tag: \(error.localizedDescription)"
             showError = true
@@ -368,7 +382,11 @@ struct TagsView: View {
     private func removeTagFromSelectedNotes(_ tag: String) async {
         defer { finishApplying() }
         do {
-            try tagClient.removeTagFromNotes(tag, targetNoteIDs)
+            let removeTagFromNotes = tagClient.removeTagFromNotes
+            let noteIDs = targetNoteIDs
+            try await Task.detached(priority: .userInitiated) {
+                try removeTagFromNotes(tag, noteIDs)
+            }.value
         } catch {
             errorMessage = "Failed to remove tag: \(error.localizedDescription)"
             showError = true
@@ -379,7 +397,10 @@ struct TagsView: View {
         isDeleting = true
         defer { isDeleting = false }
         do {
-            try tagClient.removeTag(tag)
+            let removeTag = tagClient.removeTag
+            try await Task.detached(priority: .userInitiated) {
+                try removeTag(tag)
+            }.value
             selectedTag = nil
             await loadTags()
         } catch {
@@ -395,7 +416,10 @@ struct TagsView: View {
             return
         }
         do {
-            try tagClient.renameTag(oldName, trimmed)
+            let renameTag = tagClient.renameTag
+            try await Task.detached(priority: .userInitiated) {
+                try renameTag(oldName, trimmed)
+            }.value
             tagToRename = nil
             await loadTags()
         } catch {

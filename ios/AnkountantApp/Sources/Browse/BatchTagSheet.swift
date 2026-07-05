@@ -117,7 +117,10 @@ struct BatchTagSheet: View {
     private func loadTags() async {
         loadErrorMessage = nil
         do {
-            let tags = try tagClient.getAllTags()
+            let getAllTags = tagClient.getAllTags
+            let tags = try await Task.detached(priority: .userInitiated) {
+                try getAllTags()
+            }.value
             allTags = tags.sorted()
         } catch {
             allTags = []
@@ -137,11 +140,15 @@ struct BatchTagSheet: View {
         defer { isApplying = false }
 
         let ids = Array(noteIDs)
+        let tagsToApply = Array(tags)
 
         do {
-            for tag in tags {
-                try tagClient.addTagToNotes(tag, ids)
-            }
+            let addTagToNotes = tagClient.addTagToNotes
+            try await Task.detached(priority: .userInitiated) {
+                for tag in tagsToApply {
+                    try addTagToNotes(tag, ids)
+                }
+            }.value
             onApplied()
             dismiss()
         } catch {
