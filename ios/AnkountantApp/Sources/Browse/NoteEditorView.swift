@@ -46,7 +46,7 @@ struct NoteEditorView: View {
                         Text(loadErrorMessage)
                     } actions: {
                         Button("Retry") {
-                            loadNote()
+                            Task { await loadNote() }
                         }
                     }
                 }
@@ -93,7 +93,7 @@ struct NoteEditorView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .task { loadNote() }
+        .task { await loadNote() }
     }
 
     private func fieldBinding(for index: Int) -> Binding<String> {
@@ -123,12 +123,16 @@ struct NoteEditorView: View {
         )
     }
 
-    private func loadNote() {
+    private func loadNote() async {
         loadErrorMessage = nil
         saveErrorMessage = nil
 
         do {
-            let notetype = try notetypesService.getNotetype(note.mid)
+            let getNotetype = notetypesService.getNotetype
+            let noteMID = note.mid
+            let notetype = try await Task.detached(priority: .userInitiated) {
+                try getNotetype(noteMID)
+            }.value
             fieldNames = notetype.fieldNames
             fieldValues = NoteFormRules.splitFields(note.flds, minimumCount: fieldNames.count)
             tags = note.tags.trimmingCharacters(in: .whitespaces)
@@ -160,7 +164,10 @@ struct NoteEditorView: View {
         updatedNote.tags = NoteFormRules.spacedTags(from: tags)
 
         do {
-            try noteClient.save(updatedNote)
+            let saveNote = noteClient.save
+            try await Task.detached(priority: .userInitiated) {
+                try saveNote(updatedNote)
+            }.value
         } catch {
             saveErrorMessage = "Failed to save note: \(error.localizedDescription)"
             return

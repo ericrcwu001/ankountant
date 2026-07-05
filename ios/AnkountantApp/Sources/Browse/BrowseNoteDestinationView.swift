@@ -45,7 +45,12 @@ struct BrowseNoteDestinationView: View {
         }
 
         do {
-            guard let fullNote = try noteClient.fetch(note.id) else {
+            let fetchNote = noteClient.fetch
+            let noteId = note.id
+            let fullNote = try await Task.detached(priority: .userInitiated) {
+                try fetchNote(noteId)
+            }.value
+            guard let fullNote else {
                 resolvedNote = nil
                 loadErrorMessage = "The selected note could not be found."
                 return

@@ -166,7 +166,11 @@ struct EditImageOcclusionNoteView: View {
         saveError = nil
 
         do {
-            let data = try client.getNote(noteId)
+            let getNote = client.getNote
+            let currentNoteId = noteId
+            let data = try await Task.detached(priority: .userInitiated) {
+                try getNote(currentNoteId)
+            }.value
 
             guard let img = UIImage(data: data.imageData) else {
                 uiImage = nil
@@ -202,7 +206,13 @@ struct EditImageOcclusionNoteView: View {
         let tags = NoteFormRules.normalizedTags(from: tagsText)
 
         do {
-            try client.updateNote(noteId, occlusions, header, backExtra, tags)
+            let updateNote = client.updateNote
+            let currentNoteId = noteId
+            let noteHeader = header
+            let noteBackExtra = backExtra
+            try await Task.detached(priority: .userInitiated) {
+                try updateNote(currentNoteId, occlusions, noteHeader, noteBackExtra, tags)
+            }.value
             onSave()
             dismiss()
         } catch {

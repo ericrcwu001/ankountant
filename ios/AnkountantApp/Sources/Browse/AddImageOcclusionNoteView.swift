@@ -264,7 +264,10 @@ struct AddImageOcclusionNoteView: View {
         saveErrorMessage = nil
 
         do {
-            decks = try deckClient.fetchAll()
+            let fetchAllDecks = deckClient.fetchAll
+            decks = try await Task.detached(priority: .userInitiated) {
+                try fetchAllDecks()
+            }.value
         } catch {
             decks = []
             selectedDeckId = 0
@@ -375,7 +378,13 @@ struct AddImageOcclusionNoteView: View {
         let tags = NoteFormRules.normalizedTags(from: tagsText)
 
         do {
-            try client.addNote(url, occlusions, header, backExtra, tags, selectedDeckId, 0)
+            let addNote = client.addNote
+            let deckId = selectedDeckId
+            let noteHeader = header
+            let noteBackExtra = backExtra
+            try await Task.detached(priority: .userInitiated) {
+                try addNote(url, occlusions, noteHeader, noteBackExtra, tags, deckId, 0)
+            }.value
             onSave()
             dismiss()
         } catch {
