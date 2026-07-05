@@ -195,7 +195,10 @@ struct DeckTemplateListView: View {
         defer { isLoading = false }
 
         do {
-            let allEntries = try notetypesClient.listAll()
+            let listAllNotetypes = notetypesClient.listAll
+            let allEntries = try await Task.detached(priority: .userInitiated) {
+                try listAllNotetypes()
+            }.value
             entries = sortDeckTemplateEntries(allEntries)
             errorMessage = nil
         } catch {
@@ -211,9 +214,14 @@ struct DeckTemplateListView: View {
         guard !newName.isEmpty, newName != renameTarget.name else { return }
 
         do {
-            var notetype: Anki_Notetypes_Notetype = try notetypesClient.getRaw(renameTarget.id)
-            notetype.name = newName
-            try notetypesClient.update(notetype)
+            let getRaw = notetypesClient.getRaw
+            let updateNotetype = notetypesClient.update
+            let notetypeId = renameTarget.id
+            try await Task.detached(priority: .userInitiated) {
+                var notetype: Anki_Notetypes_Notetype = try getRaw(notetypeId)
+                notetype.name = newName
+                try updateNotetype(notetype)
+            }.value
             await loadTemplates()
         } catch {
             actionError = "Rename failed: \(error.localizedDescription)"
@@ -225,7 +233,11 @@ struct DeckTemplateListView: View {
         guard let deleteTarget else { return }
 
         do {
-            try notetypesClient.remove(deleteTarget.id)
+            let removeNotetype = notetypesClient.remove
+            let notetypeId = deleteTarget.id
+            try await Task.detached(priority: .userInitiated) {
+                try removeNotetype(notetypeId)
+            }.value
             await loadTemplates()
         } catch {
             actionError = "Delete failed: \(error.localizedDescription)"
@@ -678,7 +690,10 @@ struct TemplateEditorView: View {
         defer { isLoading = false }
 
         do {
-            notetype = try notetypesClient.getRaw(notetypeId)
+            let getRaw = notetypesClient.getRaw
+            notetype = try await Task.detached(priority: .userInitiated) {
+                try getRaw(notetypeId)
+            }.value
             originalNotetype = notetype
             normalizeTemplateIndex(preferred: initialTemplateIndex)
             errorMessage = nil
@@ -701,7 +716,11 @@ struct TemplateEditorView: View {
         defer { isSaving = false }
 
         do {
-            try notetypesClient.update(notetype)
+            let updateNotetype = notetypesClient.update
+            let updatedNotetype = notetype
+            try await Task.detached(priority: .userInitiated) {
+                try updateNotetype(updatedNotetype)
+            }.value
             if let onSaved {
                 await onSaved()
             }

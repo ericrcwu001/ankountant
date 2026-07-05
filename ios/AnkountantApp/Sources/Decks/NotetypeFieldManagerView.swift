@@ -242,7 +242,10 @@ struct NotetypeFieldManagerView: View {
         defer { isLoading = false }
 
         do {
-            notetype = try notetypesClient.getRaw(notetypeId)
+            let getRaw = notetypesClient.getRaw
+            notetype = try await Task.detached(priority: .userInitiated) {
+                try getRaw(notetypeId)
+            }.value
             originalFields = notetype.fields
             loadErrorMessage = nil
         } catch {
@@ -310,7 +313,11 @@ struct NotetypeFieldManagerView: View {
         defer { isSaving = false }
 
         do {
-            try notetypesClient.update(notetype)
+            let updateNotetype = notetypesClient.update
+            let updatedNotetype = notetype
+            try await Task.detached(priority: .userInitiated) {
+                try updateNotetype(updatedNotetype)
+            }.value
             originalFields = notetype.fields
             if let onSaved {
                 await onSaved()
