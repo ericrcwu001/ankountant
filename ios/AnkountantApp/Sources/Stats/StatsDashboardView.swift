@@ -62,6 +62,7 @@ struct StatsDashboardView: View {
             handleImport(result)
         }
         .alert("Import", isPresented: $showImportAlert) {
+            Button("OK", role: .cancel) {}
         } message: {
             Text(importMessage ?? "")
         }
