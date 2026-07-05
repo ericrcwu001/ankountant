@@ -86,6 +86,9 @@ struct ConfusionDrillView: View {
                 Button("Import package", systemImage: "square.and.arrow.down") {
                     showImport = true
                 }
+                NavigationLink(value: readinessSection) {
+                    Label(readinessButtonLabel, systemImage: "chart.line.uptrend.xyaxis")
+                }
                 Button("Retry") {
                     Task { await load() }
                 }
