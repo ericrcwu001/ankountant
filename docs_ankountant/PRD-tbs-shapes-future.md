@@ -86,7 +86,7 @@ Same as `PRD.md` — **the Retaker**. Additional need served here: the candidate
 ### T4 — Grading extension (`SubmitPerformanceAttempt`) · P0
 
 **Story:** (enabler) As the system, I need the existing performance RPC to grade the two new modes without a new data path.
-**Where:** extend the `mode` switch in `rslib/src/backend/scheduler.rs`; no new RPC (unless T2 needs `SearchLiterature`). Same Attempt Log write (A8), same Performance rollup (A4).
+**Where:** extend the `mode` switch in `rslib/src/ankountant/service.rs`; no new RPC. Same Attempt Log write (A8), same Performance rollup (A4).
 **Rubric:**
 
 - [ ] AC1 — `mode=research` grades correctness + records time; `mode=doc_review` grades per-blank partial credit. _(verify-by: `test-rust`)_
@@ -135,7 +135,7 @@ Inherits all of `PRD.md` §"Technical Context" and Functional/Non-Functional req
 
 - [x] **OQ-1 — Literature licensing.** RESOLVED (ADR 0006): personal-use build; real ASC excerpts loaded at runtime from the gitignored Anki media folder (full fidelity), never committed to the repo (honors the Tier-B firewall). Citations + our paraphrases + manifests are committed. Swappable loader seam kept for any future distribution.
 - [x] **OQ-2 — Time as credit vs signal.** RESOLVED: correctness-only credit (normalized citation match; accept exact paragraph OR parent section per the key); time-to-cite recorded + trended as a coaching signal, never folded into the score.
-- [ ] **OQ-3 — Corpus search backend.** Client-side over the bundled corpus vs an append-only `SearchLiterature` RPC — still open; decide in synthesis per corpus size (research agents 05/08 to advise). — owner: eric — blocks: T2 implementation choice.
+- [x] **OQ-3 — Corpus search backend.** RESOLVED: client-side search over the bundled corpus; no append-only `SearchLiterature` RPC exists.
 
 ## Changelog
 

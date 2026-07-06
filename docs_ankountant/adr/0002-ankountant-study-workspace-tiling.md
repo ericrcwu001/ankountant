@@ -48,7 +48,7 @@ utilities, theme-aware `--elevation-e1..e3`, and remove the legacy
 
 **2. BSP tiling workspace** at `ts/routes/(ankountant)/ankountant-workspace/`:
 
-- `layout.ts` — a pure, DOM-free binary tree (`leaf{surface}` | `split{dir,
+- `workspace-layout.ts` — a pure, DOM-free binary tree (`leaf{surface}` | `split{dir,
   ratio, a, b}`) with **path-based** immutable operations (`splitAt`, `closeAt`,
   `setSurfaceAt`, `setRatioAt`), a `MAX_PANES = 4` cap, and localStorage
   serialize/deserialize with repair. Unit-tested in `layout.test.ts`.
@@ -76,9 +76,9 @@ re-tabbed. This is deliberately native, not premium.
   swapped — the premium tiling the Qt docks could not provide.
 - The layout model is pure and tested, decoupled from Svelte; adding a surface
   is a registry entry (`surfaces.ts`) + a pane wrapper.
-- Qt-native tools (Browser/Add/Stats) still tile only via Qt docks (now
-  closable), and are **not** hostable in web panes. A **Review** surface is not
-  yet wired (it needs the reviewer runtime). Drag-a-surface-onto-an-edge drop
-  zones are a deferred enhancement; splitting is button-driven for now.
+- Add/Browse/Stats now have web-native workspace panes; classic Qt dialogs remain
+  available for edge cases. A **Review** surface is not yet wired (it needs the
+  reviewer runtime). Drag-a-surface-onto-an-edge drop zones are a deferred
+  enhancement; splitting is button-driven for now.
 - The token foundation (type scale + elevation) is shared, so future re-skins of
   any web surface consume it rather than hardcoding.

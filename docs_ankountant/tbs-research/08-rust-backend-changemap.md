@@ -35,7 +35,7 @@ grading** (T4).
 | `Outcome.elapsed_ms: Option<u32>` (time in `outcome_json`)      | `rslib/src/ankountant/attempt_log.rs:39` | yes (research, T1 AC2)                            |
 | readiness partial-credit bucket accepts `doc_review`            | `rslib/src/ankountant/readiness.rs:86`   | **yes (doc_review)**                              |
 | doc_review grading                                              | —                                        | **none** (reuses default `steps` arm + `grade()`) |
-| seed real research/doc_review items (replace stored-only stubs) | `rslib/src/ankountant/seed.rs:412`       | yes (playable seed)                               |
+| seed real research/doc_review items from typed section content  | `rslib/src/ankountant/seed.rs`           | yes (playable seed)                               |
 | `SearchLiterature` RPC                                          | `proto/anki/scheduler.proto:90` (tail)   | **only if** corpus goes server-side (see §5)      |
 
 Everything else — Attempt Log note write (A8), `confusion_set_id` resolution,
@@ -661,18 +661,16 @@ so it needs no change.
   and — only if a backend corpus is chosen — a `col` config key. `Outcome`'s new
   `elapsed_ms` is `#[serde(default)]`, so old collections round-trip unchanged.
   The schema-stability test (`tests.rs:599` `a8_no_schema_change...`) still holds.
-- **Append-only proto (FR-6):** T4 grading needs **no** proto edit (free-form
-  `mode`/`submission_json`). The only optional proto addition (`SearchLiterature`)
-  is appended at the service tail; no existing method reorders, so iOS indices
-  0–43 are stable (new method → iOS 44).
+- **Append-only proto (FR-6):** T4 grading needed **no** proto field edit
+  (free-form `mode`/`submission_json`). A future `SearchLiterature` RPC, if ever
+  needed, must be appended at the service tail; the shipped implementation keeps
+  literature search client-side and avoids iOS index churn.
 - **Right impl location:** `SubmitPerformanceAttempt` dispatches in
   `rslib/src/scheduler/service/mod.rs:412` into
   `Collection::ankountant_submit_performance_attempt`
-  (`rslib/src/ankountant/service.rs:24`). The PRD's mention of
-  `rslib/src/backend/scheduler.rs` is **stale** — that path is not where grading
-  lives; all edits target `ankountant/{service,grading,logic,attempt_log,
-  readiness,seed}.rs`.
-- **Testing:** extend `tests.rs` (`submit` helper `tests.rs:482`) with a research
-  correct/incorrect + `elapsed_ms` case and a doc_review multi-blank partial-credit
-  - readiness case; run `just check` (full regen) since anything touching proto
-    needs it, otherwise `just test-rust`.
+  (`rslib/src/ankountant/service.rs:24`). All landed edits are in
+  `ankountant/{service,grading,logic,attempt_log,readiness,seed}.rs`.
+- **Testing:** coverage should include research correct/incorrect + `elapsed_ms`,
+  doc-review multi-blank partial credit, readiness rollup, seed validation, and
+  the no-schema-change invariant. Run `just test-rust` for Rust-only changes and
+  `just check` when touching proto or generated cross-language contracts.

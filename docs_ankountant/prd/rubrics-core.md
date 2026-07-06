@@ -110,13 +110,13 @@
 
 ## A9 — TBS note type, all 4 shapes (SPOV 6) · P0 · depends: —
 
-**Behavior (pinned):** new note type `Ankountant TBS`. Fields: `tbs_type` (research|journal_entry|numeric|doc_review), `prompt`, `exhibits_json`, `steps_json` (ordered array; each step `{ id, answer_key, weight }`, weights default `1/N` equal, sum 1.0 — used for A10 partial credit), `schema_tag`, plus provenance fields `source_passage`, `gen_method`, `checker_status`. **Scope clarity:** provenance fields are **STORED** (in-scope MVP, forward-compat) but remain **UNPOPULATED** — field _population_ by an AI pipeline is Phase 2a (out of scope). The note type structurally holds all four shapes; **journal-entry + numeric are fully playable (B4); research-sim + document-review are storable but their playable surfaces are deferred** (`../PRD-tbs-shapes-future.md`).
+**Behavior (pinned):** new note type `Ankountant TBS`. Fields: `tbs_type` (research|journal_entry|numeric|doc_review), `prompt`, `exhibits_json`, `steps_json` (ordered array; each step `{ id, answer_key, weight }`, weights default `1/N` equal, sum 1.0 — used for A10 partial credit), `schema_tag`, plus provenance fields `source_passage`, `gen_method`, `checker_status`. **Scope clarity:** provenance fields are **STORED** (in-scope MVP, forward-compat); seed-authored items may leave them empty, while build-time cardgen/template imports populate them as ordinary static note data. The note type structurally holds all four shapes, and journal-entry, numeric, research-sim, and document-review are all playable through the shared TBS/performance path.
 
 - [ ] AC1 — the note type validates & stores a journal-entry TBS (multi-line steps) and a numeric TBS (per-cell steps). _(test-rust/test-py)_
 - [ ] AC2 — `steps_json` supports N gradable steps each with answer key + weight. _(test-rust)_
-- [ ] AC3 — a `doc_review` and a `research` TBS can be stored (not yet played) without schema change. _(test-rust)_
+- [ ] AC3 — a `doc_review` and a `research` TBS can be stored and played without schema change. _(test-rust)_
 - [ ] AC4 — provenance fields exist and default empty (stored, unpopulated). _(test-rust)_
-      **Done when:** one note type covers all four shapes; JE + numeric fully specified.
+      **Done when:** one note type covers all four playable shapes.
 
 ---
 

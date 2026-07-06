@@ -29,11 +29,11 @@ The build/ folder is made up of 4 packages:
 
 If you run into trouble with the build process:
 
-- You can see the executed commands with e.g. `./ninja pylib -v`
+- Start with the relevant `just` recipe, such as `just check`, `just build`, or
+  `just run`, so dependency setup and generated inputs stay consistent.
+- If you need low-level Ninja diagnostics, add or use a `just` recipe that wraps
+  the diagnostic command instead of invoking the generated Ninja wrapper directly.
 - You can see the output of successful commands by defining N2_OUTPUT_SUCCESS=1
-- You can see what's triggering a rebuild of a target with e.g.
-  `./ninja qt/anki -d explain`.
-- You can browse the build graph via e.g. `./ninja -- -t browse wheels`
 - You can profile build performance with
   https://discourse.cmake.org/t/profiling-build-performance/2443/3.
 

@@ -15,7 +15,7 @@ Implemented iOS surfaces:
 - `HomeView` now renders the CPA summit hero, countdown/readiness cards, sync-safe exam-date control, active-section topic list, phase-aware study CTA, and confusion practice entry.
 - `FarTopicDetailView` shows a selected topic's Memory, Performance, Gap, Memory range, Performance range, and confusion-set tokens.
 - `ReviewView` requires a Guess/Unsure/Confident selection before answer reveal.
-- `ContentView` now uses the supplied Home/Study/Review/Analytics/More tab shell while preserving the Reader, Browse/Review, Stats, and Settings destinations.
+- `ContentView` now uses Home, optional Reader, Browse, Analytics, and More tabs; Review opens full-screen from Home or deck detail, and Simulations are reached through the Home/deck flow.
 - `StatsDashboardView` now starts with a Progress summary card while preserving the existing full chart stack.
 
 Data/feature preservation:
@@ -466,9 +466,9 @@ alone on pass line / above-below / unproven; **the displayed score never reads a
 
 ## 10. Build / test / verify
 
-> iOS is the documented exception to the repo's `just`-only rule — it has its own toolchain
-> (`xcodegen` / `xcodebuild` / `swift test`); `just` builds the **desktop** only. Don't expect
-> a `just` recipe to build or test iOS.
+> Use `just test-ios` for the app XCTest wrapper. Swift package logic can still
+> use `swift test` in `ios/`, and a full simulator build still uses `xcodebuild`
+> unless a dedicated `just` build recipe is added.
 
 ```bash
 # from ios/  (only if the xcframework is missing — this feature is Swift-only)

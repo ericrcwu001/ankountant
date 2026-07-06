@@ -107,7 +107,7 @@ What changed in the harvester:
 
 Funnel: **501 expanded** (0 grounding failures) -> 501 self-check -> gold
 calibration **PASS** -> **13 batches** fully judged by independent Cursor subagents
-(2 waves) -> **325 correct_useful, 175 bad_teaching, 1 wrong** -> leakage 0 (vs 84
+(2 waves) -> **325 correct_useful, 175 bad_teaching, 1 wrong** -> leakage 0 (vs 138
 sealed refs) -> dedup 0 -> **325 shipped** (`out/tmpl4/cpa_bank.apkg`, 120 decks).
 
 | Cut             | tmpl3 |    tmpl4 |

@@ -137,7 +137,7 @@ Select an iOS Simulator or device, then build and run (Cmd+R).
 - **UI**: SwiftUI with strict-concurrency checking (Swift language mode v6; Swift 6.2 package manifests)
 - **Theme**: `AnkountantUI` / `AnkountantTheme` for palette, typography, spacing, radius, elevation, and motion tokens shared by app and widgets
 - **Dependency Injection**: [swift-dependencies](https://github.com/pointfreeco/swift-dependencies) (`@DependencyClient` struct-closure pattern)
-- **Backend**: [ankitects/anki](https://github.com/ankitects/anki) Rust crate via C FFI
+- **Backend**: this monorepo's forked `rslib/` Rust core, derived from [ankitects/anki](https://github.com/ankitects/anki), via `ios/anki-bridge-rs` C FFI
 - **Serialization**: Protocol Buffers generated from `proto/anki/*.proto`
 - **Database**: SQLite (owned by Rust backend)
 - **Build**: SPM for library modules, xcodegen for the app target

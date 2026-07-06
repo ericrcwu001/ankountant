@@ -10,6 +10,7 @@ from dataclasses import dataclass
 import aqt.forms
 from anki._legacy import print_deprecation_warning
 from anki.collection import Progress
+from anki.utils import is_mac
 from aqt.qt import *
 from aqt.qt import sip
 from aqt.utils import disable_help_button, tr
@@ -26,6 +27,7 @@ class ProgressManager:
         self.blockUpdates = False
         self._show_timer: QTimer | None = None
         self._busy_cursor_timer: QTimer | None = None
+        self._busy_cursor_set = False
         self._win: ProgressDialog | None = None
         self._levels = 0
         self._backend_timer: QTimer | None = None
@@ -305,9 +307,20 @@ class ProgressManager:
         self._shown = 0
 
     def _set_busy_cursor(self) -> None:
+        if is_mac:
+            # macOS has no native wait cursor, so Qt renders WaitCursor from a
+            # bundled bitmap and converts it via QImage.toCGImage(). On recent
+            # macOS/Qt that conversion can trap inside CoreGraphics (SIGTRAP),
+            # taking down the whole app. The progress dialog is the busy
+            # indicator here, so skip the override cursor on macOS.
+            return
         self.mw.app.setOverrideCursor(QCursor(Qt.CursorShape.WaitCursor))
+        self._busy_cursor_set = True
 
     def _restore_cursor(self) -> None:
+        if not self._busy_cursor_set:
+            return
+        self._busy_cursor_set = False
         self.app.restoreOverrideCursor()
 
     def busy(self) -> int:

@@ -116,41 +116,21 @@ Add to `props` in `_vars.scss` (emitted as `--*` by `_root-vars.scss`):
 that package, its tests, and the app/widget consumers. The notes below are kept
 as implementation history and cleanup guidance, not as a wholly unstarted plan.
 
-Map `design-tokens.json` → Swift. All values are the **single navy identity** (no `muted`).
+Map `design-tokens.json` → Swift. The current package exports the shared app and
+widget theme surface:
 
-### 4.1 `AnkountantUI/Sources/AnkountantTheme/Palette.swift`
+| Token area | Current source |
+| --- | --- |
+| Palettes and state colors | `Palette.swift`, `PaletteEnvironment.swift` |
+| Theme and persistence | `Theme.swift`, `ThemeManager.swift`, `UserDefaults+AppGroup.swift` |
+| Typography and numeric styles | `AnkountantTypography.swift` |
+| Spacing, radius, elevation, motion | `AnkountantSpacing.swift`, `AnkountantRadius.swift`, `AnkountantElevation.swift`, `AnkountantMotion.swift` |
+| Reusable modifiers and ShapeStyles | `AnkountantModifiers.swift`, `PaletteShapeStyle.swift` |
 
-- Replace the four palettes with **two** (`light`, `dark`) using `color.neutral` + `color.brand` + `color.state` values. Add `surfaceInset` and an **`onAccent`** field (white; navy passes AA comfortably).
-- `Color.hex` helper: pin sRGB — `Color(.sRGB, red:…, green:…, blue:…, opacity:…)` — for 1:1 parity with web hexes.
-- Add `stateNew/stateLearn/stateReview/...` fields so views stop hardcoding `.blue/.orange/.green`; **align `learn` to the shared token** (web uses red — reconcile iOS orange → the shared value).
-
-### 4.2 `AnkountantUI/Sources/AnkountantTheme/Theme.swift` + `ThemeManager.swift`
-
-- Collapse `Theme { vivid, muted }` → single identity; keep only `Appearance { system, light, dark }` (or drop `Theme` entirely and resolve by `ColorScheme`).
-- `ThemeManager`: `@Observable @MainActor` and **remove `@unchecked Sendable`** (matches `ios/CONTRIBUTING.md`; fixes the data-race smell).
-- **Blast radius (must update in same pass or build breaks):** `AppearanceSettingsView.swift` (the vivid/muted picker) and the 3 `AnkountantThemeTests` files (`ThemeManagerTests`, `ThemeTests`) reference `.vivid/.muted/Palette.resolve(theme:)`.
-
-### 4.3 `AnkountantApp/Sources/Theme/` → move into the `AnkountantTheme` package
-
-`project.yml` excludes `Widgets/` from the app target and the widget extension depends only on `AnkountantTheme`, so the widget can't see `AnkountantFont`/`AnkountantSpacing`/modifiers and re-invents them (`MediumWidgetView.swift:56-58`, `LargeWidgetView.swift:74-78` hardcode `.blue/.orange/.green` + different kerning). **Move `AnkountantTypography.swift`, `AnkountantSpacing.swift`, `AnkountantModifiers.swift` into the `AnkountantTheme` package** so app + widget share them.
-
-### 4.4 Add token types (values from `design-tokens.json`)
-
-- `AnkountantRadius` (inner 6 / control 8 / card 12 / container 16 / pill).
-- `AnkountantElevation` driven by a new `palette.shadow` (theme-aware) — retire the hardcoded `Color.black.opacity(0.22), radius:15, x:3, y:5`.
-- `AnkountantMotion` (durations 100/160/240/400; gate with `@Environment(\.accessibilityReduceMotion)`).
-
-### 4.5 Typography → Dynamic Type
-
-- `AnkountantTypography`: back the scale with **text styles** or `@ScaledMetric(relativeTo:)` (no fixed pt that ignores Dynamic Type). Keep negative tracking on **display sizes only**; drop it on body/caption. Add a `.numeric` variant (`.monospacedDigit()`) + a `.dataCell()` for JE/score alignment.
-
-### 4.6 Button shape / contrast
-
-- Controls → 8px rounded-rect (`RoundedRectangle(cornerRadius: AnkountantRadius.control)`), retire `Capsule()` for buttons (chips keep capsule). Route primary label to `palette.onAccent`.
-
-### 4.7 (recommended) ShapeStyle tokens
-
-Expose the palette as resolvable `ShapeStyle`s so views use `.foregroundStyle(.textPrimary)` / `.background(.surface)` instead of `@Environment(\.palette)` boilerplate (`design-system.md` §7 / swiftui-pro review).
+Widgets import `AnkountantTheme`, so app and WidgetKit views share palette,
+typography, spacing, radius, elevation, motion, and card-state tokens. Remaining
+cleanup should be documented against concrete direct-token escapes in current
+views, not as a package migration.
 
 ---
 

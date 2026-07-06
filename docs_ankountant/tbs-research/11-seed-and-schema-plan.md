@@ -217,8 +217,9 @@ what is stored; `content_tbs_steps` (`seed.rs:821-852`) transforms them at load:
 6. **Roll up** — `ankountant_get_readiness` (`readiness.rs:62-194`):
    - **Performance = sealed attempts only** (`readiness.rs:79-102`); study-pile
      attempts are skipped.
-   - Mode bucketing: **`mode == "tbs"` → partial-credit average**; **everything
-     else → pass/fail thresholded at `credit >= 0.5`** (`readiness.rs:86-101`).
+   - Mode bucketing: **`mode == "tbs"` or `"doc_review"` → partial-credit
+     average**; **`"confusion"` and `"research"` → pass/fail thresholded at
+     `credit >= 0.5`** (`readiness.rs`).
    - **Memory = trailing-30d recall reps on the study pile only**
      (`readiness.rs:199-241`); sealed items never contribute to Memory.
 
@@ -231,10 +232,10 @@ There is **no research/doc_review count** — new items simply increment
 `sealed_items` (see §4.5), so the response/proto is unchanged and iOS index
 re-derivation is not triggered.
 
-**Today's stored-only stubs** (the thing we are replacing) — `seed.rs:412-424`:
-one `research` + one `doc_review` note, `exhibits_json="[]"`, `steps_json="[]"`,
-placed in `Ankountant::Sealed::FAR::misc`, tagged `ds::cost::capitalize`,
-suspended. They prove A9 storage but are unplayable (0 steps → 0 credit).
+**Historical stored-only placeholders** — the pre-implementation seed wrote one
+`research` + one `doc_review` note with `exhibits_json="[]"` and
+`steps_json="[]"`. The shipped seed now writes typed, playable research and
+document-review items from `section_items[]`.
 
 ---
 
