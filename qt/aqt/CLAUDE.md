@@ -46,7 +46,8 @@ Svelte/TypeScript web components and drives the collection via typed operations.
 
 Qt now owns Ankountant desktop integration: the single-window shell/menu entries,
 Ankountant `AnkiWebViewKind` routing, mediasrv registration for the
-`routes/(ankountant)/` SvelteKit pages, workspace webviews, and CPA bank / 50k
+`routes/(ankountant)/` SvelteKit pages, workspace webviews, research/doc-review
+and literature routes, native Ankountant settings/sync pages, and CPA bank / 50k
 stress-test loaders. Add new collection mutations as a `CollectionOp` in
 `operations/` (use `QueryOp` for read-only async). New dialogs: either a `.ui`
 form + generated code, or embed an `AnkiWebView` SvelteKit page and register its

@@ -295,7 +295,7 @@
         </p>
         <div class="summary">
           <div class="metric"><strong>5</strong><span>subagents audited backend coverage</span></div>
-          <div class="metric"><strong>8</strong><span>self-contained evidence and report pages</span></div>
+          <div class="metric"><strong>9</strong><span>self-contained evidence and report pages</span></div>
           <div class="metric"><strong>50,921</strong><span>cards in the committed engine benchmark</span></div>
           <div class="metric"><strong>0</strong><span>open website gaps after requested ignores</span></div>
         </div>
@@ -315,6 +315,30 @@
           <strong>FAR Coverage Map</strong>
           <span>7c topic rows, generated/shipped counts, runtime seed coverage, and abstain line.</span>
           <span class="report-action">Open coverage map &rarr;</span>
+        </a>
+        <a class="report-card" href="prompt-injection.html">
+          <span class="report-kicker">Subpage</span>
+          <strong>Prompt-Injection Resistance</strong>
+          <span>Hidden HTML sanitizer, retrieved-passage data delimiters, no-tool request surface, and regression tests.</span>
+          <span class="report-action">Open prompt-injection proof &rarr;</span>
+        </a>
+        <a class="report-card" href="ablation.html">
+          <span class="report-kicker">Evidence</span>
+          <strong>Three-Build Ablation</strong>
+          <span>A2 on, A2 off, and plain Anki/FSRS baseline with equal study time.</span>
+          <span class="report-action">Open ablation &rarr;</span>
+        </a>
+        <a class="report-card" href="undo.html">
+          <span class="report-kicker">Evidence</span>
+          <strong>Undo and Integrity Proof</strong>
+          <span>Undo/redo round trip and database integrity after the Rust scheduler change.</span>
+          <span class="report-action">Open undo proof &rarr;</span>
+        </a>
+        <a class="report-card" href="latency.html">
+          <span class="report-kicker">Evidence</span>
+          <strong>50k Latency Benchmark</strong>
+          <span>p50, p95, and worst-case timings on the 50,921-card Rust engine benchmark.</span>
+          <span class="report-action">Open latency benchmark &rarr;</span>
         </a>
         <a class="report-card" href="models.html">
           <span class="report-kicker">Evidence</span>
@@ -383,7 +407,7 @@
           <tr>
             <td>Study feature tested in three builds with equal study time.</td>
             <td>Backend ablation artifact</td>
-            <td><span class="status partial">Partial</span></td>
+            <td><span class="status pass">Backend pass</span></td>
             <td>
               <a href="ablation.html">ablation.html</a> now compares full app, app with A2 off,
               and plain Anki/FSRS baseline with equal <code>6.4s</code> study time. It is a backend
@@ -646,6 +670,11 @@
             <td>7c FAR coverage map: topic rows, target/generated/shipped counts, seed/runtime coverage, abstain line.</td>
             <td><code>just test-py</code> and <code>just ankountant-evidence</code></td>
           </tr>
+          <tr>
+            <td><a href="prompt-injection.html">prompt-injection.html</a></td>
+            <td>Prompt-injection resistance: hidden HTML sanitization, passage delimiters, no tools, JSON-only request.</td>
+            <td><code>just test-cardgen</code></td>
+          </tr>
         </tbody>
       </table>
 
@@ -682,7 +711,11 @@
             <li>Open this page.</li>
             <li>
               Open <a href="models.html">models</a>, <a href="latency.html">latency</a>,
-              <a href="coverage-map.html">coverage map</a>, and <a href="ai-card-check.html">AI card check</a>.
+              <a href="coverage-map.html">coverage map</a>, <a href="ai-card-check.html">AI card check</a>, and
+              <a href="prompt-injection.html">prompt-injection proof</a>.
+            </li>
+            <li>
+              Open <a href="ablation.html">ablation</a> and <a href="undo.html">undo</a> for the Rust-change proof.
             </li>
             <li>State fixture limitations clearly: no real-student validation yet.</li>
           </ul>

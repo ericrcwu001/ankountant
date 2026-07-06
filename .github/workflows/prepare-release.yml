@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version (e.g. 26.04 for stable, 26.04b1 or 26.04rc1 for pre-release)"
+        description: "Version (e.g. 1.0 for stable, 1.0b1 or 1.0rc1 for pre-release)"
         required: true
         type: string
       skip-ci-check:

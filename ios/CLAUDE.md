@@ -45,11 +45,13 @@ target is the separate Xcode project `AnkountantApp/`.
 | `AnkiClients`                    | `@DependencyClient` structs + live implementations                                                                                                                |
 | `AnkiSync`                       | `KeychainHelper` for credential storage                                                                                                                           |
 | `AnkountantCardWeb`              | Card HTML rewriting + MathJax injection for `WKWebView`                                                                                                           |
+| `AnkountantUI` / `AnkountantTheme`| Shared app/widget design tokens: palette, typography, spacing, radius, elevation, motion                                                                            |
 | `AnkountantReader` (sibling pkg) | Reader/dictionary domain types (hoshidicts C++); the Anki-bridged loader (`ReaderBookClient`) lives in `AnkiClients`. Ankountant-specific — no desktop equivalent |
 | `AnkiRustLib` (binary target)    | Prebuilt `rslib/` as `AnkiRust.xcframework`                                                                                                                       |
 
 App feature folders (`AnkountantApp/Sources/`): `Review`, `Browse`, `Decks`,
-`Stats`, `Sync`, `Reader`, `Settings`, `Shared`, `Theme`, `Widgets`.
+`Home`, `Simulations`, `Stats`, `Sync`, `Reader`, `Settings`, `Shared`,
+`Widgets`.
 
 ## Build Commands
 
@@ -113,12 +115,26 @@ wrong Rust method. Backend services (odd IDs) prepend their own methods before
 delegating to the collection service, so backend vs collection method indices
 differ; always use the backend (odd) IDs. See `proto/CLAUDE.md`.
 
-## Import Rules (Swift 6.2 + InternalImportsByDefault)
+## Import Rules (Swift language mode v6 + InternalImportsByDefault)
 
 - `public import` for any module whose types appear in public API signatures
 - `import` (internal) for modules used only within the file
 - `@DependencyClient` files need `public import Dependencies`
 - SwiftProtobuf methods (`serializedData`, `init(serializedBytes:)`) need `import SwiftProtobuf`
+
+## Ankountant Surfaces
+
+- Bottom navigation is Home, optional Reader, Browse, Analytics, and More.
+  Review opens as a full-screen flow from Home or deck detail.
+- Home renders the five visible CPA sections (`FAR`, `AUD`, `REG`, `TCP`,
+  `ISC`) using `GetReadiness` from the shared Rust core. The section-agnostic TBS
+  model still supports all six CPA sections including `BAR`.
+- Simulations live in `AnkountantApp/Sources/Simulations/`: confusion practice,
+  journal-entry, numeric, research, and document-review. Research submits
+  `mode="research"`; document review submits `mode="doc_review"`; JE/numeric use
+  `mode="tbs"`.
+- `AnkiKit` carries the bundled per-section literature corpus resource used by
+  the client-side research search. There is no `SearchLiterature` RPC.
 
 ## Known Issues & Workarounds
 

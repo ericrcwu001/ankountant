@@ -4,9 +4,12 @@ title: "Anki Architecture"
 
 Very brief notes for now.
 
-## Backend/GUI
+## Shared Core And Clients
 
-At the highest level, Anki is logically separated into two parts.
+Ankountant ships two clients on one shared Rust core: the PyQt/Svelte desktop app
+and the native SwiftUI iOS app. Both use `rslib/` and the
+`proto/anki/*.proto` contract. Desktop reaches Rust through `pylib/rsbridge`;
+iOS reaches Rust through `ios/anki-bridge-rs` and `ios/AnkiRust.xcframework`.
 
 A neat visualization of the file layout is available here:
 [https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=ankitects%2Fanki](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=ankitects%2Fanki)
@@ -25,7 +28,7 @@ These days, the majority of backend logic lives in a Rust library (rslib, locate
 
 pylib contains a private Python module called rsbridge (`pylib/rsbridge/`) that wraps the Rust code, making it accessible in Python.
 
-### GUI (aqt & ts)
+### Desktop GUI (aqt & ts)
 
 Anki's _GUI_ is a mix of Qt (via the PyQt Python bindings for Qt), and
 TypeScript/HTML/CSS. The Qt code lives in `qt/aqt/`, and is importable in Python
@@ -33,14 +36,23 @@ with "import aqt". The web code is split between `qt/aqt/data/web/` and `ts/`,
 with the majority of new code being placed in the latter, and copied into the
 former at build time.
 
+### iOS (SwiftUI)
+
+The native iOS client lives under `ios/`. It uses Swift protobuf types generated
+into `ios/Sources/AnkiProto/`, hand-maintained service/method IDs in
+`ios/Sources/AnkiBackend/AnkiBackend.swift`, and a compiled copy of `rslib/`
+packaged as `ios/AnkiRust.xcframework`. See `ios/CLAUDE.md` and
+`ios/ARCHITECTURE.md` before changing it.
+
 ## Protobuf
 
 Anki uses Protocol Buffers to define backend methods, and the storage format of
 some items in a collection file. The definitions live in `proto/anki/`.
 
-The Python/Rust bridge uses them to pass data back and forth, and some of the
-TypeScript code also makes use of them, allowing data to be communicated in a
-type-safe manner between the different languages.
+The Python/Rust bridge uses them to pass data back and forth, TypeScript uses
+generated callers for web routes, and iOS uses generated Swift message types plus
+hand-maintained service/method IDs. Field numbers and service/method order are
+compatibility-sensitive because both desktop and iOS dispatch the same contract.
 
 At the moment, the protobuf is not considered public API. Some pylib methods
 expose a protobuf object directly to callers, but when they do so, they use a

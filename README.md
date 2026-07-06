@@ -30,21 +30,25 @@ Scoring readiness on cards you already drilled is just measuring recall again. A
 
 ## Current UI
 
-The desktop home screen is now a summit-style CPA dashboard: a navy app rail, a white countdown/readiness rail, and a five-section readiness range for FAR, AUD, REG, TCP, and ISC with topic drill-ins for the active section. The iOS companion mirrors the same flow natively with a summit hero, topic list, topic detail drill-ins, a pre-reveal confidence check during review, and a Progress summary above the detailed stats charts. Both clients keep the existing review, sync, import, deck browsing, and scoring paths intact.
+The desktop home screen is now a summit-style CPA dashboard: a navy app rail, a white countdown/readiness rail, and a five-section readiness range for FAR, AUD, REG, TCP, and ISC with topic drill-ins for the active section. The desktop workspace also mounts the Readiness dashboard, confusion practice, the four-shape TBS shell, research simulation, document review, authoritative literature, stats, add, and browse panes.
+
+The iOS companion mirrors the same CPA flow natively with Summit Home, native review, Simulations, Reader/dictionary, Browse and note editing including image occlusion, Analytics, Sync/import, Settings, and WidgetKit due-count widgets. Review opens as a full-screen flow from Home or deck detail; the bottom navigation is Home, optional Reader, Browse, Analytics, and More.
 
 ## Grounding
 
 Every design decision above traces to peer-reviewed cognitive and psychometric research — the testing effect, spacing, interleaving, cognitive load, calibration, item-response theory, and selective prediction. The full research foundation, spiky points of view, and source tree live in **[`docs_ankountant/brainlift.md`](./docs_ankountant/brainlift.md)**.
 
-## AI: grounded card generation
+## AI: grounded card generation and optional feedback
 
-The only place Ankountant uses generative AI is a **build-time** pipeline that grows the CPA question bank — never at study time. It's the honest way to reach exam-scale coverage without hand-authoring 50,000 cards.
+Ankountant's shipped CPA question-bank content is generated only by a **build-time** pipeline — never live during grading, scheduling, or readiness scoring. It's the honest way to reach exam-scale coverage without hand-authoring 50,000 cards.
+
+The runtime study loop remains deterministic for correctness, scheduling, and Readiness. Optional **Learning Feedback** may call OpenAI during review or simulations when configured with a user API key, but it is tutoring feedback only: it does not decide correctness, change scores, or alter scheduling.
 
 **What we built.** A 12-stage retrieval-augmented generation (RAG) tool (`tools/cardgen/`, isolated from the app): ingest public/licensed CPA sources → chunk + quality-filter → embed into LanceDB (vector + BM25) → hybrid retrieve + rerank → generate with OpenAI `gpt-5-mini` **constrained to the retrieved passage** → deterministic self-check → an **independent 3-bucket judge** (a different provider/model — Cursor subagents — from the generator) → leakage + dedup gates → emit ordinary Anki notes (`.apkg`). Every shipped card carries provenance: the verbatim `source_passage`, its `source_id`/`locator` citation, the full `gen_method` (model, prompt version, retrieval config, index hash, seed), and a `checker_status`.
 
 **Why.** Two rules drive it: _provenance or it doesn't count_, and _a wrong fact is worse than no card_. Grounding every card in a named source makes it traceable; the independent judge blocks wrong cards **before** a student sees them (cutoff fixed in advance — ship only `correct + useful`), and the judge is itself **calibrated against a gold set** — the build halts if it can't catch planted-wrong cards; a pre-registered A/B/C shows hybrid retrieval **beats** plain keyword and vector search. Because it's build-time only, the app runs fully with **AI switched off**, and cards are just data — no new tables, so they sync unchanged to the phone.
 
-**What we skipped (on purpose).** No runtime/live AI — no chatbot, no on-device generation, no model calls during review; TBS/MCQ grading stays deterministic and rule-based. `proof3` is the bounded live RAG proof; `tmpl4` is the current importable template deck; a full **unique** 50k grounded bank is still deferred until the corpus is much larger. The repo does include a sharded **stress-test** pack that duplicates the current bank to 51k+ notes for loader/performance testing; it is not new study material.
+**What we skipped (on purpose).** No runtime/live card generation, no chatbot, and no model-driven grading: TBS/MCQ correctness stays deterministic and rule-based. `proof3` is the bounded live RAG proof; `tmpl4` is the current importable template deck; a full **unique** 50k grounded bank is still deferred until the corpus is much larger. The repo does include a sharded **stress-test** pack that duplicates the current bank to 51k+ notes for loader/performance testing; it is not new study material.
 
 **Current cardgen artifacts.** RAG proof (`proof3`): 300 targeted → 263 generated (37 declined rather than fabricate) → judged **181 correct+useful / 70 wrong / 12 bad-teaching** → **161 vetted cards shipped** after leakage (0 leaks) + dedup. Beat-the-baseline **PASS**: hybrid faithfulness 0.742 vs BM25 0.608 / vector 0.592 (n=120). Judge calibration: **100% of 182 gold positives passed, 100% of 36 planted negatives caught**. Importable template deck (`tmpl4`): **325 shipped**, 1 wrong blocked, 0 leakage. Scale-test pack: `just cardgen-stress` writes `stress_bank_part*.apkg` shards tagged `stress` / `dup::<n>` for the desktop "50k Stress Test" loader. Full write-up: **[`docs_ankountant/rag/RAG_RUN_RESULTS.md`](./docs_ankountant/rag/RAG_RUN_RESULTS.md)** · template deck: **[`docs_ankountant/rag/TEMPLATE_DECK_RESULTS.md`](./docs_ankountant/rag/TEMPLATE_DECK_RESULTS.md)** · visual report: **[`docs_ankountant/rag/rag-ai-card-generation.html`](./docs_ankountant/rag/rag-ai-card-generation.html)** · design rationale: **[ADR 0009](./docs_ankountant/adr/0009-rag-cardgen-lean-stack-cursor-judge-tier-b.md)**.
 
@@ -52,7 +56,7 @@ The only place Ankountant uses generative AI is a **build-time** pipeline that g
 
 `proto/anki/*.proto` is the single contract every client dispatches into.
 
-- **`rslib/`** — Rust core (collection, notes, decks, search, sync, media, scheduling). The deadline-anchored scheduler work lives under `rslib/src/scheduler/`.
+- **`rslib/`** — Rust core (collection, notes, decks, search, sync, media, scheduling). Ankountant domain logic lives in `rslib/src/ankountant/`, with scheduler integration under `rslib/src/scheduler/`.
 - **`pylib/` + `qt/aqt/`** — Python API over a PyO3 bridge and the PyQt desktop GUI.
 - **`ts/`** — Svelte/TypeScript pages served to the embedded webviews.
 - **`ios/`** — native SwiftUI client consuming a compiled `.xcframework` build of `rslib/` over a C FFI.

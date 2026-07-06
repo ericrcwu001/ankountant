@@ -46,7 +46,8 @@ PyO3 FFI, iOS via a compiled `.xcframework` over a C FFI.
   (`ios/anki-bridge-rs/` → `ios/AnkiRust.xcframework`) over a 4-function C FFI,
   plus Swift modules in `ios/Sources/` (`AnkiProto`, `AnkiBackend`,
   `AnkiServices`, `AnkiClients`). Feature UI in `ios/AnkountantApp/` (Review,
-  Browse, Decks, Stats, Sync, Reader, Settings).
+  Home, Browse, Decks, Simulations, Stats, Sync, Reader, Settings, Widgets) and
+  shared app/widget theme tokens in `ios/AnkountantUI/`.
 - Read **`ios/CLAUDE.md`** and **`ios/ARCHITECTURE.md`** before working in `ios/`.
 
 ### Cross-language data flow

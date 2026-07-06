@@ -11,7 +11,8 @@ deck-options.html). This is where new ankountant study UI lands.
   `import-anki-package/`, `import-page/`, `card-info/`, plus Ankountant pages
   under `routes/(ankountant)/` (`ankountant-home`, `ankountant-dashboard`,
   `ankountant-workspace`, `ankountant-confusion`, `ankountant-tbs`,
-  `ankountant-sync`, `ankountant-stats`).
+  `ankountant-research`, `ankountant-doc-review`, `ankountant-sync`,
+  `ankountant-settings`, `ankountant-stats`).
 - `reviewer/` — review session runtime (`index.ts`, `answering.ts`,
   `preload.ts`, `images.ts`); the card display loop, hooks, and state API.
 - `editor/` — note field editor (NoteEditor, EditorField, contenteditable,
@@ -64,10 +65,12 @@ deck-options.html). This is where new ankountant study UI lands.
 ## Ankountant work
 
 Ankountant study UI lives in `routes/(ankountant)/`: the summit Home/readiness
-map, Readiness dashboard, tiled workspace, confusion practice, TBS shell, sync
-view, and stats. The pre-reveal confidence gate hooks into
-`reviewer/answering.ts` / the `onShownHook` reveal path and reuses components in
-`lib/components/`. New RPCs come through `@generated/backend` / `postProto()`
+map, Readiness dashboard, tiled workspace, confusion practice, TBS shell,
+research simulation, document review, literature/search surfaces, sync,
+settings, and stats. The pre-reveal confidence gate is implemented in
+`reviewer/ankountant_confidence.ts`, exposed from `reviewer/index.ts`, persists
+through `mutateNextCardStates` in `reviewer/answering.ts`, and is driven by
+`qt/aqt/reviewer.py`. New RPCs come through `@generated/backend` / `postProto()`
 from `proto/`.
 
 ## Dev loop

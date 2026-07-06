@@ -43,11 +43,15 @@ it relates to the desktop app, and `ios/CLAUDE.md` for working conventions.
 | **AnkiClients**                        | `@DependencyClient` structs with live implementations                                                                  |
 | **AnkiSync**                           | `KeychainHelper` for credential storage                                                                                |
 | **AnkountantCardWeb**                  | Card HTML rewriting + MathJax for `WKWebView` rendering                                                                |
+| **AnkountantUI** (sibling package)     | `AnkountantTheme`: shared palette, typography, spacing, radius, elevation, and motion tokens used by app and widgets    |
 | **AnkountantReader** (sibling package) | Reader/dictionary domain types (hoshidicts C++ engine). **Ankountant-specific feature, not in the official client**    |
 
-All library modules live in the SPM package (`Package.swift`, package name
-"AnkiBridge"). The iOS app target (`AnkountantApp/`) is a separate Xcode project
-(`AnkountantApp.xcodeproj`, regenerated from `project.yml` by xcodegen).
+Core Anki bridge modules live in the SPM package (`Package.swift`, package name
+"AnkiBridge"). Ankountant UI and Reader code live in sibling Swift packages. The
+iOS app target (`AnkountantApp/`) is a separate Xcode project
+(`AnkountantApp.xcodeproj`, regenerated from `project.yml` by xcodegen). App
+feature folders include `Home`, `Review`, `Browse`, `Decks`, `Simulations`,
+`Stats`, `Sync`, `Reader`, `Settings`, `Shared`, and `Widgets`.
 
 ## The Rust Bridge
 
@@ -58,7 +62,7 @@ The entire bridge surface is four C functions (declared in
 
 | Function                                                                         | Purpose                                               |
 | -------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `anki_open_backend(path, lang)`                                                  | Open a collection at the given path, returns a handle |
+| `anki_open_backend(init_data, init_len, out_ptr)`                                | Initialize from serialized `BackendInit` protobuf bytes and return an opaque backend pointer |
 | `anki_run_method(handle, service, method, input, input_len, output, output_len)` | Run an RPC method                                     |
 | `anki_free_response(ptr, len)`                                                   | Free a response buffer allocated by Rust              |
 | `anki_close_backend(handle)`                                                     | Close the collection and free the handle              |
@@ -158,12 +162,48 @@ Deck filtering uses Anki search syntax: `deck:"English::Grammar"` includes subde
 3. Render heatmap, streak, summary stats with SwiftUI Charts
 ```
 
+### Ankountant Home / Readiness
+
+```
+1. GetExamDate(section) / SetExamDate(section, date) — sync-safe exam settings
+2. GetReadiness(section)                            — Memory, Performance, Gap, Readiness band
+3. Render Summit Home, section rows, topic detail, and phase-aware study actions
+```
+
+Readiness uses the same Rust `rslib/src/ankountant/` implementation as desktop.
+The iOS Home shows five visible sections (`FAR`, `AUD`, `REG`, `TCP`, `ISC`);
+the shared TBS engine still understands all six CPA sections including `BAR`.
+
+### Simulations
+
+```
+1. listTbsTasks() / confusionQueue(section, maxItems)
+2. loadTbs(noteId) → parse TBS fields into TbsModel
+3. Submit via SubmitPerformanceAttempt:
+   - journal_entry / numeric: mode "tbs"
+   - research: mode "research"
+   - document review: mode "doc_review"
+   - confusion: mode "confusion"
+4. Rust grades, writes Attempt Log, and returns per-step credit
+```
+
+Research and document-review surfaces are implemented natively in
+`AnkountantApp/Sources/Simulations/`. The literature search is client-side over
+the bundled per-section corpus in `AnkiKit` resources; there is no
+`SearchLiterature` RPC.
+
 ### Reader / Dictionary (Ankountant-specific)
 
 Books and chapters are stored as Anki notes; the reader loads them via
 `ReaderBookClient` (in `AnkiClients`, backed by note search), and word lookups go
 through the offline hoshidicts engine in the `AnkountantReader` package. Lookups
 can spawn new cards. No desktop equivalent.
+
+### Widgets / Theme
+
+WidgetKit due-count widgets read snapshots written by the app and import
+`AnkountantTheme` from the sibling `AnkountantUI` package, so app and widgets use
+the same palette/card-state token source.
 
 ## Build Pipeline
 

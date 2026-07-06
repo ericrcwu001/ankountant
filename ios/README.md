@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  An open-source, offline-first Anki-compatible iOS flashcard client with sync server support.
+  A native iOS companion for Ankountant's CPA study workflow, backed by the same forked Rust core as the desktop app.
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 
 ---
 
-Ankountant wraps the official [ankitects/anki](https://github.com/ankitects/anki) Rust backend via C FFI, giving you a native SwiftUI experience backed by the same battle-tested engine that powers Anki Desktop and AnkiDroid. Sync your decks with any compatible sync server (including self-hosted), study with FSRS scheduling, and keep your review history in perfect sync across all your devices.
+Ankountant wraps this monorepo's forked `rslib/` Rust core, derived from [ankitects/anki](https://github.com/ankitects/anki), through `ios/anki-bridge-rs` and a small C FFI. Swift owns the native UI; Rust owns the collection database, sync, FSRS scheduling, rendering, statistics, and Ankountant readiness logic.
 
 ## Features
 
@@ -32,13 +32,15 @@ Ankountant wraps the official [ankitects/anki](https://github.com/ankitects/anki
 - **CPA FAR Home** -- summit hero, exam countdown, readiness range, sync-safe exam date, FAR topic list, and topic detail drill-ins for Memory, Performance, and Gap
 - **Pre-Reveal Confidence Check** -- review sessions require Guess/Unsure/Confident before answer reveal so confidence is captured before feedback
 - **Progress Summary** -- the Analytics tab starts with a compact mastered-card, retention, reviewed-today, and daily-load summary before the detailed charts
-- **Study Reader** -- the Study tab reads books from your collection chapter-by-chapter; tap any word for a Yomitan-compatible dictionary lookup; chained popups, search history, per-dictionary collapsed memory; TTS speak button with language-aware voice selection; bundled Korean fonts (Sarasa Mono K, Nanum Myeongjo, Nanum Gothic); vertical writing mode and Latin/CJK auto-detection; cross-device progress sync
+- **Simulations** -- research, document-review, journal-entry, numeric, and confusion-practice surfaces backed by the shared `SubmitPerformanceAttempt` path
+- **Study Reader** -- the optional Reader tab reads books from your collection chapter-by-chapter; tap any word for a Yomitan-compatible dictionary lookup; chained popups, search history, per-dictionary collapsed memory; TTS speak button with language-aware voice selection; bundled Korean fonts (Sarasa Mono K, Nanum Myeongjo, Nanum Gothic); vertical writing mode and Latin/CJK auto-detection; cross-device progress sync
+- **WidgetKit Widgets** -- home-screen due-count widgets sharing the same Ankountant theme tokens as the app
 - **Multi-Profile Accounts** -- isolated Anki collections per profile, fast picker in the decks toolbar, per-profile sync credentials and review history
 - **Image Occlusion** -- create and edit notes with rectangle, ellipse, polygon, and text masks; reviewer parity with upstream Anki
 - **Multi-Theme System** -- Vivid + Muted palettes, Light/Dark/Follow-System; persists across app and home-screen widgets via App Group
 - **Per-Deck Study Options** -- FSRS weights editor with optimizer + simulator, preset CRUD, Easy Days, bury rules, timer, auto-advance
 - **Offline-First** -- everything works offline; sync when you have a connection
-- **Swift 6.2 Strict Concurrency** -- zero data races, fully actor-isolated, `Sendable` throughout
+- **Swift strict-concurrency checking** -- app target uses Swift language mode v6; packages use Swift 6.2 manifests with audited concurrency exceptions around FFI, UserDefaults, reader progress, and TTS
 
 ## Screenshots
 
@@ -62,6 +64,8 @@ Rust static library (ankitects/anki)
 ```
 
 Swift owns the UI. Rust owns everything else -- database, sync, FSRS scheduling, card templates, statistics.
+
+The bottom navigation is Home, optional Reader, Browse, Analytics, and More. Review opens full-screen from Home or deck detail. Simulations are reached through the Home/deck flow and reuse the shared Ankountant services.
 
 For the full architecture walkthrough, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
@@ -130,7 +134,8 @@ Select an iOS Simulator or device, then build and run (Cmd+R).
 
 ## Tech Stack
 
-- **UI**: SwiftUI with strict concurrency (Swift 6.2, language mode v6)
+- **UI**: SwiftUI with strict-concurrency checking (Swift language mode v6; Swift 6.2 package manifests)
+- **Theme**: `AnkountantUI` / `AnkountantTheme` for palette, typography, spacing, radius, elevation, and motion tokens shared by app and widgets
 - **Dependency Injection**: [swift-dependencies](https://github.com/pointfreeco/swift-dependencies) (`@DependencyClient` struct-closure pattern)
 - **Backend**: [ankitects/anki](https://github.com/ankitects/anki) Rust crate via C FFI
 - **Serialization**: Protocol Buffers generated from `proto/anki/*.proto`

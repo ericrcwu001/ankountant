@@ -51,3 +51,6 @@ open with no server.
   one-source 3-bucket counts, cutoff, gold set, baseline, and leakage proof.
 - [`coverage-map.html`](coverage-map.html) — 7c FAR coverage map and abstain
   line.
+- [`prompt-injection.html`](prompt-injection.html) — prompt-injection resistance
+  evidence for hidden HTML sanitization, retrieved-passage delimiters, no tools,
+  and JSON-only generation requests.
