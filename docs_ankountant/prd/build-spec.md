@@ -39,7 +39,7 @@ clarifications = {
     "iOS service/method indices hand-maintained in AnkiBackend.swift; resync from _backend_generated.py after any proto change (FR-6).",
     "Sync-safe: no new SQLite table/column on notes/cards/revlog (FR-5) — hidden notes/settings notes + col config only."
   ],
-  nonGoals: "Runtime AI/RAG card generation (Phase 2a is build-time only). Cloud sync, accounts, sync server proof (Phase 2b). Real IRT/CAT psychometrics (ADR 0005 CPA-scale heuristic only). Research-sim & document-review TBS SURFACES (future PRD) — the note type still STORES all 4 shapes. BAR-first specialization. Full unique 50k course/content library. B2B/Becker head-on.",
+  nonGoals: "Runtime AI/RAG card generation (Phase 2a is build-time only; optional Learning Feedback may call OpenAI as tutoring feedback but never grading/scheduling/readiness). Cloud sync, accounts, sync server proof (Phase 2b). Real IRT/CAT psychometrics (ADR 0005 CPA-scale heuristic only). BAR-first specialization. Full unique 50k course/content library. B2B/Becker head-on.",
   definitionOfDone: "just check exits 0; test-rust + test-py + test-ts green; every desktop-UI acceptance (per-assertion Playwright specs) green; all objective contract assertions pass. iOS is a manual demo track, NOT contract-gated. A2 may be parked without failing the contract.",
   budget: "one overnight run",
   buildLocation: "in-place (no worktree)",

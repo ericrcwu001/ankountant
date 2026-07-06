@@ -12,7 +12,7 @@ Implemented surfaces:
 - Desktop topographic renderer: active-section topics remain data-bound to backend readiness, with layered foreground/background SVG mountains, clipped contours, pass-line flags, hover-toggled topic detail cards, and the existing topic drill-down links.
 - iOS `Home`: native summit hero, topic list, topic detail screen with Memory/Performance ranges and Gap, exam-date control backed by the sync-safe backend RPCs, and phase-aware review/confusion actions.
 - iOS `Review`: pre-reveal confidence gate is now a required card-style panel before answer reveal.
-- iOS shell: bottom navigation now matches the supplied Home/Study/Review/Analytics/More framing while preserving Reader, Browse/Review, Stats, and Settings destinations.
+- iOS shell: bottom navigation is Home, optional Reader, Browse, Analytics, and More; Review opens full-screen from Home or deck detail.
 - iOS `Analytics`: Progress summary card added above the existing detailed charts.
 
 Verification:
@@ -110,6 +110,11 @@ Add to `props` in `_vars.scss` (emitted as `--*` by `_root-vars.scss`):
 ---
 
 ## 4. iOS — SwiftUI theme (`ios/`)
+
+2026-07-06 audit update: the shared iOS/widget theme package now exists at
+`ios/AnkountantUI/Sources/AnkountantTheme/`. Future token changes should update
+that package, its tests, and the app/widget consumers. The notes below are kept
+as implementation history and cleanup guidance, not as a wholly unstarted plan.
 
 Map `design-tokens.json` → Swift. All values are the **single navy identity** (no `muted`).
 

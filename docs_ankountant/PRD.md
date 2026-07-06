@@ -1,6 +1,6 @@
 # Ankountant — Phase 1 MVP PRD (loop-facing)
 
-> Status: Draft v3 · Owner: eric · Last updated: 2026-07-04
+> Status: Draft v4 · Owner: eric · Last updated: 2026-07-06
 > Scope: **Phase 1 of `brainlift_features.md` only.** Grounded in `brainlift.md` + a codebase survey.
 > **This file is the `agentic-loop`-facing spec** — kept lean so Plan/scope-guard stay cheap. Each feature carries a quotable requirement, objective acceptance bullets (the Contract phase reads these), and a **Detail:** pointer. **Implementers: open the referenced `prd/*.md` file before building a feature** — it holds the full acceptance criteria, proto contracts, data model, and integration file paths.
 > Launch parameters (clarifications + config) and the seed spec are in **`prd/build-spec.md`**.
@@ -30,7 +30,7 @@ Ankountant is a fork of Anki (shared Rust core + PyQt desktop + native iOS Swift
 - **Cloud sync, accounts, sync server → Phase 2b (out).** MVP is local-first, single-device, but built sync-safe (no new tables/columns) so Phase 2b needs no rework.
 - **Populating provenance fields → Phase 2a (out).** The fields are **stored** on the TBS note type (in-scope, forward-compat); only their **population** is out.
 - **Real IRT/CAT psychometrics (out)** — Readiness is the ADR 0005 Wilson-to-CPA-scale band heuristic; adaptive CAT item selection and faithful AICPA score reproduction remain out.
-- **Research-sim & document-review TBS _surfaces_ → future PRD (out).** The TBS note type still **stores** all four shapes; only the playable surfaces for those two are deferred.
+- **Populating a full production-scale unique CPA bank → Phase 2a+ (out).** The current app renders and grades all four TBS shapes; expanding coverage to a full unique 50k grounded bank remains out.
 - **BAR-first specialization; ablation study; full course library; head-on B2B/Becker — all out.**
 
 ## 5. Feature specs
@@ -150,7 +150,7 @@ One screen showing Memory, Performance, the gap, and exam-day Readiness as a ban
 
 ## 6. Key flows
 
-1. **Set exam date → schedule reshapes** (`SetExamDate` writes a sync-safe settings note; near date ⇒ shorter intervals). 2. **Confusion-set session** (fetch queue → per item: confidence → label-stripped treatment pick → graded + logged). 3. **TBS session** (open surface → fill JE/numeric + exhibits → submit → per-step partial credit). 4. **Readiness check** (dashboard → abstain on thin data, else a CPA-scale band + center + the gap). Each flow has empty/loading/error states (see `prd/rubrics-*.md`).
+1. **Set exam date → schedule reshapes** (`SetExamDate` writes a sync-safe settings note; near date ⇒ shorter intervals). 2. **Confusion-set session** (fetch queue → per item: confidence → label-stripped treatment pick → graded + logged). 3. **TBS session** (open the exam shell → complete journal-entry, numeric, research, or document-review task → submit → per-step or citation credit). 4. **Readiness check** (dashboard → abstain on thin data, else a CPA-scale band + center + the gap). Each flow has empty/loading/error states (see `prd/rubrics-*.md`).
 
 ## 7. Success metrics
 
@@ -169,7 +169,7 @@ Demo proof-points (each maps to an acceptance test): exam-date change reschedule
 ## 9. Non-functional requirements
 
 - **NFR-1** _Blocking:_ `GetReadiness`/`BuildConfusionQueue` <100 ms on the FAR seed. _Evidence artifact:_ `just ankountant-bench` reports the release-mode shared Rust engine floor for answer, next-card, and dashboard operations. _Non-blocking (post-MVP):_ full UI/platform latency on 50k notes remains separately measured.
-- **NFR-2** Local-first / offline; no account. **NFR-3** Data round-trips through standard Anki sync unchanged (Phase 2b needs no rework). **NFR-4** AGPL-3.0. **NFR-5** Desktop (macOS/Win/Linux) + iOS, one shared core. **NFR-6** No live model calls at runtime.
+- **NFR-2** Local-first / offline; no account. **NFR-3** Data round-trips through standard Anki sync unchanged (Phase 2b needs no rework). **NFR-4** AGPL-3.0. **NFR-5** Desktop (macOS/Win/Linux) + iOS, one shared core. **NFR-6** Core grading, scheduling, readiness, and generated card content are deterministic/offline. Optional Learning Feedback may call OpenAI during review/simulation when configured with a user API key; it is tutoring feedback only and must not affect correctness or scheduling.
 
 ## 10. Companion docs
 
@@ -178,7 +178,7 @@ Demo proof-points (each maps to an acceptance test): exam-date change reschedule
 - `prd/contracts-and-data.md` — proto message contracts, data model, integration file paths, build/test/lint commands, sync-safety.
 - `prd/build-spec.md` — seed content, phase ordering, cut order, **agentic-loop launch clarifications + config**, risks, open questions.
 - `evidence/README.md` — self-contained rubric evidence artifacts (`determinism`, `ablation`, `paraphrase`, `undo`, `latency`).
-- `PRD-tbs-shapes-future.md` — deferred research-sim + document-review TBS surfaces.
+- `PRD-tbs-shapes-future.md` — historical rationale for research-sim + document-review TBS surfaces; current implementation is in the shared core, desktop Svelte routes, and iOS Simulations views.
 
 ## Changelog
 
@@ -186,3 +186,4 @@ Demo proof-points (each maps to an acceptance test): exam-date change reschedule
 - Cycle 1 — 2026-06-30 — 4-expert refine: proto contracts; A1 ramp; A2 rewritten rote-only pre-FSRS; A8 precedent+PRAGMA; pinned storage/abstain/AC inputs; 50k demoted; FR-6 hardened; OQ-4 resolved; OQ-5 added.
 - v2 — 2026-06-30 — Restructured for `agentic-loop` (3 phase-simulations): split into lean loop-facing PRD + `prd/` companions; per-feature objective-acceptance bullets so the Contract phase (which never sees companions) has substance; fixed A2↔B1 phase-order bug (confidence via custom_data, tests seed it); iOS ACs made a non-gated demo checklist (objective contract = Rust + desktop-e2e); provenance stored-vs-populated disambiguated for the scope-guard; Phase-A-before-B encoded as `dependsOn`; timing ACs made non-gating; non-goals block prepared for `clarifications.nonGoals`.
 - v3 — 2026-07-04 — Refreshed for shipped evidence/features: exam dates now persist through `SetExamDate`/`GetExamDate` settings notes; Readiness emits a CPA-scale band/center/coverage/reasons; evidence artifacts include undo integrity and release latency benchmark.
+- v4 — 2026-07-06 — Refreshed for implemented research/document-review TBS surfaces, optional Learning Feedback runtime tutoring, and expanded iOS companion surfaces.

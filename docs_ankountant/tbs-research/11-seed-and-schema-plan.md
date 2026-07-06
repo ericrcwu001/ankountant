@@ -10,6 +10,14 @@
 > shapes), `docs_ankountant/rag/01-sources-and-licensing.md` (Tier-A/Tier-B
 > firewall), `docs_ankountant/adr/0004-far-demo-profile-seed.md`.
 
+> **2026-07-06 audit update:** this plan has been implemented. The current source
+> of truth is the section-agnostic `section_items[]` content in
+> `rslib/src/ankountant/seed_content.json`, validated by typed seed structs in
+> `seed.rs`. Research items use `mode:"research"` and accepted citation arrays;
+> document-review items use `mode:"doc_review"`, a `role:"document"` exhibit with
+> `<blank step="...">` markers, and per-blank options. The analysis below remains
+> useful for rationale and compatibility constraints.
+
 ---
 
 ## 0. The one invariant everything hangs on
@@ -28,8 +36,8 @@ fields are strictly required (see §4.5). This is possible because of one fact:
 That is the whole trick: `options[]`, `confusion_set_id`, `accepted_citations[]`,
 `corpus_refs[]`, `label`, `weight`, `tolerance` can all ride inside a
 `steps_json` step; the Rust grader only ever reads `id`, `answer_key`, `weight`,
-`tolerance`, and ignores the rest. The frontend and the (future) T4 grading arm
-read the rest.
+`tolerance`, and ignores the rest. The clients and the shipped research grading
+arm read the extra shape-specific keys.
 
 ### Source map (what I read)
 
@@ -81,8 +89,9 @@ Field index 2 of the TBS note type (`notetypes.rs:47-72`,
 ]
 ```
 
-- MCQ items, the pinned numeric, and the stored-only research/doc_review stubs
-  all write the empty array `"[]"` (`seed.rs:320`, `801`, `419`).
+- MCQ items and simple non-exhibit items can still write the empty array `"[]"`.
+  Research and document-review seed items now use typed exhibits from
+  `section_items[]` instead of stored-only placeholders.
 
 ### 1.2 `steps_json` — the graded step schema (`grading::GradableStep`)
 

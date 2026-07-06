@@ -80,9 +80,13 @@ assert message.WhichOneof("bar") == "name"
 ### Backwards Compatibility
 
 The official [language guide](https://developers.google.com/protocol-buffers/docs/proto3)
-makes a lot of notes about backwards compatibility, but as Anki usually doesn't
-use Protobuf to communicate between different clients, things like shuffling around
-field numbers are usually not a concern.
+makes a lot of notes about backwards compatibility. In Ankountant, desktop and
+iOS share collections and dispatch the same protobuf RPC contract, so field
+numbers and service/method order are compatibility-sensitive. Python, Rust, and
+TypeScript regenerate from `proto/`, but iOS service/method IDs in
+`ios/Sources/AnkiBackend/AnkiBackend.swift` are maintained by hand and must be
+re-derived from `out/pylib/anki/_backend_generated.py` after service/method
+changes.
 
 However, there are some messages, like `Deck`, which get stored in the database.
 If these are modified in an incompatible way, this can lead to serious issues if

@@ -124,10 +124,12 @@
     </div>
     <div class="callout warn">
       <div class="t">What we skipped</div>
-      <p>No runtime/live AI — no chatbot, no on-device generation, no model calls during review; grading
-         stays deterministic. This is a bounded <b>300-card proof</b> across 5 sections — <b>BAR</b> and the
-         full 50k bank are deferred (machinery built, corpus not yet), and generated Tier-B cards are
-         personal-use, not redistributable.</p>
+      <p>No runtime/live card generation, chatbot grading, or model-driven scoring; grading stays
+         deterministic. Optional Learning Feedback may call OpenAI as tutoring feedback with a user key,
+         but it does not decide correctness, scores, readiness, or scheduling. This is a bounded
+         <b>300-card proof</b> across 5 sections — <b>BAR</b> and the full 50k bank are deferred
+         (machinery built, corpus not yet), and generated Tier-B cards are personal-use, not
+         redistributable.</p>
     </div>
   </div>
 
@@ -219,7 +221,7 @@
       </div>
       <div class="callout ok">
         <div class="t">Runs with AI switched off</div>
-        <p>Deterministic offline embed / generate / judge backends; 71 keyless tests, no network or key required.</p>
+        <p>Deterministic offline embed / generate / judge backends; the dedicated keyless suite runs with no network or key required.</p>
       </div>
     </div>
   </div>
@@ -280,9 +282,9 @@ const reqs = [
   ["Eval before students see anything (accuracy, wrong-rate, cutoff)","independent 3-bucket judge; pre-set cutoff = ship only correct+useful","181 / 70 / 12","ok"],
   ["Judge calibrated against a gold set","the gold stage runs the judge on positives + planted negatives, then halts below the pre-set bar","182 pos passed 100% / 36 planted neg caught 100%","ok"],
   ["Beats a simpler method (keyword or vector)","A/B/C: BM25 vs vector vs hybrid+rerank, chunk-keyed, n=120","PASS — hybrid 0.742 > BM25 0.608 / vector 0.592","ok"],
-  ["App still scores with AI switched off","deterministic offline embed / gen / judge backends","71 keyless tests; CARDGEN_OFFLINE=1","ok"],
+  ["App still scores with AI switched off","deterministic offline embed / gen / judge backends","dedicated keyless suite; CARDGEN_OFFLINE=1","ok"],
   ["7f — AI card check (3 counts + cutoff)","the judge buckets","181 correct / 70 wrong / 12 bad-teaching","ok"],
-  ["7e — Leakage check vs the sealed bank","cosine + word-shingle screen","161 screened vs 84 refs, 0 leaks","ok"],
+  ["7e — Leakage check vs the sealed bank","cosine + word-shingle screen","181 screened vs 138 refs, 0 leaks","ok"],
   ["Adversarial — prompt injection in a source","ingest strips override lines; passages framed as untrusted DATA","sanitizer in ingest.py","ok"],
   ["Adversarial — correct-but-useless cards","v2 decline ({skip:true}) + bad_teaching quarantine","37 declined + 12 quarantined","ok"],
   ["Adversarial — service offline / rate-limited / broken output","tenacity retry + model fallback + JSON validation","openai_generate.py","ok"],

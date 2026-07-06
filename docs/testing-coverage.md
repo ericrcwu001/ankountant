@@ -26,6 +26,18 @@ just test-ts --coverage --html
 
 HTML reports are written under `out/coverage/` (gitignored).
 
+## Ankountant-specific checks
+
+These recipes are outside the main coverage thresholds unless explicitly wired
+into a future build-tool change:
+
+```sh
+just test-ios          # iOS XCTest wrapper; requires Xcode/simulator
+just test-cardgen      # offline, keyless tools/cardgen pytest
+just ankountant-evidence
+just ankountant-bench
+```
+
 ## Coverage tools and thresholds
 
 | Stack               | Test runner                          | Coverage tool    | Minimum |

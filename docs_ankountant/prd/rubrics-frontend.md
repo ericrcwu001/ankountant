@@ -50,17 +50,19 @@
 
 ---
 
-## B4 — TBS review surface: journal-entry + numeric (SPOV 6) · P0 · depends: A9, A10
+## B4 — TBS exam shell: journal-entry, numeric, research, and document-review (SPOV 6) · P0 · depends: A9, A10
 
-**Behavior (pinned):** a NEW screen distinct from the card reviewer (desktop: new Svelte route under `ts/`; iOS: new SwiftUI view). Renders `Ankountant TBS` notes (A9), shows an exhibits pane, submits via `SubmitPerformanceAttempt(mode=tbs)` (A10). JE = editable grid (account / debit / credit rows); numeric = input cells / dropdowns. On submit, per-step correctness + partial-credit total shown. Basic exhibits pane in scope; full split-screen "interface-fluency sim" is a stretch (see `build-spec.md`).
+**Behavior (pinned):** a screen distinct from the card reviewer (desktop: Svelte routes under `ts/routes/(ankountant)/`; iOS: SwiftUI views under `Simulations`). Renders `Ankountant TBS` notes (A9), shows the exam shell with exhibits/literature/scratch tools, and submits via `SubmitPerformanceAttempt` (A10). JE/numeric use `mode="tbs"`; research uses `mode="research"`; document review uses `mode="doc_review"`. JE = editable grid; numeric = input cells; research = citation search/submit; document review = inline blanks/dropdowns. On submit, per-step correctness or citation verdict plus partial-credit total is shown.
 **Desktop (objective contract):**
 
 - [ ] B4-D1 — a JE TBS renders an editable multi-row grid; a partially-correct submission shows per-line right/wrong and a partial-credit total matching A10. _(test-e2e, reconciled with A10 test-rust)_
 - [ ] B4-D2 — a numeric TBS renders input cells graded per cell with tolerance. _(test-e2e)_
 - [ ] B4-D3 — the surface is NOT the flashcard reviewer and exposes NO Again/Hard/Good/Easy buttons. _(test-e2e asserting those controls are absent)_
 - [ ] B4-D4 — exhibits referenced by the TBS are visible alongside the task. _(test-e2e)_
-      **iOS (demo checklist, non-gated):** JE grid + numeric cells playable, step-graded, exhibits visible. _(manual demo)_
-      **Done when:** JE + numeric TBS are playable and step-graded — desktop gated by e2e.
+- [ ] B4-D5 — research tasks require a confidence commit, accept a governing citation, grade all-or-nothing, and record time-to-cite as a neutral signal. _(test-e2e + test-rust)_
+- [ ] B4-D6 — document-review tasks require every blank to be selected, submit once, and show per-blank results plus partial credit. _(test-e2e + test-rust)_
+      **iOS (demo checklist, non-gated):** JE, numeric, research, and document-review simulations are playable, gated by confidence, and step/citation graded. _(manual demo / XCTest at client layer where feasible)_
+      **Done when:** all four TBS shapes are playable and graded — desktop gated by e2e; iOS by demo.
 
 ---
 

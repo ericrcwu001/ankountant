@@ -4,6 +4,12 @@
 > schemas) + D10 (per-section literature). Read after `BUILD-PLAN.md`. This is the
 > concrete target for Workstream A (and B/C).
 
+> **2026-07-06 audit update:** this target is now the implemented shape. The live
+> source of truth is `section_items[]` in
+> `rslib/src/ankountant/seed_content.json`, the typed/validated seed loader in
+> `rslib/src/ankountant/seed.rs`, and bundled per-section literature consumed by
+> the desktop and iOS research surfaces.
+
 ## 1. Section dimension (minimal, sync-safe)
 
 - `section ∈ {AUD, FAR, REG, BAR, ISC, TCP}`.
@@ -11,10 +17,11 @@
   `Ankountant::Sealed::<section>::<set_id>` (sealed detection in `service.rs`) and
   by per-section config keys (`ankountant.confusable.<section>`,
   `GetReadiness(section)`). So most of the "section" plumbing exists.
-- Add a native note tag `sec::<section>` for direct query; keep the `ds::`
-  confusion tag. **No new field/table.**
-- Generalize the seed + CONFUSABLE map + readiness beyond FAR: author
-  `Ankountant::Sealed::AUD::*`, `ankountant.confusable.AUD`, etc.
+- Native note tags `sec::<section>` and the `ds::` confusion tag keep direct
+  query support without a new field/table.
+- The seed, CONFUSABLE map, and readiness path are section-aware across
+  `Ankountant::Sealed::<section>::*`, `ankountant.confusable.<section>`, and
+  `GetReadiness(section)`.
 
 ## 2. Typed schemas (D9) — replace "unknown-keys-ignored" with validated structs
 

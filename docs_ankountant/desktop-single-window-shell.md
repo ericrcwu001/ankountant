@@ -24,6 +24,8 @@ The flat public URLs are preserved because `qt/aqt/mediasrv.py` whitelists by fi
 - `/ankountant-research`
 - `/ankountant-doc-review`
 - `/ankountant-stats`
+- `/ankountant-sync`
+- `/ankountant-settings`
 - `/ankountant-workspace`
 
 All of these live under `ts/routes/(ankountant)/`, so they share `+layout.svelte` without changing URLs. The layout provides the navy sidebar and registers `window.__ankGoto` so the existing shell webview can navigate client-side.
@@ -32,17 +34,16 @@ All of these live under `ts/routes/(ankountant)/`, so they share `+layout.svelte
 
 The sidebar is not decorative. It maps to existing features:
 
-| Item       | Target                                                                |
-| ---------- | --------------------------------------------------------------------- |
-| Dashboard  | `/ankountant-home`                                                    |
-| Study      | `/ankountant-workspace`                                               |
-| Practice   | `/ankountant-confusion`                                               |
-| Review     | `/ankountant-tbs`                                                     |
-| Analytics  | `/ankountant-stats`                                                   |
-| Bookmarks  | `/ankountant-workspace?initial=browse&mode=notes&search=tag%3Amarked` |
-| Notes      | `/ankountant-workspace?initial=browse&mode=notes`                     |
-| Flashcards | `/ankountant-workspace?initial=browse&mode=cards`                     |
-| Settings   | `bridgeCommand("ankountant:prefs")` → `AnkiQt.onPrefs()`              |
+| Item      | Target                                           |
+| --------- | ------------------------------------------------ |
+| Dashboard | `/ankountant-home`                               |
+| Study     | `/ankountant-workspace`                          |
+| Practice  | `/ankountant-confusion`                          |
+| TBS       | `/ankountant-tbs`                                |
+| Analytics | `/ankountant-stats`                              |
+| Browse    | `/ankountant-workspace?initial=browse&single=browse` |
+| Sync      | `/ankountant-sync`                               |
+| Settings  | `/ankountant-settings`                           |
 
 `BrowsePane.svelte` reads `mode` and `search` launch parameters only for initial state. Once mounted, it keeps the same browser behavior: backend search, card/note mode, row actions, inline editing, find/replace, tags, flags, suspend, and delete.
 
@@ -53,7 +54,8 @@ Handled in `Workspace._ankountant_bridge()`:
 - `ankountant:exit` raises the classic home dock.
 - `ankountant:review` selects `Ankountant::Study::FAR` and enters the normal overview/review flow.
 - `ankountant:stats` opens the existing stats tool.
-- `ankountant:prefs` opens existing Preferences.
+- `ankountant:prefs` opens the native Ankountant settings route.
+- `ankountant:sync` starts the existing sync flow.
 - `ankountant:nav:<page>` opens or navigates the shell to a known Ankountant route.
 
 ## Visual contract
@@ -85,6 +87,6 @@ After `just run`, visually inspect the full PyQt app, not only a browser render:
 1. Confirm the launch surface is the Ankountant shell, not the classic Decks tab.
 2. Confirm the dark sidebar, white metric rail, topographic map, pass line, flags, and legend match the summit reference.
 3. Hover a topic flag and confirm its detail card appears; move off the flag and confirm the card disappears.
-4. Click Dashboard, Study, Practice, Review, Analytics, Bookmarks, Notes, Flashcards, and Settings.
+4. Click Dashboard, Study, Practice, TBS, Analytics, Browse, Sync, and Settings.
 5. Confirm Study/Review still enter the existing collection-driven flows.
 6. Toggle `Ctrl+Shift+D` to verify classic Decks/Add/Browse/Stats access is still available.

@@ -4,6 +4,14 @@
 
 Core Python library for [Anki](https://apps.ankiweb.net), the spaced repetition flashcard program.
 
+## Fork note
+
+This README also describes the upstream Anki package. For Ankountant
+development, use the repo-root `just` recipes and fork docs; source is
+<https://github.com/ericrcwu001/ankountant>. Ankountant-specific domain behavior
+belongs in the shared Rust core (`rslib/src/ankountant/`) and reaches this layer
+through generated backend wrappers.
+
 ## About
 
 [Anki](https://apps.ankiweb.net) is a spaced repetition program that helps you remember things efficiently. This package contains the Python layer of Anki's core: it wraps the Rust backend (`rslib`) and exposes the primary API used by the desktop app and add-ons alike.

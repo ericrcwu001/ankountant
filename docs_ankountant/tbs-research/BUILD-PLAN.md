@@ -4,6 +4,11 @@
 > (`00-DECISIONS.md`). This is the implementation spec for the `tbs-surfaces`
 > branch. Read alongside the per-topic research (`01`–`12`) in this folder.
 
+> **2026-07-06 audit update:** the `tbs-surfaces` work has landed. Keep this file
+> as historical implementation context; use `09-desktop-surface-plan.md`,
+> `10-ios-surface-plan.md`, and `12-designsystem-workspace-integration.md` for the
+> current as-built maps.
+
 ## SCOPE UPDATE (2026-07-02): section-agnostic, ALL sections
 
 > This plan was drafted FAR-first; per the grill-me follow-up it is now
@@ -20,13 +25,14 @@
 
 ## The load-bearing finding
 
-`SubmitPerformanceAttempt` is already **shape-agnostic**: `mode` (field 2) and
+`SubmitPerformanceAttempt` is **shape-agnostic**: `mode` (field 2) and
 `submission_json` (field 3) are free-form strings; the grader routes any
 non-`"confusion"` mode through the generic per-step path; and `GradableStep` /
 `Outcome` ignore unknown JSON keys (no `deny_unknown_fields`). ⇒ **research +
-doc_review need NO proto change, NO new note-type field, NO SQLite change, and NO
-iOS index churn.** The work is (1) a tiny backend delta, (2) real seed content,
-(3) client rendering (desktop + iOS both currently stub these two shapes).
+doc_review required NO proto field change, NO new note-type field, NO SQLite
+change, and NO iOS index churn.** The landed work is explicit mode validation,
+real typed seed content, bundled literature, and desktop/iOS rendering for all
+four TBS shapes.
 
 ## Resolved open questions / reconciliations
 
@@ -56,14 +62,10 @@ iOS index churn.** The work is (1) a tiny backend delta, (2) real seed content,
   accepted-citation list**, all-or-nothing). Add `Outcome.elapsed_ms: Option<u32>`
   (`#[serde(default)]`, backward-compatible) and write time-to-cite into
   `outcome_json` (T1 AC2). **doc_review reuses the existing per-step path.**
-- **A3** Seed — replace the empty research/doc_review stub loop (`seed.rs:~412-424`)
-  with a content-driven loop (mirror the content-TBS transform); add `research[]`
-  - `doc_review[]` arrays to `seed_content.json`. Author **~4 research + ~4
-    doc-review** items spanning the 4 confusion sets, sealed-bank tagged
-    (`Ankountant::Sealed::FAR::<set_id>`, suspended, `ds::` `schema_tag`) so they
-    feed Performance, not the study schedule. Sources: `02-60-pdf.md` (research
-    items + AICPA App B accounting-changes / App C contingent-liabilities tables) +
-    `06-docreview-sim.md` (AICPA FAR net-revenues memo).
+- **A3** Seed — implemented with section-agnostic typed `section_items[]` in
+  `seed_content.json`, sealed-bank placement, `sec::<section>` tags, and `ds::`
+  schema tags so research/doc-review items feed Performance rather than the study
+  schedule.
   * ⚠️ **CRITICAL GAAP-vintage check:** `60.pdf` is 2014 (ASC 840 not 842, pre-606,
     "extraordinary items"). **Verify every citation + treatment against CURRENT US
     GAAP** (ASC 842 leases, ASC 606 revenue, no extraordinary items) before
@@ -99,7 +101,8 @@ iOS index churn.** The work is (1) a tiny backend delta, (2) real seed content,
   (not free text) + "no entry required" + spare rows.
 - **B5 Results layer** (differentiator, agent 07): per-blank reveal + correct value
   - rationale + citation/Blueprint tag.
-- **B6 Register surfaces:** `layout.ts` `SurfaceKind` union + `SURFACE_KINDS`;
+- **B6 Register surfaces:** `workspace-layout.ts` `SurfaceKind` union +
+  `SURFACE_KINDS`;
   `surfaces.ts` registry; `panes/*Pane.svelte` (filter by `tbsType` — `TbsPane`
   currently grabs the first TBS note regardless of shape); shell routes/tabs;
   `mediasrv.py` allowlist; `workspace.py` route map. Tokens: tabular `--font-mono`
@@ -108,10 +111,9 @@ iOS index churn.** The work is (1) a tiny backend delta, (2) real seed content,
 
 ## Workstream C — iOS parity · non-gated (fast-follow)
 
-- **C1** `TbsTaskView` — replace the `.research` / `.docReview` "unsupported"
-  branches with `ResearchTaskView` (search + citation input) + `DocReviewTaskView`
-  (exhibits + `Picker` blanks). Reuse `ConfidenceGateView` +
-  `ConfusionDrillView.treatmentButton`.
+- **C1** iOS simulation surfaces — implemented with `ResearchTaskView` (search +
+  citation input) and `DocReviewTaskView` (exhibits + `Picker` blanks), sharing
+  the confidence gate and common simulation models.
 - **C2** `TbsParsing`/`TbsModels` — add `RenderStep.options`/`placeholder`, input
   structs, a generic `buildStepsSubmission` (mirror desktop `lib.ts`); extend
   `TbsParsingTests`. No index resync (no new RPC). New files auto-included via
@@ -126,5 +128,5 @@ stays on the existing `SubmitPerformanceAttempt` step-graded path.
 
 ## Delivery
 
-Isolated `tbs-surfaces` branch/worktree. Order: A (gated) → B (gated) → C
-(non-gated) → final `just check` green. Nothing merges to `main` until green.
+Historical delivery order was A (gated) → B (gated) → C → final `just check`.
+Future edits should use the current as-built docs listed at the top of this file.

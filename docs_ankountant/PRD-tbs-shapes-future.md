@@ -1,8 +1,13 @@
-# Ankountant — Future PRD: Research-Sim & Document-Review TBS Shapes
+# Ankountant — Research-Sim & Document-Review TBS Shapes
 
-> Status: Draft v1 (future / post-MVP) · Owner: eric · Last updated: 2026-06-30
-> Depends on: `PRD.md` (Phase 1 MVP). This PRD adds the **two deferred TBS shapes** to the surfaces already shipped there.
-> Same build model: per-feature rubrics for an autonomous karpathy loop.
+> Status update (2026-07-06 audit): **implemented**. Research and
+> document-review TBSs are seeded, graded, and rendered on desktop and iOS.
+> Historical plan language below is retained for rationale; use
+> `tbs-research/09-desktop-surface-plan.md` and `10-ios-surface-plan.md` for the
+> current file map.
+>
+> Original status: Draft v1 (future / post-MVP) · Owner: eric · Last updated:
+> 2026-06-30.
 
 ## 1. Overview
 
@@ -14,7 +19,7 @@ The Phase 1 MVP (`PRD.md`) ships a first-class TBS review mode with **journal-en
 - **Goals:**
   1. A **research-sim surface** that embeds section-appropriate authoritative literature (FAR/BAR → FASB ASC; REG/TCP → IRC; AUD → AICPA/PCAOB standards) and grades a submitted citation on **correctness and time** (navigation, not recall).
   2. A **document-review surface** where each blank reuses the Phase 1 confusion-set "which treatment?" logic (SPOV 4), graded per blank with partial credit.
-- **Non-goals:** No AI generation of these items (that's Phase 2a). No full, licensed copy of the codification — a **scoped, bundled excerpt corpus** sufficient for seed items (licensing is OQ-1). No sections beyond the MVP's FAR unless seed content is authored for them.
+- **Non-goals:** No runtime/live AI generation of these items; build-time cardgen/template output may import as ordinary static notes. No full, licensed copy of the codification — a **scoped, bundled excerpt corpus** sufficient for seed items (licensing is OQ-1). The implemented seed/corpus is section-agnostic across CPA sections, not FAR-only.
 
 ## 3. Target User Persona
 
@@ -43,7 +48,7 @@ Same as `PRD.md` — **the Retaker**. Additional need served here: the candidate
 ### T1 — Research-sim surface & grading · P0 (of this PRD)
 
 **Story:** As the Retaker, I want to search the embedded literature and submit the governing citation, graded on whether it's right and how fast I found it — training lookup, not memorization.
-**Where:** new surface reusing the TBS screen shell (desktop Svelte route; iOS SwiftUI view); grading via `SubmitPerformanceAttempt(mode=research)` extended in `rslib/src/backend/scheduler.rs`; `steps_json` answer key holds the accepted citation(s); latency from the surface.
+**Where:** surface reusing the TBS exam shell (desktop Svelte route; iOS SwiftUI view); grading via `SubmitPerformanceAttempt(mode=research)` in `rslib/src/ankountant/{service,grading,logic,attempt_log,readiness}.rs`; `steps_json` answer key holds the accepted citation(s); latency from the surface.
 **Behavior (pinned):** the item shows a prompt + a searchable literature pane (T2); the user submits a citation string (e.g., `ASC 842-20-25-1`). Grading: exact/normalized match against accepted citation(s) in the answer key; **time-to-submit** recorded and surfaced (fast+correct is the goal); credit is correctness (1/0), with time as a reported secondary signal, not a credit multiplier (keeps grading honest).
 **Rubric:**
 
@@ -56,7 +61,7 @@ Same as `PRD.md` — **the Retaker**. Additional need served here: the candidate
 ### T2 — Bundled scoped literature corpus · P0
 
 **Story:** As the system, I need a searchable, bundled excerpt corpus so research items work offline with no live service and no licensing overreach.
-**Where:** a bundled data file (FAR → scoped FASB ASC excerpts) shipped with the app; searched locally. If full-text search needs backend support, add an append-only RPC `SearchLiterature(section, query)`; otherwise search client-side over the bundled file.
+**Where:** bundled per-section data files shipped with the app and searched locally. OQ-3 is resolved: client-side search over the bundled corpus; no append-only `SearchLiterature` RPC exists.
 **Behavior (pinned):** corpus is a curated, **scoped excerpt set** keyed by citation, sufficient for the seed research items — not the full codification. Search is substring/keyword over titles + bodies; offline; local-first (NFR-2 of `PRD.md` holds).
 **Rubric:**
 

@@ -108,7 +108,7 @@ to compile, but will mean Anki will run slower.
 To run Anki in optimized mode, use:
 
 ```
-./tools/runopt
+just run-optimized
 ```
 
 Or set RELEASE=1 or RELEASE=2. The latter will further optimize the output, but make

@@ -594,9 +594,10 @@ message Readiness {
 
 message SubmitPerformanceAttemptRequest {
   int64 item_note_id = 1;
-  // "confusion" | "tbs"
+  // "confusion" | "tbs" | "research" | "doc_review"
   string mode = 2;
-  // confusion: {"choice":"..."}; tbs: {"steps":[{"id":..,"value":..}]}
+  // confusion: {"choice":"..."}; research: {"citation":"..."};
+  // tbs/doc_review: {"steps":[{"id":..,"value":..}]}
   string submission_json = 3;
   string confidence = 4;
   uint32 latency_ms = 5;

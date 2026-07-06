@@ -3,6 +3,11 @@
 Status: Accepted
 Date: 2026-07-01
 
+2026-07-06 status update: superseded in part. The workspace now hosts
+web-native Browse, Add, Stats, Literature, Research, and Doc Review panes in
+addition to Dashboard, Confusion, and TBS. Classic Qt dialogs may still exist for
+edge cases; Review remains the main classic runtime not mounted as a pane.
+
 ## Context
 
 The desktop app let users "split screen" by dragging the Qt workspace tabs

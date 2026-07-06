@@ -15,9 +15,9 @@ reranked hybrid retrieval, full fan-out (concurrent generation + Batch-API path
 
 - concurrent embeddings + parallel-judge wave plan + sampled-audit gate), Tier-A
   corpus fetch helper, template expansion, and a sharded stress-pack builder.
-  Offline suite: **71 passing**. Current live RAG proof is `proof3`; current
-  importable template deck is `tmpl4`; full unique 50k generation still needs a
-  larger corpus and live keys.
+  The dedicated offline suite runs through `just test-cardgen`. Current live RAG
+  proof is `proof3`; current importable template deck is `tmpl4`; full unique 50k
+  generation still needs a larger corpus and live keys.
 
 ## What exists (done + verified)
 
@@ -38,7 +38,7 @@ reranked hybrid retrieval, full fan-out (concurrent generation + Batch-API path
   `rslib/src/ankountant/{notetypes.rs,seed.rs,tests.rs}`. `just check` green
   (622 Rust + 76 Qt).
 - **Repo hygiene:** `tools/cardgen` is isolated from the runtime and gated
-  separately by `just test-cardgen` (71 keyless tests).
+  separately by `just test-cardgen` with keyless offline tests.
 
 ## Key files
 
@@ -73,7 +73,7 @@ reranked hybrid retrieval, full fan-out (concurrent generation + Batch-API path
 | fan-out: concurrent gen + Batch API + concurrent embeddings                    | ✅ done (`generate.py`, `providers/openai_batch.py`, `index.py`; offline stays sequential/deterministic; resumable) |
 | scaled judging: wave plan + sampled-audit gate                                 | ✅ done (`cursor_judge.py::plan`, `judge.py::_audit_split`, `judge_mode=audit`)                                     |
 | Tier-A corpus fetch/register                                                   | ✅ done (`scripts/fetch_corpus.py`; IRS/NIST/OpenStax registered + indexed)                                         |
-| tests                                                                          | ✅ 71 offline tests green                                                                                           |
+| tests                                                                          | ✅ dedicated offline suite green under `just test-cardgen`                                                          |
 | **live** proof3 (gpt-5-mini) + parallel judge + compare                        | ✅ done (161 vetted RAG cards, baseline PASS, judge calibration PASS)                                               |
 | template deck (`tmpl4`)                                                        | ✅ done (325 shipped, 1 wrong blocked, 0 leakage)                                                                   |
 | stress pack (`just cardgen-stress`)                                            | ✅ done (sharded duplicate pack for 50k-scale load testing)                                                         |
@@ -87,7 +87,7 @@ manifest). Tier-A was fetched over HTTP by the helper.
 ## Run / test
 
 ```bash
-just test-cardgen                    # offline, keyless, 71 tests
+just test-cardgen                    # offline, keyless cardgen suite
 just cardgen all --target 300 --run-id proof3          # live proof path (needs OPENAI_API_KEY)
 just cardgen all --target 300 --run-id proof3 --resume # resumes after judge verdicts, if needed
 # fan out parallel Cursor judge subagents (see queue/plan.json) to fill out/<run>/07-judge/verdicts/

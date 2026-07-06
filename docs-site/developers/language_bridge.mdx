@@ -2,13 +2,15 @@
 title: "Language Bridge"
 ---
 
-Anki's codebase uses three layers.
+Ankountant's codebase uses the desktop layers inherited from Anki plus a native
+iOS Swift client.
 
 1. The web frontend, created in Svelte and typescript,
 2. The Python layer and
-3. The core Rust layer.
+3. The core Rust layer, and
+4. The iOS Swift layer under `ios/`.
 
-Each layer can can makes RPC (Remote Procedure Call) to the layers below it. While it should be avoided, Python can also invoke Typescript functions. The Rust layers never make calls to the other layers. Note that it can make RPC to AnkiWeb and other servers, which is out of scope of this document.
+Each desktop layer can make RPC (Remote Procedure Call) to the layers below it. While it should be avoided, Python can also invoke Typescript functions. The Rust layers never make calls to the other layers. iOS calls the same Rust backend contract through `ios/anki-bridge-rs` and generated Swift protobuf message types. Note that Rust can make RPC to AnkiWeb and other servers, which is out of scope of this document.
 
 In this document we'll provide examples of bridge between languages, explaining:
 
@@ -28,7 +30,7 @@ If the RPC implementation is in Python, it should be declared in the service [fr
 
 ## Making a Remote Procedure Call
 
-In this section we'll consider how to make Remote Procedure Call (RPC) from languages used in Anki. Languages used for AnkiDroid and AnkiMobile are out of scope of this document.
+In this section we'll consider how to make Remote Procedure Call (RPC) from languages used in Ankountant.
 
 ### Making a RPC from Python
 
@@ -43,6 +45,15 @@ Let's consider the method [`rpc GetCsvMetadata(CsvMetadataRequest) returns (CsvM
 It's used in the TypeScript class [`ImportCsvState`](https://github.com/ankitects/anki/blob/acaeee91fa853e4a7a78dcddbb832d009ec3529a/ts/routes/import-csv/lib.ts#L102), as an asynchronous function. It's argument is a single javascript object, whose keys are as in [`CsvMetadataRequest`](https://github.com/ankitects/anki/blob/acaeee91fa853e4a7a78dcddbb832d009ec3529a/proto/anki/import_export.proto#L138) and it returns a `CsvMetadata`.
 
 The method was imported with `import { getCsvMetadata } from "@generated/backend";` and the types were imported with `import type { CsvMetadata } from "@generated/anki/import_export_pb";`. Note that it was not necessary to import the input type given that it's simply an untyped javascript object.
+
+### Invoking Method From Swift
+
+Swift protobuf message types are generated into `ios/Sources/AnkiProto/*.pb.swift`
+by `ios/scripts/generate-protos.sh`. Service and method IDs are not generated:
+after any proto service/method add or reorder, run `just check`, inspect
+`out/pylib/anki/_backend_generated.py`, and update
+`ios/Sources/AnkiBackend/AnkiBackend.swift` by hand so Swift dispatches the same
+backend indices as Python.
 
 ## Implementation
 

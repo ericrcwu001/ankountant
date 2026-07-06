@@ -1,6 +1,6 @@
 # 08 — Rust Backend Change-Map: `research` + `doc_review` TBS grading
 
-> Read-only analysis for adding the two deferred TBS shapes
+> Historical read-only analysis for adding the two formerly deferred TBS shapes
 > (`docs_ankountant/PRD-tbs-shapes-future.md`, features T1–T4) to the shared
 > Rust core. Scope: exactly what to add/change in `rslib/` + `proto/`, with
 > file:line refs. **No code was modified producing this doc.**
@@ -9,6 +9,14 @@
 > only notes, `col` config JSON, `card.custom_data`); proto is **append-only**
 > (new RPCs appended after `LoadFarSeed`; existing methods never reordered; iOS
 > indices hand-maintained).
+
+> **2026-07-06 audit update:** this change-map has landed. The as-built backend
+> validates explicit `mode` values in `rslib/src/ankountant/service.rs`, grades
+> research citations in `grading.rs` with citation normalization in `logic.rs`,
+> stores latency in `attempt_log.rs`, rolls doc-review into fractional
+> Performance in `readiness.rs`, and seeds playable research/doc-review content
+> from typed section items in `seed.rs`. `SearchLiterature` was not added; both
+> clients search the bundled literature corpus client-side.
 
 ## 0. TL;DR — the whole change surface
 
@@ -45,9 +53,10 @@ mode-agnostic and picks up both modes for free.
 ```587:595:proto/anki/scheduler.proto
 message SubmitPerformanceAttemptRequest {
   int64 item_note_id = 1;
-  // "confusion" | "tbs"
+  // "confusion" | "tbs" | "research" | "doc_review"
   string mode = 2;
-  // confusion: {"choice":"..."}; tbs: {"steps":[{"id":..,"value":..}]}
+  // confusion: {"choice":"..."}; research: {"citation":"..."}; tbs/doc_review:
+  // {"steps":[{"id":..,"value":..}]}
   string submission_json = 3;
   string confidence = 4;
   uint32 latency_ms = 5;
@@ -69,34 +78,31 @@ message StepResult {
 }
 ```
 
-**Key finding — no proto change needed for T4.** `mode` (field 2) and
+**Key finding — no proto field change was needed for T4.** `mode` (field 2) and
 `submission_json` (field 3) are opaque strings; the response already models "N
 weighted per-step results + a total". `research` returns one `StepResult`
 (`id:"citation"`, `weight:1.0`), `doc_review` returns one per blank. The
 field-number contract is untouched, so Rust/Python/TS/iOS all keep working with
-zero regen. The comments on fields 2–3 are stale-once-we-add-modes; updating them
-is cosmetic and does **not** shift indices.
+zero regen. The field comments now document all four shipped modes; that comment
+edit is cosmetic and does **not** shift indices.
 
 ### 1.2 Current `mode` values, and the mode-vs-shape distinction
 
 Two different vocabularies are in play — do not conflate them:
 
 - **Attempt `mode`** (the RPC `mode` field, persisted to the Attempt Log `mode`
-  field): currently only **`"confusion"`** and **`"tbs"`** (proto comment
-  `scheduler.proto:589`; produced by the seed at `seed.rs:729` and `seed.rs:745`;
-  branched in `service.rs:118`). New values to add: **`"research"`**,
-  **`"doc_review"`**.
-- **Note shape** (`tbs_type`, TBS field 0 — `notetypes.rs:48`): currently
-  `"mcq"`, `"journal_entry"`, `"numeric"`, plus the stored-only `"research"` /
-  `"doc_review"` stubs (`seed.rs:415`). The TS mirror enumerates all four
-  playable shapes (`ts/routes/(ankountant)/ankountant-tbs/lib.ts:18`).
+  field): shipped values are **`"confusion"`**, **`"tbs"`**,
+  **`"research"`**, and **`"doc_review"`**.
+- **Note shape** (`tbs_type`, TBS field 0 — `notetypes.rs:48`): shipped values
+  include `"mcq"`, `"journal_entry"`, `"numeric"`, `"research"`, and
+  `"doc_review"`; the playable research/doc-review content now comes from the
+  typed seed content instead of stored-only placeholders.
 
 The mapping is **not** 1:1: an `mcq`-shape sealed item is submitted with
 `mode="confusion"` (single `"choice"` step), while `journal_entry`/`numeric`
-items submit `mode="tbs"`. For the new shapes we recommend a 1:1 mapping —
-`research`-shape → `mode="research"`, `doc_review`-shape → `mode="doc_review"` —
-so analytics can tell them apart (this is what forces the one readiness change in
-§6).
+items submit `mode="tbs"`. The shipped mapping for the newer shapes is 1:1:
+`research`-shape → `mode="research"`, `doc_review`-shape → `mode="doc_review"`,
+so analytics can tell them apart.
 
 ### 1.3 `ConfusionItem` / TBS DTOs and `BuildConfusionQueue`
 
@@ -495,10 +501,10 @@ Notes:
   `buildJeSubmission`/`buildNumericSubmission` (`lib.ts:118-146`). (Frontend work,
   out of this Rust change-map's scope, listed for completeness.)
 
-### 4.3 Seed (`seed.rs`) — replace the stored-only stubs
+### 4.3 Seed (`seed.rs`) — playable typed items
 
-Today the seed writes empty, unplayable stubs (`exhibits_json="[]"`,
-`steps_json="[]"`) — `seed.rs:412`:
+Historical context: the original seed wrote empty, unplayable placeholders
+(`exhibits_json="[]"`, `steps_json="[]"`) — `seed.rs:412`:
 
 ```415:424:rslib/src/ankountant/seed.rs
 for shape in ["research", "doc_review"] {
@@ -513,14 +519,11 @@ for shape in ["research", "doc_review"] {
 }
 ```
 
-To make them playable, author at least one real `research` and one `doc_review`
-item into `seed_content.json` (which already carries `kind`/`prompt`/`exhibits`/
-`steps` for JE/numeric — e.g. `seed_content.json:1366`+) and build them like the
-other content TBS (`seed.rs:370-410`, `content_tbs_steps` `seed.rs:821`).
-`content_tbs_steps` needs a `research`/`doc_review` branch (research → wrap the
-citation array; doc_review → pass through `answer_key`+`weight`+ the render-only
-keys). T2 AC3 (`PRD-tbs-shapes-future.md:65`) requires every seed research item's
-accepted citation to exist in the corpus (§5).
+The as-built seed replaces that loop with section-agnostic `section_items[]`
+content. Research items carry accepted citation arrays that must exist in the
+bundled literature corpus; document-review items carry a primary document exhibit
+with `<blank step="...">` markers plus per-blank options. The seed validates this
+typed structure before writing sync-safe JSON into the existing TBS fields.
 
 ---
 

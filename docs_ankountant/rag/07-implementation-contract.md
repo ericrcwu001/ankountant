@@ -210,5 +210,7 @@ survive. `license` is `public` (IRS/NIST/OMB/Treasury — redistributable) or
 - `just cardgen` → run DAG (proof defaults). `just cardgen-full` → `--target 50000`.
 - `just cardgen all --mode template` → the no-LLM template deck (then `resume`).
 - `just test-cardgen` → `uv run pytest tools/cardgen/tests` (offline, keyless).
-- Wire `test-cardgen` into `just check` (or `just test-py`) so the pipeline is
-  gated. All tests use the offline backends; **no test needs a key or network.**
+- `just check` gates the main app/repo; cardgen remains a dedicated gate because
+  `tools/cardgen/` is isolated from the shipped runtime. Run both when changing
+  generated content, provenance fields, or the import/load paths. All cardgen
+  tests use the offline backends; **no test needs a key or network.**

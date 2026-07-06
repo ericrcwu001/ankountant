@@ -40,11 +40,12 @@ the built-in web-search/fetch as the Exa/web-reader equivalent plus `yt-dlp` +
   **"no entry required"** control and **more blank rows than needed**. Our JE
   account field is currently free-text (`TbsSurface.svelte` / `TbsTaskView.swift`).
   Free-text is _easier_ but _not test-accurate_ and it also makes grading noisier.
-- **Build the two shapes we stubbed:** **document-review** (click underlined text →
-  dropdown of edits → Accept / Reset, with a per-blank answered/unanswered marker)
-  and **research** (now, post-2024, an **excerpt-as-exhibit + structured citation
-  entry**, not a full searchable codification). Both are currently
-  `"This simulation type isn't supported yet."`
+- **Keep polishing the two formerly stubbed shapes:** **document-review** (click
+  underlined text → dropdown of edits → Accept / Reset, with a per-blank
+  answered/unanswered marker) and **research** (now, post-2024, an
+  **excerpt-as-exhibit + structured citation entry**, not a full searchable
+  codification). Both are now implemented on desktop and iOS; remaining work is
+  fidelity polish, richer rationales, and broader seeded coverage.
 - **Our differentiator should be the results layer.** Everyone shows a partial-%;
   the leaders (UWorld written rationales; Becker SkillBuilder/ExamSolver videos;
   Gleim explanations + **blueprint references**) explain the _why_ per blank and
@@ -458,12 +459,15 @@ Wiley review; cpaexamguide.com "best CPA review courses."
 Grounded in our current code:
 `ts/routes/(ankountant)/ankountant-tbs/TbsSurface.svelte`,
 `ios/AnkountantApp/Sources/Simulations/TbsTaskView.swift`,
-`ios/Sources/AnkiKit/TbsModels.swift`. Today **`journal_entry` + `numeric` are
-implemented on both surfaces; `research` + `doc_review` are stubs**; grading is
-**server-side** (`SubmitPerformanceAttempt`, answer keys never sent to the client —
-keep this security model). Desktop already has a **sticky side exhibit pane** and a
-"Ledger" design system (tabular figures, color-never-alone ✓/✗); iOS stacks
-exhibits **below** the task (a mobile split-attention problem to fix).
+`ios/Sources/AnkiKit/TbsModels.swift`,
+`ios/AnkountantApp/Sources/Simulations/ResearchTaskView.swift`, and
+`ios/AnkountantApp/Sources/Simulations/DocReviewTaskView.swift`. Today
+**`journal_entry` + `numeric` + `research` + `doc_review` are implemented** on
+desktop and iOS; grading is **server-side** (`SubmitPerformanceAttempt`, answer
+keys never sent to the client — keep this security model). Desktop already has a
+sticky exhibit/document shell and the Ledger design system (tabular figures,
+color-never-alone ✓/✗); iOS uses native simulation views and should keep
+improving co-visibility on small screens.
 
 ### P0 — fidelity fixes to what we already ship
 
@@ -481,19 +485,19 @@ exhibits **below** the task (a mobile split-attention problem to fix).
   segmented control / a pull-up sheet** so a cell and its exhibit are co-visible
   (match the desktop sticky pane intent).
 
-### P1 — build the two stubbed shapes (biggest coverage gap)
+### P1 — deepen the two formerly stubbed shapes
 
 - **Document review (`doc_review`):** render the memo/document with **underlined
   segments**; tapping/clicking a segment opens a **dropdown** (`original text` /
   `delete` → strike-through / replacement options); show a **per-segment
   answered/unanswered marker**; support **Accept/Reset**. Reuse the server
-  per-step grading (each segment = one step). This is a signature exam format and
-  currently unsupported.
-- **Research (`research`):** implement the **2024** shape, not the legacy searchable
-  codification — show the **guidance excerpt as an exhibit** + a **structured
-  citation entry** (segmented inputs, e.g. `ASC [842]-[20]-[25]-[1]`), and grade it
-  **all-or-nothing** with a note that the exam does the same. Cheaper to build _and_
-  more test-accurate than a fake searchable ASC.
+  per-step grading (each segment = one step). This is now playable; the remaining
+  gap is exam-grade interaction polish and seeded variety.
+- **Research (`research`):** keep the **2024** shape, not the legacy searchable
+  codification — show the **guidance excerpt as an exhibit** + a structured
+  citation entry, and grade it **all-or-nothing** with a note that the exam does
+  the same. Current surfaces are playable; next improvements are segmented
+  citation controls, richer result explanations, and more section coverage.
 
 ### P2 — make the **results layer** our differentiator
 

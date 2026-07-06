@@ -3,6 +3,11 @@
 > North star for the "finish the deferred TBS surfaces" effort. Read this FIRST
 > for the research synthesis, seed authoring, and implementation phases. Source:
 > grill-me interview with eric, 2026-07-02.
+>
+> 2026-07-06 audit update: the effort described here is implemented. Research
+> and document-review TBSs are seeded, graded, and rendered on desktop and iOS.
+> Use `09-desktop-surface-plan.md`, `10-ios-surface-plan.md`, and
+> `12-designsystem-workspace-integration.md` for current file maps.
 
 ## Decisions
 
@@ -78,11 +83,11 @@ Full spec: **`BUILD-PLAN.md`** (this folder).
 
 ## Pipeline / status
 
-- **Phase 0 (running):** 12 research agents → `docs_ankountant/tbs-research/{01..12}.md`.
-- **Phase 1:** synthesize → updated PRD + rubrics.
-- **Phase 2:** author seed content (research + doc-review sample items).
-- **Phase 3:** implement on `tbs-surfaces` worktree; `just check` green.
-- **Phase 4:** report + await merge approval.
+- **Complete:** research agents, synthesis, seed content, desktop surfaces, iOS
+  surfaces, workspace registration, and shared Rust grading path.
+- **Current follow-up:** expand production content coverage, add/refresh e2e and
+  XCTest coverage as interactions change, and keep literature corpora aligned
+  across Rust/TS/iOS resources.
 
 ## References
 

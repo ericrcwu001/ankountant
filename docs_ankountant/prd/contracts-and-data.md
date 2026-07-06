@@ -17,7 +17,12 @@ message ConfusionItem { int64 note_id = 1; string prompt = 2; repeated string tr
 
 message GetReadinessRequest { string section = 1; }
 message GetReadinessResponse { repeated TopicScore topics = 1; Readiness readiness = 2; }
-message TopicScore { string set_id = 1; double memory = 2; double performance = 3; double gap = 4; }
+message TopicScore {
+  string set_id = 1; double memory = 2; double performance = 3; double gap = 4;
+  bool memory_insufficient = 5;
+  double memory_low = 6; double memory_high = 7;
+  double performance_low = 8; double performance_high = 9;
+}
 message Readiness {
   bool abstain = 1; string reason = 2;
   double band_low = 3; double band_high = 4; string confidence = 5;
@@ -26,8 +31,8 @@ message Readiness {
 } // band/point are CPA 0..99 when not abstaining
 
 message SubmitPerformanceAttemptRequest {
-  int64 item_note_id = 1; string mode = 2;   // "confusion" | "tbs"
-  string submission_json = 3;                // confusion: {"choice":"..."}; tbs: {"steps":[{"id":..,"value":..}]}
+  int64 item_note_id = 1; string mode = 2;   // "confusion" | "tbs" | "research" | "doc_review"
+  string submission_json = 3;                // confusion: {"choice":"..."}; research: {"citation":"..."}; tbs/doc_review: {"steps":[{"id":..,"value":..}]}
   string confidence = 4; uint32 latency_ms = 5;
 }
 message SubmitPerformanceAttemptResponse { repeated StepResult steps = 1; double total_credit = 2; int64 attempt_note_id = 3; }
@@ -57,14 +62,14 @@ Codegen: edit `proto/anki/scheduler.proto` → **`just check`** (regenerates Rus
 | ----------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
 | Schema tag              | Anki tag (`ds::…`) on notes                                     | namespaced deep-structure tag                                                                                            | Groups by principle; syncs natively (A6).                                                              |
 | Cognitive-demand tag    | Anki tag (`cog::rote`\|`cog::applied`) on cards' notes          | rote vs applied                                                                                                          | Gates A2 (rote only).                                                                                  |
-| CONFUSABLE map          | `col` config `ankountant.confusable.FAR`                        | `{set_id: {tags:[…], treatments:[…]}}`                                                                                   | Seeded; drives A3/B2; resolves tag→set_id.                                                             |
+| CONFUSABLE map          | `col` config `ankountant.confusable.<section>`                   | `{set_id: {tags:[…], treatments:[…]}}`                                                                                   | Seeded per section; drives A3/B2; resolves tag→set_id.                                                  |
 | Study note              | standard note/card + `ds::`/`cog::` tags                        | fields                                                                                                                   | Normal FSRS schedule.                                                                                  |
-| Sealed Performance item | note in `Ankountant::Sealed::FAR`; cards `queue=-1` (suspended) | fields, `ds::` tag                                                                                                       | Firewall = permanently suspended (A7).                                                                 |
+| Sealed Performance item | note in `Ankountant::Sealed::<section>::<set_id>`; cards `queue=-1` (suspended) | fields, `ds::` tag and `sec::<section>` tag                                                                              | Firewall = permanently suspended (A7).                                                                 |
 | Ankountant TBS note     | new note type                                                   | `tbs_type`, `prompt`, `exhibits_json`, `steps_json` (`{id,answer_key,weight}`), `schema_tag`, provenance (stored, empty) | All 4 shapes (A9).                                                                                     |
 | Attempt Log note        | hidden note type, never-queued deck                             | `item_ref`, `confusion_set_id`, `mode`, `confidence`, `latency_ms`, `outcome_json`, `ts`                                 | Sync-safe per-attempt store (A8); source for the 3 scores.                                             |
 | Per-card scalars        | `card.custom_data`                                              | `te` flag, trailing-5 latencies, latest confidence                                                                       | ≤100 bytes (A2/A8).                                                                                    |
 | Exam date               | hidden `Ankountant Settings` note                               | `section`, key `exam.date`, ISO date                                                                                     | First-class, sync-safe; set/read via `SetExamDate`/`GetExamDate`; legacy config is read-only fallback. |
-| 3-score rollup          | `col` config `ankountant.readiness.FAR`                         | memory/performance/gap/readiness per topic                                                                               | Cache; recomputed by A4.                                                                               |
+| 3-score rollup          | computed from Attempt Log + study revlog                        | memory/performance/gap/readiness per topic, including ranges and insufficient flags                                       | Returned by `GetReadiness(section)`; cache keys, if added, must be section-scoped.                      |
 | Rote latency prior      | `col` config `ankountant.latency.rote`                          | EMA of rote answer times                                                                                                 | A2 cold-start baseline.                                                                                |
 
 ## Sync-safety (hard rule, FR-5)
